@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>익힘 셰이더 프로토타입 — 야키토리 명인</title>
+<style>
+  :root {
+    --bg: #14100e;
+    --panel: #1e1815;
+    --line: #352b25;
+    --text: #efe4da;
+    --dim: #9c8878;
+    --ember: #ff8a3d;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 24px 16px;
+    background:
+      radial-gradient(120% 80% at 50% 115%, #4a2410 0%, transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  h1 span { color: var(--dim); font-weight: 400; }
+
+  #stage {
+    width: min(78vw, 420px);
+    aspect-ratio: 1;
+    display: block;
+    cursor: pointer;
+    border-radius: 12px;
+    touch-action: manipulation;
+    /* 숯불 위에 올려둔 느낌의 바닥 발광 */
+    background: radial-gradient(60% 40% at 50% 92%, rgba(255,110,30,0.30), transparent 70%);
+    transition: transform 0.08s ease;
+  }
+  #stage:active { transform: scale(0.985); }
+
+  #state {
+    font-size: 20px;
+    font-weight: 650;
+    color: var(--ember);
+    min-height: 1.4em;
+    letter-spacing: -0.02em;
+  }
+
+  .hint { color: var(--dim); font-size: 13px; margin: -8px 0 0; }
+
+  .panel {
+    width: min(78vw, 420px);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .row { display: grid; grid-template-columns: 92px 1fr 42px; align-items: center; gap: 10px; }
+  .row label { color: var(--dim); font-size: 13px; }
+  .row output { font-variant-numeric: tabular-nums; text-align: right; color: var(--dim); font-size: 13px; }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--ember);
+  }
+
+  #error {
+    max-width: min(90vw, 560px);
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #3a1512;
+    border: 1px solid #6b2a20;
+    color: #ffcfc4;
+    font-size: 13px;
+    white-space: pre-wrap;
+  }
+
+  footer { color: var(--dim); font-size: 12px; text-align: center; }
+  code { color: #d8c3ae; }
+</style>
+</head>
+<body>
+
+  <h1>익힘 셰이더 <span>— TECH-REND-001 §2.1</span></h1>
+
+  <canvas id="stage"></canvas>
+
+  <div id="state">날것</div>
+  <p class="hint">꼬치를 클릭하면 굽기 전 ↔ 굽기 후로 바뀝니다.</p>
+
+  <div class="panel">
+    <div class="row">
+      <label for="doneness">uDoneness</label>
+      <input id="doneness" type="range" min="0" max="1" step="0.01" value="0">
+      <output id="donenessVal">0.00</output>
+    </div>
+    <div class="row">
+      <label for="tare">uTareAmount</label>
+      <input id="tare" type="range" min="0" max="1" step="0.01" value="0">
+      <output id="tareVal">0.00</output>
+    </div>
+  </div>
+
+  <div id="error" hidden></div>
+
+  <footer>
+    수치는 전부 미확정 초안입니다 · <code>app/art/test.png</code>
+  </footer>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
