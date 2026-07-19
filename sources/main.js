@@ -9,7 +9,8 @@
 // ─────────────────────────────────────────────────────────────
 
 // 네기마 placeholder. 실제 아트가 나오면 이 경로만 바꾸면 된다.
-const IMAGE_URL = '../art/skewer-negima.png';
+// 2.art-concept 의 픽셀 아트 방향에 맞춘 버전. 이전 러프는 skewer-negima.png 에 남아있다.
+const IMAGE_URL = '../art/skewer-negima-pixel.png';
 
 const DONENESS_RAW = 0.0;
 const DONENESS_PERFECT = 0.5;
@@ -84,8 +85,9 @@ function createTexture(img) {
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    // 픽셀 아트는 NEAREST. LINEAR 로 두면 도트 경계가 뭉개진다.
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     return tex;
