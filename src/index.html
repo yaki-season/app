@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YAKI SEASON — 프로토타입</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <header id="orderBar" data-testid="order-bar">
+    <p id="orderStatusText" data-testid="order-status-text">주문을 확인하세요</p>
+    <ol id="orderList" data-testid="order-list" aria-label="네기마 주문 순서"></ol>
+  </header>
+
+  <main id="workArea" data-testid="work-area">
+
+    <section id="screen-assembly" class="screen" data-testid="screen-assembly" hidden>
+      <div class="assembly-stage">
+        <div class="skewer-area">
+          <button id="assembledSkewer" class="skewer" data-testid="assembled-skewer" disabled>
+            <span class="skewer-slot" data-testid="assembly-slot-0"></span>
+            <span class="skewer-slot" data-testid="assembly-slot-1"></span>
+            <span class="skewer-slot" data-testid="assembly-slot-2"></span>
+            <span class="skewer-slot" data-testid="assembly-slot-3"></span>
+            <span class="skewer-slot" data-testid="assembly-slot-4"></span>
+          </button>
+          <p class="hint" id="assemblyHint" data-testid="assembly-hint">재료통을 순서대로 클릭하세요.</p>
+        </div>
+        <div class="bins">
+          <button class="ingredient" data-ingredient="chicken" data-testid="ingredient-chicken">
+            <span class="ingredient-icon" aria-hidden="true"></span>닭다리살
+          </button>
+          <button class="ingredient" data-ingredient="leek" data-testid="ingredient-leek">
+            <span class="ingredient-icon" aria-hidden="true"></span>대파
+          </button>
+        </div>
+      </div>
+      <div id="deliverySlot" class="delivery-slot" data-testid="delivery-slot">
+        <span>그릴로 전달</span>
+      </div>
+    </section>
+
+    <section id="screen-grill" class="screen" data-testid="screen-grill" hidden>
+      <button id="waitingSkewer" class="skewer waiting" data-testid="waiting-skewer">대기 꼬치</button>
+      <div id="grillSlot" class="grill-slot" data-testid="grill-slot">
+        <div id="grillSmoke" class="smoke" data-testid="grill-smoke" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <canvas id="grillCanvas" data-testid="grill-canvas" width="256" height="256"></canvas>
+        <svg class="cook-ring" viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="cook-ring-track" cx="50" cy="50" r="46"></circle>
+          <circle class="cook-ring-zone" cx="50" cy="50" r="46"></circle>
+          <circle id="cookRingProgress" class="cook-ring-progress" cx="50" cy="50" r="46"></circle>
+        </svg>
+        <span id="grillFace" class="face-badge" data-testid="grill-face-badge" hidden></span>
+        <span id="grillFeedback" class="grill-feedback" data-testid="grill-feedback" hidden></span>
+      </div>
+      <div class="plate-drop" data-testid="plate-drop"><span class="sr-only">접시</span></div>
+    </section>
+
+    <section id="screen-counter" class="screen" data-testid="screen-counter" hidden>
+      <button id="counterPlate" class="plate" data-testid="counter-plate" hidden>
+        <span id="platedSkewerArt" class="plated-skewer" aria-hidden="true"></span>
+        <span class="sr-only">완성된 네기마</span>
+      </button>
+      <button id="orderMat" class="order-mat" data-testid="order-mat">
+        <span class="customer" data-testid="customer" aria-hidden="true"></span>
+        손님 주문 매트
+      </button>
+    </section>
+
+    <div id="flyingIngredient" class="flying-ingredient" data-testid="flying-ingredient" hidden></div>
+
+    <div id="loadingOverlay" class="overlay" data-testid="loading-overlay">
+      <p>로딩 중…</p>
+    </div>
+
+    <div id="errorOverlay" class="overlay error" data-testid="error-overlay" hidden>
+      <p id="errorMessage" data-testid="error-message"></p>
+      <button id="retryButton" data-testid="retry-button">다시 시도</button>
+    </div>
+
+    <div id="resultOverlay" class="overlay result" data-testid="result-overlay" hidden>
+      <p id="resultMessage" data-testid="result-message"></p>
+      <button id="restartButton" data-testid="restart-button">한 번 더 만들기</button>
+    </div>
+
+  </main>
+
+  <nav id="processTabs" data-testid="process-tabs">
+    <button class="tab" data-process="assembly" data-testid="tab-assembly">조립</button>
+    <button class="tab" data-process="grill" data-testid="tab-grill">그릴</button>
+    <button class="tab" data-process="counter" data-testid="tab-counter">카운터</button>
+  </nav>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

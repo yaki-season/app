@@ -1,0 +1,190 @@
+# YAKI SEASON — 단일 야키토리 주문 수직 슬라이스
+
+PC 웹에서 마우스 클릭만으로 네기마 한 주문을 조립하고, 양면을 굽고, 손님에게 서빙하는
+최소 프로토타입입니다.
+
+구현 기준 요구사항은 별도 `docs` 저장소에서 관리합니다.
+
+| 식별자 | 문서 | 버전 |
+|---|---|---|
+| `SYS-001` | `spec/system/SYS-001_웹_프로토타입_런타임과_상태_관리.md` | `v1.0.0` |
+| `GPL-001` | `spec/gameplay/GPL-001_단일_야키토리_주문_수직_슬라이스.md` | `v1.0.0` |
+| `UI-001` | `spec/ui/UI-001_웹_클릭_조리_및_서빙_인터페이스.md` | `v1.0.0` |
+| `ART-001` | `spec/art/ART-001_야키토리_프로토타입_픽셀_아트_에셋.md` | `v1.0.0` |
+| `QA-001` | `spec/qa/QA-001_최소_프로토타입_동작_검증.md` | `v1.0.0` |
+
+## 실행
+
+셰이더와 텍스처를 `fetch`로 불러오므로 로컬 서버가 필요합니다. `file://`로 열면 동작하지 않습니다.
+
+```bash
+npm install
+npm run dev
+```
+
+브라우저에서 http://localhost:8777/src/index.html 을 엽니다.
+
+`?debug`를 붙이면 현재 공정, 면별 경과 시간과 판정 결과가 1초마다 콘솔에 출력됩니다
+(`SYS-001 §상세요구사항 10`). 개발자용 수치는 UI에 노출하지 않습니다.
+
+## 검증
+
+```bash
+npm run test:e2e:install   # 최초 1회, Chromium 내려받기
+npm run verify             # 상태 로직 단위 테스트 + 데스크톱 종단 테스트
+```
+
+개별 실행도 가능합니다.
+
+| 명령 | 대상 |
+|---|---|
+| `npm test` | 상태 전이·조리 판정 단위 테스트 (Vitest, 브라우저 없음) |
+| `npm run test:e2e` | `1280×720`과 `1920×1080` 종단 테스트 (Playwright, Chromium) |
+| `npx playwright test qa-scenarios` | `QA-001` 시나리오 A~D와 캔버스 픽셀 검사 |
+| `npx playwright test assets` | 에셋 404·콘솔 오류·보간·로딩 게이트 |
+| `npx playwright test layout` | 최소 클릭 영역·화면 내 포함·겹침 |
+| `npx playwright test capture` | 공정별 화면 캡처를 `captures/`에 생성 |
+
+종단 테스트는 `python -m http.server 8777`을 자동으로 띄웁니다. 이미 떠 있으면 재사용합니다.
+
+검증 결과와 남은 위험은 [QA-RESULTS.md](QA-RESULTS.md)에 있습니다.
+
+## 구성
+
+```
+app/
+├── src/
+│   ├── index.html            # 애플리케이션 진입점
+│   ├── main.js               # DOM 이벤트 → 상태 전이 → 렌더링 배선, 단일 rAF 루프
+│   ├── style.css             # 화면 레이아웃, 1280×720 / 1920×1080 대응
+│   ├── config/recipe.js      # ★ 레시피와 조리 임계값의 단일 정의 위치
+│   ├── state/gameState.js    # ★ 순수 상태 모델 (DOM·WebGL 의존 없음)
+│   ├── render/grillRenderer.js
+│   └── shaders/              # sources/ 스파이크에서 가져온 익힘 셰이더
+├── art/                      # 런타임 에셋
+├── tests/
+│   ├── unit/                 # 상태 전이와 조리 판정 경계
+│   └── e2e/                  # 데스크톱 마우스 클릭 종단 흐름
+└── sources/                  # 초기 익힘 셰이더 스파이크 (런타임 아님, 아래 참고)
+```
+
+## 렌더러 선택 근거
+
+**기존 WebGL2를 유지하고 Three.js를 도입하지 않았습니다** (`SYS-001 §상세요구사항 13`).
+
+- 이 슬라이스에서 3D 렌더링이 필요한 대상은 그릴 위 꼬치 하나뿐입니다. 씬 그래프, 카메라와
+  머티리얼 시스템을 얻는 대가로 Three.js 번들을 추가할 만한 대상 수가 아닙니다.
+- `sources/`의 익힘 셰이더가 이미 요구 표현(마이야르 색 변화, 그을음 마스크, 타레 스페큘러,
+  숯불 반사광)을 담고 있어 그대로 옮기면 통합 비용이 가장 낮았습니다.
+- 나머지 화면(조립, 카운터, 주문표, 공정 탭)은 DOM으로 충분하고, 클릭 영역과 접근성 처리도
+  DOM 쪽이 유리합니다.
+- 결과적으로 화면 전체에서 렌더러는 WebGL2 하나, 애니메이션 루프는 `main.js`의 `loop()`
+  하나만 운영합니다.
+
+전환이 필요해지는 시점은 꼬치가 여러 개 동시에 보이거나 카메라 앵글이 생길 때입니다.
+
+## 기존 실험 코드 재사용 판정
+
+| 자산 | 판정 | 근거 |
+|---|---|---|
+| `sources/shaders/skewer.vert.glsl` | **재사용** | `src/shaders/`로 복사. 버퍼 없는 풀스크린 쿼드로 수정 없이 사용 가능 |
+| `sources/shaders/skewer.frag.glsl` | **재사용** | `src/shaders/`로 복사. `uDoneness` 인터페이스를 그대로 두고 값 계산만 게임 상태로 옮김 |
+| `art/skewer-negima-pixel.png` | **재사용** | 그릴 셰이더의 런타임 텍스처. 품질이 충분해 교체하지 않음 |
+| `art/skewer-negima.png` | 분리 | 이전 러프. `art/archive/`로 옮김 |
+| `art/test.png` | 분리 | 빈 흰 원. `art/archive/`로 옮김 |
+| `sources/index.html`, `sources/main.js` | **대체** | 슬라이더 계측용 단일 토글 UI. 게임 화면 구조와 목적이 달라 `src/`로 새로 작성 |
+| `tools/grill-tool.html` | 유지 | 개발자용 계측 도구. 런타임과 무관 |
+
+`sources/`는 참조용으로 남겨두었습니다. 런타임 진입점은 `src/index.html` 하나입니다.
+
+## 설계 경계
+
+- **상태와 렌더링은 분리되어 있습니다.** `src/state/gameState.js`는 순수 함수만 노출하고
+  DOM·WebGL·타이머를 참조하지 않습니다. 모든 시간 값은 호출자가 단조 증가 밀리초로 넘깁니다.
+  덕분에 조리 판정 전체를 브라우저 없이 모의 시간으로 검증할 수 있습니다 (`SYS-001 §14`).
+- **조리 수치는 `src/config/recipe.js` 한 곳에만 있습니다** (`GPL-001 §비기능 4`).
+  화면별로 임계값을 다시 정의하지 않습니다.
+- **타이머는 존재하지 않습니다.** 조리 시간은 `faceStartAtMs`와 현재 시각의 차이로만 계산하므로
+  `setInterval` 누적 오차나 중복 타이머가 생길 수 없습니다. 숨김·복귀는 `pausedAtMs`를 두고
+  복귀 시 정지 구간만큼 `faceStartAtMs`를 미루는 방식으로 처리합니다 (`SYS-001 §6`).
+- **입력 잠금은 대상별입니다.** 전역 잠금은 서로 다른 대상의 연속 클릭까지 삼켜
+  화면 전체 입력을 막으므로 사용하지 않습니다 (`UI-001 §17`).
+
+## 에셋
+
+런타임 에셋은 `art/generated/`에 있고, 경로는 `src/config/assets.js` 한 곳에서만 정의합니다.
+여기 등록된 항목은 모두 필수 에셋으로 취급해 전부 로드되기 전에는 핵심 입력을 활성화하지 않습니다.
+
+### 제작 방법
+
+에셋은 손으로 그린 것이 아니라 **코드로 생성**합니다.
+
+```bash
+pip install Pillow
+python tools/generate-art.py
+```
+
+`tools/generate-art.py`가 `ART-001`의 팔레트·광원 방향·상태 구분 규칙을 코드로 담고 있어,
+색이나 크기를 바꾸려면 이미지가 아니라 이 스크립트를 수정하고 다시 실행합니다.
+팔레트 기준값은 콘셉트 `05`, `06`, `13`에서 추출했습니다.
+
+### 목록
+
+| 파일 | 사용 위치 | 상태·변형 | 원본 크기 |
+|---|---|---|---|
+| `bg-assembly.png` | `#screen-assembly` 배경 | — | `640×360` |
+| `bg-grill.png` | `#screen-grill` 배경 | — | `640×360` |
+| `bg-counter.png` | `#screen-counter` 배경 | — | `640×360` |
+| `icon-chicken.png` | 주문표 칸 | 기본 / `.done` / `.next` / `.mismatch` | `16×16` |
+| `icon-leek.png` | 주문표 칸 | 같음 | `16×16` |
+| `ingredient-chicken.png` | 재료통, 날아가는 재료 | 기본 / `:active` / `.mismatch` | `20×20` |
+| `ingredient-leek.png` | 재료통, 날아가는 재료 | 같음 | `20×20` |
+| `piece-chicken.png` | 조립 칸 | `.filled-chicken` | `14×14` |
+| `piece-leek.png` | 조립 칸 | `.filled-leek` | `14×14` |
+| `skewer-empty.png` | 빈 꼬치 막대 | 기본 / `.assembled` | `96×16` |
+| `brazier.png` | 그릴 칸 | 기본 | `110×110` |
+| `brazier-hot.png` | 그릴 칸 | `.hot` (가열 중) | `110×110` |
+| `skewer-negima-raw.png` | 접시 위 꼬치, 셰이더 대체 | `under` | `64×64` |
+| `skewer-negima-cooking.png` | 셰이더 대체 | `under` 후반 | `64×64` |
+| `skewer-negima-perfect.png` | 접시 위 꼬치, 셰이더 대체 | `perfect` | `64×64` |
+| `skewer-negima-over.png` | 접시 위 꼬치, 셰이더 대체 | `over` | `64×64` |
+| `skewer-negima-burnt.png` | 셰이더 대체 | `burnt` | `64×64` |
+| `plate.png` | 접시, 접시 놓는 자리 | 기본 / `.selected` / `.serving` | `60×60` |
+| `order-mat.png` | 손님 주문 매트 | 기본 / `.highlight` | `100×70` |
+| `customer-idle.png` | 손님 | 대기 | `40×48` |
+| `customer-happy.png` | 손님 | 좋은 반응 | `40×48` |
+| `customer-meh.png` | 손님 | 낮은 품질 반응 | `40×48` |
+| `vfx-smoke.png` | 그릴 연기 | 익힘 단계별 농도 | `16×16` |
+| `vfx-ember.png` | 불씨 | — | `8×8` |
+| `vfx-gloss.png` | 윤기 | 적정 구간 진입 | `24×24` |
+| `vfx-pierce.png` | 관통 스파크 | 4프레임 시트 | `64×16` |
+
+그릴 위 조리 중인 꼬치는 위 래스터가 아니라 `art/skewer-negima-pixel.png` 텍스처와
+익힘 셰이더로 그립니다. 래스터 5종은 WebGL2를 쓸 수 없는 환경의 대체 경로이며,
+`perfect`와 `over`는 접시 위 표현에도 함께 사용합니다.
+
+전체 전송 크기는 약 `16KB`로 목표 `5MB`를 크게 밑돌고, 최대 한 변은 `640px`로
+제한 `1024px` 안에 있습니다.
+
+`art/archive/`는 런타임에서 로드하지 않습니다. 초기 실험의 중간 산출물만 들어 있습니다.
+
+### 화면별 안전 영역
+
+주문표(상단 `약 53px`)와 공정 탭(하단 `약 65px`)을 제외한 중앙 영역이 작업 대상 배치 구간입니다.
+`tests/e2e/layout.spec.js`가 이 경계와 최소 클릭 영역 `44×44`를 두 뷰포트에서 자동 검사하고,
+`tests/e2e/assets.spec.js`가 에셋 404·콘솔 오류·최근접 보간을 검사하므로,
+에셋을 교체하면 두 테스트가 모두 통과해야 합니다.
+
+조리 상태 이름은 `src/config/recipe.js`의 `DONENESS` 값을 그대로 씁니다:
+`under`, `perfect`, `over`, `burnt`. 화면에서는 `.doneness-*` 클래스로 노출됩니다.
+
+## 알려진 한계
+
+- **에셋은 코드로 생성한 픽셀 아트입니다.** `ART-001`의 팔레트·광원·상태 구분 규칙은
+  지키지만, 콘셉트 시트의 회화적 밀도에는 미치지 못합니다. 같은 파일명으로 교체하면
+  코드 수정 없이 반영됩니다.
+- **배경은 `cover`로 늘어납니다.** 정수 배율이 아니므로 배경에는 1px 디테일을 넣지 않고
+  넓은 면과 부드러운 밝기 변화만 사용합니다. 조작 대상 스프라이트는 최근접 보간을 유지합니다.
+- 헤드리스 환경에는 GPU가 없어 종단 테스트는 SwiftShader로 WebGL2를 소프트웨어 렌더링합니다
+  (`playwright.config.js`). 성능 측정 용도로는 쓸 수 없습니다.
+- 모바일 브라우저, 터치 입력과 모바일 뷰포트는 `UI-001` 범위에서 제외되어 대응하지 않습니다.
