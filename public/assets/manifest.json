@@ -1,9 +1,12 @@
 {
   "$schema": "./manifest.schema.json",
-  "schemaVersion": "1.1.1",
+  "schemaVersion": "2.0.0",
   "generatedAt": "2026-07-22",
   "specRefs": [
-    "ART-003 v1.1.0",
+    "ART-003 v2.0.0",
+    "ART-002 v2.0.0",
+    "UI-002 v2.0.0",
+    "SYS-003 v2.0.0",
     "SYS-004 v1.0.0",
     "ART-001 v1.1.0",
     "QA-002 v1.0.0"
@@ -26,7 +29,7 @@
     {
       "id": "BG-INTERIOR-BASE",
       "legacyId": "BG-01",
-      "revision": 1,
+      "revision": 2,
       "status": "approved",
       "pack": "core",
       "kind": "image",
@@ -54,7 +57,10 @@
       "provenance": "art/provenance/artist-002-p0-environment-assets.json",
       "license": "Project-owned; generated with OpenAI image_gen and project references",
       "specRefs": [
-        "ART-003 v1.1.0",
+        "ART-003 v2.0.0",
+        "ART-002 v2.0.0",
+        "UI-002 v2.0.0",
+        "SYS-003 v2.0.0",
         "ART-001 v1.1.0"
       ],
       "reviewedAt": "2026-07-22",
@@ -62,15 +68,15 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
-          "bytes": 4830
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
         }
       ]
     },
     {
       "id": "BG-FOREGROUND-FRAME",
       "legacyId": "BG-02",
-      "revision": 2,
+      "revision": 3,
       "status": "approved",
       "pack": "core",
       "kind": "image",
@@ -98,7 +104,10 @@
       "provenance": "art/provenance/artist-002-p0-environment-assets.json",
       "license": "Project-owned; generated with OpenAI image_gen and project references",
       "specRefs": [
-        "ART-003 v1.1.0",
+        "ART-003 v2.0.0",
+        "ART-002 v2.0.0",
+        "UI-002 v2.0.0",
+        "SYS-003 v2.0.0",
         "ART-001 v1.1.0"
       ],
       "reviewedAt": "2026-07-22",
@@ -106,15 +115,15 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
-          "bytes": 4830
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
         }
       ]
     },
     {
       "id": "ST-ASSEMBLY-TIER-1",
       "legacyId": "ST-01",
-      "revision": 2,
+      "revision": 3,
       "status": "approved",
       "pack": "core",
       "kind": "image",
@@ -145,7 +154,10 @@
       "provenance": "art/provenance/artist-002-p0-environment-assets.json",
       "license": "Project-owned; generated with OpenAI image_gen and project references",
       "specRefs": [
-        "ART-003 v1.1.0",
+        "ART-003 v2.0.0",
+        "ART-002 v2.0.0",
+        "UI-002 v2.0.0",
+        "SYS-003 v2.0.0",
         "ART-001 v1.1.0"
       ],
       "reviewedAt": "2026-07-22",
@@ -153,15 +165,15 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
-          "bytes": 4830
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
         }
       ]
     },
     {
       "id": "ST-GRILL-TIER-1",
       "legacyId": "ST-02",
-      "revision": 2,
+      "revision": 3,
       "status": "approved",
       "pack": "core",
       "kind": "image",
@@ -190,7 +202,10 @@
       "provenance": "art/provenance/artist-002-p0-environment-assets.json",
       "license": "Project-owned; generated with OpenAI image_gen and project references",
       "specRefs": [
-        "ART-003 v1.1.0",
+        "ART-003 v2.0.0",
+        "ART-002 v2.0.0",
+        "UI-002 v2.0.0",
+        "SYS-003 v2.0.0",
         "ART-001 v1.1.0"
       ],
       "reviewedAt": "2026-07-22",
@@ -198,15 +213,15 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
-          "bytes": 4830
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
         }
       ]
     },
     {
       "id": "ST-CHARCOAL-CORE",
       "legacyId": "ST-03",
-      "revision": 2,
+      "revision": 3,
       "status": "approved",
       "pack": "core",
       "kind": "image",
@@ -233,7 +248,10 @@
       "provenance": "art/provenance/artist-002-p0-environment-assets.json",
       "license": "Project-owned; generated with OpenAI image_gen and project references",
       "specRefs": [
-        "ART-003 v1.1.0",
+        "ART-003 v2.0.0",
+        "ART-002 v2.0.0",
+        "UI-002 v2.0.0",
+        "SYS-003 v2.0.0",
         "ART-001 v1.1.0"
       ],
       "reviewedAt": "2026-07-22",
@@ -241,15 +259,15 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
-          "bytes": 4830
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
         }
       ]
     },
     {
       "id": "ST-SERVICE-COUNTER",
       "legacyId": "ST-04",
-      "revision": 2,
+      "revision": 3,
       "status": "approved",
       "pack": "core",
       "kind": "image",
@@ -277,7 +295,10 @@
       "provenance": "art/provenance/artist-002-p0-environment-assets.json",
       "license": "Project-owned; generated with OpenAI image_gen and project references",
       "specRefs": [
-        "ART-003 v1.1.0",
+        "ART-003 v2.0.0",
+        "ART-002 v2.0.0",
+        "UI-002 v2.0.0",
+        "SYS-003 v2.0.0",
         "ART-001 v1.1.0"
       ],
       "reviewedAt": "2026-07-22",
@@ -285,15 +306,15 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
-          "bytes": 4830
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
         }
       ]
     },
     {
       "id": "PR-SERVING-PLATE",
       "legacyId": "PR-01",
-      "revision": 2,
+      "revision": 3,
       "status": "approved",
       "pack": "core",
       "kind": "image",
@@ -320,7 +341,10 @@
       "provenance": "art/provenance/artist-002-p0-environment-assets.json",
       "license": "Project-owned; generated with OpenAI image_gen and project references",
       "specRefs": [
-        "ART-003 v1.1.0",
+        "ART-003 v2.0.0",
+        "ART-002 v2.0.0",
+        "UI-002 v2.0.0",
+        "SYS-003 v2.0.0",
         "ART-001 v1.1.0"
       ],
       "reviewedAt": "2026-07-22",
@@ -328,8 +352,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
-          "bytes": 4830
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
         }
       ]
     },
@@ -621,8 +645,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
-          "bytes": 4830
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
         }
       ],
       "source": "art/source/environment/bg-exterior-s0-closed-r1.html"
@@ -667,8 +691,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
-          "bytes": 4830
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
         }
       ],
       "source": "art/source/environment/bg-exterior-s1-open-r1.html"
@@ -890,7 +914,7 @@
       "source": "art/review/artist-002/pr-matchbox-old/r1/generated.png"
     },
     {
-      "revision": 2,
+      "revision": 3,
       "status": "approved",
       "pack": "core",
       "colorSpace": "sRGB",
@@ -898,17 +922,18 @@
       "provenance": "art/provenance/artist-002-p0-environment-assets.json",
       "license": "Project-owned; generated with OpenAI image_gen and project references",
       "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-002 v1.0.0",
-        "SCN-002 v1.0.0",
-        "UI-002 v1.0.0"
+        "ART-003 v2.0.0",
+        "ART-002 v2.0.0",
+        "UI-002 v2.0.0",
+        "SYS-003 v2.0.0",
+        "SCN-002 v1.0.0"
       ],
       "reviewedAt": "2026-07-22",
       "id": "BG-SEATING-6",
       "kind": "image",
       "url": "/assets/core/background/bg-seating-6.png",
-      "sha256": "97460485a27ff24a68e94aee5a7759158c1eaf41393132e961c38d63b0e47c31",
-      "bytes": 91743,
+      "sha256": "8c4b35ee8b965d790cac9c848cc08edc3a86938aed381d37bf8fa5cbee4da810",
+      "bytes": 32788,
       "dimensions": {
         "width": 2048,
         "height": 1152
@@ -932,11 +957,11 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
-          "bytes": 4830
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
         }
       ],
-      "source": "art/source/environment/bg-seating-6-r2.html"
+      "source": "art/source/environment/bg-seating-6-r3.html"
     },
     {
       "revision": 1,
@@ -947,10 +972,65 @@
       "provenance": "art/provenance/artist-002-p0-environment-assets.json",
       "license": "Project-owned; generated with OpenAI image_gen and project references",
       "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-002 v1.0.0",
-        "SCN-002 v1.0.0",
-        "UI-002 v1.0.0"
+        "ART-003 v2.0.0",
+        "ART-002 v2.0.0",
+        "UI-002 v2.0.0",
+        "SYS-003 v2.0.0",
+        "SCN-002 v1.0.0"
+      ],
+      "reviewedAt": "2026-07-22",
+      "id": "BG-BAR-COUNTER-BASE",
+      "kind": "image",
+      "url": "/assets/core/background/bg-bar-counter-base.png",
+      "sha256": "a94aaccb67ca8f3de1b3b1acb63791388b47c146fc1f6eb8bc610b8b0ef38980",
+      "bytes": 39533,
+      "dimensions": {
+        "width": 2048,
+        "height": 1152
+      },
+      "format": "png",
+      "alpha": "straight",
+      "pivot": {
+        "x": 0.5,
+        "y": 1
+      },
+      "anchors": [
+        "customer-edge",
+        "player-edge",
+        "order-mat-01",
+        "order-mat-02",
+        "order-mat-03",
+        "order-mat-04",
+        "order-mat-05",
+        "order-mat-06",
+        "plate-handoff",
+        "glass-handoff"
+      ],
+      "clips": [],
+      "companions": [
+        {
+          "role": "layout",
+          "url": "/assets/core/metadata/p0-environment-layout.json",
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
+        }
+      ],
+      "source": "art/source/environment/bg-bar-counter-base-r1.html"
+    },
+    {
+      "revision": 2,
+      "status": "approved",
+      "pack": "core",
+      "colorSpace": "sRGB",
+      "mirrorSafe": false,
+      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
+      "license": "Project-owned; generated with OpenAI image_gen and project references",
+      "specRefs": [
+        "ART-003 v2.0.0",
+        "ART-002 v2.0.0",
+        "UI-002 v2.0.0",
+        "SYS-003 v2.0.0",
+        "SCN-002 v1.0.0"
       ],
       "reviewedAt": "2026-07-22",
       "id": "ST-DRINK-BEER-TIER-1",
@@ -980,14 +1060,14 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
-          "bytes": 4830
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
         }
       ],
       "source": "art/review/artist-002/st-drink-beer-tier-1/r1/generated.png"
     },
     {
-      "revision": 1,
+      "revision": 2,
       "status": "approved",
       "pack": "core",
       "colorSpace": "sRGB",
@@ -995,10 +1075,11 @@
       "provenance": "art/provenance/artist-002-p0-environment-assets.json",
       "license": "Project-owned; generated with OpenAI image_gen and project references",
       "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-002 v1.0.0",
-        "SCN-002 v1.0.0",
-        "UI-002 v1.0.0"
+        "ART-003 v2.0.0",
+        "ART-002 v2.0.0",
+        "UI-002 v2.0.0",
+        "SYS-003 v2.0.0",
+        "SCN-002 v1.0.0"
       ],
       "reviewedAt": "2026-07-22",
       "id": "ST-CLEANUP-OVERLAY",
@@ -1028,8 +1109,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
-          "bytes": 4830
+          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
+          "bytes": 7127
         },
         {
           "role": "atlas",
