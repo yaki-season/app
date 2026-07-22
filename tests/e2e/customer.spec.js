@@ -1,7 +1,13 @@
-// GPL-002 손님 상태와 유형 — 런타임 검증.
+// 손님 시스템 런타임 검증.
 // 단위 테스트가 상태 머신을 검증한다면, 여기서는 실제 앱에서 손님 생명주기와
 // 다중 슬롯 재주문이 조리 흐름과 맞물려 도는지 확인한다.
+//
+// 손님 시스템은 현재 비활성이므로(`src/config/features.js` 참조) 이 파일은 건너뛴다.
+// `GPL-003` 기준 재작업에서 플래그를 켜면 함께 되살아난다.
 import { test, expect } from '@playwright/test';
+import { CUSTOMER_SYSTEM_ENABLED } from '../../src/config/features.js';
+
+test.skip(!CUSTOMER_SYSTEM_ENABLED, '손님 시스템이 비활성이다 (epic 005 범위 밖, GPL-003 재작업 대기)');
 
 async function boot(page) {
   await page.goto('/src/index.html');

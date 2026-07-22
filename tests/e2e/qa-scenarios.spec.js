@@ -61,10 +61,7 @@ test('시나리오 A: 정상 품질 서빙', async ({ page }) => {
 
   // 7. 좋은 반응과 다시 하기
   await expect(page.getByTestId('result-overlay')).toBeVisible();
-  // 판정은 손님이 소유한다 (GPL-002 §5)
-  const served = await page.evaluate(() => window.__yakiDebug.getCustomer());
-  expect(served.satisfaction).toBe('good');
-  expect(served.mood).toBe('happy');
+  expect((await getState(page)).servedQuality).toBe('good');
   await expect(page.getByTestId('customer')).toHaveClass(/happy/);
   await page.getByTestId('restart-button').click();
   await expect(page.getByTestId('screen-assembly')).toBeVisible();
@@ -125,12 +122,7 @@ test('시나리오 C: 탄 꼬치와 복구', async ({ page }) => {
   expect(fresh.faceStartAtMs).toBeNull();
   expect(fresh.pausedAtMs).toBeNull();
   expect(fresh.plateSelected).toBe(false);
-
-  // 손님도 함께 초기화된다 (GPL-002 §13)
-  const freshCustomer = await page.evaluate(() => window.__yakiDebug.getCustomer());
-  expect(freshCustomer.slotIndex).toBe(0);
-  expect(freshCustomer.satisfaction).toBeNull();
-  expect(freshCustomer.mood).toBeNull();
+  expect(fresh.servedQuality).toBeNull();
 });
 
 test('시나리오 D: 중단과 복귀', async ({ page }) => {

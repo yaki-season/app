@@ -27,6 +27,7 @@ import { NEGIMA_RASTER, allAssetUrls } from './config/assets.js';
 import { classifyDoneness } from './config/recipe.js';
 import { CUSTOMER_STATE, SATISFACTION } from './state/customer/customer.js';
 import { createCustomerByIndex, CUSTOMER_TYPE_LABEL } from './state/customer/types.js';
+import { CUSTOMER_SYSTEM_ENABLED } from './config/features.js';
 
 const ASSET_URLS = {
   texture: '../art/skewer-negima-pixel.png',
@@ -88,8 +89,9 @@ let customer = null;
 let customerIndex = 0;
 
 // 손님 스폰은 유형 4종을 순환한다 (혼술족 → 퇴근직장인 → 미식블로거 → 커플).
+// 손님 시스템이 꺼져 있으면 손님을 만들지 않고, 화면은 수직 슬라이스 동작을 유지한다.
 function spawnCustomer() {
-  customer = createCustomerByIndex(customerIndex++);
+  customer = CUSTOMER_SYSTEM_ENABLED ? createCustomerByIndex(customerIndex++) : null;
 }
 
 // 한 손님이 모든 슬롯을 마쳤는가 (퇴장 중이거나 나갔음).
@@ -219,19 +221,27 @@ function render() {
   ui.errorOverlay.hidden = !state.loadError;
   if (state.loadError) ui.errorMessage.textContent = `필수 에셋을 불러오지 못했습니다: ${state.loadError}`;
 
-  // 결과는 손님이 모든 슬롯을 마치고 퇴장할 때 보여준다. 다중 슬롯 손님은
-  // 중간 서빙 뒤 재주문으로 이어지므로 그 시점에 결과를 띄우지 않는다.
-  const resultVisible = state.status === STATUS.FAILED || isCustomerFinished();
+  // 손님 시스템이 켜져 있으면 손님이 모든 슬롯을 마치고 퇴장할 때 결과를 보여준다
+  // (다중 슬롯은 중간 서빙 뒤 재주문으로 이어지므로 그때 띄우면 안 된다).
+  // 꺼져 있으면 서빙 즉시 결과를 보여주는 수직 슬라이스 동작을 유지한다.
+  const resultVisible = customer
+    ? state.status === STATUS.FAILED || isCustomerFinished()
+    : state.status === STATUS.SERVED || state.status === STATUS.FAILED;
+
   ui.resultOverlay.hidden = !resultVisible;
   if (resultVisible) {
-    // 서빙 결과 문구는 손님 판정에서 온다. 요리사는 판정하지 않는다.
-    const satisfaction = customer?.overallSatisfaction();
+    // 판정 출처: 손님이 있으면 손님, 없으면 조리 결과(GPL-001 §13)
+    const good = customer
+      ? customer.overallSatisfaction() === SATISFACTION.GOOD
+      : state.servedQuality === 'good';
+    const failed = customer?.overallSatisfaction() === SATISFACTION.FAIL;
+
     ui.resultMessage.textContent =
       state.status === STATUS.FAILED
         ? '꼬치가 타버렸습니다. 다시 만들어 볼까요?'
-        : satisfaction === SATISFACTION.GOOD
+        : good
           ? '손님이 만족했습니다! 완벽한 굽기였어요.'
-          : satisfaction === SATISFACTION.FAIL
+          : failed
             ? '주문과 다른 꼬치라 손님이 실망했습니다.'
             : '손님이 받았지만 살짝 과하게 익었다고 아쉬워합니다.';
   }
@@ -363,11 +373,16 @@ function renderCounter() {
   const plateState = state.frontResult === 'over' || state.backResult === 'over' ? 'over' : 'perfect';
   ui.platedSkewerArt.style.backgroundImage = `url("${NEGIMA_RASTER[plateState]}")`;
 
-  // 손님 반응: 손님 엔티티의 mood를 그대로 반영한다 (판정 소유는 손님).
-  // 서빙을 받아 먹는 중이거나 퇴장할 때 반응을 보이고, 그 외에는 대기 표정이다.
-  const showMood =
-    customer?.mood && (customer.state === CUSTOMER_STATE.EATING || isCustomerFinished());
-  ui.customer.className = `customer ${showMood ? customer.mood : 'idle'}`;
+  // 손님 반응. 손님 시스템이 켜져 있으면 손님이 계산한 mood를 쓰고,
+  // 꺼져 있으면 조리 결과에서 파생한다 (수직 슬라이스 동작).
+  let mood = 'idle';
+  if (customer) {
+    const showMood = customer.state === CUSTOMER_STATE.EATING || isCustomerFinished();
+    if (showMood && customer.mood) mood = customer.mood;
+  } else if (state.status === STATUS.SERVED) {
+    mood = state.servedQuality === 'good' ? 'happy' : 'meh';
+  }
+  ui.customer.className = `customer ${mood}`;
 }
 
 function renderTabs() {
