@@ -1,6 +1,6 @@
 # YAKI SEASON asset catalog
 
-- 카탈로그 버전: `1.1.0`
+- 카탈로그 버전: `1.1.1`
 - 마지막 검증일: `2026-07-22`
 - 기준: `ART-003 v1.1.0`, `SYS-004 v1.0.0`, `ART-001 v1.1.0`, `QA-002 v1.0.0`
 - 런타임 단일 원본: [`public/assets/manifest.json`](../public/assets/manifest.json)
@@ -34,7 +34,7 @@
 | `PR-RECIPE-NOTE-CORE` | - | `approved` | P0 `core` | atlas 2045x682 indexed-alpha PNG | [runtime](../public/assets/core/props/pr-recipe-note-core.png) | [source](review/artist-002/pr-recipe-note-core/r1/generated.png) | [review record](provenance/artist-002-p0-environment-assets.json) | S0-D1 노트 5상태 | `27fcb31740b4a58d67d66f59e67dfd4aaf4b7fc99b3cf8a936b4d82ac85db08b` |
 | `PR-CHARCOAL-IGNITION` | - | `approved` | P0 `core` | atlas 2048x684 indexed-alpha PNG | [runtime](../public/assets/core/props/pr-charcoal-ignition.png) | [source](review/artist-002/pr-charcoal-ignition/r1/generated.png) | [review record](provenance/artist-002-p0-environment-assets.json) | S0 숯 점화 4단계 | `6fa1057357ed691b5cdefb9d3cda6cb48626cdeb791a901835e51594b8f6ae23` |
 | `PR-MATCHBOX-OLD` | - | `approved` | P0 `core` | image 640x512 indexed-alpha PNG | [runtime](../public/assets/core/props/pr-matchbox-old.png) | [source](review/artist-002/pr-matchbox-old/r1/generated.png) | [review record](provenance/artist-002-p0-environment-assets.json) | S0 소품·D14 이야기 회수 | `5fc5d4ccb240bb4b91d81d5fe7a4b54498a08f9f8e07684ba05eeaf4ff56c9f5` |
-| `BG-SEATING-6` | - | `approved` | P0 `core` | image 2048x1152 indexed-alpha PNG | [runtime](../public/assets/core/background/bg-seating-6.png) | [source](review/artist-002/bg-seating-6/r1/generated.png) | [review record](provenance/artist-002-p0-environment-assets.json) | D1 기본 6석·좌석 FSM | `b993761f211dd0e430e5ecd27d0bc4fff55275cd0ac68ab784ea08299052a111` |
+| `BG-SEATING-6` | - | `approved` | P0 `core` | image 2048x1152 indexed-alpha PNG | [runtime](../public/assets/core/background/bg-seating-6.png) | [source](source/environment/bg-seating-6-r2.html) | [review record](provenance/artist-002-p0-environment-assets.json) | D1 카운터 결합 6석·좌석 FSM | `97460485a27ff24a68e94aee5a7759158c1eaf41393132e961c38d63b0e47c31` |
 | `ST-DRINK-BEER-TIER-1` | - | `approved` | P0 `core` | image 1536x768 indexed-alpha PNG | [runtime](../public/assets/core/stations/st-drink-beer-tier-1.png) | [source](review/artist-002/st-drink-beer-tier-1/r1/generated.png) | [review record](provenance/artist-002-p0-environment-assets.json) | D1 단일 레버 생맥주 station | `1f9928b345a34105c336034fbdd5e1efcc08a988f32137cf954f52e6de502366` |
 | `ST-CLEANUP-OVERLAY` | - | `approved` | P0 `core` | atlas 2046x728 indexed-alpha PNG | [runtime](../public/assets/core/stations/st-cleanup-overlay.png) | [source](review/artist-002/st-cleanup-overlay/r1/generated.png) | [review record](provenance/artist-002-p0-environment-assets.json) | 식기 있음·잔 있음·정리 완료 | `1c9f52fdbbecb3e2b575b5e1a0fdae01756bf04806ef61a37662976c9056f721` |
 | `FD-01` | `FD-01` | `deprecated` | P0 reference | image 256x256 RGBA PNG | [review](review/legacy-gameplay/food/chicken_thigh_raw.png) | [source](review/generated-2026-07-22/fd-01-chicken-thigh-raw-chroma-unapproved.png) | [review record](provenance/legacy-gameplay-assets.json) | `MDL-INGREDIENT-CHICKEN` 형태·색 참고 | `fac7e019c02cf361210fa5cd017a58fcfb541cdf8033fdf8b17bdedd649b14b2` |
@@ -43,7 +43,7 @@
 | `FD-04` | `FD-04` | `deprecated` | P0 reference | image 512x1024 RGBA PNG | [review](review/legacy-gameplay/food/negima_raw.png) | [source](review/generated-2026-07-22/fd-04-negima-raw-chroma-v2.png) | [review record](provenance/legacy-gameplay-assets.json) | 3D 조립 순서와 `FD-NEGIMA-ORDER` 참고 | `646f8e158db8d38d25158e23d17e69fba1cee16a74521a391464bd90305117a3` |
 <!-- asset-registry:end -->
 
-승인 24개 image·atlas 합계는 `2,832,021`바이트, 중복을 제거한 companion metadata는 `6,686`바이트로 총 `2,838,707`바이트다. 스테이션·6석 anchor와 배경 mobile crop은 [`p0-environment-layout.json`](../public/assets/core/metadata/p0-environment-layout.json)에 고정했다. 츠키오카 최종 11-clip atlas는 Artist 004 승인 전까지 기존 fragment를 사용한다.
+승인 24개 image·atlas 합계는 `2,855,961`바이트, 중복을 제거한 companion metadata는 `6,690`바이트로 총 `2,862,651`바이트다. 스테이션·6석 anchor와 배경 mobile crop은 [`p0-environment-layout.json`](../public/assets/core/metadata/p0-environment-layout.json)에 고정했다. 츠키오카 최종 11-clip atlas는 Artist 004 승인 전까지 기존 fragment를 사용한다.
 
 ## 화면·모듈별 조회
 

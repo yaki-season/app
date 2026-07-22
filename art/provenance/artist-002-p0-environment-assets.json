@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "1.0.0",
-  "task": "artist/002 v1.0.1",
+  "schemaVersion": "1.0.1",
+  "task": "artist/002 v1.0.2",
   "createdAt": "2026-07-22",
   "tooling": {
     "rasterGeneration": "OpenAI built-in image_gen",
@@ -106,12 +106,14 @@
     },
     {
       "id": "BG-SEATING-6",
-      "action": "new",
+      "action": "new-revised-after-review",
       "runtime": "public/assets/core/background/bg-seating-6.png",
-      "source": "art/review/artist-002/bg-seating-6/r1/generated.png",
+      "source": "art/source/environment/bg-seating-6-r2.html",
+      "generatedSource": "art/review/artist-002/bg-seating-6/r2/generated.png",
+      "alphaSource": "art/review/artist-002/bg-seating-6/r2/alpha.png",
       "references": ["BG-INTERIOR-BASE", "docs/inbox/2.art-concept/15_prototype_customer_seating_flow.png", "docs/inbox/2.art-concept/02_shop_interior_counter.png"],
-      "prompt": "Exactly six separate worn timber counter stools in one lower foreground layer, upper scene empty, matching the approved interior perspective, isolated on flat green chroma.",
-      "review": ["Exactly six stools", "No people or baked seat state", "Desktop and mobile anchors defined", "2048x1152 transparent layer"]
+      "prompt": "One continuous old timber customer counter and exactly six separate stools in strict centered frontal perspective, aligned to the approved back-wall vanishing point, isolated on flat green chroma.",
+      "review": ["Revision 2 after user perspective feedback", "Counter, fascia and six stools form one depth structure", "Countertop at about 51% scene height", "All six stools contact the lower customer floor", "Desktop and mobile seat anchors revised", "2048x1152 transparent layer"]
     },
     {
       "id": "ST-DRINK-BEER-TIER-1",
@@ -168,9 +170,9 @@
     }
   ],
   "budgets": {
-    "approvedImageAndAtlasBytes": 2832021,
-    "uniqueCompanionBytes": 6686,
-    "totalCoreArtBytes": 2838707,
+    "approvedImageAndAtlasBytes": 2855961,
+    "uniqueCompanionBytes": 6690,
+    "totalCoreArtBytes": 2862651,
     "targetBytes": 3145728,
     "result": "pass",
     "activeSceneTextureEstimate": {

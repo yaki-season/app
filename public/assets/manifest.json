@@ -1,6 +1,6 @@
 {
   "$schema": "./manifest.schema.json",
-  "schemaVersion": "1.1.0",
+  "schemaVersion": "1.1.1",
   "generatedAt": "2026-07-22",
   "specRefs": [
     "ART-003 v1.1.0",
@@ -62,8 +62,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "d4e02cacb63a33d32bd1112aa70f2eea332fd9bfb2ec08eea880d0a14690fb54",
-          "bytes": 4826
+          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
+          "bytes": 4830
         }
       ]
     },
@@ -106,8 +106,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "d4e02cacb63a33d32bd1112aa70f2eea332fd9bfb2ec08eea880d0a14690fb54",
-          "bytes": 4826
+          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
+          "bytes": 4830
         }
       ]
     },
@@ -153,8 +153,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "d4e02cacb63a33d32bd1112aa70f2eea332fd9bfb2ec08eea880d0a14690fb54",
-          "bytes": 4826
+          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
+          "bytes": 4830
         }
       ]
     },
@@ -198,8 +198,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "d4e02cacb63a33d32bd1112aa70f2eea332fd9bfb2ec08eea880d0a14690fb54",
-          "bytes": 4826
+          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
+          "bytes": 4830
         }
       ]
     },
@@ -241,8 +241,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "d4e02cacb63a33d32bd1112aa70f2eea332fd9bfb2ec08eea880d0a14690fb54",
-          "bytes": 4826
+          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
+          "bytes": 4830
         }
       ]
     },
@@ -285,8 +285,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "d4e02cacb63a33d32bd1112aa70f2eea332fd9bfb2ec08eea880d0a14690fb54",
-          "bytes": 4826
+          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
+          "bytes": 4830
         }
       ]
     },
@@ -328,8 +328,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "d4e02cacb63a33d32bd1112aa70f2eea332fd9bfb2ec08eea880d0a14690fb54",
-          "bytes": 4826
+          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
+          "bytes": 4830
         }
       ]
     },
@@ -621,8 +621,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "d4e02cacb63a33d32bd1112aa70f2eea332fd9bfb2ec08eea880d0a14690fb54",
-          "bytes": 4826
+          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
+          "bytes": 4830
         }
       ],
       "source": "art/source/environment/bg-exterior-s0-closed-r1.html"
@@ -667,8 +667,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "d4e02cacb63a33d32bd1112aa70f2eea332fd9bfb2ec08eea880d0a14690fb54",
-          "bytes": 4826
+          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
+          "bytes": 4830
         }
       ],
       "source": "art/source/environment/bg-exterior-s1-open-r1.html"
@@ -890,7 +890,7 @@
       "source": "art/review/artist-002/pr-matchbox-old/r1/generated.png"
     },
     {
-      "revision": 1,
+      "revision": 2,
       "status": "approved",
       "pack": "core",
       "colorSpace": "sRGB",
@@ -907,8 +907,8 @@
       "id": "BG-SEATING-6",
       "kind": "image",
       "url": "/assets/core/background/bg-seating-6.png",
-      "sha256": "b993761f211dd0e430e5ecd27d0bc4fff55275cd0ac68ab784ea08299052a111",
-      "bytes": 67803,
+      "sha256": "97460485a27ff24a68e94aee5a7759158c1eaf41393132e961c38d63b0e47c31",
+      "bytes": 91743,
       "dimensions": {
         "width": 2048,
         "height": 1152
@@ -932,11 +932,11 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "d4e02cacb63a33d32bd1112aa70f2eea332fd9bfb2ec08eea880d0a14690fb54",
-          "bytes": 4826
+          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
+          "bytes": 4830
         }
       ],
-      "source": "art/review/artist-002/bg-seating-6/r1/generated.png"
+      "source": "art/source/environment/bg-seating-6-r2.html"
     },
     {
       "revision": 1,
@@ -980,8 +980,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "d4e02cacb63a33d32bd1112aa70f2eea332fd9bfb2ec08eea880d0a14690fb54",
-          "bytes": 4826
+          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
+          "bytes": 4830
         }
       ],
       "source": "art/review/artist-002/st-drink-beer-tier-1/r1/generated.png"
@@ -1028,8 +1028,8 @@
         {
           "role": "layout",
           "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "d4e02cacb63a33d32bd1112aa70f2eea332fd9bfb2ec08eea880d0a14690fb54",
-          "bytes": 4826
+          "sha256": "94bbe6fac267f02d438fe68bd6f21539159c76aae7806a9727b11aa639d64c6e",
+          "bytes": 4830
         },
         {
           "role": "atlas",

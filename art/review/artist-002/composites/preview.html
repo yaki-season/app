@@ -22,19 +22,19 @@
       position: absolute;
       z-index: 2;
       left: 50%;
-      bottom: -2%;
-      width: min(74vw, 1120px);
-      max-height: 64vh;
+      bottom: -9%;
+      width: min(88vw, 1320px);
+      max-height: 82vh;
       object-fit: contain;
       transform: translateX(-50%);
       transform-origin: bottom center;
     }
     .foreground { z-index: 3; }
     @media (max-aspect-ratio: 16 / 9) {
-      .station { width: min(82vw, 1120px); }
+      .station { width: min(94vw, 1320px); }
     }
     @media (min-aspect-ratio: 2 / 1) {
-      .station { width: min(62vw, 1120px); max-height: 78vh; bottom: -7%; }
+      .station { width: min(76vw, 1320px); max-height: 92vh; bottom: -16%; }
     }
   </style>
 </head>
@@ -50,8 +50,7 @@
       ],
       station: [
         ['background/shop-backwall-night.jpg', 'full'],
-        ['stations/st-drink-beer-tier-1.png', 'station'],
-        ['background/shop-foreground-frame.png', 'full foreground']
+        ['stations/st-drink-beer-tier-1.png', 'station']
       ],
       exteriorClosed: [['background/bg-exterior-s0-closed.jpg', 'full']],
       exteriorOpen: [['background/bg-exterior-s1-open.jpg', 'full']]
