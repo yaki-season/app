@@ -1,0 +1,197 @@
+{
+  "schemaVersion": "2.0.0",
+  "task": "artist/002 v2.0.2",
+  "createdAt": "2026-07-22",
+  "tooling": {
+    "rasterGeneration": "OpenAI built-in image_gen",
+    "logoAndTextComposition": "SVG/HTML source rendered with headless Chromium",
+    "transparency": "remove_chroma_key.py with border auto-key, soft matte, despill and zero edge contraction for revised seating and counter layers",
+    "optimization": "sharp-cli 128-color indexed PNG without dithering for revised transparent environment layers; earlier approved indexed PNG and JPEG settings retained"
+  },
+  "license": "Project-owned output created from project-provided references; no external stock assets",
+  "textReview": {
+    "required": ["YAKI SEASON", "炭火やきとり とり暦", "とり暦"],
+    "forbidden": ["鳥屋", "Toriya"],
+    "result": "All required strings are code-authored in SVG/HTML sources and manually verified. No generated text is used in runtime assets."
+  },
+  "commonVisualContract": {
+    "style": "Crisp Japanese pixel art with deliberate four-pixel clusters, stepped silhouettes, restrained dithering and no smoothing",
+    "palette": ["deep navy", "charcoal", "weathered timber", "amber firelight", "muted moss", "indigo"],
+    "lighting": "Warm lower-left charcoal/lantern light with weak cool navy fill",
+    "composition": "Fixed chef-side camera: customer anchors and character layer behind a continuous bar counter; active station module grounded in the lower player-work region",
+    "avoid": ["customer-side reverse camera", "full customer stools in player foreground", "station-only room with no customer or bar counter", "photorealism", "smooth vector shading", "presentation frames", "UI", "watermarks", "unapproved readable text"]
+  },
+  "assets": [
+    {
+      "id": "BR-LOGO-HORIZONTAL",
+      "action": "new",
+      "runtime": "public/assets/core/brand/br-logo-horizontal.png",
+      "source": "art/source/brand/br-logo-horizontal/br-logo-horizontal-r1.svg",
+      "prompt": "Code-authored horizontal brand lockup with exact YAKI SEASON and 炭火やきとり とり暦 strings, charcoal plate, amber border and muted moss dividers.",
+      "review": ["Exact English and Japanese strings", "No 鳥屋/Toriya", "1024x256", "Transparent exterior pixels", "Readable at 256px wide"]
+    },
+    {
+      "id": "BR-LOGO-COMPACT",
+      "action": "new",
+      "runtime": "public/assets/core/brand/br-logo-compact.png",
+      "source": "art/source/brand/br-logo-compact/br-logo-compact-r1.svg",
+      "prompt": "Code-authored compact とり暦 mark with exact text, large 暦 signal, charcoal plaque and amber pixel border.",
+      "review": ["Exact とり暦", "No generated glyphs", "512x512", "Large 暦 remains identifiable at 64px"]
+    },
+    {
+      "id": "BG-EXTERIOR-S0-CLOSED",
+      "action": "new",
+      "runtime": "public/assets/core/background/bg-exterior-s0-closed.jpg",
+      "source": "art/source/environment/bg-exterior-s0-closed-r1.html",
+      "generatedSource": "art/review/artist-002/bg-exterior-s0-closed/r1/generated.png",
+      "compositedSource": "art/review/artist-002/bg-exterior-s0-closed/r1/composited.png",
+      "references": ["docs/inbox/2.art-concept/01_shop_exterior_torikoyomi.png", "docs/inbox/2.art-concept/13_art_style_guide.png"],
+      "prompt": "Closed forty-year-old timber yakitori storefront in a rain-wet navy alley, lanterns and interior unlit, entrance locked, folded indigo noren and blank sign surfaces for exact text composition.",
+      "review": ["2048x1152", "No people or generated text", "Exact sign text composited separately", "Door lock and noren anchors visible", "Mobile center crop preserves storefront"]
+    },
+    {
+      "id": "BG-EXTERIOR-S1-OPEN",
+      "action": "new-edit",
+      "runtime": "public/assets/core/background/bg-exterior-s1-open.jpg",
+      "source": "art/source/environment/bg-exterior-s1-open-r1.html",
+      "generatedSource": "art/review/artist-002/bg-exterior-s1-open/r1/generated.png",
+      "compositedSource": "art/review/artist-002/bg-exterior-s1-open/r1/composited.png",
+      "references": ["BG-EXTERIOR-S0-CLOSED", "docs/inbox/2.art-concept/13_art_style_guide.png"],
+      "prompt": "Edit the exact S0 storefront only into a quiet reopening state: warm lanterns, restrained interior glow, open entrance, hanging noren and wet amber reflection; preserve architecture and blank sign surfaces.",
+      "review": ["Same storefront and camera as S0", "State change reads through light, entrance and noren", "Exact sign text composited separately", "No renovation or people"]
+    },
+    {
+      "id": "PR-SHOP-KEY",
+      "action": "new",
+      "runtime": "public/assets/core/props/pr-shop-key.png",
+      "source": "art/review/artist-002/pr-shop-key/r1/generated.png",
+      "references": ["docs/inbox/2.art-concept/16_first_business_day_storyboard.png", "docs/inbox/2.art-concept/13_art_style_guide.png"],
+      "prompt": "One practical inherited brass-and-dark-iron storefront key with faded indigo cord, diagonal 3/4 view, isolated on flat green chroma.",
+      "review": ["One object", "Readable grip and lock tip", "Transparent corners", "No text, hand or shadow"]
+    },
+    {
+      "id": "PR-NOREN-S0",
+      "action": "new",
+      "runtime": "public/assets/core/props/pr-noren-s0.png",
+      "source": "art/review/artist-002/pr-noren-s0/r1/generated.png",
+      "references": ["docs/inbox/2.art-concept/01_shop_exterior_torikoyomi.png", "docs/inbox/2.art-concept/13_art_style_guide.png"],
+      "prompt": "Exactly three same-object indigo noren states: folded and tied, hanging four-panel crest, subtle rightward sway; isolated atlas on flat green chroma.",
+      "review": ["Three clips present", "Common rod, fabric and scale", "No readable writing", "2046x714 atlas metadata validated"]
+    },
+    {
+      "id": "PR-RECIPE-NOTE-CORE",
+      "action": "new",
+      "runtime": "public/assets/core/props/pr-recipe-note-core.png",
+      "source": "art/review/artist-002/pr-recipe-note-core/r1/generated.png",
+      "references": ["docs/inbox/2.art-concept/00_brand_identity_yaki_season_torikoyomi.png", "docs/inbox/2.art-concept/16_first_business_day_storyboard.png", "docs/inbox/2.art-concept/13_art_style_guide.png"],
+      "prompt": "Exactly five states of one inherited spiral notebook: closed, stained negima, locked incomplete momo, restored momo and blank record page; visual symbols only on flat green chroma.",
+      "review": ["Five states visually distinct", "Negima and momo silhouettes differ", "Locked state uses stain and lock silhouette", "No baked readable text", "2045x682 atlas metadata validated"]
+    },
+    {
+      "id": "PR-CHARCOAL-IGNITION",
+      "action": "new",
+      "runtime": "public/assets/core/props/pr-charcoal-ignition.png",
+      "source": "art/review/artist-002/pr-charcoal-ignition/r1/generated.png",
+      "references": ["ST-CHARCOAL-CORE", "docs/inbox/2.art-concept/06_charcoal_grill_station.png", "docs/inbox/2.art-concept/13_art_style_guide.png"],
+      "prompt": "Exactly four same-layout binchotan states: cold, single ember, igniting and stable, without flame or smoke, isolated on flat green chroma.",
+      "review": ["Four ignition stages", "Shape remains stable", "Heat changes texture and luminance", "No flame, smoke or labels", "2048x684 atlas metadata validated"]
+    },
+    {
+      "id": "PR-MATCHBOX-OLD",
+      "action": "new",
+      "runtime": "public/assets/core/props/pr-matchbox-old.png",
+      "source": "art/review/artist-002/pr-matchbox-old/r1/generated.png",
+      "references": ["docs/inbox/2.art-concept/00_brand_identity_yaki_season_torikoyomi.png", "docs/inbox/2.art-concept/13_art_style_guide.png"],
+      "prompt": "One worn indigo and amber matchbox with abstract charcoal and seal shapes, inner tray slightly offset, isolated on flat green chroma.",
+      "review": ["No readable text or cigarette branding", "Worn story prop identity", "Transparent corners", "Reusable in S0 and D14"]
+    },
+    {
+      "id": "BG-SEATING-6",
+      "action": "new-revised-after-screen-contract-review",
+      "runtime": "public/assets/core/background/bg-seating-6.png",
+      "source": "art/source/environment/bg-seating-6-r3.html",
+      "generatedSource": "art/review/artist-002/bg-seating-6/r3/generated.png",
+      "alphaSource": "art/review/artist-002/bg-seating-6/r3/alpha.png",
+      "references": ["BG-INTERIOR-BASE", "docs/inbox/2.art-concept/03_main_service_gameplay_ui.png", "docs/inbox/2.art-concept/09_customer_waiting_and_cleanup.png"],
+      "prompt": "Exactly six empty customer-side bar-seat backrests in one horizontal row, viewed from the chef side; upper backrests only, with no counter, tabletop, full stools, legs, people or room, isolated on flat green chroma.",
+      "review": ["Revision 3 replaces incompatible combined counter and foreground stools", "Exactly six separate customer-side backrests", "No counter or player-side stool geometry", "Counter layer occludes the lower backs", "Desktop and mobile customer anchors revised", "2048x1152 transparent indexed layer"]
+    },
+    {
+      "id": "BG-BAR-COUNTER-BASE",
+      "action": "new",
+      "runtime": "public/assets/core/background/bg-bar-counter-base.png",
+      "source": "art/source/environment/bg-bar-counter-base-r1.html",
+      "generatedSource": "art/review/artist-002/bg-bar-counter-base/r1/generated.png",
+      "alphaSource": "art/review/artist-002/bg-bar-counter-base/r1/alpha.png",
+      "references": ["BG-INTERIOR-BASE", "BG-SEATING-6", "docs/inbox/2.art-concept/02_shop_interior_counter.png", "docs/inbox/2.art-concept/03_main_service_gameplay_ui.png", "docs/inbox/2.art-concept/09_customer_waiting_and_cleanup.png"],
+      "prompt": "One continuous built-in Japanese izakaya bar counter viewed from the chef side, with a narrow clean top and dark chef-facing apron, spanning the scene in restrained frontal perspective, isolated on flat green chroma.",
+      "review": ["Separate fixed counter layer", "Continuous horizontal customer/player boundary", "No chairs, people, stations, food or text", "Six order-mat anchors plus plate and glass handoff anchors", "2048x1152 transparent indexed layer"]
+    },
+    {
+      "id": "ST-DRINK-BEER-TIER-1",
+      "action": "new",
+      "runtime": "public/assets/core/stations/st-drink-beer-tier-1.png",
+      "source": "art/review/artist-002/st-drink-beer-tier-1/r1/generated.png",
+      "references": ["ST-ASSEMBLY-TIER-1", "docs/inbox/2.art-concept/07_beer_drink_station.png", "docs/inbox/2.art-concept/13_art_style_guide.png"],
+      "prompt": "One compact aged single-lever draft beer station with empty-glass ring, central nozzle and drip tray, right handoff tray, no glass or liquid, isolated on flat green chroma.",
+      "review": ["Exactly one lever and nozzle", "Five workflow anchors distinct", "Matches 1536x768 station canvas", "No text, UI or extra tap", "Desktop and mobile composites retain the customer and fixed counter behind the lower player-side station"]
+    },
+    {
+      "id": "ST-CLEANUP-OVERLAY",
+      "action": "new",
+      "runtime": "public/assets/core/stations/st-cleanup-overlay.png",
+      "source": "art/review/artist-002/st-cleanup-overlay/r1/generated.png",
+      "references": ["ST-SERVICE-COUNTER", "docs/inbox/2.art-concept/09_customer_waiting_and_cleanup.png", "docs/inbox/2.art-concept/13_art_style_guide.png"],
+      "prompt": "Exactly three cleanup overlays: used plate with skewers, used plate with nearly empty mug, clean plate with folded cloth and small glint, isolated on flat green chroma.",
+      "review": ["Three states visually distinct", "No people or labels", "Common plate scale and pivot", "2046x728 atlas metadata validated"]
+    },
+    {
+      "id": "BG-INTERIOR-BASE",
+      "action": "reuse-metadata",
+      "review": ["Existing JPEG unchanged", "Chef-side view remains compatible", "Vanishing point and actual mobile vertical crop recorded", "Revision raised to 2"]
+    },
+    {
+      "id": "BG-FOREGROUND-FRAME",
+      "action": "reuse-optimize-metadata",
+      "review": ["Existing indexed PNG unchanged", "Chef-side counter and station composite keeps the frame outside interaction bounds", "HUD and center transparent rect metadata retained", "Revision raised to 3"]
+    },
+    {
+      "id": "ST-ASSEMBLY-TIER-1",
+      "action": "reuse-optimize-metadata",
+      "review": ["Three bins, skewer groove and handoff tray retained", "Desktop and mobile chef-side composites keep customer and counter visible", "Five anchors retained", "Revision raised to 3"]
+    },
+    {
+      "id": "ST-GRILL-TIER-1",
+      "action": "reuse-optimize-metadata",
+      "review": ["Two slots and divider retained", "Desktop and mobile chef-side composites keep customer and counter visible", "Three anchors retained", "Revision raised to 3"]
+    },
+    {
+      "id": "ST-CHARCOAL-CORE",
+      "action": "reuse-optimize-metadata",
+      "review": ["Ember silhouette and luminance retained", "Heat center retained", "Compatible with the re-reviewed grill station placement", "Revision raised to 3"]
+    },
+    {
+      "id": "ST-SERVICE-COUNTER",
+      "action": "reuse-optimize-metadata",
+      "review": ["Order mat and plate landing retained", "Desktop and mobile chef-side composites keep customer and fixed counter visible", "Two anchors retained", "Revision raised to 3"]
+    },
+    {
+      "id": "PR-SERVING-PLATE",
+      "action": "reuse-optimize-metadata",
+      "review": ["Indigo empty plate silhouette retained", "Order decal anchor retained", "Compatible with fixed counter handoff anchors", "Revision raised to 3"]
+    }
+  ],
+  "budgets": {
+    "approvedImageAndAtlasBytes": 2836539,
+    "uniqueCompanionBytes": 8987,
+    "totalCoreArtBytes": 2845526,
+    "targetBytes": 3145728,
+    "result": "pass",
+    "activeSceneTextureEstimate": {
+      "exteriorS0": "approximately 11 MiB including exterior, logo and story props",
+      "interiorSingleStation": "approximately 47-55 MiB including interior, seating, fixed counter, one customer fragment and one station",
+      "limit": "64 MiB",
+      "rule": "Do not retain both exterior backgrounds, all station planes and all story atlases simultaneously."
+    }
+  }
+}

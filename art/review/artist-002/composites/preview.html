@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Artist 002 composite review</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body, main { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body { background: #080a0e; }
+    main { position: relative; isolation: isolate; }
+    img { display: block; image-rendering: pixelated; }
+    .full {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+    .seating { z-index: 1; }
+    .customer {
+      position: absolute;
+      z-index: 2;
+      left: 50%;
+      bottom: 43%;
+      height: 47%;
+      max-width: 24%;
+      object-fit: contain;
+      object-position: bottom;
+      transform: translateX(-50%);
+    }
+    .counter { z-index: 3; }
+    .station {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      bottom: -5%;
+      width: auto;
+      height: 58%;
+      max-width: 78%;
+      object-fit: contain;
+      transform: translateX(-50%);
+      transform-origin: bottom center;
+    }
+    .foreground { z-index: 5; pointer-events: none; }
+    @media (min-aspect-ratio: 2 / 1) {
+      .customer { height: 53%; bottom: 41%; }
+      .station { height: 68%; bottom: -10%; }
+    }
+  </style>
+</head>
+<body>
+  <main id="scene"></main>
+  <script>
+    const root = '../../../../public/assets/core/';
+    const stationAssets = {
+      assembly: 'stations/assembly-workbench.png',
+      grill: 'stations/charcoal-grill-body.png',
+      drink: 'stations/st-drink-beer-tier-1.png',
+      service: 'stations/service-counter.png'
+    };
+    const stationName = new URLSearchParams(location.search).get('station') || 'drink';
+    const stationAsset = stationAssets[stationName] || stationAssets.drink;
+    const scenes = {
+      interior: [
+        ['background/shop-backwall-night.jpg', 'full'],
+        ['background/bg-seating-6.png', 'full seating'],
+        ['characters/tsukioka-waiting.png', 'customer'],
+        ['background/bg-bar-counter-base.png', 'full counter'],
+        ['background/shop-foreground-frame.png', 'full foreground']
+      ],
+      station: [
+        ['background/shop-backwall-night.jpg', 'full'],
+        ['background/bg-seating-6.png', 'full seating'],
+        ['characters/tsukioka-waiting.png', 'customer'],
+        ['background/bg-bar-counter-base.png', 'full counter'],
+        [stationAsset, 'station'],
+        ['background/shop-foreground-frame.png', 'full foreground']
+      ],
+      exteriorClosed: [['background/bg-exterior-s0-closed.jpg', 'full']],
+      exteriorOpen: [['background/bg-exterior-s1-open.jpg', 'full']]
+    };
+    const name = new URLSearchParams(location.search).get('scene') || 'interior';
+    const selected = scenes[name] || scenes.interior;
+    const container = document.querySelector('#scene');
+    for (const [path, className] of selected) {
+      const image = document.createElement('img');
+      image.src = root + path;
+      image.className = className;
+      image.alt = '';
+      container.append(image);
+    }
+  </script>
+</body>
+</html>
