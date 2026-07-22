@@ -1,5 +1,7 @@
 # YAKI SEASON 2.5D 게임플레이 에셋 매니페스트
 
+> 보존 문서: 개발자 2 작업 001 완료 당시의 경로·프롬프트·검수 기록이다. 현재 런타임 기준은 [`public/assets/manifest.json`](../../public/assets/manifest.json), 개발자 조회 기준은 [`art/ASSET-CATALOG.md`](../ASSET-CATALOG.md)다. 아래 `art/gameplay/` 경로는 이전 전 위치이며 코드에서 사용하지 않는다.
+
 - 생성일: `2026-07-22`
 - 구현 기준: `ART-001 v1.1.0`, `SYS-002 v1.0.0`, `SCN-001 v1.0.0`, `UI-001 v1.1.0`
 - 담당 작업: `developer-2/001 v1.0.3`

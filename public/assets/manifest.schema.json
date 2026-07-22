@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yaki-season.local/assets/manifest.schema.json",
+  "title": "YAKI SEASON runtime asset manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "generatedAt", "specRefs", "packs", "assets"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "generatedAt": { "type": "string", "format": "date" },
+    "specRefs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "packs": {
+      "type": "object",
+      "required": ["core", "campaign", "optional"],
+      "additionalProperties": {
+        "type": "object",
+        "required": ["load", "description"],
+        "properties": {
+          "load": { "enum": ["startup", "stage", "on-demand"] },
+          "description": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/asset" }
+    }
+  },
+  "$defs": {
+    "point": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "id", "revision", "status", "pack", "kind", "url", "sha256", "bytes",
+        "dimensions", "format", "colorSpace", "alpha", "pivot", "anchors", "clips",
+        "mirrorSafe", "source", "provenance", "license", "specRefs", "reviewedAt"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z0-9-]+$" },
+        "legacyId": { "type": "string", "pattern": "^[A-Z0-9-]+$" },
+        "groupId": { "type": "string", "pattern": "^[A-Z0-9-]+$" },
+        "revision": { "type": "integer", "minimum": 1 },
+        "status": { "const": "approved" },
+        "pack": { "enum": ["core", "campaign", "optional"] },
+        "kind": { "enum": ["image", "atlas", "model", "texture", "vfx"] },
+        "url": { "type": "string", "pattern": "^/assets/[a-z0-9./-]+$" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "dimensions": {
+          "type": "object",
+          "required": ["width", "height"],
+          "properties": {
+            "width": { "type": "integer", "minimum": 1 },
+            "height": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        },
+        "format": { "enum": ["jpeg", "png", "webp", "glb", "json"] },
+        "colorSpace": { "enum": ["sRGB", "linear"] },
+        "alpha": { "enum": ["none", "straight"] },
+        "pivot": { "$ref": "#/$defs/point" },
+        "anchors": { "type": "array" },
+        "clips": { "type": "array", "items": { "type": "string" } },
+        "mirrorSafe": { "type": "boolean" },
+        "source": { "type": "string", "minLength": 1 },
+        "provenance": { "type": "string", "minLength": 1 },
+        "license": { "type": "string", "minLength": 1 },
+        "specRefs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "reviewedAt": { "type": "string", "format": "date" }
+      }
+    }
+  }
+}
