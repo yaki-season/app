@@ -196,12 +196,12 @@ describe('서빙과 재시작', () => {
     return clickGrillSkewer(s3, 3000 + 3000); // 뒷면 적정 -> plated
   }
 
-  it('양면 적정이면 좋은 품질로 서빙된다', () => {
+  it('접시 선택 후 주문 매트를 클릭하면 서빙된다', () => {
+    // 품질 판정은 손님이 소유하므로 여기서는 서빙 발생만 확인한다 (customer.test.js가 판정 검증)
     const s0 = platedState();
     const s1 = clickPlate(s0);
     const s2 = clickOrderMat(s1);
     expect(s2.status).toBe(STATUS.SERVED);
-    expect(s2.servedQuality).toBe('good');
   });
 
   it('접시 선택 없이 주문 매트를 클릭해도 서빙되지 않는다', () => {

@@ -35,7 +35,8 @@ function baseSessionFields() {
     backResult: null,
 
     plateSelected: false,
-    servedQuality: null, // 'good' | 'low'
+    // 품질 판정(good/low)은 여기 두지 않는다. 요리사는 판정하지 않고 손님이 소유한다
+    // (GPL-002 §상세요구사항 5). 원면 결과 frontResult/backResult만 남긴다.
 
     assetsLoaded: false,
     loadError: null,
@@ -210,15 +211,12 @@ export function clickEmpty(state) {
 
 export function clickOrderMat(state) {
   if (state.status !== STATUS.PLATED || !state.plateSelected) return state;
-
-  const quality =
-    state.frontResult === 'over' || state.backResult === 'over' ? 'low' : 'good';
-
+  // 요리사는 판정하지 않는다. 서빙이 일어났다는 사실만 기록하고 원면 결과를 남긴다.
+  // 만족도·팁·mood는 손님이 frontResult/backResult로 계산한다 (GPL-002).
   return {
     ...state,
     status: STATUS.SERVED,
     plateSelected: false,
-    servedQuality: quality,
     completedProcesses: withCompletedProcess(state.completedProcesses, PROCESS.COUNTER),
   };
 }
