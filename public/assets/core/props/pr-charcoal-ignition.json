@@ -1,0 +1,13 @@
+{
+  "assetId": "PR-CHARCOAL-IGNITION",
+  "image": "./pr-charcoal-ignition.png",
+  "size": { "width": 2048, "height": 684 },
+  "pivot": { "x": 0.5, "y": 1 },
+  "frames": {
+    "cold": { "x": 0, "y": 0, "width": 512, "height": 684 },
+    "ember": { "x": 512, "y": 0, "width": 512, "height": 684 },
+    "igniting": { "x": 1024, "y": 0, "width": 512, "height": 684 },
+    "stable": { "x": 1536, "y": 0, "width": 512, "height": 684 }
+  },
+  "sequence": ["cold", "ember", "igniting", "stable"]
+}

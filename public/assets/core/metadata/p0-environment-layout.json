@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "1.0.0",
+  "coordinateSystem": "normalized-top-left",
+  "specRefs": ["ART-003 v1.1.0", "ART-002 v1.0.0", "UI-002 v1.0.0"],
+  "profiles": {
+    "desktop-16x9": {
+      "referenceViewport": { "width": 1920, "height": 1080 },
+      "sourceCrop": { "x": 0, "y": 0, "width": 1, "height": 1 },
+      "hudSafeRect": { "x": 0.06, "y": 0.02, "width": 0.88, "height": 0.15 },
+      "customerSafeRect": { "x": 0.08, "y": 0.18, "width": 0.84, "height": 0.38 },
+      "stationSafeRect": { "x": 0.04, "y": 0.52, "width": 0.92, "height": 0.46 }
+    },
+    "mobile-landscape": {
+      "referenceViewport": { "width": 844, "height": 390 },
+      "sourceCrop": { "x": 0.08, "y": 0, "width": 0.84, "height": 1 },
+      "hudSafeRect": { "x": 0.08, "y": 0.02, "width": 0.84, "height": 0.15 },
+      "customerSafeRect": { "x": 0.03, "y": 0.18, "width": 0.94, "height": 0.38 },
+      "stationSafeRect": { "x": 0.02, "y": 0.52, "width": 0.96, "height": 0.46 }
+    }
+  },
+  "assets": {
+    "BG-INTERIOR-BASE": {
+      "pivot": { "x": 0.5, "y": 0.5 },
+      "vanishingPoint": { "x": 0.5, "y": 0.42 },
+      "mobileCrop": { "x": 0.08, "y": 0, "width": 0.84, "height": 1 }
+    },
+    "BG-FOREGROUND-FRAME": {
+      "pivot": { "x": 0.5, "y": 0.5 },
+      "hudTransparentRect": { "x": 0, "y": 0, "width": 1, "height": 0.140625 },
+      "centerTransparentRect": { "x": 0.1, "y": 0.14, "width": 0.8, "height": 0.86 }
+    },
+    "BG-EXTERIOR-S0-CLOSED": {
+      "pivot": { "x": 0.5, "y": 0.5 },
+      "signRect": { "x": 0.355, "y": 0.2, "width": 0.29, "height": 0.16 },
+      "doorLock": { "x": 0.5, "y": 0.705 },
+      "norenRod": { "x": 0.5, "y": 0.43 },
+      "mobileCrop": { "x": 0.08, "y": 0, "width": 0.84, "height": 1 }
+    },
+    "BG-EXTERIOR-S1-OPEN": {
+      "pivot": { "x": 0.5, "y": 0.5 },
+      "signRect": { "x": 0.355, "y": 0.2, "width": 0.29, "height": 0.16 },
+      "entrance": { "x": 0.5, "y": 0.71 },
+      "norenRod": { "x": 0.5, "y": 0.43 },
+      "mobileCrop": { "x": 0.08, "y": 0, "width": 0.84, "height": 1 }
+    },
+    "BG-SEATING-6": {
+      "pivot": { "x": 0.5, "y": 1 },
+      "desktopAnchors": {
+        "seat-01": { "x": 0.11, "y": 0.535 },
+        "seat-02": { "x": 0.265, "y": 0.535 },
+        "seat-03": { "x": 0.42, "y": 0.535 },
+        "seat-04": { "x": 0.58, "y": 0.535 },
+        "seat-05": { "x": 0.735, "y": 0.535 },
+        "seat-06": { "x": 0.89, "y": 0.535 }
+      },
+      "mobileAnchors": {
+        "seat-01": { "x": 0.036, "y": 0.535 },
+        "seat-02": { "x": 0.22, "y": 0.535 },
+        "seat-03": { "x": 0.405, "y": 0.535 },
+        "seat-04": { "x": 0.595, "y": 0.535 },
+        "seat-05": { "x": 0.78, "y": 0.535 },
+        "seat-06": { "x": 0.964, "y": 0.535 }
+      },
+      "interactionBounds": { "x": 0.025, "y": 0.4, "width": 0.95, "height": 0.42 }
+    },
+    "ST-ASSEMBLY-TIER-1": {
+      "pivot": { "x": 0.5, "y": 1 },
+      "anchors": {
+        "ingredient-bin-01": { "x": 0.2, "y": 0.42 },
+        "ingredient-bin-02": { "x": 0.285, "y": 0.42 },
+        "ingredient-bin-03": { "x": 0.37, "y": 0.42 },
+        "skewer-groove": { "x": 0.52, "y": 0.45 },
+        "handoff-tray": { "x": 0.76, "y": 0.46 }
+      },
+      "interactionBounds": { "x": 0.12, "y": 0.22, "width": 0.76, "height": 0.58 }
+    },
+    "ST-GRILL-TIER-1": {
+      "pivot": { "x": 0.5, "y": 1 },
+      "anchors": {
+        "grill-slot-01": { "x": 0.35, "y": 0.43 },
+        "grill-divider": { "x": 0.5, "y": 0.43 },
+        "grill-slot-02": { "x": 0.65, "y": 0.43 }
+      },
+      "interactionBounds": { "x": 0.15, "y": 0.24, "width": 0.7, "height": 0.5 }
+    },
+    "ST-CHARCOAL-CORE": {
+      "pivot": { "x": 0.5, "y": 1 },
+      "anchors": { "heat-center": { "x": 0.5, "y": 0.53 } },
+      "interactionBounds": { "x": 0.08, "y": 0.27, "width": 0.84, "height": 0.55 }
+    },
+    "ST-DRINK-BEER-TIER-1": {
+      "pivot": { "x": 0.5, "y": 1 },
+      "anchors": {
+        "empty-glass": { "x": 0.25, "y": 0.51 },
+        "lever-grip": { "x": 0.5, "y": 0.08 },
+        "nozzle": { "x": 0.5, "y": 0.31 },
+        "drip-tray": { "x": 0.5, "y": 0.58 },
+        "handoff-tray": { "x": 0.79, "y": 0.51 }
+      },
+      "interactionBounds": { "x": 0.1, "y": 0.03, "width": 0.82, "height": 0.84 }
+    },
+    "ST-SERVICE-COUNTER": {
+      "pivot": { "x": 0.5, "y": 1 },
+      "anchors": {
+        "order-mat": { "x": 0.5, "y": 0.42 },
+        "plate-landing": { "x": 0.5, "y": 0.56 }
+      },
+      "interactionBounds": { "x": 0.2, "y": 0.28, "width": 0.6, "height": 0.48 }
+    },
+    "ST-CLEANUP-OVERLAY": {
+      "pivot": { "x": 0.5, "y": 0.5 },
+      "targetAnchor": "BG-SEATING-6.seat-*",
+      "interactionBounds": { "x": 0.08, "y": 0.17, "width": 0.84, "height": 0.66 }
+    },
+    "PR-SERVING-PLATE": {
+      "pivot": { "x": 0.5, "y": 0.5 },
+      "anchors": { "order-decal": { "x": 0.5, "y": 0.47 } }
+    }
+  }
+}

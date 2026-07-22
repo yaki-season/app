@@ -1,0 +1,12 @@
+{
+  "assetId": "ST-CLEANUP-OVERLAY",
+  "image": "./st-cleanup-overlay.png",
+  "size": { "width": 2046, "height": 728 },
+  "pivot": { "x": 0.5, "y": 0.5 },
+  "frames": {
+    "used-plate": { "x": 0, "y": 0, "width": 682, "height": 728 },
+    "used-plate-and-glass": { "x": 682, "y": 0, "width": 682, "height": 728 },
+    "clean": { "x": 1364, "y": 0, "width": 682, "height": 728 }
+  },
+  "seatAnchorPattern": "seat-01..seat-06"
+}

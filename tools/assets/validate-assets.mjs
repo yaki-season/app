@@ -48,19 +48,21 @@ function parsePng(buffer) {
   const height = buffer.readUInt32BE(20);
   const bitDepth = buffer[24];
   const colorType = buffer[25];
-  const channels = { 0: 1, 2: 3, 4: 2, 6: 4 }[colorType];
+  const channels = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[colorType];
   const idat = [];
+  let transparency = null;
   let offset = 8;
 
   while (offset < buffer.length) {
     const length = buffer.readUInt32BE(offset);
     const type = buffer.subarray(offset + 4, offset + 8).toString('ascii');
     if (type === 'IDAT') idat.push(buffer.subarray(offset + 8, offset + 8 + length));
+    if (type === 'tRNS') transparency = buffer.subarray(offset + 8, offset + 8 + length);
     offset += 12 + length;
     if (type === 'IEND') break;
   }
 
-  return { width, height, bitDepth, colorType, channels, idat };
+  return { width, height, bitDepth, colorType, channels, idat, transparency };
 }
 
 function paeth(a, b, c) {
@@ -73,7 +75,7 @@ function paeth(a, b, c) {
 
 function decodePngRows(buffer) {
   const info = parsePng(buffer);
-  if (info.bitDepth !== 8 || !info.channels || ![4, 6].includes(info.colorType)) {
+  if (info.bitDepth !== 8 || !info.channels || ![3, 4, 6].includes(info.colorType)) {
     throw new Error(`unsupported PNG alpha layout: bitDepth=${info.bitDepth}, colorType=${info.colorType}`);
   }
 
@@ -114,6 +116,10 @@ function decodePngRows(buffer) {
 }
 
 function readAlpha(decoded, x, y) {
+  if (decoded.colorType === 3) {
+    const paletteIndex = decoded.pixels[y * decoded.stride + x];
+    return decoded.transparency?.[paletteIndex] ?? 255;
+  }
   const alphaOffset = decoded.colorType === 6 ? 3 : 1;
   return decoded.pixels[y * decoded.stride + x * decoded.channels + alphaOffset];
 }
@@ -206,6 +212,24 @@ if (manifest) {
     if (!Array.isArray(asset.anchors) || !Array.isArray(asset.clips)) fail(`${asset.id}: anchors and clips must be arrays`);
     if (!existsSync(join(repoRoot, asset.source))) fail(`${asset.id}: source is missing: ${asset.source}`);
     if (!existsSync(join(repoRoot, asset.provenance))) fail(`${asset.id}: provenance is missing: ${asset.provenance}`);
+    if (asset.kind === 'atlas' && asset.clips.length === 0) fail(`${asset.id}: atlas clips are missing`);
+
+    for (const companion of asset.companions ?? []) {
+      if (!/^\/assets\/[a-z0-9./-]+$/.test(companion.url)) {
+        fail(`${asset.id}: invalid companion URL ${companion.url}`);
+        continue;
+      }
+      const companionPath = join(repoRoot, 'public', companion.url);
+      registeredFiles.add(companionPath);
+      if (!existsSync(companionPath)) {
+        fail(`${asset.id}: companion file is missing: ${companion.url}`);
+        continue;
+      }
+      const companionBuffer = readFileSync(companionPath);
+      if (companionBuffer.length !== companion.bytes) fail(`${asset.id}: companion bytes mismatch for ${companion.url}`);
+      if (sha256(companionBuffer) !== companion.sha256) fail(`${asset.id}: companion SHA-256 mismatch for ${companion.url}`);
+      if (companion.url.endsWith('.json')) readJson(companionPath, `${asset.id} companion`);
+    }
 
     const runtimePath = join(repoRoot, 'public', asset.url);
     registeredFiles.add(runtimePath);
@@ -275,14 +299,14 @@ if (manifest) {
     const linkedRuntime = row.assetLink ? resolve(dirname(catalogPath), row.assetLink) : null;
     const expectedRuntime = join(repoRoot, 'public', asset.url);
     if (linkedRuntime !== expectedRuntime) fail(`${asset.id}: catalog runtime link does not match manifest URL`);
-    if (row.legacyId !== asset.legacyId) fail(`${asset.id}: catalog legacy ID mismatch`);
+    if (row.legacyId !== (asset.legacyId ?? null)) fail(`${asset.id}: catalog legacy ID mismatch`);
   }
   for (const id of approvedIds) {
     if (!ids.has(id)) fail(`${id}: catalog approved item is missing from manifest`);
   }
 }
 
-if (catalogRows.length !== 16) fail(`catalog migration registry must contain 16 rows, found ${catalogRows.length}`);
+if (catalogRows.length < 16) fail(`catalog registry must contain at least the 16 migrated rows, found ${catalogRows.length}`);
 for (const row of catalogRows) {
   for (const [label, link] of [['asset', row.assetLink], ['source', row.sourceLink], ['provenance', row.provenanceLink]]) {
     if (!link) fail(`${row.id}: catalog ${label} link is missing`);
@@ -303,7 +327,7 @@ if (provenance) {
   if ((provenance.assets ?? []).length !== 16) fail('legacy provenance must contain 16 assets');
   const decisions = new Map((provenance.assets ?? []).map((asset) => [asset.legacyId, asset.decision]));
   for (const row of catalogRows) {
-    if (decisions.get(row.legacyId) !== row.status) {
+    if (row.legacyId && decisions.get(row.legacyId) !== row.status) {
       fail(`${row.id}: provenance decision does not match catalog status`);
     }
   }

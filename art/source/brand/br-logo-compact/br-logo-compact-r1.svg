@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>とり暦 compact brand mark</title>
+  <g shape-rendering="crispEdges">
+    <path d="M128 32h256v24h40v40h24v320h-24v40h-40v24H128v-24H88v-40H64V96h24V56h40z" fill="#10131b"/>
+    <path d="M136 48h240v16h40v40h16v304h-16v40h-40v16H136v-16H96v-40H80V104h16V64h40z" fill="none" stroke="#d08a3a" stroke-width="8"/>
+    <rect x="112" y="88" width="288" height="8" fill="#7c2f2c"/>
+    <rect x="112" y="416" width="288" height="8" fill="#7c2f2c"/>
+    <path d="M240 76h32v24h24v32h-16v24h-48v-24h-16v-32h24z" fill="#e0a34c"/>
+    <path d="M248 92h16v20h12v16h-40v-16h12z" fill="#f3d59a"/>
+  </g>
+  <g font-family="Hiragino Kaku Gothic ProN, Yu Gothic, Noto Sans JP, sans-serif" text-anchor="middle" letter-spacing="0">
+    <text x="262" y="252" fill="#05070a" opacity="0.85" font-size="96" font-weight="900">とり</text>
+    <text x="256" y="244" fill="#f3d59a" font-size="96" font-weight="900">とり</text>
+    <text x="262" y="382" fill="#05070a" opacity="0.85" font-size="156" font-weight="900">暦</text>
+    <text x="256" y="374" fill="#f0e3c1" font-size="156" font-weight="900">暦</text>
+    <text x="256" y="458" fill="#d08a3a" font-size="25" font-weight="800">YAKI SEASON</text>
+  </g>
+</svg>
