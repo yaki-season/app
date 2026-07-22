@@ -29,14 +29,16 @@ test('공정별 화면을 캡처한다', async ({ page }, testInfo) => {
   await shot('04-그릴-대기꼬치');
 
   await page.getByTestId('waiting-skewer').click();
-  await page.waitForTimeout(1200);
+  // 캡처는 실제 판정 구간에서 찍어야 의미가 있다. 고정 대기로는 느린 머신에서
+  // '적정' 대신 '과다'가 찍힌다.
+  await expect(page.getByTestId('grill-face-badge')).toContainText('앞면 · 덜 익음');
   await shot('05-그릴-앞면-덜익음');
 
-  await page.waitForTimeout(1800);
+  await expect(page.getByTestId('grill-face-badge')).toContainText('앞면 · 적정', { timeout: 15000 });
   await shot('06-그릴-앞면-적정');
 
   await page.getByTestId('grill-canvas').click();
-  await page.waitForTimeout(3000);
+  await expect(page.getByTestId('grill-face-badge')).toContainText('뒷면 · 적정', { timeout: 15000 });
   await shot('07-그릴-뒷면-적정');
 
   await page.getByTestId('grill-canvas').click();

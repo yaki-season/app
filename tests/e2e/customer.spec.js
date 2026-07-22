@@ -5,36 +5,21 @@
 // 손님 시스템은 현재 비활성이므로(`src/config/features.js` 참조) 이 파일은 건너뛴다.
 // `GPL-003` 기준 재작업에서 플래그를 켜면 함께 되살아난다.
 import { test, expect } from '@playwright/test';
+import { boot, assembleSkewer, placeOnGrill, clickWhenPerfect, serve } from './helpers.js';
 import { CUSTOMER_SYSTEM_ENABLED } from '../../src/config/features.js';
 
 test.skip(!CUSTOMER_SYSTEM_ENABLED, '손님 시스템이 비활성이다 (epic 005 범위 밖, GPL-003 재작업 대기)');
-
-async function boot(page) {
-  await page.goto('/src/index.html');
-  await expect(page.getByTestId('loading-overlay')).toBeHidden({ timeout: 10000 });
-  await expect(page.getByTestId('error-overlay')).toBeHidden();
-}
 
 const getCustomer = (page) => page.evaluate(() => window.__yakiDebug.getCustomer());
 
 // 꼬치 하나를 조립·굽기·서빙까지 끝낸다
 async function cookAndServe(page) {
-  for (const ing of ['chicken', 'leek', 'chicken', 'leek', 'chicken']) {
-    await page.getByTestId(`ingredient-${ing}`).click();
-    await page.waitForTimeout(200);
-  }
-  await page.getByTestId('assembled-skewer').click();
-  await expect(page.getByTestId('screen-grill')).toBeVisible();
-  await page.getByTestId('waiting-skewer').click();
-
-  await page.waitForTimeout(2700); // 앞면 적정
-  await page.getByTestId('grill-canvas').click();
-  await page.waitForTimeout(2700); // 뒷면 적정
-  await page.getByTestId('grill-canvas').click();
-
-  await expect(page.getByTestId('screen-counter')).toBeVisible({ timeout: 2000 });
-  await page.getByTestId('counter-plate').click();
-  await page.getByTestId('order-mat').click();
+  await assembleSkewer(page);
+  await placeOnGrill(page);
+  await clickWhenPerfect(page, '앞면');
+  await clickWhenPerfect(page, '뒷면');
+  await expect(page.getByTestId('screen-counter')).toBeVisible({ timeout: 5000 });
+  await serve(page);
 }
 
 test('손님이 입장→주문→대기 상태를 거치고 인내심 게이지가 표시된다', async ({ page }) => {
@@ -94,7 +79,8 @@ test('퇴근직장인은 재주문으로 꼬치를 두 번 요구한다', async 
 
   // 첫 꼬치 서빙 — 결과를 띄우지 않고 재주문으로 이어져야 한다
   await cookAndServe(page);
-  await page.waitForTimeout(2500); // 식사(1.5s) → 재주문
+  // 식사가 끝나 재주문으로 넘어가면 조리가 초기화된다. 그 상태를 기다린다.
+  await expect(page.getByTestId('screen-assembly')).toBeVisible({ timeout: 10000 });
 
   const midway = await getCustomer(page);
   expect(midway.slotIndex).toBe(1);

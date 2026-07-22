@@ -1,6 +1,7 @@
 // ART-001 §완료기준 5, 6 / SYS-001 §완료기준 7
 // 에셋 404, 처리되지 않은 콘솔 오류, 보간 방식과 로딩 게이트를 검사한다.
 import { test, expect } from '@playwright/test';
+import { assembleSkewer, placeOnGrill, clickWhenPerfect, serve } from './helpers.js';
 
 function collectProblems(page) {
   const failedRequests = [];
@@ -23,20 +24,12 @@ function collectProblems(page) {
 }
 
 async function playFullFlow(page) {
-  for (const ing of ['chicken', 'leek', 'chicken', 'leek', 'chicken']) {
-    await page.getByTestId(`ingredient-${ing}`).click();
-    await page.waitForTimeout(200);
-  }
-  await page.getByTestId('assembled-skewer').click();
-  await expect(page.getByTestId('screen-grill')).toBeVisible();
-  await page.getByTestId('waiting-skewer').click();
-  await page.waitForTimeout(2700);
-  await page.getByTestId('grill-canvas').click();
-  await page.waitForTimeout(2700);
-  await page.getByTestId('grill-canvas').click();
-  await expect(page.getByTestId('screen-counter')).toBeVisible({ timeout: 2000 });
-  await page.getByTestId('counter-plate').click();
-  await page.getByTestId('order-mat').click();
+  await assembleSkewer(page);
+  await placeOnGrill(page);
+  await clickWhenPerfect(page, '앞면');
+  await clickWhenPerfect(page, '뒷면');
+  await expect(page.getByTestId('screen-counter')).toBeVisible({ timeout: 5000 });
+  await serve(page);
   await expect(page.getByTestId('result-overlay')).toBeVisible();
 }
 

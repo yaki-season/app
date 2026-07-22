@@ -1,21 +1,9 @@
 // UI-001 §상세요구사항 4, §데스크톱 화면 요구사항, §예외 및 경계 조건
 // 두 데스크톱 검증 뷰포트에서 핵심 조작 대상의 크기와 위치를 확인한다.
 import { test, expect } from '@playwright/test';
+import { boot, assembleSkewer as assemble, placeOnGrill, clickWhenPerfect } from './helpers.js';
 
 const MIN_CLICK_PX = 44;
-
-async function boot(page) {
-  await page.goto('/src/index.html');
-  await expect(page.getByTestId('loading-overlay')).toBeHidden({ timeout: 10000 });
-  await expect(page.getByTestId('error-overlay')).toBeHidden();
-}
-
-async function assemble(page) {
-  for (const ing of ['chicken', 'leek', 'chicken', 'leek', 'chicken']) {
-    await page.getByTestId(`ingredient-${ing}`).click();
-    await page.waitForTimeout(200);
-  }
-}
 
 async function expectClickable(page, testId) {
   const box = await page.getByTestId(testId).boundingBox();
@@ -51,12 +39,9 @@ test('그릴 화면의 조작 대상이 최소 클릭 영역을 만족하고 화
 test('카운터 화면의 조작 대상이 최소 클릭 영역을 만족하고 화면 안에 있다', async ({ page }) => {
   await boot(page);
   await assemble(page);
-  await page.getByTestId('assembled-skewer').click();
-  await page.getByTestId('waiting-skewer').click();
-  await page.waitForTimeout(2700);
-  await page.getByTestId('grill-canvas').click();
-  await page.waitForTimeout(2700);
-  await page.getByTestId('grill-canvas').click();
+  await placeOnGrill(page);
+  await clickWhenPerfect(page, '앞면');
+  await clickWhenPerfect(page, '뒷면');
 
   await expect(page.getByTestId('screen-counter')).toBeVisible({ timeout: 2000 });
   await expectClickable(page, 'counter-plate');
@@ -70,9 +55,7 @@ function overlaps(a, b) {
 test('익힘 상태 배지가 조리 중인 꼬치를 가리지 않는다', async ({ page }) => {
   await boot(page);
   await assemble(page);
-  await page.getByTestId('assembled-skewer').click();
-  await page.getByTestId('waiting-skewer').click();
-  await page.waitForTimeout(500);
+  await placeOnGrill(page);
 
   const badge = await page.getByTestId('grill-face-badge').boundingBox();
   const canvas = await page.getByTestId('grill-canvas').boundingBox();

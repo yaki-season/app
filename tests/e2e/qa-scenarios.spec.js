@@ -4,21 +4,13 @@
 // 조작하는 대신 같은 단계를 브라우저 자동화로 재현한 것이다. 사람의 이해도와
 // 손맛 판단은 §관찰 플레이테스트 항목이며 이 파일로 대체되지 않는다.
 import { test, expect } from '@playwright/test';
-
-async function boot(page) {
-  await page.goto('/src/index.html');
-  await expect(page.getByTestId('loading-overlay')).toBeHidden({ timeout: 10000 });
-  await expect(page.getByTestId('error-overlay')).toBeHidden();
-}
-
-async function assemble(page) {
-  for (const ing of ['chicken', 'leek', 'chicken', 'leek', 'chicken']) {
-    await page.getByTestId(`ingredient-${ing}`).click();
-    await page.waitForTimeout(200);
-  }
-}
-
-const getState = (page) => page.evaluate(() => window.__yakiDebug.getState());
+import {
+  boot,
+  getState,
+  assembleSkewer as assemble,
+  placeOnGrill,
+  clickWhenPerfect,
+} from './helpers.js';
 
 test('시나리오 A: 정상 품질 서빙', async ({ page }) => {
   await boot(page);
@@ -41,14 +33,11 @@ test('시나리오 A: 정상 품질 서빙', async ({ page }) => {
   expect((await getState(page)).status).toBe('grillFront');
 
   // 4. 앞면 적정에서 뒤집기
-  await page.waitForTimeout(2700);
-  await expect(page.getByTestId('grill-face-badge')).toContainText('적정');
-  await page.getByTestId('grill-canvas').click();
+  await clickWhenPerfect(page, '앞면');
   expect((await getState(page)).frontResult).toBe('perfect');
 
   // 5. 뒷면 적정에서 접시 회수
-  await page.waitForTimeout(2700);
-  await page.getByTestId('grill-canvas').click();
+  await clickWhenPerfect(page, '뒷면');
   const plated = await getState(page);
   expect(plated.status).toBe('plated');
   expect(plated.backResult).toBe('perfect');
@@ -79,19 +68,16 @@ test('시나리오 B: 잘못된 재료와 이른 클릭', async ({ page }) => {
 
   // 3~4. 정상 조립 후 그릴에 올린 직후 클릭 → 뒤집히지 않고 덜 익음 피드백
   await assemble(page);
-  await page.getByTestId('assembled-skewer').click();
-  await page.getByTestId('waiting-skewer').click();
-  await page.waitForTimeout(400);
+  await placeOnGrill(page);
+  await expect(page.getByTestId('grill-face-badge')).toContainText('앞면 · 덜 익음');
   await page.getByTestId('grill-canvas').click();
   expect((await getState(page)).status).toBe('grillFront');
   await expect(page.getByTestId('grill-feedback')).toBeVisible();
   await expect(page.getByTestId('grill-feedback')).toContainText('덜 익었');
 
   // 5. 이후 정상 흐름을 계속 완료할 수 있다
-  await page.waitForTimeout(2500);
-  await page.getByTestId('grill-canvas').click();
-  await page.waitForTimeout(2700);
-  await page.getByTestId('grill-canvas').click();
+  await clickWhenPerfect(page, '앞면');
+  await clickWhenPerfect(page, '뒷면');
   await expect(page.getByTestId('screen-counter')).toBeVisible({ timeout: 2000 });
   await page.getByTestId('counter-plate').click();
   await page.getByTestId('order-mat').click();
@@ -105,8 +91,7 @@ test('시나리오 C: 탄 꼬치와 복구', async ({ page }) => {
   await page.getByTestId('waiting-skewer').click();
 
   // 1~2. 7초 이상 방치 → 탄 상태와 실패 원인, 다시 만들기
-  await page.waitForTimeout(7300);
-  await expect(page.getByTestId('result-overlay')).toBeVisible({ timeout: 2000 });
+  await expect(page.getByTestId('result-overlay')).toBeVisible({ timeout: 15000 });
   await expect(page.getByTestId('result-message')).toContainText('타버렸습니다');
   const failed = await getState(page);
   expect(failed.status).toBe('failed');
@@ -128,10 +113,9 @@ test('시나리오 C: 탄 꼬치와 복구', async ({ page }) => {
 test('시나리오 D: 중단과 복귀', async ({ page }) => {
   await boot(page);
   await assemble(page);
-  await page.getByTestId('assembled-skewer').click();
-  await page.getByTestId('waiting-skewer').click();
+  await placeOnGrill(page);
 
-  // 1. 굽기 1초 시점에 숨김
+  // 1. 굽는 도중 숨김
   await page.waitForTimeout(1000);
   await page.evaluate(() => {
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
@@ -153,11 +137,9 @@ test('시나리오 D: 중단과 복귀', async ({ page }) => {
   expect(resumed.pausedAtMs).toBeNull();
 
   // 4. 같은 꼬치를 계속 조리해 정상 서빙한다
-  await page.waitForTimeout(2000);
-  await page.getByTestId('grill-canvas').click();
+  await clickWhenPerfect(page, '앞면');
   expect((await getState(page)).status).toBe('grillBack');
-  await page.waitForTimeout(2700);
-  await page.getByTestId('grill-canvas').click();
+  await clickWhenPerfect(page, '뒷면');
   await expect(page.getByTestId('screen-counter')).toBeVisible({ timeout: 2000 });
   await page.getByTestId('counter-plate').click();
   await page.getByTestId('order-mat').click();
@@ -167,9 +149,9 @@ test('시나리오 D: 중단과 복귀', async ({ page }) => {
 test('시각 검증: 그릴 캔버스가 빈 화면이나 단색이 아니다', async ({ page }) => {
   await boot(page);
   await assemble(page);
-  await page.getByTestId('assembled-skewer').click();
-  await page.getByTestId('waiting-skewer').click();
-  await page.waitForTimeout(2700);
+  await placeOnGrill(page);
+  // 충분히 구워져 캔버스에 내용이 있는 시점까지 상태로 기다린다
+  await expect(page.getByTestId('grill-face-badge')).toContainText('앞면 · 적정', { timeout: 15000 });
 
   // 캔버스 픽셀을 직접 읽어 렌더 결과를 확인한다 (QA-001 §시각 검증)
   const stats = await page.getByTestId('grill-canvas').evaluate((canvas) => {
