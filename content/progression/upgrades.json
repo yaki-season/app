@@ -1,0 +1,54 @@
+[
+  {
+    "id": "ingredient-chicken-t2",
+    "schemaVersion": 1,
+    "displayKey": "upgrade.chicken.t2",
+    "active": true,
+    "status": "candidate",
+    "category": "ingredient",
+    "tier": 2,
+    "costGold": 1000,
+    "reputationReq": 1,
+    "requiresUpgradeId": null,
+    "effect": { "kind": "basePriceMult", "value": 1.1 }
+  },
+  {
+    "id": "equipment-grill-slots-2",
+    "schemaVersion": 1,
+    "displayKey": "upgrade.grill.slots2",
+    "active": true,
+    "status": "candidate",
+    "category": "equipment",
+    "tier": 1,
+    "costGold": 1500,
+    "reputationReq": 2,
+    "requiresUpgradeId": null,
+    "effect": { "kind": "grillSlots", "value": 2 }
+  },
+  {
+    "id": "interior-seats-8",
+    "schemaVersion": 1,
+    "displayKey": "upgrade.interior.seats8",
+    "active": true,
+    "status": "candidate",
+    "category": "interior",
+    "tier": 1,
+    "costGold": 2000,
+    "reputationReq": 3,
+    "requiresUpgradeId": null,
+    "effect": { "kind": "seatCap", "value": 8 }
+  },
+  {
+    "id": "interior-seats-12",
+    "schemaVersion": 1,
+    "displayKey": "upgrade.interior.seats12",
+    "active": true,
+    "status": "candidate",
+    "category": "interior",
+    "tier": 2,
+    "costGold": 4000,
+    "reputationReq": 5,
+    "requiresUpgradeId": "interior-seats-8",
+    "effect": { "kind": "seatCap", "value": 12 }
+  }
+]

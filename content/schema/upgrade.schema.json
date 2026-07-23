@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "upgrade.schema.json",
+  "title": "업그레이드",
+  "type": "object",
+  "required": ["id", "schemaVersion", "displayKey", "active", "status", "category", "tier", "costGold", "reputationReq", "effect"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "displayKey": { "type": "string", "minLength": 1 },
+    "active": { "type": "boolean" },
+    "status": { "enum": ["candidate", "approved"] },
+    "category": { "enum": ["ingredient", "equipment", "interior"] },
+    "tier": { "type": "integer", "minimum": 1, "maximum": 10 },
+    "costGold": { "type": "integer", "minimum": 0, "unit": "G" },
+    "reputationReq": { "type": "integer", "minimum": 0, "unit": "명성" },
+    "requiresUpgradeId": {
+      "type": ["string", "null"],
+      "description": "선행 업그레이드 ID. 존재하는 업그레이드를 참조해야 한다."
+    },
+    "effect": {
+      "type": "object",
+      "description": "수치 효과 하나 이상 (DAT-001 성장·직원).",
+      "required": ["kind", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["basePriceMult", "patienceBonusSec", "seatCap", "grillSlots", "judgeWindowBonusSec"] },
+        "value": { "type": "number" }
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "scenario.schema.json",
+  "title": "영업일 시나리오",
+  "type": "object",
+  "required": ["id", "schemaVersion", "displayKey", "active", "status", "stage", "emotionKey", "prevDay", "nextDay", "unlocks"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "displayKey": { "type": "string", "minLength": 1 },
+    "active": { "type": "boolean" },
+    "status": { "enum": ["candidate", "approved"] },
+    "stage": { "type": "string", "minLength": 1 },
+    "emotionKey": { "type": "string", "minLength": 1 },
+    "prevDay": { "type": ["string", "null"], "description": "이전 날짜 ID. 첫 날은 null. 끊긴 참조 금지 (DAT-001 §15)." },
+    "nextDay": { "type": ["string", "null"], "description": "다음 날짜 ID. 마지막 날은 null. 끊긴 참조 금지." },
+    "unlocks": { "type": "array", "items": { "type": "string" }, "description": "이 날 해금되는 메뉴·업그레이드 ID." },
+    "fallbackNote": { "type": "string", "description": "필수 메뉴·손님 잠김 시 대체 흐름 요약 (DAT-001 §16)." }
+  }
+}

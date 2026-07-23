@@ -10,6 +10,9 @@ const CONTENT_FILES = {
   recipes: ['recipes/negima.json'],
   customers: ['customers/types.json'],
   days: ['campaign/day-d1.json'],
+  upgrades: ['progression/upgrades.json'],
+  staff: ['staff/staff.json'],
+  scenarios: ['campaign/scenario.json'],
 };
 
 async function readJson(fetchImpl, url) {

@@ -15,6 +15,9 @@ function loadBundle() {
     recipes: [read('content/recipes/negima.json')],
     customers: read('content/customers/types.json'),
     days: [read('content/campaign/day-d1.json')],
+    upgrades: read('content/progression/upgrades.json'),
+    staff: read('content/staff/staff.json'),
+    scenarios: read('content/campaign/scenario.json'),
   };
 }
 
@@ -23,6 +26,9 @@ const SCHEMAS = {
   recipe: read('content/schema/recipe.schema.json'),
   customerType: read('content/schema/customer-type.schema.json'),
   day: read('content/schema/day.schema.json'),
+  upgrade: read('content/schema/upgrade.schema.json'),
+  staff: read('content/schema/staff.schema.json'),
+  scenario: read('content/schema/scenario.schema.json'),
 };
 
 function clone(x) {
@@ -93,6 +99,47 @@ describe('교차 규칙 거부 (런타임 공유)', () => {
     const b = loadBundle();
     b.processes[0].faceThresholdsSec = { under: 0, perfect: 6, over: 5, burnt: 7 }; // perfect>over
     expect(checkContentRules(b).errors.join()).toMatch(/구간 순서/);
+  });
+});
+
+describe('성장·직원·시나리오 데이터', () => {
+  it('업그레이드·직원·시나리오가 스키마·교차 검증을 통과한다', () => {
+    // 실제 데이터에 세 단위가 포함된 상태로 이미 전체 검증을 통과함
+    const b = loadBundle();
+    expect(b.upgrades.length).toBeGreaterThan(0);
+    expect(b.staff.length).toBeGreaterThan(0);
+    expect(b.scenarios.length).toBeGreaterThan(0);
+  });
+
+  it('업그레이드의 알 수 없는 효과 종류를 거부한다', () => {
+    const b = loadBundle();
+    b.upgrades[0].effect.kind = 'teleport';
+    expect(validateContent(b, SCHEMAS).valid).toBe(false);
+  });
+
+  it('미정의 선행 업그레이드 참조를 거부한다', () => {
+    const b = loadBundle();
+    b.upgrades[0].requiresUpgradeId = 'no-such-upgrade';
+    expect(checkContentRules(b).errors.join()).toMatch(/미정의 선행 업그레이드/);
+  });
+
+  it('직원 품질 상한은 good|perfect만 허용한다', () => {
+    const b = loadBundle();
+    b.staff[0].qualityCap = 'legendary';
+    expect(validateContent(b, SCHEMAS).valid).toBe(false);
+  });
+
+  it('시나리오 날짜 체인이 끊기면 거부한다 (DAT-001 §15)', () => {
+    const b = loadBundle();
+    b.scenarios[1].nextDay = 'd99'; // 존재하지 않는 날짜
+    expect(checkContentRules(b).errors.join()).toMatch(/끊긴 다음 날짜/);
+  });
+
+  it('시나리오 첫 날의 prevDay=null은 허용한다', () => {
+    const b = loadBundle();
+    const first = b.scenarios.find((s) => s.prevDay === null);
+    expect(first).toBeTruthy();
+    expect(checkContentRules(b).valid).toBe(true);
   });
 });
 

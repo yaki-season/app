@@ -1,0 +1,30 @@
+[
+  {
+    "id": "staff-drink",
+    "schemaVersion": 1,
+    "displayKey": "staff.drink",
+    "active": true,
+    "status": "candidate",
+    "role": "drink",
+    "speedMult": 1.0,
+    "qualityCap": "good",
+    "wageGold": 300,
+    "xp": { "base": 100, "growth": 1.5 },
+    "mistakeRate": 0.15,
+    "animRef": "staff.drink.idle"
+  },
+  {
+    "id": "staff-hall",
+    "schemaVersion": 1,
+    "displayKey": "staff.hall",
+    "active": true,
+    "status": "candidate",
+    "role": "hall",
+    "speedMult": 1.1,
+    "qualityCap": "good",
+    "wageGold": 350,
+    "xp": { "base": 120, "growth": 1.5 },
+    "mistakeRate": 0.1,
+    "animRef": "staff.hall.idle"
+  }
+]

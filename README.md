@@ -121,7 +121,10 @@ content/
 ├── processes/grill.json     # 조리 익힘 구간(적정·과다·탄) — recipe.js가 읽음
 ├── recipes/negima.json      # 네기마 레시피
 ├── customers/types.json     # 손님 유형별 인내심·팁·주문 순서
-└── campaign/day-d1.json     # 영업일 손님 수·간격·경제
+├── campaign/day-d1.json     # 영업일 손님 수·간격·경제·타이밍
+├── campaign/scenario.json   # 영업일 시나리오(날짜·해금·이전/다음 날 체인)
+├── progression/upgrades.json # 재료 등급·장비·인테리어 업그레이드
+└── staff/staff.json         # 직원 역할·속도·품질 상한·급여
 ```
 
 | 모듈 | 역할 |

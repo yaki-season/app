@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "staff.schema.json",
+  "title": "직원",
+  "type": "object",
+  "required": ["id", "schemaVersion", "displayKey", "active", "status", "role", "speedMult", "qualityCap", "wageGold", "xp", "mistakeRate", "animRef"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "displayKey": { "type": "string", "minLength": 1 },
+    "active": { "type": "boolean" },
+    "status": { "enum": ["candidate", "approved"] },
+    "role": { "enum": ["drink", "fry", "hall"], "description": "스테이션·책임 단위 (GPL-005 §16)." },
+    "speedMult": { "type": "number", "minimum": 0.1, "maximum": 3, "unit": "배" },
+    "qualityCap": { "enum": ["good", "perfect"], "description": "초급은 good 상한, 최고 숙련만 perfect (GPL-005 §18)." },
+    "wageGold": { "type": "integer", "minimum": 0, "unit": "G/일" },
+    "xp": {
+      "type": "object",
+      "description": "숙련 경험치 곡선.",
+      "required": ["base", "growth"],
+      "additionalProperties": false,
+      "properties": {
+        "base": { "type": "number", "minimum": 1 },
+        "growth": { "type": "number", "minimum": 1, "maximum": 3, "unit": "배" }
+      }
+    },
+    "mistakeRate": { "type": "number", "minimum": 0, "maximum": 1, "unit": "비율" },
+    "animRef": { "type": "string", "minLength": 1 }
+  }
+}

@@ -14,6 +14,9 @@ export function validateContent(bundle, schemas) {
     recipes: ajv.compile(schemas.recipe),
     customers: ajv.compile(schemas.customerType),
     days: ajv.compile(schemas.day),
+    upgrades: schemas.upgrade ? ajv.compile(schemas.upgrade) : null,
+    staff: schemas.staff ? ajv.compile(schemas.staff) : null,
+    scenarios: schemas.scenario ? ajv.compile(schemas.scenario) : null,
   };
 
   const errors = [];

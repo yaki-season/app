@@ -1,0 +1,41 @@
+[
+  {
+    "id": "s0",
+    "schemaVersion": 1,
+    "displayKey": "scenario.s0",
+    "active": true,
+    "status": "candidate",
+    "stage": "프롤로그",
+    "emotionKey": "상속",
+    "prevDay": null,
+    "nextDay": "d1",
+    "unlocks": ["negima"],
+    "fallbackNote": "튜토리얼 메뉴 네기마만 사용. 스토리 장면은 건너뛸 수 있다."
+  },
+  {
+    "id": "d1",
+    "schemaVersion": 1,
+    "displayKey": "scenario.d1",
+    "active": true,
+    "status": "candidate",
+    "stage": "D1",
+    "emotionKey": "첫 영업",
+    "prevDay": "s0",
+    "nextDay": "d2",
+    "unlocks": ["momo"],
+    "fallbackNote": "모모 미복원 시 네기마만으로 진행 가능."
+  },
+  {
+    "id": "d2",
+    "schemaVersion": 1,
+    "displayKey": "scenario.d2",
+    "active": true,
+    "status": "candidate",
+    "stage": "D2",
+    "emotionKey": "단골의 시작",
+    "prevDay": "d1",
+    "nextDay": null,
+    "unlocks": [],
+    "fallbackNote": "이후 날짜는 캠페인 확장에서 이어진다(현재 스텁)."
+  }
+]
