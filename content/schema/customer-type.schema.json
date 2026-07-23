@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "customer-type.schema.json",
+  "title": "손님 유형",
+  "type": "object",
+  "required": ["id", "schemaVersion", "displayKey", "active", "status", "groupSize", "patienceSec", "tipMultiplier", "orderSequence"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "displayKey": { "type": "string", "minLength": 1 },
+    "active": { "type": "boolean" },
+    "status": { "enum": ["candidate", "approved"] },
+    "groupSize": { "type": "integer", "minimum": 1, "maximum": 4 },
+    "patienceSec": { "type": "number", "minimum": 1, "maximum": 300, "unit": "초" },
+    "tipMultiplier": { "type": "number", "minimum": 0, "maximum": 5, "unit": "배" },
+    "orderSequence": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "enum": ["drink", "skewer", "fry", "sashimi", "side"] }
+    }
+  }
+}

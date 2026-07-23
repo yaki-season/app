@@ -1,0 +1,46 @@
+[
+  {
+    "id": "solo",
+    "schemaVersion": 1,
+    "displayKey": "customer.solo",
+    "active": true,
+    "status": "candidate",
+    "groupSize": 1,
+    "patienceSec": 40,
+    "tipMultiplier": 1.0,
+    "orderSequence": ["skewer"]
+  },
+  {
+    "id": "office",
+    "schemaVersion": 1,
+    "displayKey": "customer.office",
+    "active": true,
+    "status": "candidate",
+    "groupSize": 2,
+    "patienceSec": 30,
+    "tipMultiplier": 1.1,
+    "orderSequence": ["drink", "skewer", "skewer"]
+  },
+  {
+    "id": "blogger",
+    "schemaVersion": 1,
+    "displayKey": "customer.blogger",
+    "active": true,
+    "status": "candidate",
+    "groupSize": 1,
+    "patienceSec": 30,
+    "tipMultiplier": 0.9,
+    "orderSequence": ["skewer"]
+  },
+  {
+    "id": "couple",
+    "schemaVersion": 1,
+    "displayKey": "customer.couple",
+    "active": true,
+    "status": "candidate",
+    "groupSize": 2,
+    "patienceSec": 35,
+    "tipMultiplier": 1.2,
+    "orderSequence": ["skewer"]
+  }
+]

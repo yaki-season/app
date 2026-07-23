@@ -1,0 +1,16 @@
+{
+  "id": "d1",
+  "schemaVersion": 1,
+  "displayKey": "day.d1",
+  "active": true,
+  "status": "candidate",
+  "customerCount": 20,
+  "spawnIntervalSec": 12,
+  "customerPool": ["solo", "office"],
+  "economy": {
+    "basePrice": 100,
+    "qualityMultGood": 1.5,
+    "qualityMultLow": 1.0,
+    "tipBase": 20
+  }
+}

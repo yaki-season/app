@@ -1,4 +1,5 @@
-import { RECIPE, COOK_THRESHOLDS_SEC, TAB_TRANSITION_MS } from './config/recipe.js';
+import { RECIPE, COOK_THRESHOLDS_SEC, TAB_TRANSITION_MS, applyBalanceContent } from './config/recipe.js';
+import { loadContent } from './content/loader.js';
 import {
   STATUS,
   PROCESS,
@@ -584,6 +585,16 @@ async function boot() {
   const attempt = ++bootAttempt;
 
   try {
+    // 밸런스 콘텐츠를 불러와 조리 수치를 데이터에서 읽는다 (DAT-001).
+    // 실패해도 recipe.js의 안전 기본값으로 게임은 계속된다.
+    try {
+      const { bundle, validation } = await loadContent('../content');
+      if (validation.valid) applyBalanceContent(bundle);
+      else console.warn('밸런스 콘텐츠 검증 실패, 기본값 사용:', validation.errors);
+    } catch (contentErr) {
+      console.warn('밸런스 콘텐츠 로드 실패, 기본값 사용:', contentErr.message);
+    }
+
     // 필수 에셋을 모두 받은 뒤에만 입력을 활성화한다 (SYS-001 §상세요구사항 8)
     await Promise.all(allAssetUrls().map(preloadImage));
 

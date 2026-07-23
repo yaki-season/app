@@ -1,0 +1,14 @@
+{
+  "id": "grill-negima",
+  "schemaVersion": 1,
+  "displayKey": "process.grill.negima",
+  "active": true,
+  "status": "candidate",
+  "station": "grill",
+  "faceThresholdsSec": {
+    "under": 0.0,
+    "perfect": 2.5,
+    "over": 5.5,
+    "burnt": 7.0
+  }
+}

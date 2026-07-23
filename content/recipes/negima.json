@@ -1,0 +1,10 @@
+{
+  "id": "negima",
+  "schemaVersion": 1,
+  "displayKey": "menu.negima",
+  "active": true,
+  "status": "candidate",
+  "category": "skewer",
+  "ingredients": ["chicken", "leek", "chicken", "leek", "chicken"],
+  "processId": "grill-negima"
+}

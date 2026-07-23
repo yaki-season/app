@@ -110,6 +110,30 @@ app/
 
 `sources/`는 참조용으로 남겨두었습니다. 런타임 진입점은 `src/index.html` 하나입니다.
 
+## 콘텐츠 데이터 (밸런스 수치)
+
+게임 수치는 코드 상수가 아니라 `content/`의 JSON에서 옵니다 (`DAT-001`). 부팅 시 로드·검증해
+게임 로직에 반영합니다. 로드에 실패하면 코드의 안전 기본값으로 계속됩니다.
+
+```
+content/
+├── schema/            # JSON Schema (Ajv 검증용)
+├── processes/grill.json     # 조리 익힘 구간(적정·과다·탄) — recipe.js가 읽음
+├── recipes/negima.json      # 네기마 레시피
+├── customers/types.json     # 손님 유형별 인내심·팁·주문 순서
+└── campaign/day-d1.json     # 영업일 손님 수·간격·경제
+```
+
+| 모듈 | 역할 |
+|---|---|
+| `src/content/rules.js` | 교차 검증(참조·중복·구간 순서·상태). 브라우저·Node 공용 |
+| `src/content/validate.js` | Ajv 전체 스키마 검증. **개발·테스트 전용**(런타임 미사용) |
+| `src/content/loader.js` | 런타임 로더. fetch + 가벼운 검사 + `candidate`/`approved` 분리 |
+
+`SYS-004`대로 **전체 스키마 검증(Ajv)은 테스트에서, 런타임은 가벼운 검사만** 합니다.
+`approved`이고 활성인 레코드만 게임 기본값으로 로드되고, `candidate`는 도구에서만 시험합니다.
+`npm test`가 실제 `content/`를 스키마·교차 규칙으로 검증하고, 각 위반 유형의 거부를 확인합니다.
+
 ## 밸런스 튜닝 도구 (개발·기획용)
 
 기획자가 코드 수정 없이 게임 수치를 조절하고 한 영업일을 시뮬레이션해 결과를 보는 내부 도구입니다

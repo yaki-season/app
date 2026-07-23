@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "process.schema.json",
+  "title": "조리 공정",
+  "type": "object",
+  "required": ["id", "schemaVersion", "displayKey", "active", "status", "station", "faceThresholdsSec"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "displayKey": { "type": "string", "minLength": 1 },
+    "active": { "type": "boolean" },
+    "status": { "enum": ["candidate", "approved"] },
+    "station": { "type": "string", "minLength": 1 },
+    "faceThresholdsSec": {
+      "type": "object",
+      "description": "면별 익힘 구간의 하한(초). 다음 구간의 하한이 상한이다.",
+      "required": ["under", "perfect", "over", "burnt"],
+      "additionalProperties": false,
+      "properties": {
+        "under": { "type": "number", "minimum": 0, "unit": "초" },
+        "perfect": { "type": "number", "minimum": 0, "unit": "초" },
+        "over": { "type": "number", "minimum": 0, "unit": "초" },
+        "burnt": { "type": "number", "minimum": 0, "unit": "초" }
+      }
+    }
+  }
+}
