@@ -3,7 +3,7 @@
   "$id": "day.schema.json",
   "title": "영업일",
   "type": "object",
-  "required": ["id", "schemaVersion", "displayKey", "active", "status", "customerCount", "spawnIntervalSec", "customerPool", "economy"],
+  "required": ["id", "schemaVersion", "displayKey", "active", "status", "customerCount", "spawnIntervalSec", "customerPool", "economy", "timingSec", "autoPolicySuccessRate"],
   "additionalProperties": false,
   "properties": {
     "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
@@ -29,6 +29,23 @@
         "qualityMultLow": { "type": "number", "minimum": 0, "maximum": 5, "unit": "배" },
         "tipBase": { "type": "number", "minimum": 0, "unit": "G" }
       }
+    },
+    "timingSec": {
+      "type": "object",
+      "description": "영업일 루프의 조리·식사 타이밍. 자동 정책 시뮬레이션의 주문당 시간 도출에 쓴다.",
+      "required": ["assembly", "eat"],
+      "additionalProperties": false,
+      "properties": {
+        "assembly": { "type": "number", "minimum": 0, "unit": "초" },
+        "eat": { "type": "number", "minimum": 0, "unit": "초" }
+      }
+    },
+    "autoPolicySuccessRate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "unit": "비율",
+      "description": "자동 플레이어가 적정에 성공할 확률 (시뮬레이터용)."
     }
   }
 }

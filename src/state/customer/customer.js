@@ -119,9 +119,7 @@ export class Customer {
 
   // base 판정. 유형별 차이는 서브클래스가 override 한다.
   judge(payload) {
-    if (!payload.recipeMatched) return SATISFACTION.FAIL;
-    if (payload.frontResult === 'over' || payload.backResult === 'over') return SATISFACTION.LOW;
-    return SATISFACTION.GOOD;
+    return baseJudge(payload);
   }
 
   tipFor(satisfaction) {
@@ -153,6 +151,14 @@ export class Customer {
     this.stateStartMs += nowMs - this.pausedAtMs;
     this.pausedAtMs = null;
   }
+}
+
+// 조리 결과 → 만족도. 손님 엔티티와 영업일 루프(businessDay)가 공유하는 단일 판정 규칙.
+// 레시피가 맞고 과다가 없으면 GOOD, 과다면 LOW, 레시피가 틀리면 FAIL.
+export function baseJudge(payload) {
+  if (!payload.recipeMatched) return SATISFACTION.FAIL;
+  if (payload.frontResult === 'over' || payload.backResult === 'over') return SATISFACTION.LOW;
+  return SATISFACTION.GOOD;
 }
 
 export function moodFor(satisfaction) {

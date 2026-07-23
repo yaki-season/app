@@ -12,5 +12,10 @@
     "qualityMultGood": 1.5,
     "qualityMultLow": 1.0,
     "tipBase": 20
-  }
+  },
+  "timingSec": {
+    "assembly": 2.0,
+    "eat": 1.5
+  },
+  "autoPolicySuccessRate": 0.8
 }
