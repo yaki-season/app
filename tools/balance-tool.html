@@ -18,15 +18,16 @@
   .sub { color:var(--dim); font-size:12px; margin:0 0 18px; }
   .status-badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px;
     border:1px solid var(--warn); color:var(--warn); vertical-align:middle; margin-left:8px; }
-  .wrap { display:grid; grid-template-columns: minmax(360px, 1fr) minmax(320px, 1fr); gap:20px; align-items:start; }
-  @media (max-width: 860px) { .wrap { grid-template-columns:1fr; } }
+  .wrap { display:grid; grid-template-columns: minmax(380px, 1fr) minmax(320px, 1fr); gap:20px; align-items:start; }
+  @media (max-width: 880px) { .wrap { grid-template-columns:1fr; } }
 
   .panel { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px; }
   .panel h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--dim); margin:0 0 12px; }
 
   .group { margin-bottom:16px; }
   .group-name { font-size:12px; color:var(--ember); margin:0 0 8px; font-weight:600; }
-  .row { display:grid; grid-template-columns: 120px 1fr 78px; gap:10px; align-items:center; margin-bottom:8px; }
+  .file-tag { color:var(--dimmer); font-size:10px; font:10px var(--mono); margin-left:6px; }
+  .row { display:grid; grid-template-columns: 150px 1fr 84px; gap:10px; align-items:center; margin-bottom:8px; }
   .row.changed .rlabel::after { content:" ●"; color:var(--ember); }
   .rlabel { font-size:12px; color:var(--text); }
   input[type=range] { width:100%; accent-color:var(--ember); }
@@ -38,6 +39,7 @@
     border-radius:8px; padding:8px 14px; cursor:pointer; }
   button:hover { border-color:var(--ember); }
   button.primary { background:var(--ember); color:#1a120a; border-color:var(--ember); font-weight:600; }
+  button:disabled { opacity:.5; cursor:default; }
   .seed { display:flex; align-items:center; gap:6px; margin-left:auto; color:var(--dim); font-size:12px; }
   .seed input { width:64px; font:12px var(--mono); background:var(--surface-2); color:var(--text);
     border:1px solid var(--line); border-radius:6px; padding:4px 6px; }
@@ -59,17 +61,17 @@
 </style>
 </head>
 <body>
-  <h1>밸런스 튜닝 도구 <span class="status-badge" id="statusBadge">candidate</span></h1>
-  <p class="sub">수치를 조절하고 한 영업일을 시뮬레이션해 결과를 본다. 저장 형식은 JSON, 값은 <code>candidate</code>다 · SYS-005</p>
+  <h1>밸런스 튜닝 도구 <span class="status-badge" id="statusBadge">content</span></h1>
+  <p class="sub">실제 게임 데이터 <code>content/</code>를 직접 조절한다. 도구에서 바꾼 값이 곧 게임 값이다 · SYS-005</p>
 
   <div class="wrap">
     <div class="panel">
-      <h2>수치</h2>
-      <div id="controls"></div>
+      <h2>수치 (content/)</h2>
+      <div id="controls"><p class="empty">데이터 로드 중…</p></div>
       <div class="toolbar">
-        <button class="primary" id="run">▶ 시뮬레이션 실행</button>
-        <button id="reset">되돌리기</button>
-        <button id="export">JSON 내보내기</button>
+        <button class="primary" id="run" disabled>▶ 시뮬레이션 실행</button>
+        <button id="reset" disabled>되돌리기</button>
+        <button id="export" disabled>변경된 content 내보내기</button>
         <label class="seed">시드 <input type="number" id="seed" value="1" min="0"></label>
       </div>
       <div id="error"></div>
@@ -83,80 +85,151 @@
   </div>
 
   <script type="module">
-    import { runBusinessDay } from './simulator.js';
+    import { buildConfigFromContent, simulateBusinessDay } from '../src/state/businessDay.js';
+    import { checkContentRules } from '../src/content/rules.js';
 
     const $ = (id) => document.getElementById(id);
-    let data = null;      // 현재 편집 중
-    let original = null;  // 원본 (되돌리기용)
-    let prev = null;      // 직전 실행 결과 (비교용)
+    const clone = (x) => JSON.parse(JSON.stringify(x));
 
-    function clone(x) { return JSON.parse(JSON.stringify(x)); }
+    // content 파일 (게임이 로드하는 것과 동일 경로)
+    const FILES = {
+      grill: 'processes/grill.json',
+      types: 'customers/types.json',
+      day: 'campaign/day-d1.json',
+    };
+    const SCHEMA_FILES = {
+      process: 'schema/process.schema.json',
+      customerType: 'schema/customer-type.schema.json',
+      day: 'schema/day.schema.json',
+    };
+    const TYPE_LABEL = { solo: '혼술족', office: '퇴근직장인', blogger: '미식블로거', couple: '커플' };
 
-    async function load() {
-      try {
-        const res = await fetch('./balance-data.json');
-        if (!res.ok) throw new Error('balance-data.json 로드 실패 (' + res.status + ')');
-        data = await res.json();
-        original = clone(data);
-        $('statusBadge').textContent = data.status || 'candidate';
-        renderControls();
-      } catch (e) {
-        $('error').textContent = e.message + '\n로컬 서버로 열어야 합니다: npm run dev → /tools/balance-tool.html';
+    let content = {};   // { grill, types, day } 편집 중
+    let original = {};  // 되돌리기 원본
+    let schemas = {};
+    let prev = null;    // 직전 실행 결과
+    let fields = [];    // 렌더된 슬라이더 필드
+
+    async function readJson(rel) {
+      const r = await fetch(`../content/${rel}`);
+      if (!r.ok) throw new Error(`${rel} 로드 실패 (${r.status})`);
+      return r.json();
+    }
+
+    // 스키마 properties를 path로 따라가 제약을 얻는다 (데이터가 스키마 구조를 그대로 따름)
+    function constraints(schema, path) {
+      let node = schema;
+      for (const key of path) node = node.properties[key];
+      const integer = node.type === 'integer';
+      const min = node.minimum ?? 0;
+      const max = node.maximum ?? (min + 100);
+      let step = integer ? 1 : max <= 5 ? 0.05 : max <= 15 ? 0.1 : Math.max(1, Math.round((max - min) / 100));
+      return { min, max, step, unit: node.unit ?? '', integer };
+    }
+
+    const getPath = (obj, path) => path.reduce((o, k) => o[k], obj);
+    const setPath = (obj, path, v) => { const p = path.slice(0, -1).reduce((o, k) => o[k], obj); p[path[path.length - 1]] = v; };
+
+    // 편집 대상 필드 정의 (값=content, 제약=schema)
+    function buildFields() {
+      const F = [];
+      const add = (group, label, fileKey, obj, schema, path, origObj) =>
+        F.push({ group, label, fileKey, obj, schema, path, origObj });
+
+      // 조리 (grill)
+      for (const k of ['perfect', 'over', 'burnt']) {
+        add('조리', { perfect: '적정 시작', over: '과다 시작', burnt: '탄 상태 시작' }[k],
+          'grill', content.grill, schemas.process, ['faceThresholdsSec', k], original.grill);
       }
+      // 영업일 (day)
+      const dayRows = [
+        [['customerCount'], '손님 수'],
+        [['spawnIntervalSec'], '손님 간격'],
+        [['timingSec', 'assembly'], '조립 시간'],
+        [['timingSec', 'eat'], '식사 시간'],
+        [['autoPolicySuccessRate'], '적정 성공률'],
+        [['economy', 'basePrice'], '기본 판매가'],
+        [['economy', 'qualityMultGood'], '좋음 배율'],
+        [['economy', 'qualityMultLow'], '낮음 배율'],
+        [['economy', 'tipBase'], '기본 팁'],
+      ];
+      for (const [path, label] of dayRows) add('영업일', label, 'day', content.day, schemas.day, path, original.day);
+
+      // 손님 유형 (day.customerPool의 유형만)
+      for (const id of content.day.customerPool) {
+        const rec = content.types.find((t) => t.id === id);
+        const orig = original.types.find((t) => t.id === id);
+        if (!rec) continue;
+        const name = TYPE_LABEL[id] ?? id;
+        add('손님', `${name} 인내심`, 'types', rec, schemas.customerType, ['patienceSec'], orig);
+        add('손님', `${name} 팁 배율`, 'types', rec, schemas.customerType, ['tipMultiplier'], orig);
+      }
+      return F;
     }
 
     function renderControls() {
+      fields = buildFields();
       const box = $('controls');
       box.innerHTML = '';
-      for (const [gname, fields] of Object.entries(data.groups)) {
-        const g = document.createElement('div');
-        g.className = 'group';
-        g.innerHTML = `<p class="group-name">${gname}</p>`;
-        for (const [key, f] of Object.entries(fields)) {
-          const row = document.createElement('div');
-          row.className = 'row';
-          row.dataset.g = gname; row.dataset.k = key;
-          row.innerHTML = `
-            <span class="rlabel">${f.label}</span>
-            <input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${f.value}">
-            <span class="rval"><span class="num">${f.value}</span> <span class="unit">${f.unit}</span></span>`;
-          const range = row.querySelector('input');
-          const num = row.querySelector('.num');
-          range.addEventListener('input', () => {
-            const val = parseFloat(range.value);
-            f.value = val;
-            num.textContent = val;
-            markChanged(row, gname, key);
-          });
-          g.appendChild(row);
+      let lastGroup = null;
+      let gbox;
+      for (const f of fields) {
+        if (f.group !== lastGroup) {
+          const g = document.createElement('div');
+          g.className = 'group';
+          const tag = { 조리: 'grill.json', 영업일: 'day-d1.json', 손님: 'types.json' }[f.group] ?? '';
+          g.innerHTML = `<p class="group-name">${f.group}<span class="file-tag">${tag}</span></p>`;
+          box.appendChild(g);
+          gbox = g;
+          lastGroup = f.group;
         }
-        box.appendChild(g);
+        const c = constraints(f.schema, f.path);
+        const value = getPath(f.obj, f.path);
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `
+          <span class="rlabel">${f.label}</span>
+          <input type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${value}">
+          <span class="rval"><span class="num">${value}</span> <span class="unit">${c.unit}</span></span>`;
+        const range = row.querySelector('input');
+        const num = row.querySelector('.num');
+        range.addEventListener('input', () => {
+          const v = c.integer ? parseInt(range.value, 10) : parseFloat(range.value);
+          setPath(f.obj, f.path, v);
+          num.textContent = v;
+          row.classList.toggle('changed', v !== getPath(f.origObj, f.path));
+        });
+        gbox.appendChild(row);
       }
+      $('run').disabled = $('reset').disabled = $('export').disabled = false;
     }
 
-    function markChanged(row, g, k) {
-      const changed = data.groups[g][k].value !== original.groups[g][k].value;
-      row.classList.toggle('changed', changed);
+    function bundle() {
+      return { processes: [content.grill], days: [content.day], customers: content.types };
     }
 
-    function fmt(n) { return n.toLocaleString('ko-KR'); }
+    function changedFiles() {
+      const out = [];
+      if (JSON.stringify(content.grill) !== JSON.stringify(original.grill)) out.push(['grill', content.grill]);
+      if (JSON.stringify(content.day) !== JSON.stringify(original.day)) out.push(['day', content.day]);
+      if (JSON.stringify(content.types) !== JSON.stringify(original.types)) out.push(['types', content.types]);
+      return out;
+    }
 
+    const fmt = (n) => n.toLocaleString('ko-KR');
     function delta(cur, before, invert = false) {
       if (before === undefined) return '';
       const d = cur - before;
       if (d === 0) return `<span class="delta flat">±0</span>`;
       const good = invert ? d < 0 : d > 0;
-      const cls = good ? 'up' : 'down';
       const sign = d > 0 ? '+' : '';
-      return `<span class="delta ${cls}">${sign}${fmt(Number(d.toFixed(1)))}</span>`;
+      return `<span class="delta ${good ? 'up' : 'down'}">${sign}${fmt(Number(d.toFixed(1)))}</span>`;
     }
 
     function renderResult(r) {
       const goodPct = r.served ? Math.round((r.good / r.served) * 100) : 0;
-      const lowPct = 100 - goodPct;
       const m = (k, key, unit = '', invert = false) =>
         `<div class="metric"><div class="k">${k}</div><div class="v">${fmt(r[key])}${unit}${delta(r[key], prev?.[key], invert)}</div></div>`;
-
       $('result').innerHTML = `
         <div class="metrics">
           ${m('총 수익 (매출+팁)', 'total', ' G')}
@@ -168,47 +241,53 @@
         </div>
         <div style="margin-top:12px">
           <div class="k" style="font-size:11px;color:var(--dim)">품질 분포 (서빙 ${r.served}명 중)</div>
-          <div class="quality-bar">
-            <div class="good" style="width:${goodPct}%"></div>
-            <div class="low" style="width:${lowPct}%"></div>
-          </div>
-          <div class="legend">
-            <span><b>좋음</b> ${r.good}명 (${goodPct}%)</span>
-            <span><b>낮음</b> ${r.low}명 (${lowPct}%)</span>
-          </div>
+          <div class="quality-bar"><div class="good" style="width:${goodPct}%"></div><div class="low" style="width:${100 - goodPct}%"></div></div>
+          <div class="legend"><span><b>좋음</b> ${r.good}명 (${goodPct}%)</span><span><b>낮음</b> ${r.low}명 (${100 - goodPct}%)</span></div>
         </div>`;
-      $('hint').textContent =
-        `주문당 조리 ${r.cookTimePerOrderSec}초 · 손님 ${r.customers}명 · 이탈률 ${Math.round(r.leaveRate * 100)}%. ` +
-        `초록/빨강 화살표는 직전 실행 대비 변화입니다.`;
+      $('hint').textContent = `주문당 조리 ${r.cookTimePerOrderSec}초 · 손님 ${r.customers}명 · 이탈률 ${Math.round(r.leaveRate * 100)}%. 화살표는 직전 실행 대비 변화입니다.`;
     }
 
     $('run').addEventListener('click', () => {
       $('error').textContent = '';
+      const b = bundle();
+      const v = checkContentRules(b); // 게임과 같은 런타임 검증
+      if (!v.valid) { $('error').textContent = '검증 실패:\n' + v.errors.join('\n'); return; }
       try {
-        const seed = parseInt($('seed').value, 10) || 0;
-        const r = runBusinessDay(data, seed);
+        const r = simulateBusinessDay(buildConfigFromContent(b, { dayId: content.day.id }), parseInt($('seed').value, 10) || 0);
         renderResult(r);
         prev = r;
-      } catch (e) {
-        $('error').textContent = e.message;
+      } catch (e) { $('error').textContent = e.message; }
+    });
+
+    $('reset').addEventListener('click', () => { content = clone(original); renderControls(); });
+
+    $('export').addEventListener('click', async () => {
+      const changed = changedFiles();
+      if (changed.length === 0) { $('error').textContent = '변경된 파일이 없습니다.'; return; }
+      $('error').textContent = '';
+      for (const [key, data] of changed) {
+        const blob = new Blob([JSON.stringify(data, null, 2) + '\n'], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = FILES[key].split('/').pop();
+        a.click();
+        URL.revokeObjectURL(a.href);
+        await new Promise((r) => setTimeout(r, 300)); // 다중 다운로드 차단 방지
       }
+      $('hint').textContent = `${changed.length}개 파일을 내려받았습니다. content/의 해당 파일을 교체하면 게임에 반영됩니다.`;
     });
 
-    $('reset').addEventListener('click', () => {
-      data = clone(original);
-      renderControls();
-    });
-
-    $('export').addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'balance-data.json';
-      a.click();
-      URL.revokeObjectURL(a.href);
-    });
-
-    load();
+    (async function load() {
+      try {
+        content = { grill: await readJson(FILES.grill), types: await readJson(FILES.types), day: await readJson(FILES.day) };
+        schemas = { process: await readJson(SCHEMA_FILES.process), customerType: await readJson(SCHEMA_FILES.customerType), day: await readJson(SCHEMA_FILES.day) };
+        original = clone(content);
+        renderControls();
+      } catch (e) {
+        $('controls').innerHTML = '';
+        $('error').textContent = e.message + '\n로컬 서버로 열어야 합니다: npm run dev → /tools/balance-tool.html';
+      }
+    })();
   </script>
 </body>
 </html>

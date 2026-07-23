@@ -24,10 +24,10 @@
       "required": ["basePrice", "qualityMultGood", "qualityMultLow", "tipBase"],
       "additionalProperties": false,
       "properties": {
-        "basePrice": { "type": "number", "minimum": 0, "unit": "G" },
+        "basePrice": { "type": "number", "minimum": 0, "maximum": 1000, "unit": "G" },
         "qualityMultGood": { "type": "number", "minimum": 0, "maximum": 5, "unit": "배" },
         "qualityMultLow": { "type": "number", "minimum": 0, "maximum": 5, "unit": "배" },
-        "tipBase": { "type": "number", "minimum": 0, "unit": "G" }
+        "tipBase": { "type": "number", "minimum": 0, "maximum": 200, "unit": "G" }
       }
     },
     "timingSec": {
@@ -36,8 +36,8 @@
       "required": ["assembly", "eat"],
       "additionalProperties": false,
       "properties": {
-        "assembly": { "type": "number", "minimum": 0, "unit": "초" },
-        "eat": { "type": "number", "minimum": 0, "unit": "초" }
+        "assembly": { "type": "number", "minimum": 0, "maximum": 10, "unit": "초" },
+        "eat": { "type": "number", "minimum": 0, "maximum": 10, "unit": "초" }
       }
     },
     "autoPolicySuccessRate": {
