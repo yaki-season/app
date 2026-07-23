@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "status": "candidate",
+  "note": "기획자 튜닝용 후보 수치. approved 확정 전에는 게임 기본값으로 로드하지 않는다 (DAT-001 §8).",
+  "groups": {
+    "조리": {
+      "perfectStartSec": { "label": "적정 시작(초)", "value": 2.5, "min": 0.5, "max": 6, "step": 0.1, "unit": "초" },
+      "overStartSec": { "label": "과다 시작(초)", "value": 5.5, "min": 1, "max": 9, "step": 0.1, "unit": "초" },
+      "burntStartSec": { "label": "탄 상태 시작(초)", "value": 7.0, "min": 2, "max": 12, "step": 0.1, "unit": "초" },
+      "assemblySec": { "label": "조립 시간(초)", "value": 2.0, "min": 0, "max": 8, "step": 0.1, "unit": "초" }
+    },
+    "손님": {
+      "patienceSec": { "label": "인내심(초)", "value": 30, "min": 5, "max": 90, "step": 1, "unit": "초" },
+      "spawnIntervalSec": { "label": "손님 간격(초)", "value": 12, "min": 2, "max": 40, "step": 1, "unit": "초" },
+      "eatSec": { "label": "식사 시간(초)", "value": 1.5, "min": 0.5, "max": 6, "step": 0.1, "unit": "초" }
+    },
+    "경제": {
+      "basePrice": { "label": "기본 판매가", "value": 100, "min": 10, "max": 500, "step": 10, "unit": "G" },
+      "qualityMultGood": { "label": "좋음 품질 배율", "value": 1.5, "min": 1, "max": 2, "step": 0.05, "unit": "×" },
+      "qualityMultLow": { "label": "낮음 품질 배율", "value": 1.0, "min": 0.3, "max": 1.5, "step": 0.05, "unit": "×" },
+      "tipBase": { "label": "기본 팁", "value": 20, "min": 0, "max": 100, "step": 1, "unit": "G" }
+    },
+    "영업일": {
+      "customerCount": { "label": "손님 수", "value": 20, "min": 1, "max": 100, "step": 1, "unit": "명" }
+    },
+    "자동정책": {
+      "successRate": { "label": "적정 성공률", "value": 0.8, "min": 0, "max": 1, "step": 0.05, "unit": "비율" }
+    }
+  }
+}
