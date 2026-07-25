@@ -1,6 +1,9 @@
 // SYS-002 2.5D 장면 렌더러. Three.js 렌더러 하나와 rAF 루프 하나만 쓴다 (§3).
 // 더미 도형(무광 색 평면)이 각 에셋 슬롯을 대신하며, 실제 앵커·레이어 깊이·카메라 계약을 지킨다.
-// 2.5D는 스프라이트 합성이므로 조명 없이 MeshBasicMaterial로 색을 그대로 낸다.
+//
+// 2.5D 핵심: 레이어를 "진짜 깊이"에 두고 카메라를 셰프 시점으로 살짝 기울인다.
+// 각 레이어 평면은 홈 카메라를 향한 빌보드로, 홈 포즈에서 지정 앵커에 정확히 놓인다.
+// 카메라가 프리셋 사이를 움직이면 깊이가 다른 레이어가 다른 속도로 밀린다(시차)+ 카운터가 손님을 가린다.
 
 import * as THREE from 'three';
 import {
@@ -13,53 +16,66 @@ import {
 
 const ASPECT = 16 / 9; // 기준 뷰포트(1280×720·1920×1080 모두 16:9)
 const FOV = 42;
-const CAM_Z = 11.7; // z=0 평면이 세로로 프레임을 채우는 거리
-const HALF_TAN = Math.tan((FOV / 2) * (Math.PI / 180));
+const TAN_HALF = Math.tan((FOV / 2) * (Math.PI / 180));
 
-// 레이어 z에서 프레임을 채우는 월드 높이/너비 (원근 스케일 보정)
-function fillHeightAt(z) {
-  return 2 * (CAM_Z - z) * HALF_TAN;
-}
-// 정규화 top-left (nx,ny) → 레이어 z에서의 월드 (x,y). 어느 깊이든 같은 화면 위치에 맞춘다.
-function nToWorldAtZ(nx, ny, z) {
-  const fh = fillHeightAt(z);
-  const fw = fh * ASPECT;
-  return { x: (nx - 0.5) * fw, y: (0.5 - ny) * fh, fw, fh };
+// 셰프 시점 홈 포즈: 바 안쪽에서 살짝 위·뒤에서 카운터 너머를 내려다본다 (§4~6).
+// 프리셋은 이 포즈를 기준으로 좌우 이동 + 작업대 push-in만 준다.
+const HOME_EYE = new THREE.Vector3(0, 3.7, 12.2);
+const HOME_LOOK = new THREE.Vector3(0, -1.9, -5.5);
+
+// 홈 카메라 하나로 배치를 계산하고, 같은 카메라를 라이브로 움직인다.
+function makeHomeCamera() {
+  const c = new THREE.PerspectiveCamera(FOV, ASPECT, 0.1, 200);
+  c.position.copy(HOME_EYE);
+  c.lookAt(HOME_LOOK);
+  c.updateMatrixWorld(true);
+  c.updateProjectionMatrix();
+  return c;
 }
 
-function fullFramePlane(z, material) {
-  const fh = fillHeightAt(z);
-  const geo = new THREE.PlaneGeometry(fh * ASPECT, fh);
+// 정규화 화면 앵커(nx,ny top-left) → 카메라에서 쏜 광선이 평면 z=const를 만나는 월드 좌표.
+const _v = new THREE.Vector3();
+function worldAtScreen(cam, nx, ny, z) {
+  _v.set(nx * 2 - 1, -(ny * 2 - 1), 0.5).unproject(cam);
+  _v.sub(cam.position);
+  const t = (z - cam.position.z) / _v.z;
+  return cam.position.clone().add(_v.multiplyScalar(t));
+}
+
+// 홈 카메라를 향한 빌보드 평면. rect(정규화 top-left)만큼의 화면을 덮도록 z 거리에 맞춰 크기 계산.
+function billboard(cam, rect, z, material) {
+  const cx = rect.x + rect.width / 2;
+  const cy = rect.y + rect.height / 2;
+  const center = worldAtScreen(cam, cx, cy, z);
+  const dist = center.distanceTo(cam.position);
+  const fullH = 2 * dist * TAN_HALF; // 이 거리에서 화면 전체 높이
+  const geo = new THREE.PlaneGeometry(fullH * ASPECT * rect.width, fullH * rect.height);
   const mesh = new THREE.Mesh(geo, material);
-  mesh.position.set(0, 0, z);
+  mesh.position.copy(center);
+  mesh.quaternion.copy(cam.quaternion); // 홈 카메라 정면을 향함
   return mesh;
 }
 
-function rectPlane(rect, z, material) {
-  const c = nToWorldAtZ(rect.x + rect.width / 2, rect.y + rect.height / 2, z);
-  const geo = new THREE.PlaneGeometry(rect.width * c.fw, rect.height * c.fh);
-  const mesh = new THREE.Mesh(geo, material);
-  mesh.position.set(c.x, c.y, z);
-  return mesh;
-}
-
-function slotMeshFor(slot) {
+function slotMeshFor(cam, slot) {
   const mat = new THREE.MeshBasicMaterial({ color: slot.color });
   switch (slot.key) {
+    case 'bg':
+      return billboard(cam, { x: 0, y: 0, width: 1, height: 1 }, LAYER_Z.background, mat);
+    case 'seating':
+      return billboard(cam, ANCHORS.customerSafeRect, LAYER_Z.background + 0.1, mat);
     case 'counter':
-      return rectPlane(ANCHORS.barCounterBounds, LAYER_Z.counter, mat);
+      return billboard(cam, ANCHORS.barCounterBounds, LAYER_Z.counter, mat);
     case 'st-assembly':
     case 'st-grill':
     case 'st-service':
-      return rectPlane(ANCHORS.playerWorkBounds, LAYER_Z.station, mat);
+      return billboard(cam, ANCHORS.playerWorkBounds, LAYER_Z.station, mat);
     case 'customer': {
       const seat = ANCHORS.seats['seat-03'];
-      return rectPlane({ x: seat.x - 0.08, y: 0.22, width: 0.16, height: 0.38 }, LAYER_Z.customer, mat);
+      // 손님은 앉은 상반신: 좌석 x 중심, 카운터 위로 올라온 부분만 (하체는 카운터가 가림)
+      return billboard(cam, { x: seat.x - 0.075, y: 0.14, width: 0.15, height: 0.4 }, LAYER_Z.customer, mat);
     }
-    case 'seating':
-      return rectPlane(ANCHORS.customerSafeRect, LAYER_Z.background + 0.1, mat);
     default:
-      return fullFramePlane(LAYER_Z[slot.layer], mat); // 배경 전체
+      return billboard(cam, { x: 0, y: 0, width: 1, height: 1 }, LAYER_Z[slot.layer], mat);
   }
 }
 
@@ -68,29 +84,38 @@ export function createSceneRenderer(canvas) {
   renderer.setClearColor(0x0f0b08, 1);
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(FOV, ASPECT, 0.1, 100);
-  const cam = { x: 0, targetX: 0 };
-  applyCamera(camera, cam);
+  const camera = makeHomeCamera(); // 홈 포즈에서 시작 → 배치 계산에 사용
 
   const slotMeshes = {};
   const stationByProcess = {};
 
   for (const slot of DUMMY_SLOTS) {
     if (slot.key === 'foreground') continue; // 아래에서 양끝 프레임으로
-    const mesh = slotMeshFor(slot);
+    const mesh = slotMeshFor(camera, slot);
     mesh.userData.dummy = slot.assetId;
-    mesh.renderOrder = -LAYER_Z[slot.layer];
+    mesh.renderOrder = -LAYER_Z[slot.layer]; // 먼 것 먼저
     scene.add(mesh);
     slotMeshes[slot.key] = mesh;
     if (slot.process) stationByProcess[slot.process] = mesh;
   }
 
-  // 전경: 중앙을 비운 양끝 세로 프레임 (SYS-002 §6)
-  const fgMat = new THREE.MeshBasicMaterial({ color: 0x0d0906 });
-  const fgFh = fillHeightAt(LAYER_Z.foreground);
+  // 바닥: 깊이를 파는 더미 지면 (실제 배경 아트가 오면 제거). 카운터 앞쪽으로 멀어지는 그리드.
+  const floorMat = new THREE.MeshBasicMaterial({ color: 0x171009 });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 80), floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(0, -2.6, -8);
+  floor.renderOrder = -100;
+  scene.add(floor);
+  const grid = new THREE.GridHelper(120, 60, 0x47341f, 0x2a1e12);
+  grid.position.set(0, -2.58, -8);
+  grid.renderOrder = -99;
+  scene.add(grid);
+
+  // 전경: 양끝의 얇고 은은한 세로 비네트 프레임 (§6). 검은 기둥이 아니라 가장자리 어둠.
+  const fgMat = new THREE.MeshBasicMaterial({ color: 0x150f0a });
   for (const side of [-1, 1]) {
-    const bar = new THREE.Mesh(new THREE.PlaneGeometry(fgFh * ASPECT * 0.12, fgFh), fgMat);
-    bar.position.set(side * fgFh * ASPECT * 0.44, 0, LAYER_Z.foreground);
+    const bar = billboard(camera, { x: side < 0 ? 0 : 0.96, y: 0, width: 0.04, height: 1 }, LAYER_Z.foreground, fgMat);
+    bar.renderOrder = 200;
     scene.add(bar);
   }
 
@@ -101,7 +126,6 @@ export function createSceneRenderer(canvas) {
     neutral: 0xc2b3a3,
     retry: 0xef6a58,
   };
-
   function setCustomerState(stateName) {
     const m = slotMeshes.customer;
     if (m) m.material.color.setHex(CUSTOMER_MOOD_COLOR[stateName] ?? CUSTOMER_MOOD_COLOR.waiting);
@@ -111,28 +135,35 @@ export function createSceneRenderer(canvas) {
     for (const [proc, mesh] of Object.entries(stationByProcess)) mesh.visible = proc === process;
   }
 
+  // ── 카메라 프리셋 (홈 포즈 기준 좌우 이동 + push-in) ─────────
+  const cam = { x: HOME_EYE.x, y: HOME_EYE.y, z: HOME_EYE.z, targetX: HOME_LOOK.x };
+  function applyCamera() {
+    camera.position.set(cam.x, cam.y, cam.z);
+    camera.lookAt(cam.targetX, HOME_LOOK.y, HOME_LOOK.z);
+  }
+
   let camTween = null;
   function goToPreset(process, nowMs) {
-    const to = CAMERA_PRESETS[process] || CAMERA_PRESETS.assembly;
-    camTween = { from: { ...cam }, to: { x: to.x, targetX: to.targetX }, startMs: nowMs };
+    const p = CAMERA_PRESETS[process] || CAMERA_PRESETS.assembly;
+    const to = { x: HOME_EYE.x + p.x, y: HOME_EYE.y, z: HOME_EYE.z - (6.0 - p.z), targetX: HOME_LOOK.x + p.targetX };
+    camTween = { from: { ...cam }, to, startMs: nowMs };
   }
   function tickCamera(nowMs) {
     if (!camTween) return;
     const t = Math.min(1, (nowMs - camTween.startMs) / CAMERA_TRANSITION_MS);
     const e = 1 - Math.pow(1 - t, 3);
     cam.x = lerp(camTween.from.x, camTween.to.x, e);
+    cam.z = lerp(camTween.from.z, camTween.to.z, e);
     cam.targetX = lerp(camTween.from.targetX, camTween.to.targetX, e);
-    applyCamera(camera, cam);
+    applyCamera();
     if (t >= 1) camTween = null;
   }
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
     renderer.setPixelRatio(dpr);
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+    camera.aspect = ASPECT; // 16:9 고정 (레터박스는 CSS가 처리)
     camera.updateProjectionMatrix();
   }
 
@@ -140,6 +171,15 @@ export function createSceneRenderer(canvas) {
     tickCamera(nowMs);
     resize();
     renderer.render(scene, camera);
+  }
+
+  // main.js 핫스팟 배치용: 홈 포즈 기준 앵커→월드 + 채움 크기. (이름은 하위호환 유지)
+  const homeRef = makeHomeCamera();
+  function nToWorldAtZ(nx, ny, z) {
+    const p = worldAtScreen(homeRef, nx, ny, z);
+    const dist = p.distanceTo(homeRef.position);
+    const fullH = 2 * dist * TAN_HALF;
+    return { x: p.x, y: p.y, z: p.z, fw: fullH * ASPECT, fh: fullH };
   }
 
   return {
@@ -152,14 +192,9 @@ export function createSceneRenderer(canvas) {
     setCustomerState,
     setActiveStation,
     nToWorldAtZ,
+    homeQuaternion: homeRef.quaternion.clone(),
     dispose: () => renderer.dispose(),
   };
-}
-
-// 셰프측 카메라: 살짝 아래에서 정면을 보되 앵커가 어긋나지 않게 target도 같은 x로 이동 (§4~6)
-function applyCamera(camera, cam) {
-  camera.position.set(cam.x, 0, CAM_Z);
-  camera.lookAt(cam.targetX, 0, 0);
 }
 
 function lerp(a, b, t) {

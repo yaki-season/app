@@ -43,7 +43,9 @@ function addHotspot(key, nx, ny, w, h, color) {
     new THREE.PlaneGeometry(w * c.fw, h * c.fh),
     new THREE.MeshBasicMaterial({ color }),
   );
-  mesh.position.set(c.x, c.y, LAYER_Z.interactive);
+  mesh.position.set(c.x, c.y, c.z);
+  mesh.quaternion.copy(R.homeQuaternion); // 셰프 시점을 향한 빌보드 (키스톤 방지)
+  mesh.renderOrder = 100; // 스테이션·손님보다 위
   mesh.userData.hotspot = key;
   R.scene.add(mesh);
   hotspots[key] = mesh;

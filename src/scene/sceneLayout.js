@@ -53,9 +53,9 @@ export const CUSTOMER_ASSET_ID = {
 // 셰프측 고정 원근 카메라의 공정별 프리셋. 배경·손님·카운터는 유지하고 하단만 바꾼다 (SYS-002 §5,6).
 // 짧은 좌우 이동 + 작업대 push-in. 전환은 0.25~0.45초 ease-out.
 export const CAMERA_PRESETS = {
-  assembly: { x: -0.6, z: 6.0, targetX: -0.3 },
-  grill: { x: 0.0, z: 5.4, targetX: 0.0 }, // 그릴은 살짝 push-in
-  counter: { x: 0.6, z: 6.0, targetX: 0.3 },
+  assembly: { x: -1.1, z: 6.0, targetX: -0.5 },
+  grill: { x: 0.0, z: 4.6, targetX: 0.0 }, // 그릴은 확실히 push-in
+  counter: { x: 1.1, z: 6.0, targetX: 0.5 },
 };
 export const CAMERA_TRANSITION_MS = 350;
 

@@ -1,0 +1,25 @@
+<!-- 2.5D vs 2D 차이 시연용 (게임 아님). 같은 더미 레이어를 정면(납작) / 기울임(깊이)로 비교. -->
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>2.5D 차이 시연</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0f0b08; overflow: hidden; }
+    #c { width: 100vw; height: 100vh; display: block; }
+    #label {
+      position: fixed; left: 16px; top: 12px; color: #f0e6d6;
+      font: 600 15px/1.4 system-ui, sans-serif; letter-spacing: .2px;
+      background: rgba(0,0,0,.35); padding: 6px 12px; border-radius: 6px;
+    }
+  </style>
+  <script type="importmap">
+    { "imports": { "three": "/node_modules/three/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="label"></div>
+  <script type="module" src="./depth-demo.js"></script>
+</body>
+</html>
