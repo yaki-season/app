@@ -38,6 +38,9 @@ export async function assembleSkewer(page) {
   for (const [i, ingredient] of RECIPE.entries()) {
     await clickHotspot(page, `ingredient-${ingredient}`);
     await expect.poll(() => getState(page).then((s) => s.assemblyIndex)).toBe(i + 1);
+    await expect.poll(
+      () => page.evaluate((key) => window.__sceneDebug.motionActive(key), `ingredient-${ingredient}`),
+    ).toBe(false);
     await page.waitForTimeout(INPUT_LOCK_MS + 30);
   }
 }

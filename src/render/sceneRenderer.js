@@ -71,8 +71,8 @@ function slotMeshFor(cam, slot) {
       return billboard(cam, ANCHORS.playerWorkBounds, LAYER_Z.station, mat);
     case 'customer': {
       const seat = ANCHORS.seats['seat-03'];
-      // 손님은 앉은 상반신: 좌석 x 중심, 카운터 위로 올라온 부분만 (하체는 카운터가 가림)
-      return billboard(cam, { x: seat.x - 0.075, y: 0.14, width: 0.15, height: 0.4 }, LAYER_Z.customer, mat);
+      // 전신 평면을 카운터 뒤에 둔다. 상판 아래 하체는 counter 레이어가 실제 깊이로 가린다.
+      return billboard(cam, { x: seat.x - 0.075, y: 0.14, width: 0.15, height: 0.47 }, LAYER_Z.customer, mat);
     }
     default:
       return billboard(cam, { x: 0, y: 0, width: 1, height: 1 }, LAYER_Z[slot.layer], mat);
@@ -126,9 +126,11 @@ export function createSceneRenderer(canvas) {
     neutral: 0xc2b3a3,
     retry: 0xef6a58,
   };
+  let customerState = 'waiting';
   function setCustomerState(stateName) {
+    customerState = stateName in CUSTOMER_MOOD_COLOR ? stateName : 'waiting';
     const m = slotMeshes.customer;
-    if (m) m.material.color.setHex(CUSTOMER_MOOD_COLOR[stateName] ?? CUSTOMER_MOOD_COLOR.waiting);
+    if (m) m.material.color.setHex(CUSTOMER_MOOD_COLOR[customerState]);
   }
 
   function setActiveStation(process) {
@@ -143,6 +145,9 @@ export function createSceneRenderer(canvas) {
   }
 
   let camTween = null;
+  const frameDurations = [];
+  let lastFrameAt = null;
+  let frameCount = 0;
   function goToPreset(process, nowMs) {
     const p = CAMERA_PRESETS[process] || CAMERA_PRESETS.assembly;
     const to = { x: HOME_EYE.x + p.x, y: HOME_EYE.y, z: HOME_EYE.z - (6.0 - p.z), targetX: HOME_LOOK.x + p.targetX };
@@ -171,6 +176,34 @@ export function createSceneRenderer(canvas) {
     tickCamera(nowMs);
     resize();
     renderer.render(scene, camera);
+    if (lastFrameAt != null) {
+      const duration = nowMs - lastFrameAt;
+      if (duration > 0 && duration < 250) {
+        frameDurations.push(duration);
+        if (frameDurations.length > 120) frameDurations.shift();
+      }
+    }
+    lastFrameAt = nowMs;
+    frameCount += 1;
+  }
+
+  function performanceStats() {
+    const averageFrameMs = frameDurations.length
+      ? frameDurations.reduce((sum, value) => sum + value, 0) / frameDurations.length
+      : 0;
+    return {
+      calls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles,
+      points: renderer.info.render.points,
+      lines: renderer.info.render.lines,
+      dpr: renderer.getPixelRatio(),
+      averageFrameMs,
+      fps: averageFrameMs > 0 ? 1000 / averageFrameMs : 0,
+      sampledFrames: frameDurations.length,
+      frameCount,
+      canvasCount: document.querySelectorAll('canvas').length,
+      renderLoopCount: 1,
+    };
   }
 
   // main.js 핫스팟 배치용: 홈 포즈 기준 앵커→월드 + 채움 크기. (이름은 하위호환 유지)
@@ -190,7 +223,9 @@ export function createSceneRenderer(canvas) {
     resize,
     goToPreset,
     setCustomerState,
+    getCustomerState: () => customerState,
     setActiveStation,
+    performanceStats,
     nToWorldAtZ,
     homeQuaternion: homeRef.quaternion.clone(),
     dispose: () => renderer.dispose(),

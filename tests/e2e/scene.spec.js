@@ -51,6 +51,9 @@ test('클릭만으로 조립→굽기→서빙 루프가 돈다', async ({ page 
   for (let i = 0; i < recipe.length; i++) {
     await clickHotspot(page, recipe[i]);
     await expect.poll(() => st(page).then((s) => s.assemblyIndex)).toBe(i + 1);
+    await expect.poll(
+      () => page.evaluate((key) => window.__sceneDebug.motionActive(key), recipe[i]),
+    ).toBe(false);
     await page.waitForTimeout(220); // 대상별 입력 잠금
   }
 
@@ -86,11 +89,18 @@ test('탄 상태면 츠키오카가 retry 반응을 보인다', async ({ page })
   for (let i = 0; i < recipe.length; i++) {
     await clickHotspot(page, recipe[i]);
     await expect.poll(() => st(page).then((s) => s.assemblyIndex)).toBe(i + 1);
+    await expect.poll(
+      () => page.evaluate((key) => window.__sceneDebug.motionActive(key), recipe[i]),
+    ).toBe(false);
     await page.waitForTimeout(220);
   }
   await clickHotspot(page, 'assembled-skewer');
   await clickHotspot(page, 'waiting-skewer');
   // 방치 → 탄 상태 (결과 오버레이가 나타날 때까지)
-  await expect(page.getByTestId('result-overlay')).toBeVisible({ timeout: 15000 });
+  await expect.poll(
+    () => page.evaluate(() => window.__sceneDebug.tickNow().status),
+    { timeout: 15000 },
+  ).toBe('failed');
+  await expect(page.getByTestId('result-overlay')).toBeVisible();
   await expect(page.getByTestId('result-message')).toContainText('타버렸습니다');
 });

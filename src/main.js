@@ -30,7 +30,10 @@ const canvas = el('scene');
 const R = createSceneRenderer(canvas);
 
 let state = assetsLoaded(createInitialState()); // 더미라 에셋 로딩 없이 바로 시작
-let customerHold = null; // tasting → satisfied 지연용 타이머
+let customerTimer = null; // tasting → satisfied 지연용 타이머
+let serviceInFlight = false;
+let serviceTimer = null;
+let lastHandledKey = null;
 
 // ── 인터랙티브 오브젝트 (레이캐스트 대상) ─────────────────────
 // 더미 박스. 실제 아트는 PR-*·재료 스프라이트로 교체된다.
@@ -59,6 +62,88 @@ addHotspot('waiting-skewer', 0.34, 0.64, 0.12, 0.05, 0xc9a86a);
 addHotspot('grill-skewer', 0.50, 0.60, 0.06, 0.16, 0xd98a5f);
 addHotspot('plate', 0.64, 0.60, 0.10, 0.10, 0xe8e0d0);
 addHotspot('order-mat', 0.50, 0.50, 0.14, 0.08, 0x584636);
+
+const hotspotHome = Object.fromEntries(
+  Object.entries(hotspots).map(([key, mesh]) => [key, mesh.position.clone()]),
+);
+const motions = new Map();
+const motionTravel = new Map();
+
+function worldPoint(nx, ny, z = LAYER_Z.interactive) {
+  const point = R.nToWorldAtZ(nx, ny, z);
+  return new THREE.Vector3(point.x, point.y, point.z);
+}
+
+function moveHotspot(key, points, durationMs, now, onComplete) {
+  const mesh = hotspots[key];
+  if (!mesh) return;
+  const motion = {
+    mesh,
+    points: [mesh.position.clone(), ...points],
+    durationMs,
+    startAt: now,
+    onComplete,
+    fallbackTimer: null,
+  };
+  motion.fallbackTimer = window.setTimeout(() => {
+    if (motions.get(key) !== motion) return;
+    mesh.position.copy(motion.points.at(-1));
+    mesh.scale.setScalar(1);
+    motionTravel.set(
+      key,
+      Math.max(motionTravel.get(key) || 0, mesh.position.distanceTo(motion.points[0])),
+    );
+    motions.delete(key);
+    onComplete?.();
+  }, durationMs + 120);
+  motions.set(key, motion);
+  motionTravel.set(key, 0);
+}
+
+function tickMotions(now) {
+  for (const [key, motion] of motions) {
+    const t = Math.max(0, Math.min(1, (now - motion.startAt) / motion.durationMs));
+    const scaled = t * (motion.points.length - 1);
+    const index = Math.min(Math.floor(scaled), motion.points.length - 2);
+    const localT = scaled - index;
+    const eased = 1 - Math.pow(1 - localT, 3);
+    motion.mesh.position.lerpVectors(motion.points[index], motion.points[index + 1], eased);
+    motionTravel.set(
+      key,
+      Math.max(motionTravel.get(key) || 0, motion.mesh.position.distanceTo(motion.points[0])),
+    );
+    const lift = Math.sin(Math.PI * t);
+    motion.mesh.scale.setScalar(1 + lift * 0.12);
+    if (t >= 1) {
+      motion.mesh.scale.setScalar(1);
+      window.clearTimeout(motion.fallbackTimer);
+      motions.delete(key);
+      motion.onComplete?.();
+    }
+  }
+}
+
+function completeCustomerReaction() {
+  if (state.status !== STATUS.SERVED) return R.getCustomerState();
+  R.setCustomerState(state.servedQuality === 'good' ? 'satisfied' : 'neutral');
+  if (customerTimer != null) window.clearTimeout(customerTimer);
+  customerTimer = null;
+  return R.getCustomerState();
+}
+
+function completeService() {
+  if (!serviceInFlight) return state;
+  state = clickOrderMat(state);
+  serviceInFlight = false;
+  if (serviceTimer != null) window.clearTimeout(serviceTimer);
+  serviceTimer = null;
+  if (state.status === STATUS.SERVED) {
+    R.setCustomerState('tasting');
+    customerTimer = window.setTimeout(completeCustomerReaction, 900);
+  }
+  render();
+  return state;
+}
 
 // ── 상태 → 장면·HUD ─────────────────────────────────────────
 function visible(key, show) {
@@ -155,7 +240,15 @@ function hitTest(e) {
   ptr.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   ptr.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(ptr, R.camera);
-  const targets = Object.values(hotspots).filter((m) => m.visible);
+  const targets = Object.values(hotspots).filter(
+    (m) => {
+      if (!m.visible) return false;
+      if (state.plateSelected && m.userData.hotspot === 'plate') return false;
+      if (isAssemblyComplete(state) && m.userData.hotspot.startsWith('ingredient-')) return false;
+      if (motions.has(m.userData.hotspot)) return false;
+      return true;
+    },
+  );
   const hit = raycaster.intersectObjects(targets, false)[0];
   return hit ? hit.object.userData.hotspot : null;
 }
@@ -170,6 +263,7 @@ canvas.addEventListener('pointerdown', (e) => {
 });
 
 function handle(key, now) {
+  lastHandledKey = key;
   const prev = state;
   switch (key) {
     case 'ingredient-chicken':
@@ -177,7 +271,22 @@ function handle(key, now) {
       const ing = key === 'ingredient-chicken' ? 'chicken' : 'leek';
       const before = state.assemblyIndex;
       state = clickIngredient(state, ing, now);
-      if (state.assemblyIndex === before) showHint('순서가 달라요');
+      if (state.assemblyIndex === before) {
+        showHint('순서가 달라요');
+      } else {
+        const source = hotspotHome[key];
+        const target = hotspotHome['assembled-skewer'];
+        moveHotspot(
+          key,
+          [
+            source.clone().add(new THREE.Vector3(0, 0.45, 0.08)),
+            target.clone().add(new THREE.Vector3((state.assemblyIndex - 3) * 0.08, 0.08, 0)),
+          ],
+          320,
+          now,
+          () => hotspots[key].position.copy(source),
+        );
+      }
       break;
     }
     case 'assembled-skewer':
@@ -195,12 +304,21 @@ function handle(key, now) {
     }
     case 'plate':
       state = clickPlate(state);
+      if (state.plateSelected) {
+        moveHotspot(
+          'plate',
+          [worldPoint(0.58, 0.53, LAYER_Z.vfx), worldPoint(0.52, 0.50, LAYER_Z.vfx)],
+          280,
+          now,
+        );
+      }
       break;
     case 'order-mat':
-      state = clickOrderMat(state);
-      if (state.status === STATUS.SERVED) {
-        R.setCustomerState('tasting');
-        customerHold = now + 900; // 잠시 뒤 만족/아쉬움
+      if (state.plateSelected && !serviceInFlight) {
+        serviceInFlight = true;
+        const path = ANCHORS.handoffPath.slice(1).map(({ x, y }) => worldPoint(x, y, LAYER_Z.vfx));
+        moveHotspot('plate', path, 650, now);
+        serviceTimer = window.setTimeout(completeService, 650);
       }
       break;
   }
@@ -223,7 +341,16 @@ for (const btn of document.querySelectorAll('.tab')) {
 el('restartButton').addEventListener('click', () => {
   state = restart(state);
   R.setCustomerState('waiting');
-  customerHold = null;
+  if (customerTimer != null) window.clearTimeout(customerTimer);
+  customerTimer = null;
+  serviceInFlight = false;
+  if (serviceTimer != null) window.clearTimeout(serviceTimer);
+  serviceTimer = null;
+  motions.clear();
+  for (const [key, position] of Object.entries(hotspotHome)) {
+    hotspots[key].position.copy(position);
+    hotspots[key].scale.setScalar(1);
+  }
   render();
 });
 
@@ -243,12 +370,9 @@ function loop(now) {
     R.goToPreset(state.process, now);
     lastProcess = state.process;
   }
-  if (customerHold && now >= customerHold) {
-    R.setCustomerState(state.servedQuality === 'good' ? 'satisfied' : 'neutral');
-    customerHold = null;
-  }
   if (state.status !== prevStatus) render();
 
+  tickMotions(now);
   R.renderFrame(now);
   requestAnimationFrame(loop);
 }
@@ -267,6 +391,28 @@ const projectToScreen = (world) => {
 window.__sceneDebug = {
   getState: () => state,
   doneness: () => currentDoneness(state, performance.now()),
+  customerState: () => R.getCustomerState(),
+  lastHandledKey: () => lastHandledKey,
+  serviceInFlight: () => serviceInFlight,
+  motionActive: (key) => motions.has(key),
+  motionTravel: (key) => motionTravel.get(key) || 0,
+  performanceStats: () => R.performanceStats(),
+  tickNow: () => {
+    state = tick(state, performance.now());
+    render();
+    return state;
+  },
+  completeServiceNow: () => completeService(),
+  completeCustomerReactionNow: () => completeCustomerReaction(),
+  selectPlateNow: () => {
+    state = clickPlate(state);
+    render();
+    return state;
+  },
+  startServiceNow: () => {
+    handle('order-mat', performance.now());
+    return serviceInFlight;
+  },
   // 핫스팟 중심의 화면 픽셀 좌표 (테스트에서 canvas 클릭 위치로)
   screenPosOf: (key) => {
     const m = hotspots[key];
@@ -287,6 +433,33 @@ window.__sceneDebug = {
       minY = Math.min(minY, s.y); maxY = Math.max(maxY, s.y);
     }
     return { width: maxX - minX, height: maxY - minY };
+  },
+  occlusionReport: () => {
+    const customer = R.slotMeshes.customer;
+    const counter = R.slotMeshes.counter;
+    const screenBounds = (mesh) => {
+      mesh.updateMatrixWorld(true);
+      const { width, height } = mesh.geometry.parameters;
+      const corners = [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]
+        .map(([x, y]) => projectToScreen(
+          new THREE.Vector3(x * width, y * height, 0).applyMatrix4(mesh.matrixWorld),
+        ));
+      return {
+        left: Math.min(...corners.map((p) => p.x)),
+        right: Math.max(...corners.map((p) => p.x)),
+        top: Math.min(...corners.map((p) => p.y)),
+        bottom: Math.max(...corners.map((p) => p.y)),
+      };
+    };
+    const customerRect = screenBounds(customer);
+    const counterRect = screenBounds(counter);
+    return {
+      customerRect,
+      counterRect,
+      overlapPx: Math.max(0, customerRect.bottom - Math.max(customerRect.top, counterRect.top)),
+      customerBehindCounter: customer.position.z < counter.position.z,
+      occlusionLineY: ANCHORS.customerOcclusionLine.fromY * canvas.getBoundingClientRect().height,
+    };
   },
   renderer: R,
 };
