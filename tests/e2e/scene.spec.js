@@ -22,7 +22,7 @@ async function boot(page) {
   page.on('console', (m) => {
     if (m.type() === 'error') errs.push(m.text());
   });
-  await page.goto('/src/scene/index.html');
+  await page.goto('/src/index.html');
   await page.waitForTimeout(400);
   return errs;
 }
@@ -33,6 +33,16 @@ test('장면이 오류 없이 렌더된다', async ({ page }) => {
   // 조립 프리셋으로 시작, 손님은 대기 상태
   expect((await st(page)).process).toBe('assembly');
   expect(errs).toEqual([]);
+});
+
+test('조립 조작 대상이 최소 클릭 영역(44px)을 만족한다', async ({ page }) => {
+  await boot(page);
+  for (const key of ['ingredient-chicken', 'ingredient-leek']) {
+    const rect = await page.evaluate((k) => window.__sceneDebug.screenRectOf(k), key);
+    expect(rect, `${key} 보임`).not.toBeNull();
+    expect(rect.width, `${key} 너비`).toBeGreaterThanOrEqual(44);
+    expect(rect.height, `${key} 높이`).toBeGreaterThanOrEqual(44);
+  }
 });
 
 test('클릭만으로 조립→굽기→서빙 루프가 돈다', async ({ page }) => {

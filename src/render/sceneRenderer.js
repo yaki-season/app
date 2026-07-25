@@ -12,7 +12,7 @@ import {
   CAMERA_PRESETS,
   CAMERA_TRANSITION_MS,
   DUMMY_SLOTS,
-} from './sceneLayout.js';
+} from '../config/sceneLayout.js';
 
 const ASPECT = 16 / 9; // 기준 뷰포트(1280×720·1920×1080 모두 16:9)
 const FOV = 42;
