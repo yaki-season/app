@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YAKI SEASON — 2.5D 영업 장면 (더미)</title>
+<link rel="stylesheet" href="./scene.css">
+<script type="importmap">
+{ "imports": { "three": "/node_modules/three/build/three.module.js" } }
+</script>
+</head>
+<body>
+  <canvas id="scene" data-testid="scene-canvas"></canvas>
+
+  <header id="hud" data-testid="hud">
+    <p id="orderText" data-testid="order-text">네기마 주문</p>
+    <ol id="orderList" data-testid="order-list" aria-label="주문 순서"></ol>
+  </header>
+
+  <nav id="tabs" data-testid="process-tabs">
+    <button class="tab" data-process="assembly" data-testid="tab-assembly">조립</button>
+    <button class="tab" data-process="grill" data-testid="tab-grill">그릴</button>
+    <button class="tab" data-process="counter" data-testid="tab-counter">카운터</button>
+  </nav>
+
+  <div id="hint" data-testid="hint"></div>
+
+  <div id="resultOverlay" class="overlay" data-testid="result-overlay" hidden>
+    <p id="resultMessage" data-testid="result-message"></p>
+    <button id="restartButton" data-testid="restart-button">한 번 더 만들기</button>
+  </div>
+
+  <div id="errorOverlay" class="overlay error" data-testid="error-overlay" hidden>
+    <p id="errorMessage" data-testid="error-message"></p>
+    <button id="retryButton" data-testid="retry-button">다시 시도</button>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

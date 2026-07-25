@@ -1,0 +1,271 @@
+// 2.5D 영업 장면 진입점 (더미). 게임 상태(gameState 리듀서)를 Three.js 장면에 연결한다.
+// 조리 로직은 렌더러를 import하지 않는다 (SYS-002 §1) — 여기서만 상태→장면을 배선한다.
+
+import * as THREE from 'three';
+import { createSceneRenderer } from './sceneRenderer.js';
+import { LAYER_Z, ANCHORS } from './sceneLayout.js';
+import { RECIPE } from '../config/recipe.js';
+import {
+  STATUS,
+  PROCESS,
+  createInitialState,
+  assetsLoaded,
+  clickIngredient,
+  isAssemblyComplete,
+  clickAssembledSkewer,
+  placeOnGrill,
+  currentDoneness,
+  clickGrillSkewer,
+  tick,
+  visibilityHidden,
+  visibilityVisible,
+  clickPlate,
+  clickOrderMat,
+  clickTab,
+  restart,
+} from '../state/gameState.js';
+
+const el = (id) => document.getElementById(id);
+const canvas = el('scene');
+const R = createSceneRenderer(canvas);
+
+let state = assetsLoaded(createInitialState()); // 더미라 에셋 로딩 없이 바로 시작
+let customerHold = null; // tasting → satisfied 지연용 타이머
+
+// ── 인터랙티브 오브젝트 (레이캐스트 대상) ─────────────────────
+// 더미 박스. 실제 아트는 PR-*·재료 스프라이트로 교체된다.
+// 클릭 영역은 최소 44px을 위해 시각 크기보다 넉넉히 잡는다 (SYS-002 §11).
+const hotspots = {}; // key → mesh
+
+function addHotspot(key, nx, ny, w, h, color) {
+  const c = R.nToWorldAtZ(nx, ny, LAYER_Z.interactive);
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(w * c.fw, h * c.fh),
+    new THREE.MeshBasicMaterial({ color }),
+  );
+  mesh.position.set(c.x, c.y, LAYER_Z.interactive);
+  mesh.userData.hotspot = key;
+  R.scene.add(mesh);
+  hotspots[key] = mesh;
+  return mesh;
+}
+
+addHotspot('ingredient-chicken', 0.30, 0.80, 0.08, 0.10, 0xd98a5f);
+addHotspot('ingredient-leek', 0.44, 0.80, 0.08, 0.10, 0x8fc06a);
+addHotspot('assembled-skewer', 0.50, 0.64, 0.16, 0.05, 0xc9a86a);
+addHotspot('waiting-skewer', 0.34, 0.64, 0.12, 0.05, 0xc9a86a);
+addHotspot('grill-skewer', 0.50, 0.60, 0.06, 0.16, 0xd98a5f);
+addHotspot('plate', 0.64, 0.60, 0.10, 0.10, 0xe8e0d0);
+addHotspot('order-mat', 0.50, 0.50, 0.14, 0.08, 0x584636);
+
+// ── 상태 → 장면·HUD ─────────────────────────────────────────
+function visible(key, show) {
+  if (hotspots[key]) hotspots[key].visible = show;
+}
+
+function render() {
+  const onGrill = state.status === STATUS.GRILL_FRONT || state.status === STATUS.GRILL_BACK;
+  const complete = isAssemblyComplete(state);
+
+  R.setActiveStation(state.process);
+
+  // 인터랙티브 가시성
+  visible('ingredient-chicken', state.process === PROCESS.ASSEMBLY);
+  visible('ingredient-leek', state.process === PROCESS.ASSEMBLY);
+  visible('assembled-skewer', state.process === PROCESS.ASSEMBLY && complete);
+  visible('waiting-skewer', state.process === PROCESS.GRILL && state.status === STATUS.ASSEMBLY && complete);
+  visible('grill-skewer', onGrill);
+  visible('plate', state.process === PROCESS.COUNTER && state.status === STATUS.PLATED);
+  visible('order-mat', state.process === PROCESS.COUNTER);
+
+  // 그릴 꼬치 색 = 익힘 상태
+  if (onGrill) {
+    const d = currentDoneness(state, performance.now());
+    const color = { under: 0xd98a5f, perfect: 0xc97a2a, over: 0x8a5220, burnt: 0x2a1a10 }[d];
+    hotspots['grill-skewer'].material.color.setHex(color);
+  }
+
+  // HUD
+  renderOrderList();
+  el('orderText').textContent = orderText();
+
+  // 탭
+  for (const btn of document.querySelectorAll('.tab')) {
+    const p = btn.dataset.process;
+    btn.classList.toggle('active', state.process === p);
+    btn.disabled =
+      state.status === STATUS.LOADING ||
+      !(p === PROCESS.ASSEMBLY || state.completedProcesses.includes(p) ||
+        (p === PROCESS.GRILL && state.process === PROCESS.GRILL) ||
+        (p === PROCESS.COUNTER && state.status === STATUS.PLATED));
+  }
+
+  // 결과 오버레이 + 손님 반응
+  const resultVisible = state.status === STATUS.SERVED || state.status === STATUS.FAILED;
+  el('resultOverlay').hidden = !resultVisible;
+  if (state.status === STATUS.FAILED) {
+    el('resultMessage').textContent = '꼬치가 타버렸습니다. 다시 만들어 볼까요?';
+    R.setCustomerState('retry');
+  } else if (state.status === STATUS.SERVED) {
+    el('resultMessage').textContent =
+      state.servedQuality === 'good' ? '츠키오카가 만족했습니다!' : '조금 과하게 익었다고 아쉬워합니다.';
+  }
+}
+
+function renderOrderList() {
+  const ol = el('orderList');
+  ol.innerHTML = '';
+  RECIPE.forEach((ing, i) => {
+    const li = document.createElement('li');
+    li.textContent = ing === 'chicken' ? '닭' : '파';
+    li.dataset.testid = `order-slot-${i}`;
+    if (i < state.assemblyIndex) li.classList.add('done');
+    else if (i === state.assemblyIndex && state.status === STATUS.ASSEMBLY) li.classList.add('next');
+    ol.appendChild(li);
+  });
+}
+
+function orderText() {
+  return {
+    [STATUS.ASSEMBLY]: isAssemblyComplete(state) ? '완성된 꼬치를 클릭해 그릴로' : '재료를 순서대로 클릭',
+    [STATUS.GRILL_FRONT]: '앞면을 굽는 중',
+    [STATUS.GRILL_BACK]: '뒷면을 굽는 중',
+    [STATUS.PLATED]: '접시를 손님에게',
+    [STATUS.SERVED]: '서빙 완료',
+    [STATUS.FAILED]: '조리 실패',
+  }[state.status] || '';
+}
+
+function showHint(text) {
+  const h = el('hint');
+  h.textContent = text;
+  h.classList.add('show');
+  setTimeout(() => h.classList.remove('show'), 900);
+}
+
+// ── 입력: 레이캐스트 ─────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const ptr = new THREE.Vector2();
+const lockUntil = {}; // key → ms (대상별 잠금, UI-001 §17)
+
+function hitTest(e) {
+  const rect = canvas.getBoundingClientRect();
+  ptr.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  ptr.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(ptr, R.camera);
+  const targets = Object.values(hotspots).filter((m) => m.visible);
+  const hit = raycaster.intersectObjects(targets, false)[0];
+  return hit ? hit.object.userData.hotspot : null;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  const key = hitTest(e);
+  if (!key) return;
+  const now = performance.now();
+  if ((lockUntil[key] || 0) > now) return;
+  lockUntil[key] = now + 200;
+  handle(key, now);
+});
+
+function handle(key, now) {
+  const prev = state;
+  switch (key) {
+    case 'ingredient-chicken':
+    case 'ingredient-leek': {
+      const ing = key === 'ingredient-chicken' ? 'chicken' : 'leek';
+      const before = state.assemblyIndex;
+      state = clickIngredient(state, ing, now);
+      if (state.assemblyIndex === before) showHint('순서가 달라요');
+      break;
+    }
+    case 'assembled-skewer':
+      state = clickAssembledSkewer(state);
+      break;
+    case 'waiting-skewer':
+      state = placeOnGrill(state, now);
+      break;
+    case 'grill-skewer': {
+      const before = state.status;
+      const d = currentDoneness(state, now);
+      state = clickGrillSkewer(state, now);
+      if (state.status === before && d === 'under') showHint('아직 덜 익었어요');
+      break;
+    }
+    case 'plate':
+      state = clickPlate(state);
+      break;
+    case 'order-mat':
+      state = clickOrderMat(state);
+      if (state.status === STATUS.SERVED) {
+        R.setCustomerState('tasting');
+        customerHold = now + 900; // 잠시 뒤 만족/아쉬움
+      }
+      break;
+  }
+  if (state.status !== prev.status && state.status === STATUS.PLATED) {
+    setTimeout(() => {
+      state = clickTab(state, PROCESS.COUNTER);
+      render();
+    }, 450);
+  }
+  render();
+}
+
+for (const btn of document.querySelectorAll('.tab')) {
+  btn.addEventListener('click', () => {
+    state = clickTab(state, btn.dataset.process);
+    render();
+  });
+}
+
+el('restartButton').addEventListener('click', () => {
+  state = restart(state);
+  R.setCustomerState('waiting');
+  customerHold = null;
+  render();
+});
+
+document.addEventListener('visibilitychange', () => {
+  const now = performance.now();
+  state = document.hidden ? visibilityHidden(state, now) : visibilityVisible(state, now);
+});
+
+// 공정이 바뀌면 카메라 프리셋 이동
+let lastProcess = null;
+
+function loop(now) {
+  const prevStatus = state.status;
+  state = tick(state, now);
+
+  if (state.process !== lastProcess) {
+    R.goToPreset(state.process, now);
+    lastProcess = state.process;
+  }
+  if (customerHold && now >= customerHold) {
+    R.setCustomerState(state.servedQuality === 'good' ? 'satisfied' : 'neutral');
+    customerHold = null;
+  }
+  if (state.status !== prevStatus) render();
+
+  R.renderFrame(now);
+  requestAnimationFrame(loop);
+}
+
+R.goToPreset('assembly', 0);
+render();
+requestAnimationFrame(loop);
+
+// 개발 관찰 지점 + 레이캐스트 검증용 좌표
+window.__sceneDebug = {
+  getState: () => state,
+  doneness: () => currentDoneness(state, performance.now()),
+  // 핫스팟 중심의 화면 픽셀 좌표 (테스트에서 canvas 클릭 위치로)
+  screenPosOf: (key) => {
+    const m = hotspots[key];
+    if (!m || !m.visible) return null;
+    const v = m.position.clone().project(R.camera);
+    const rect = canvas.getBoundingClientRect();
+    return { x: rect.left + (v.x * 0.5 + 0.5) * rect.width, y: rect.top + (-v.y * 0.5 + 0.5) * rect.height };
+  },
+  renderer: R,
+};

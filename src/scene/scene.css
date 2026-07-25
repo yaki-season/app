@@ -1,0 +1,63 @@
+:root {
+  --bg: #140f0b;
+  --text: #f2e9df;
+  --dim: #a9998a;
+  --ember: #ff8340;
+  --line: #3a2e23;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
+body { font: 15px/1.5 system-ui, "Malgun Gothic", sans-serif; color: var(--text); -webkit-user-select: none; user-select: none; }
+
+#scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+
+/* 상단 14% HUD 안전 영역 (SYS-002 §7) */
+#hud {
+  position: fixed; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 22px;
+  background: linear-gradient(to bottom, rgba(10,7,5,0.85), transparent);
+  z-index: 10;
+}
+#orderText { margin: 0; font-size: 14px; color: var(--dim); }
+#orderList { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+#orderList li {
+  width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--line);
+  display: grid; place-items: center; font-size: 11px; background: rgba(32,26,21,0.7);
+}
+#orderList li.done { border-color: #7fc47a; color: #7fc47a; }
+#orderList li.next { border-color: var(--ember); }
+
+#tabs {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; gap: 8px; padding: 12px 22px; z-index: 10;
+  background: linear-gradient(to top, rgba(10,7,5,0.85), transparent);
+}
+.tab {
+  min-width: 44px; min-height: 44px; padding: 8px 20px; border-radius: 999px;
+  background: rgba(32,26,21,0.8); border: 1px solid var(--line); color: var(--text);
+  font: inherit; cursor: pointer;
+}
+.tab.active { border-color: var(--ember); color: var(--ember); }
+.tab:disabled { opacity: 0.4; cursor: default; }
+
+#hint {
+  position: fixed; left: 50%; bottom: 78px; transform: translateX(-50%);
+  font-size: 13px; color: var(--warn, #e8b04a); background: rgba(0,0,0,0.5);
+  padding: 6px 14px; border-radius: 999px; z-index: 10; pointer-events: none;
+  opacity: 0; transition: opacity 0.2s;
+}
+#hint.show { opacity: 1; }
+
+.overlay {
+  position: fixed; inset: auto 0 0 0; z-index: 20;
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  padding: 18px 24px; background: var(--bg); border-top: 1px solid var(--line);
+}
+.overlay[hidden] { display: none; }
+.overlay.error { inset: 0; flex-direction: column; }
+#restartButton, #retryButton {
+  min-height: 44px; padding: 10px 22px; border-radius: 999px;
+  background: var(--ember); color: #1a120a; border: none; font-weight: 600; cursor: pointer;
+}
