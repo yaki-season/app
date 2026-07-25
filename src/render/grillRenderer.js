@@ -2,6 +2,8 @@
 // (SYS-001 §상세요구사항 12). 단, 단일 토글 대신 경과 시간 기반 연속 uDoneness를 받는다.
 // 이 화면이 활성화된 동안에만 애니메이션 루프를 소유한다 — 다른 화면과 중복 루프를 만들지 않는다.
 
+import { GRILL_PARAMS } from './grillShaderParams.js';
+
 async function loadText(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${url} 로드 실패 (${res.status})`);
@@ -48,6 +50,24 @@ function createTexture(gl, img) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   return tex;
+}
+
+function setUniform(gl, location, value) {
+  if (location == null) return;
+  if (Array.isArray(value)) {
+    if (value.length === 2) gl.uniform2fv(location, value);
+    else if (value.length === 3) gl.uniform3fv(location, value);
+    else throw new Error(`지원하지 않는 셰이더 파라미터 길이: ${value.length}`);
+    return;
+  }
+  gl.uniform1f(location, value);
+}
+
+function applyShaderParams(gl, prog, params) {
+  for (const [name, value] of Object.entries(params)) {
+    const uniformName = `u${name[0].toUpperCase()}${name.slice(1)}`;
+    setUniform(gl, gl.getUniformLocation(prog, uniformName), value);
+  }
 }
 
 // 경과 초를 셰이더 uDoneness(0=날것, 0.5=Perfect, 1=탄 상태)로 매핑한다.
@@ -124,6 +144,7 @@ export async function createGrillRenderer(canvas, { textureUrl, vertUrl, fragUrl
   };
   gl.uniform1i(u.tex, 0);
   gl.uniform2f(u.texSize, img.width, img.height);
+  applyShaderParams(gl, prog, GRILL_PARAMS);
 
   gl.bindVertexArray(gl.createVertexArray());
   gl.enable(gl.BLEND);
@@ -142,7 +163,7 @@ export async function createGrillRenderer(canvas, { textureUrl, vertUrl, fragUrl
   }
 
   // elapsedSec: null이면 그리지 않는다 (그릴이 비어 있음)
-  function render(nowMs, elapsedSec, tare = 0.35) {
+  function render(nowMs, elapsedSec, tare = GRILL_PARAMS.tareAmount) {
     resize();
     gl.clear(gl.COLOR_BUFFER_BIT);
     if (elapsedSec == null) return;
