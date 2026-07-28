@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "D1-TSUKIOKA-RECEIVED-EATING",
+  "loop": true,
+  "frameDurationMs": 1200,
+  "frames": [
+    {
+      "index": 0,
+      "action": "eat-negima",
+      "file": "../frames/d1-tsukioka-eating-negima-complete-fhd-r1.png",
+      "sha256": "597c90993f8167421b7df90e604d5e46c302ae3230d7827bcaf6cecf45ef7a75",
+      "bytes": 350440,
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "index": 1,
+      "action": "drink-draft-beer",
+      "file": "../frames/d1-tsukioka-drinking-beer-complete-fhd-r1.png",
+      "sha256": "568d4e64d51335b215de8a0d938deaf493598304ee951dac84e2867e76faeaf9",
+      "bytes": 349220,
+      "width": 1920,
+      "height": 1080
+    }
+  ]
+}

@@ -1,3 +1,11 @@
 node_modules/
 test-results/
 playwright-report/
+/.asset-promotion-receipts/
+/.asset-promotion-staging/
+
+# 로컬 제작·검수 작업물은 저장소 루트의 ../art-workspace에서 관리한다.
+/art/
+/captures/
+
+.DS_Store

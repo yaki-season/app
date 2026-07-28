@@ -2,15 +2,19 @@
 
 ## 저장소 역할
 
-이 저장소는 게임 개발과 운영에 필요한 모든 구현 결과물을 관리한다.
+이 저장소는 게임 개발과 운영에 직접 필요한 구현 결과물만 관리한다.
 
 - 애플리케이션 소스코드
 - 테스트 코드
+- 구현 회귀를 직접 비교하기 위한 `tests/reference-images`의 고정 검증 이미지
 - 에셋 연동 코드
+- 사용자 승인과 자동 검증을 모두 통과해 `public/assets/manifest.json`에 등록된 최종 런타임 에셋
 - 빌드와 배포 설정
 - 운영 스크립트와 환경별 설정
 
 요구사항, 기획 원본과 개발자별 작업 계획의 기준 문서는 별도 `docs` 저장소에서 관리한다.
+콘셉트 원본, 생성 원본, 검수판, provenance, 반려 이력과 캡처 증빙은 저장소 바깥의
+형제 디렉터리 `../art-workspace`에서 관리한다.
 
 ## 작업 시작 규칙
 
@@ -40,6 +44,16 @@
 ## 저장소 경계
 
 - 구현·테스트·빌드·배포·운영 파일은 모두 `app`에 둔다.
+- `app/public/assets`에는 manifest에 등록된 최종 승인 런타임 파일만 둔다.
+- `app/art`와 `app/captures`를 만들거나 추적하지 않는다.
+- 구현 검증용 고정 이미지는 `tests/reference-images`에만 두고 SHA-256과 viewport 규격을
+  자동 검증한다. 프로덕션 아트·생성 reference·런타임 입력으로 사용하지 않는다.
+- 아트 작업물은 `../art-workspace`에서 검수하고, `npm run assets:promote -- ...`의
+  검증된 승격 절차로만 `public/assets`에 복사한다.
+- 승격에는 프로필 승인, 소비 화면 재조립·최적화·최종 승인과 finalizer가 파생한 handoff가
+  필요하다. provenance의 `runtimeRegistrationAllowed`를 직접 `true`로 바꾸지 않는다.
+- dry-run이 만든 30분 유효 일회성 영수증 없이는 `--write`를 실행하지 않는다. 단일 파일도
+  bundle transaction으로 처리하고 실패 시 파일과 manifest를 전부 복구한다.
 - `docs`에는 소스코드나 실행 가능한 운영 파일을 복사하지 않는다.
 - `app`에는 요구사항 문서를 중복 저장하지 않고 경로와 요구사항 식별자만 참조한다.
 - AI는 `docs/inbox/`의 사람 입력 원본을 작성·수정·이동·삭제하지 않는다.

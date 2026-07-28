@@ -1,1125 +1,337 @@
 {
-  "$schema": "./manifest.schema.json",
-  "schemaVersion": "2.0.0",
-  "generatedAt": "2026-07-22",
+  "$schema": "https://yaki-season.local/assets/manifest.schema.json",
+  "schemaVersion": "3.0.0",
+  "generatedAt": "2026-07-28",
   "specRefs": [
-    "ART-003 v2.0.0",
-    "ART-002 v2.0.0",
-    "UI-002 v2.0.0",
-    "SYS-003 v2.0.0",
-    "SYS-004 v1.0.0",
-    "ART-001 v1.1.0",
-    "QA-002 v1.0.0"
+    "ART-002 v3.6.1",
+    "ART-003 v5.0.0",
+    "YS-HANDCRAFTED-NIGHT-v1"
   ],
   "packs": {
     "core": {
       "load": "startup",
-      "description": "S0-D1 and shared gameplay assets"
+      "description": "No approved runtime visual assets; recreate from the latest approved concept set."
     },
     "campaign": {
       "load": "stage",
-      "description": "S2-S7 campaign assets"
+      "description": "No approved campaign visual assets."
     },
     "optional": {
       "load": "on-demand",
-      "description": "Approved P2 assets only"
+      "description": "No approved optional visual assets."
     }
   },
   "assets": [
     {
-      "id": "BG-INTERIOR-BASE",
-      "legacyId": "BG-01",
-      "revision": 2,
+      "id": "ARTIST-010-BACKGROUND-COMPLETE",
+      "sourceRevision": 3,
+      "runtimeBuild": 1,
       "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "complete-layer",
       "pack": "core",
       "kind": "image",
-      "url": "/assets/core/background/shop-backwall-night.jpg",
-      "sha256": "2ae10d087104579b1820e645275f67bb196595df905241abe906e8253da85d26",
-      "bytes": 342018,
-      "dimensions": {
-        "width": 2048,
-        "height": 1152
-      },
-      "format": "jpeg",
       "colorSpace": "sRGB",
       "alpha": "none",
+      "lossPolicy": "lossless-required",
       "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      },
-      "anchors": [
-        "vanishing-point",
-        "mobile-crop"
-      ],
-      "clips": [],
-      "mirrorSafe": false,
-      "source": "art/provenance/legacy-gameplay-manifest.md",
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v2.0.0",
-        "ART-002 v2.0.0",
-        "UI-002 v2.0.0",
-        "SYS-003 v2.0.0",
-        "ART-001 v1.1.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "companions": [
-        {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
-        }
-      ]
-    },
-    {
-      "id": "BG-FOREGROUND-FRAME",
-      "legacyId": "BG-02",
-      "revision": 3,
-      "status": "approved",
-      "pack": "core",
-      "kind": "image",
-      "url": "/assets/core/background/shop-foreground-frame.png",
-      "sha256": "2951e397ee80ebdafc764007592a790f54c0344c1f5741b1b406aa37328e2b1c",
-      "bytes": 58082,
-      "dimensions": {
-        "width": 2048,
-        "height": 1152
-      },
-      "format": "png",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      },
-      "anchors": [
-        "hud-transparent-rect",
-        "center-transparent-rect"
-      ],
-      "clips": [],
-      "mirrorSafe": false,
-      "source": "art/review/generated-2026-07-22/bg-02-foreground-frame-chroma-unapproved.png",
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v2.0.0",
-        "ART-002 v2.0.0",
-        "UI-002 v2.0.0",
-        "SYS-003 v2.0.0",
-        "ART-001 v1.1.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "companions": [
-        {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
-        }
-      ]
-    },
-    {
-      "id": "ST-ASSEMBLY-TIER-1",
-      "legacyId": "ST-01",
-      "revision": 3,
-      "status": "approved",
-      "pack": "core",
-      "kind": "image",
-      "url": "/assets/core/stations/assembly-workbench.png",
-      "sha256": "8f5f36f6ab60b513a83e173e7349cd0af462760ce76688a72bc0186c34c31f68",
-      "bytes": 130181,
-      "dimensions": {
-        "width": 1536,
-        "height": 768
-      },
-      "format": "png",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 1
-      },
-      "anchors": [
-        "ingredient-bin-01",
-        "ingredient-bin-02",
-        "ingredient-bin-03",
-        "skewer-groove",
-        "handoff-tray"
-      ],
-      "clips": [],
-      "mirrorSafe": false,
-      "source": "art/review/generated-2026-07-22/st-01-assembly-workbench-chroma-v2.png",
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v2.0.0",
-        "ART-002 v2.0.0",
-        "UI-002 v2.0.0",
-        "SYS-003 v2.0.0",
-        "ART-001 v1.1.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "companions": [
-        {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
-        }
-      ]
-    },
-    {
-      "id": "ST-GRILL-TIER-1",
-      "legacyId": "ST-02",
-      "revision": 3,
-      "status": "approved",
-      "pack": "core",
-      "kind": "image",
-      "url": "/assets/core/stations/charcoal-grill-body.png",
-      "sha256": "8890a94acd3f5a3236c9d44b3104c345cdee44315b806a5b300d354e86a4d283",
-      "bytes": 101291,
-      "dimensions": {
-        "width": 1536,
-        "height": 768
-      },
-      "format": "png",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 1
-      },
-      "anchors": [
-        "grill-slot-01",
-        "grill-divider",
-        "grill-slot-02"
-      ],
-      "clips": [],
-      "mirrorSafe": false,
-      "source": "art/review/generated-2026-07-22/st-02-charcoal-grill-body-chroma-v3.png",
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v2.0.0",
-        "ART-002 v2.0.0",
-        "UI-002 v2.0.0",
-        "SYS-003 v2.0.0",
-        "ART-001 v1.1.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "companions": [
-        {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
-        }
-      ]
-    },
-    {
-      "id": "ST-CHARCOAL-CORE",
-      "legacyId": "ST-03",
-      "revision": 3,
-      "status": "approved",
-      "pack": "core",
-      "kind": "image",
-      "url": "/assets/core/stations/charcoal-embers.png",
-      "sha256": "5e8822d45ed86bd5d58ca1cdb5e811a9f142d9ebaf0dcd2be4298fa465eacc2b",
-      "bytes": 62023,
-      "dimensions": {
-        "width": 1024,
-        "height": 384
-      },
-      "format": "png",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 1
-      },
-      "anchors": [
-        "heat-center"
-      ],
-      "clips": [],
-      "mirrorSafe": true,
-      "source": "art/review/generated-2026-07-22/st-03-charcoal-embers-chroma-unapproved.png",
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v2.0.0",
-        "ART-002 v2.0.0",
-        "UI-002 v2.0.0",
-        "SYS-003 v2.0.0",
-        "ART-001 v1.1.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "companions": [
-        {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
-        }
-      ]
-    },
-    {
-      "id": "ST-SERVICE-COUNTER",
-      "legacyId": "ST-04",
-      "revision": 3,
-      "status": "approved",
-      "pack": "core",
-      "kind": "image",
-      "url": "/assets/core/stations/service-counter.png",
-      "sha256": "6d94965135c42264853699f44a4e58bd43af26f1621badd0c1b64a41aa0443e0",
-      "bytes": 115890,
-      "dimensions": {
-        "width": 1536,
-        "height": 768
-      },
-      "format": "png",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 1
-      },
-      "anchors": [
-        "order-mat",
-        "plate-landing"
-      ],
-      "clips": [],
-      "mirrorSafe": false,
-      "source": "art/review/generated-2026-07-22/st-04-service-counter-chroma-v2.png",
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v2.0.0",
-        "ART-002 v2.0.0",
-        "UI-002 v2.0.0",
-        "SYS-003 v2.0.0",
-        "ART-001 v1.1.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "companions": [
-        {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
-        }
-      ]
-    },
-    {
-      "id": "PR-SERVING-PLATE",
-      "legacyId": "PR-01",
-      "revision": 3,
-      "status": "approved",
-      "pack": "core",
-      "kind": "image",
-      "url": "/assets/core/props/serving-plate.png",
-      "sha256": "dd860aa39b2f4cf800c8d40cdf4ec774daffcfbe5b65d52a74c59a092b6d5617",
-      "bytes": 31812,
-      "dimensions": {
-        "width": 768,
-        "height": 384
-      },
-      "format": "png",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      },
-      "anchors": [
-        "order-decal"
-      ],
-      "clips": [],
-      "mirrorSafe": true,
-      "source": "art/review/generated-2026-07-22/pr-01-serving-plate-chroma-v2.png",
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v2.0.0",
-        "ART-002 v2.0.0",
-        "UI-002 v2.0.0",
-        "SYS-003 v2.0.0",
-        "ART-001 v1.1.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "companions": [
-        {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
-        }
-      ]
-    },
-    {
-      "id": "CH-TSUKIOKA-WAITING",
-      "legacyId": "CH-01",
-      "groupId": "CH-TSUKIOKA-SERVICE",
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "kind": "image",
-      "url": "/assets/core/characters/tsukioka-waiting.png",
-      "sha256": "0070729c0e83e320e8e36017bd6476381f6f93ac1ca3387c2acb6fc73d5c0d17",
-      "bytes": 111936,
-      "dimensions": {
-        "width": 512,
-        "height": 640
-      },
-      "format": "png",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 1
-      },
-      "anchors": [],
-      "clips": [
-        "waiting"
-      ],
-      "mirrorSafe": false,
-      "source": "art/review/generated-2026-07-22/ch-01-tsukioka-waiting-chroma-v2.png",
-      "provenance": "art/provenance/legacy-gameplay-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-001 v1.1.0"
-      ],
-      "reviewedAt": "2026-07-22"
-    },
-    {
-      "id": "CH-TSUKIOKA-TASTING",
-      "legacyId": "CH-02",
-      "groupId": "CH-TSUKIOKA-SERVICE",
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "kind": "image",
-      "url": "/assets/core/characters/tsukioka-tasting.png",
-      "sha256": "36c90a6943cd73fd6494a537de710257b70d25b9e77c1a50694b383ba6d44be5",
-      "bytes": 121196,
-      "dimensions": {
-        "width": 512,
-        "height": 640
-      },
-      "format": "png",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 1
-      },
-      "anchors": [],
-      "clips": [
-        "tasting"
-      ],
-      "mirrorSafe": false,
-      "source": "art/review/generated-2026-07-22/ch-02-tsukioka-tasting-chroma-v2.png",
-      "provenance": "art/provenance/legacy-gameplay-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-001 v1.1.0"
-      ],
-      "reviewedAt": "2026-07-22"
-    },
-    {
-      "id": "CH-TSUKIOKA-SATISFIED",
-      "legacyId": "CH-03",
-      "groupId": "CH-TSUKIOKA-SERVICE",
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "kind": "image",
-      "url": "/assets/core/characters/tsukioka-satisfied.png",
-      "sha256": "c2db99162977ff50b0a9d88e5669f5afcbabffd9480057fb30473140cfaf1529",
-      "bytes": 110419,
-      "dimensions": {
-        "width": 512,
-        "height": 640
-      },
-      "format": "png",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 1
-      },
-      "anchors": [],
-      "clips": [
-        "satisfied"
-      ],
-      "mirrorSafe": false,
-      "source": "art/review/generated-2026-07-22/ch-03-tsukioka-satisfied-chroma-v2.png",
-      "provenance": "art/provenance/legacy-gameplay-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-001 v1.1.0"
-      ],
-      "reviewedAt": "2026-07-22"
-    },
-    {
-      "id": "CH-TSUKIOKA-NEUTRAL",
-      "legacyId": "CH-04",
-      "groupId": "CH-TSUKIOKA-SERVICE",
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "kind": "image",
-      "url": "/assets/core/characters/tsukioka-neutral.png",
-      "sha256": "790b607d9999087017e4a8a9c3ee67bf648968165608e23005ad6aa91e77fd52",
-      "bytes": 112412,
-      "dimensions": {
-        "width": 512,
-        "height": 640
-      },
-      "format": "png",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 1
-      },
-      "anchors": [],
-      "clips": [
-        "neutral"
-      ],
-      "mirrorSafe": false,
-      "source": "art/review/generated-2026-07-22/ch-04-tsukioka-neutral-chroma-v2.png",
-      "provenance": "art/provenance/legacy-gameplay-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-001 v1.1.0"
-      ],
-      "reviewedAt": "2026-07-22"
-    },
-    {
-      "id": "CH-TSUKIOKA-RETRY",
-      "legacyId": "CH-05",
-      "groupId": "CH-TSUKIOKA-SERVICE",
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "kind": "image",
-      "url": "/assets/core/characters/tsukioka-retry.png",
-      "sha256": "b2ce0da39293860ba25168d95b12926fe095739ba741177fc3bf34bd2898de32",
-      "bytes": 113440,
-      "dimensions": {
-        "width": 512,
-        "height": 640
-      },
-      "format": "png",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 1
-      },
-      "anchors": [],
-      "clips": [
-        "retry"
-      ],
-      "mirrorSafe": false,
-      "source": "art/review/generated-2026-07-22/ch-05-tsukioka-retry-chroma-v2.png",
-      "provenance": "art/provenance/legacy-gameplay-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-001 v1.1.0"
-      ],
-      "reviewedAt": "2026-07-22"
-    },
-    {
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "colorSpace": "sRGB",
-      "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-002 v1.0.0",
-        "SCN-002 v1.0.0",
-        "UI-002 v1.0.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "id": "BR-LOGO-HORIZONTAL",
-      "kind": "image",
-      "url": "/assets/core/brand/br-logo-horizontal.png",
-      "sha256": "9686881bd1b2a8f81f8792af895c7fbffe524db0bfbcd9242de7f58eda1ca552",
-      "bytes": 9115,
-      "dimensions": {
-        "width": 1024,
-        "height": 256
-      },
-      "format": "png",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      },
-      "anchors": [],
-      "clips": [],
-      "source": "art/source/brand/br-logo-horizontal/br-logo-horizontal-r1.svg"
-    },
-    {
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "colorSpace": "sRGB",
-      "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-002 v1.0.0",
-        "SCN-002 v1.0.0",
-        "UI-002 v1.0.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "id": "BR-LOGO-COMPACT",
-      "kind": "image",
-      "url": "/assets/core/brand/br-logo-compact.png",
-      "sha256": "8ae531e7ed3a836f154aff4592767cb1d2380c3a0e182f541a9828fa37ad6630",
-      "bytes": 6126,
-      "dimensions": {
-        "width": 512,
-        "height": 512
-      },
-      "format": "png",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      },
-      "anchors": [],
-      "clips": [],
-      "source": "art/source/brand/br-logo-compact/br-logo-compact-r1.svg"
-    },
-    {
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "colorSpace": "sRGB",
-      "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-002 v1.0.0",
-        "SCN-002 v1.0.0",
-        "UI-002 v1.0.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "id": "BG-EXTERIOR-S0-CLOSED",
-      "kind": "image",
-      "url": "/assets/core/background/bg-exterior-s0-closed.jpg",
-      "sha256": "919b00edd397a91cf94e0a8b8b35fa8ec026831870bbeea38ae061cbcf121060",
-      "bytes": 331136,
-      "dimensions": {
-        "width": 2048,
-        "height": 1152
-      },
-      "format": "jpeg",
-      "alpha": "none",
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      },
-      "anchors": [
-        "sign-rect",
-        "door-lock",
-        "noren-rod"
-      ],
-      "clips": [],
-      "companions": [
-        {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
-        }
-      ],
-      "source": "art/source/environment/bg-exterior-s0-closed-r1.html"
-    },
-    {
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "colorSpace": "sRGB",
-      "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-002 v1.0.0",
-        "SCN-002 v1.0.0",
-        "UI-002 v1.0.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "id": "BG-EXTERIOR-S1-OPEN",
-      "kind": "image",
-      "url": "/assets/core/background/bg-exterior-s1-open.jpg",
-      "sha256": "f8cb70a61301a2efea8b58fe0572157793c01957b14ddd600bdef850596dd031",
-      "bytes": 388667,
-      "dimensions": {
-        "width": 2048,
-        "height": 1152
-      },
-      "format": "jpeg",
-      "alpha": "none",
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      },
-      "anchors": [
-        "sign-rect",
-        "entrance",
-        "noren-rod"
-      ],
-      "clips": [],
-      "companions": [
-        {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
-        }
-      ],
-      "source": "art/source/environment/bg-exterior-s1-open-r1.html"
-    },
-    {
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "colorSpace": "sRGB",
-      "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-002 v1.0.0",
-        "SCN-002 v1.0.0",
-        "UI-002 v1.0.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "id": "PR-SHOP-KEY",
-      "kind": "image",
-      "url": "/assets/core/props/pr-shop-key.png",
-      "sha256": "7872bf1bd96b46350d0cec5629acfb36c8e26f6011271520aebf46bf94bfdb6c",
-      "bytes": 16024,
-      "dimensions": {
-        "width": 512,
-        "height": 512
-      },
-      "format": "png",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 0.5
-      },
-      "anchors": [
-        "key-grip",
-        "lock-tip"
-      ],
-      "clips": [],
-      "source": "art/review/artist-002/pr-shop-key/r1/generated.png"
-    },
-    {
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "colorSpace": "sRGB",
-      "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-002 v1.0.0",
-        "SCN-002 v1.0.0",
-        "UI-002 v1.0.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "id": "PR-NOREN-S0",
-      "kind": "atlas",
-      "url": "/assets/core/props/pr-noren-s0.png",
-      "sha256": "ec74da5a7cafcd39e3f3efe89323ed9703bb56ad75dbb572882eae883b2ec049",
-      "bytes": 95056,
-      "dimensions": {
-        "width": 2046,
-        "height": 714
-      },
-      "format": "png",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
+        "x": 0,
         "y": 0
       },
-      "anchors": [
-        "top-rod"
-      ],
-      "clips": [
-        "folded",
-        "hanging",
-        "sway-right"
-      ],
-      "companions": [
-        {
-          "role": "atlas",
-          "url": "/assets/core/props/pr-noren-s0.json",
-          "sha256": "7665d92afef80de16abcc080c6b4ea04c689de1388994106b24a716ebe8e6191",
-          "bytes": 417
-        }
-      ],
-      "source": "art/review/artist-002/pr-noren-s0/r1/generated.png"
-    },
-    {
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "colorSpace": "sRGB",
-      "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-002 v1.0.0",
-        "SCN-002 v1.0.0",
-        "UI-002 v1.0.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "id": "PR-RECIPE-NOTE-CORE",
-      "kind": "atlas",
-      "url": "/assets/core/props/pr-recipe-note-core.png",
-      "sha256": "27fcb31740b4a58d67d66f59e67dfd4aaf4b7fc99b3cf8a936b4d82ac85db08b",
-      "bytes": 208868,
-      "dimensions": {
-        "width": 2045,
-        "height": 682
-      },
-      "format": "png",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 1
-      },
       "anchors": [],
-      "clips": [
-        "closed",
-        "negima-stained",
-        "momo-locked",
-        "momo-restored",
-        "blank-record"
-      ],
-      "companions": [
-        {
-          "role": "atlas",
-          "url": "/assets/core/props/pr-recipe-note-core.json",
-          "sha256": "36f4a64c56030f10e73a6a65a09db4e647c276d1f8350d65593fe46835d97ed2",
-          "bytes": 525
-        }
-      ],
-      "source": "art/review/artist-002/pr-recipe-note-core/r1/generated.png"
-    },
-    {
-      "revision": 1,
-      "status": "approved",
-      "pack": "core",
-      "colorSpace": "sRGB",
+      "clips": [],
       "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
+      "source": "ARTSRC:ARTIST-010-BACKGROUND-COMPLETE:R3",
+      "provenance": "PROV:ARTIST-010-BACKGROUND-COMPLETE:R3",
+      "license": "YAKI SEASON internal approved artwork",
       "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-002 v1.0.0",
-        "SCN-002 v1.0.0",
-        "UI-002 v1.0.0"
+        "ART-003 v5.0.0",
+        "ART-002 v3.6.1"
       ],
-      "reviewedAt": "2026-07-22",
-      "id": "PR-CHARCOAL-IGNITION",
-      "kind": "atlas",
-      "url": "/assets/core/props/pr-charcoal-ignition.png",
-      "sha256": "6fa1057357ed691b5cdefb9d3cda6cb48626cdeb791a901835e51594b8f6ae23",
-      "bytes": 99550,
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/customer/background-complete-r3-b1.png",
+      "sha256": "7ab2351585160d994bc549db3735e0843a1350913add9a17cff650d05706db49",
+      "bytes": 3476052,
       "dimensions": {
-        "width": 2048,
-        "height": 684
+        "width": 1920,
+        "height": 1080
       },
-      "format": "png",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 1
-      },
-      "anchors": [
-        "heat-center"
-      ],
-      "clips": [
-        "cold",
-        "ember",
-        "igniting",
-        "stable"
-      ],
-      "companions": [
-        {
-          "role": "atlas",
-          "url": "/assets/core/props/pr-charcoal-ignition.json",
-          "sha256": "6aae5aa99ae82837e4def26d3ef45edd726e9a6ed6fb136efe9460db5898db78",
-          "bytes": 490
-        }
-      ],
-      "source": "art/review/artist-002/pr-charcoal-ignition/r1/generated.png"
+      "format": "png"
     },
     {
-      "revision": 1,
+      "id": "BG-SERVICE-TABLE-ARTIST009",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
       "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "complete-layer",
       "pack": "core",
-      "colorSpace": "sRGB",
-      "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v1.1.0",
-        "ART-002 v1.0.0",
-        "SCN-002 v1.0.0",
-        "UI-002 v1.0.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "id": "PR-MATCHBOX-OLD",
       "kind": "image",
-      "url": "/assets/core/props/pr-matchbox-old.png",
-      "sha256": "5fc5d4ccb240bb4b91d81d5fe7a4b54498a08f9f8e07684ba05eeaf4ff56c9f5",
-      "bytes": 23959,
-      "dimensions": {
-        "width": 640,
-        "height": 512
-      },
-      "format": "png",
+      "colorSpace": "sRGB",
       "alpha": "straight",
+      "lossPolicy": "lossless-required",
       "pivot": {
-        "x": 0.5,
-        "y": 0.5
+        "x": 0,
+        "y": 0
       },
       "anchors": [],
       "clips": [],
-      "source": "art/review/artist-002/pr-matchbox-old/r1/generated.png"
+      "mirrorSafe": false,
+      "source": "ARTSRC:BG-SERVICE-TABLE-ARTIST009:R1",
+      "provenance": "PROV:BG-SERVICE-TABLE-ARTIST009:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "ART-002 v3.6.1"
+      ],
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/customer/service-table-complete-r1-b1.png",
+      "sha256": "64ed1bb62a5d25100d2a64c040872f172476ea34833170f811c9bfe3aad2ed7c",
+      "bytes": 1425229,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
     },
     {
-      "revision": 3,
+      "id": "D1-TSUKIOKA-WAITING",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
       "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "complete-layer",
       "pack": "core",
-      "colorSpace": "sRGB",
-      "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v2.0.0",
-        "ART-002 v2.0.0",
-        "UI-002 v2.0.0",
-        "SYS-003 v2.0.0",
-        "SCN-002 v1.0.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "id": "BG-SEATING-6",
       "kind": "image",
-      "url": "/assets/core/background/bg-seating-6.png",
-      "sha256": "8c4b35ee8b965d790cac9c848cc08edc3a86938aed381d37bf8fa5cbee4da810",
-      "bytes": 32788,
-      "dimensions": {
-        "width": 2048,
-        "height": 1152
-      },
-      "format": "png",
+      "colorSpace": "sRGB",
       "alpha": "straight",
+      "lossPolicy": "lossless-required",
       "pivot": {
-        "x": 0.5,
-        "y": 1
+        "x": 0,
+        "y": 0
       },
-      "anchors": [
-        "seat-01",
-        "seat-02",
-        "seat-03",
-        "seat-04",
-        "seat-05",
-        "seat-06"
-      ],
+      "anchors": [],
       "clips": [],
-      "companions": [
-        {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
-        }
+      "mirrorSafe": false,
+      "source": "ARTSRC:D1-TSUKIOKA-WAITING:R2",
+      "provenance": "PROV:D1-TSUKIOKA-WAITING:R2",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "GPL-003 v4.11.0"
       ],
-      "source": "art/source/environment/bg-seating-6-r3.html"
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/customer/d1-tsukioka-waiting-r2-b1.png",
+      "sha256": "0d825865988fab624c9153f4a1f453b12cea218809832bf3b0c10aec88669bc1",
+      "bytes": 340027,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
     },
     {
-      "revision": 1,
+      "id": "D1-TSUKIOKA-PARTIAL-BEER-WAITING",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
       "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "complete-layer",
       "pack": "core",
-      "colorSpace": "sRGB",
-      "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v2.0.0",
-        "ART-002 v2.0.0",
-        "UI-002 v2.0.0",
-        "SYS-003 v2.0.0",
-        "SCN-002 v1.0.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "id": "BG-BAR-COUNTER-BASE",
       "kind": "image",
-      "url": "/assets/core/background/bg-bar-counter-base.png",
-      "sha256": "a94aaccb67ca8f3de1b3b1acb63791388b47c146fc1f6eb8bc610b8b0ef38980",
-      "bytes": 39533,
-      "dimensions": {
-        "width": 2048,
-        "height": 1152
-      },
-      "format": "png",
+      "colorSpace": "sRGB",
       "alpha": "straight",
+      "lossPolicy": "lossless-required",
       "pivot": {
-        "x": 0.5,
-        "y": 1
+        "x": 0,
+        "y": 0
       },
-      "anchors": [
-        "customer-edge",
-        "player-edge",
-        "order-mat-01",
-        "order-mat-02",
-        "order-mat-03",
-        "order-mat-04",
-        "order-mat-05",
-        "order-mat-06",
-        "plate-handoff",
-        "glass-handoff"
-      ],
+      "anchors": [],
       "clips": [],
-      "companions": [
-        {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
-        }
+      "mirrorSafe": false,
+      "source": "ARTSRC:D1-TSUKIOKA-PARTIAL-BEER-WAITING:R1",
+      "provenance": "PROV:D1-TSUKIOKA-PARTIAL-BEER-WAITING:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "GPL-003 v4.11.0"
       ],
-      "source": "art/source/environment/bg-bar-counter-base-r1.html"
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/customer/d1-tsukioka-partial-beer-waiting-r1-b1.png",
+      "sha256": "5fa4f5e257d54838aa22fe1403426808b71cd7bd9526730e666ea811ad5b1501",
+      "bytes": 341658,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
     },
     {
-      "revision": 2,
+      "id": "D1-TSUKIOKA-RECEIVED-EATING",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
       "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "bundle-model",
       "pack": "core",
-      "colorSpace": "sRGB",
-      "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v2.0.0",
-        "ART-002 v2.0.0",
-        "UI-002 v2.0.0",
-        "SYS-003 v2.0.0",
-        "SCN-002 v1.0.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "id": "ST-DRINK-BEER-TIER-1",
       "kind": "image",
-      "url": "/assets/core/stations/st-drink-beer-tier-1.png",
-      "sha256": "1f9928b345a34105c336034fbdd5e1efcc08a988f32137cf954f52e6de502366",
-      "bytes": 120074,
-      "dimensions": {
-        "width": 1536,
-        "height": 768
-      },
-      "format": "png",
-      "alpha": "straight",
-      "pivot": {
-        "x": 0.5,
-        "y": 1
-      },
-      "anchors": [
-        "empty-glass",
-        "lever-grip",
-        "nozzle",
-        "drip-tray",
-        "handoff-tray"
-      ],
-      "clips": [],
-      "companions": [
-        {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
-        }
-      ],
-      "source": "art/review/artist-002/st-drink-beer-tier-1/r1/generated.png"
-    },
-    {
-      "revision": 2,
-      "status": "approved",
-      "pack": "core",
       "colorSpace": "sRGB",
-      "mirrorSafe": false,
-      "provenance": "art/provenance/artist-002-p0-environment-assets.json",
-      "license": "Project-owned; generated with OpenAI image_gen and project references",
-      "specRefs": [
-        "ART-003 v2.0.0",
-        "ART-002 v2.0.0",
-        "UI-002 v2.0.0",
-        "SYS-003 v2.0.0",
-        "SCN-002 v1.0.0"
-      ],
-      "reviewedAt": "2026-07-22",
-      "id": "ST-CLEANUP-OVERLAY",
-      "kind": "atlas",
-      "url": "/assets/core/stations/st-cleanup-overlay.png",
-      "sha256": "1c9f52fdbbecb3e2b575b5e1a0fdae01756bf04806ef61a37662976c9056f721",
-      "bytes": 54943,
-      "dimensions": {
-        "width": 2046,
-        "height": 728
-      },
-      "format": "png",
       "alpha": "straight",
+      "lossPolicy": "lossless-required",
       "pivot": {
-        "x": 0.5,
-        "y": 0.5
+        "x": 0,
+        "y": 0
       },
-      "anchors": [
-        "seat-*"
-      ],
+      "anchors": [],
       "clips": [
-        "used-plate",
-        "used-plate-and-glass",
-        "clean"
+        "eat-negima",
+        "drink-draft-beer"
       ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:D1-TSUKIOKA-RECEIVED-EATING:R1",
+      "provenance": "PROV:D1-TSUKIOKA-RECEIVED-EATING:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "GPL-003 v4.11.0"
+      ],
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/customer/d1-tsukioka-received-eating-negima-r1-b1.png",
+      "sha256": "597c90993f8167421b7df90e604d5e46c302ae3230d7827bcaf6cecf45ef7a75",
+      "bytes": 350440,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png",
       "companions": [
         {
-          "role": "layout",
-          "url": "/assets/core/metadata/p0-environment-layout.json",
-          "sha256": "eccacbe3485c9e4086aed1af6eb99e6e6e30c4c93be7c8aa351579b4c68dc399",
-          "bytes": 7127
+          "role": "drink-frame",
+          "url": "/assets/core/customer/d1-tsukioka-received-eating-beer-r1-b1.png",
+          "sha256": "568d4e64d51335b215de8a0d938deaf493598304ee951dac84e2867e76faeaf9",
+          "bytes": 349220,
+          "format": "png",
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          }
         },
         {
-          "role": "atlas",
-          "url": "/assets/core/stations/st-cleanup-overlay.json",
-          "sha256": "fae378b5e657b28a4cf011d5ef7d35dde3862887ba7995d165cf16325830b3ac",
-          "bytes": 428
+          "role": "frame-manifest",
+          "url": "/assets/core/customer/d1-tsukioka-received-eating-r1-b1.json",
+          "sha256": "218cf1a01a1d15795b48319f508596092e83e0b58f1660517482aac433418fa5",
+          "bytes": 697,
+          "format": "json"
         }
+      ]
+    },
+    {
+      "id": "UI-CUSTOMER-ORDER-WAIT-PANEL",
+      "sourceRevision": 3,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:UI-CUSTOMER-ORDER-WAIT-PANEL:R3",
+      "provenance": "PROV:UI-CUSTOMER-ORDER-WAIT-PANEL:R3",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "UI-002 v5.24.1"
       ],
-      "source": "art/review/artist-002/st-cleanup-overlay/r1/generated.png"
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/ui/customer-order-wait-panel-skin-r3-b1.png",
+      "sha256": "3be12bd990151327e41070734ea6b78a8c8c0942d0bd44e65a12be4c75bf5e47",
+      "bytes": 50683,
+      "dimensions": {
+        "width": 232,
+        "height": 174
+      },
+      "format": "png"
+    },
+    {
+      "id": "UI-CUSTOMER-ORDER-ICON-NEGIMA",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:UI-CUSTOMER-ORDER-ICON-NEGIMA:R1",
+      "provenance": "PROV:UI-CUSTOMER-ORDER-ICON-NEGIMA:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "UI-002 v5.24.1"
+      ],
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/ui/order-icon-negima-r1-b1.png",
+      "sha256": "d51ad1c7e46a66208713eb55675b1718664b887c3d8d5a98b34a6f6ef117d37a",
+      "bytes": 17867,
+      "dimensions": {
+        "width": 192,
+        "height": 192
+      },
+      "format": "png"
+    },
+    {
+      "id": "UI-CUSTOMER-ORDER-ICON-DRAFT-BEER",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:UI-CUSTOMER-ORDER-ICON-DRAFT-BEER:R1",
+      "provenance": "PROV:UI-CUSTOMER-ORDER-ICON-DRAFT-BEER:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "UI-002 v5.24.1"
+      ],
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/ui/order-icon-draft-beer-r1-b1.png",
+      "sha256": "bcc841ae39a16dd67bfc7f8dcc16d43f2d66de7ab8701b93a80ffbeb12b2435d",
+      "bytes": 42974,
+      "dimensions": {
+        "width": 192,
+        "height": 192
+      },
+      "format": "png"
     }
   ]
 }

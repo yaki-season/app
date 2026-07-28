@@ -7,20 +7,18 @@
   "required": ["schemaVersion", "generatedAt", "specRefs", "packs", "assets"],
   "properties": {
     "$schema": { "type": "string" },
-    "schemaVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "schemaVersion": { "const": "3.0.0" },
     "generatedAt": { "type": "string", "format": "date" },
     "specRefs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
     "packs": {
       "type": "object",
       "required": ["core", "campaign", "optional"],
-      "additionalProperties": {
-        "type": "object",
-        "required": ["load", "description"],
-        "properties": {
-          "load": { "enum": ["startup", "stage", "on-demand"] },
-          "description": { "type": "string", "minLength": 1 }
-        }
-      }
+      "properties": {
+        "core": { "$ref": "#/$defs/pack" },
+        "campaign": { "$ref": "#/$defs/pack" },
+        "optional": { "$ref": "#/$defs/pack" }
+      },
+      "additionalProperties": false
     },
     "assets": {
       "type": "array",
@@ -28,6 +26,15 @@
     }
   },
   "$defs": {
+    "pack": {
+      "type": "object",
+      "required": ["load", "description"],
+      "properties": {
+        "load": { "enum": ["startup", "stage", "on-demand"] },
+        "description": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "point": {
       "type": "object",
       "required": ["x", "y"],
@@ -38,61 +45,114 @@
       },
       "additionalProperties": false
     },
+    "dimensions": {
+      "type": "object",
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "companion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "url", "sha256", "bytes", "format"],
+      "properties": {
+        "role": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "url": { "type": "string", "pattern": "^/assets/[a-z0-9./-]+$" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "format": { "enum": ["jpeg", "png", "webp", "glb", "json"] },
+        "dimensions": { "$ref": "#/$defs/dimensions" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "format": { "enum": ["jpeg", "png", "webp"] }
+            },
+            "required": ["format"]
+          },
+          "then": {
+            "properties": { "dimensions": true },
+            "required": ["dimensions"]
+          }
+        }
+      ]
+    },
     "asset": {
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": false,
       "required": [
-        "id", "revision", "status", "pack", "kind", "url", "sha256", "bytes",
-        "dimensions", "format", "colorSpace", "alpha", "pivot", "anchors", "clips",
+        "id", "sourceRevision", "runtimeBuild", "status", "screenUnit",
+        "profile", "pack", "kind", "url", "sha256", "bytes", "format",
+        "colorSpace", "alpha", "lossPolicy", "pivot", "anchors", "clips",
         "mirrorSafe", "source", "provenance", "license", "specRefs", "reviewedAt"
       ],
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Z0-9-]+$" },
+        "id": {
+          "type": "string",
+          "pattern": "^(?!.*-R[0-9]+$)[A-Z0-9-]+$"
+        },
         "legacyId": { "type": "string", "pattern": "^[A-Z0-9-]+$" },
         "groupId": { "type": "string", "pattern": "^[A-Z0-9-]+$" },
-        "revision": { "type": "integer", "minimum": 1 },
+        "sourceRevision": { "type": "integer", "minimum": 1 },
+        "runtimeBuild": { "type": "integer", "minimum": 1 },
         "status": { "const": "approved" },
+        "screenUnit": { "type": "string", "minLength": 1 },
+        "profile": { "enum": ["complete-layer", "standalone-raster", "bundle-model"] },
         "pack": { "enum": ["core", "campaign", "optional"] },
         "kind": { "enum": ["image", "atlas", "model", "texture", "vfx"] },
         "url": { "type": "string", "pattern": "^/assets/[a-z0-9./-]+$" },
         "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
         "bytes": { "type": "integer", "minimum": 1 },
-        "dimensions": {
+        "dimensions": { "$ref": "#/$defs/dimensions" },
+        "bounds": {
           "type": "object",
-          "required": ["width", "height"],
+          "required": ["min", "max"],
           "properties": {
-            "width": { "type": "integer", "minimum": 1 },
-            "height": { "type": "integer", "minimum": 1 }
+            "min": { "$ref": "#/$defs/point" },
+            "max": { "$ref": "#/$defs/point" }
           },
           "additionalProperties": false
         },
         "format": { "enum": ["jpeg", "png", "webp", "glb", "json"] },
-        "colorSpace": { "enum": ["sRGB", "linear"] },
-        "alpha": { "enum": ["none", "straight"] },
+        "colorSpace": { "enum": ["sRGB", "linear", "not-applicable"] },
+        "alpha": { "enum": ["none", "straight", "not-applicable"] },
+        "lossPolicy": { "enum": ["lossless-required", "lossy-background-approved", "not-applicable"] },
         "pivot": { "$ref": "#/$defs/point" },
         "anchors": { "type": "array" },
         "clips": { "type": "array", "items": { "type": "string" } },
         "companions": {
           "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["role", "url", "sha256", "bytes"],
-            "properties": {
-              "role": { "enum": ["layout", "atlas", "model"] },
-              "url": { "type": "string", "pattern": "^/assets/[a-z0-9./-]+$" },
-              "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-              "bytes": { "type": "integer", "minimum": 1 }
-            },
-            "additionalProperties": false
-          }
+          "items": { "$ref": "#/$defs/companion" }
         },
         "mirrorSafe": { "type": "boolean" },
-        "source": { "type": "string", "minLength": 1 },
-        "provenance": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "pattern": "^ARTSRC:[A-Z0-9-]+:R[0-9]+$" },
+        "provenance": { "type": "string", "pattern": "^PROV:[A-Z0-9-]+:R[0-9]+$" },
         "license": { "type": "string", "minLength": 1 },
         "specRefs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
         "reviewedAt": { "type": "string", "format": "date" }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "format": { "enum": ["jpeg", "png", "webp"] }
+            },
+            "required": ["format"]
+          },
+          "then": {
+            "required": ["dimensions"],
+            "properties": { "dimensions": true }
+          },
+          "else": {
+            "required": ["bounds"],
+            "properties": { "bounds": true }
+          }
+        }
+      ]
     }
   }
 }
