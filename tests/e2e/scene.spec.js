@@ -99,7 +99,8 @@ test('탄 상태면 츠키오카가 retry 반응을 보인다', async ({ page })
   // 방치 → 탄 상태 (결과 오버레이가 나타날 때까지)
   await expect.poll(
     () => page.evaluate(() => window.__sceneDebug.tickNow().status),
-    { timeout: 15000 },
+    // 면별 완전 탄 임계값 21초(GPL-004 §25-1)를 포함해야 한다.
+    { timeout: 30000 },
   ).toBe('failed');
   await expect(page.getByTestId('result-overlay')).toBeVisible();
   await expect(page.getByTestId('result-message')).toContainText('타버렸습니다');

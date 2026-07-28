@@ -6,9 +6,10 @@ describe('grill shader parameters', () => {
   it('maps game timing to the shader range without exceeding 0..1', () => {
     expect(elapsedSecToUniform(-1)).toBe(0);
     expect(elapsedSecToUniform(0)).toBe(0);
-    expect(elapsedSecToUniform(4)).toBe(0.5);
-    expect(elapsedSecToUniform(7)).toBe(1);
-    expect(elapsedSecToUniform(20)).toBe(1);
+    expect(elapsedSecToUniform(12)).toBe(0.5);
+    expect(elapsedSecToUniform(20)).toBeLessThan(1);
+    expect(elapsedSecToUniform(21)).toBe(1);
+    expect(elapsedSecToUniform(30)).toBe(1);
   });
 
   it('keeps every tunable scalar inside its declared range', () => {

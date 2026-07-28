@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 import {
@@ -15,13 +14,11 @@ import {
 test.skip(!process.env.CAPTURE_STATES, 'CAPTURE_STATES=1일 때 검수 캡처를 생성한다.');
 test.setTimeout(120000);
 
-const captureRoot = path.resolve('art/review/developer-1-005/captures');
-
-async function capture(page, projectName, name) {
+async function capture(page, outputPath) {
   await page.evaluate(() => window.__sceneDebug.renderer.renderFrame(performance.now()));
   await page.waitForTimeout(50);
   const buffer = await page.screenshot({
-    path: path.join(captureRoot, projectName, `${name}.png`),
+    path: outputPath,
     fullPage: true,
   });
   expect(buffer.byteLength).toBeGreaterThan(10000);
@@ -52,20 +49,20 @@ test('두 기준 뷰포트의 8개 핵심 상태를 캡처한다', async ({ page
   const project = testInfo.project.name;
   const hashes = new Set();
   await boot(page);
-  hashes.add(await capture(page, project, '01-assembly-start'));
+  hashes.add(await capture(page, testInfo.outputPath(`${project}-01-assembly-start.png`)));
 
   await assembleSkewer(page);
-  hashes.add(await capture(page, project, '02-assembly-complete'));
+  hashes.add(await capture(page, testInfo.outputPath(`${project}-02-assembly-complete.png`)));
 
   await placeOnGrill(page);
   await expect.poll(() => doneness(page), { timeout: 15000 }).toBe('perfect');
-  hashes.add(await capture(page, project, '03-grill-perfect'));
+  hashes.add(await capture(page, testInfo.outputPath(`${project}-03-grill-perfect.png`)));
 
   await clickHotspot(page, 'grill-skewer');
   await flipWhenPerfect(page, 'plated');
   await expect.poll(() => page.evaluate(() => !!window.__sceneDebug.screenPosOf('plate'))).toBe(true);
   await page.evaluate(() => window.__sceneDebug.selectPlateNow());
-  hashes.add(await capture(page, project, '04-plate-selected'));
+  hashes.add(await capture(page, testInfo.outputPath(`${project}-04-plate-selected.png`)));
 
   expect(await page.evaluate(() => window.__sceneDebug.startServiceNow())).toBe(true);
   await expect.poll(
@@ -75,10 +72,10 @@ test('두 기준 뷰포트의 8개 핵심 상태를 캡처한다', async ({ page
   await expect.poll(
     () => page.evaluate(() => window.__sceneDebug.customerState()),
   ).toBe('tasting');
-  hashes.add(await capture(page, project, '05-tasting'));
+  hashes.add(await capture(page, testInfo.outputPath(`${project}-05-tasting.png`)));
   await page.evaluate(() => window.__sceneDebug.completeCustomerReactionNow());
   expect(await page.evaluate(() => window.__sceneDebug.customerState())).toBe('satisfied');
-  hashes.add(await capture(page, project, '06-satisfied'));
+  hashes.add(await capture(page, testInfo.outputPath(`${project}-06-satisfied.png`)));
 
   await restartAndSettle(page);
   await assembleSkewer(page);
@@ -88,7 +85,7 @@ test('두 기준 뷰포트의 8개 핵심 상태를 캡처한다', async ({ page
   await expect.poll(() => doneness(page), { timeout: 15000 }).toBe('over');
   await clickHotspot(page, 'grill-skewer');
   await serveAndWait(page, 'neutral');
-  hashes.add(await capture(page, project, '07-low-quality'));
+  hashes.add(await capture(page, testInfo.outputPath(`${project}-07-low-quality.png`)));
 
   await restartAndSettle(page);
   await assembleSkewer(page);
@@ -99,6 +96,6 @@ test('두 기준 뷰포트의 8개 핵심 상태를 캡처한다', async ({ page
   ).toBe('failed');
   await expect(page.getByTestId('result-overlay')).toBeVisible();
   expect((await getState(page)).status).toBe('failed');
-  hashes.add(await capture(page, project, '08-burnt-failure'));
+  hashes.add(await capture(page, testInfo.outputPath(`${project}-08-burnt-failure.png`)));
   expect(hashes.size).toBe(8);
 });

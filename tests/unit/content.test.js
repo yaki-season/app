@@ -150,7 +150,7 @@ describe('candidate/approved 분리', () => {
     expect(approvedOnly(b.customers)).toEqual([]);
 
     b.customers[0].status = 'approved';
-    expect(approvedOnly(b.customers).map((r) => r.id)).toEqual(['solo']);
+    expect(approvedOnly(b.customers).map((r) => r.id)).toEqual([b.customers[0].id]);
   });
 });
 
@@ -165,6 +165,6 @@ describe('로직이 데이터를 읽는다', () => {
 
     // 다른 테스트에 영향 주지 않도록 실제 데이터 값으로 복원
     applyBalanceContent(loadBundle());
-    expect(COOK_THRESHOLDS_SEC[DONENESS.PERFECT]).toBe(2.5);
+    expect(COOK_THRESHOLDS_SEC[DONENESS.PERFECT]).toBe(8);
   });
 });

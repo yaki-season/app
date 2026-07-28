@@ -1,8 +1,10 @@
-// SYS-002 2.5D 장면 레이아웃 계약.
+// SCN-001 단일 손님 회귀·통합 테스트 화면 레이아웃.
 //
-// 레이어 깊이, 앵커(정규화 top-left), 카메라 프리셋, 그리고 더미 도형이 대신할 실제 에셋 ID를
-// 한 곳에 고정한다. 아트가 승인되면 각 슬롯의 assetId 텍스처만 갈아끼우면 된다.
-// 좌표는 `public/assets/core/metadata/p0-environment-layout.json`(desktop-16x9)에서 가져왔다.
+// 이 파일의 지속 카운터 구도와 더미 슬롯은 최신 SYS-002 v3 프로덕션 화면 계약이 아니다.
+// 프로덕션은 같은 플레이어 기준 공간에서 독립 손님 정보/조립/그릴/드링크/서빙 프리셋을
+// 활성화해야 한다. 아래 좌표는 아트와 무관한 테스트 화면용 고정 정규화 좌표다.
+
+export const SCENE_MODE = 'single-customer-test';
 
 // 레이어 z 깊이 (카메라는 +z에서 -z를 바라본다. 값이 작을수록 멀다.)
 export const LAYER_Z = {
@@ -31,7 +33,7 @@ export const ANCHORS = {
     'seat-05': { x: 0.728, y: 0.48 },
     'seat-06': { x: 0.88, y: 0.48 },
   },
-  // 접시 전달 경로: 플레이어측 작업 anchor → 주문 매트 → 손님측 도착 (SYS-002 §20)
+  // 테스트 접시 전달 경로: 플레이어측 작업 anchor → 주문 매트 → 손님측 도착.
   handoffPath: [
     { x: 0.5, y: 0.78 },
     { x: 0.5, y: 0.56 },
@@ -39,7 +41,7 @@ export const ANCHORS = {
   ],
 };
 
-// 츠키오카(단일 손님)는 seat-03 근처에 앉는다. 상태 이름으로만 텍스처 교체 (SYS-002 §13).
+// 츠키오카(단일 손님)는 테스트 화면에서만 seat-03 근처에 앉는다.
 export const CUSTOMER_SEAT = 'seat-03';
 export const CUSTOMER_STATES = ['waiting', 'tasting', 'satisfied', 'neutral', 'retry'];
 export const CUSTOMER_ASSET_ID = {
@@ -50,8 +52,8 @@ export const CUSTOMER_ASSET_ID = {
   retry: 'CH-TSUKIOKA-RETRY',
 };
 
-// 셰프측 고정 원근 카메라의 공정별 프리셋. 배경·손님·카운터는 유지하고 하단만 바꾼다 (SYS-002 §5,6).
-// 짧은 좌우 이동 + 작업대 push-in. 전환은 0.25~0.45초 ease-out.
+// 테스트 전용 공정 프리셋. 배경·손님·카운터를 유지하고 하단만 바꾼다.
+// 최신 프로덕션 SYS-002는 이 좌우 이동을 재사용하지 않는다.
 export const CAMERA_PRESETS = {
   assembly: { x: -1.1, z: 6.0, targetX: -0.5 },
   grill: { x: 0.0, z: 4.6, targetX: 0.0 }, // 그릴은 확실히 push-in
@@ -59,8 +61,7 @@ export const CAMERA_PRESETS = {
 };
 export const CAMERA_TRANSITION_MS = 350;
 
-// 더미 도형이 대신하는 에셋 슬롯. layer·assetId·색(더미)·앵커를 고정한다.
-// 아트 승인 시 assetId 텍스처로 교체하면 배치가 그대로 유지된다.
+// 더미 도형이 대신하는 테스트 에셋 슬롯. 프로덕션 아트 승인이나 독립 화면 인수의 근거가 아니다.
 export const DUMMY_SLOTS = [
   { key: 'bg', layer: 'background', assetId: 'BG-INTERIOR-BASE', color: 0x241c15 },
   { key: 'seating', layer: 'background', assetId: 'BG-SEATING-6', color: 0x2c2118 },

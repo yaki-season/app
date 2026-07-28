@@ -28,9 +28,9 @@ describe('콘텐츠 구동 영업일 루프', () => {
     const c = config();
     expect(c.customerCount).toBe(20);
     expect(c.spawnIntervalSec).toBe(12);
-    // day-d1의 customerPool은 solo·office → 두 유형 순환
-    expect(c.types.map((t) => t.id)).toEqual(['solo', 'office']);
-    expect(c.cookTimeSec).toBeCloseTo(10.9, 1); // assembly 2 + 2*3.7 + eat 1.5
+    // day-d1의 customerPool은 regular·solo·office → 세 유형 순환
+    expect(c.types.map((t) => t.id)).toEqual(['regular', 'solo', 'office']);
+    expect(c.cookTimeSec).toBeCloseTo(39.4, 1); // assembly 2 + 2*11.2 + eat 15
   });
 
   it('한 영업일이 손님 수만큼 처리되고 정산 지표를 낸다', () => {
@@ -94,7 +94,7 @@ describe('역할 분리 (GPL-003)', () => {
 
 describe('cook time 도출', () => {
   it('조립·양면·식사 시간을 합친다', () => {
-    const t = deriveCookTimeSec({ thresholdsSec: { perfect: 2.5, over: 5.5 }, timingSec: { assembly: 2, eat: 1.5 } });
-    expect(t).toBeCloseTo(10.9, 1);
+    const t = deriveCookTimeSec({ thresholdsSec: { perfect: 8, over: 16 }, timingSec: { assembly: 2, eat: 15 } });
+    expect(t).toBeCloseTo(39.4, 1);
   });
 });

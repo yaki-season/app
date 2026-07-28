@@ -3,7 +3,7 @@
   "$id": "day.schema.json",
   "title": "영업일",
   "type": "object",
-  "required": ["id", "schemaVersion", "displayKey", "active", "status", "customerCount", "spawnIntervalSec", "customerPool", "economy", "timingSec", "autoPolicySuccessRate"],
+  "required": ["id", "schemaVersion", "displayKey", "active", "status", "customerCount", "spawnIntervalSec", "waitRecoverySec", "urgentThresholdSec", "customerPool", "economy", "timingSec", "autoPolicySuccessRate"],
   "additionalProperties": false,
   "properties": {
     "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
@@ -13,6 +13,8 @@
     "status": { "enum": ["candidate", "approved"] },
     "customerCount": { "type": "integer", "minimum": 1, "maximum": 200, "unit": "명" },
     "spawnIntervalSec": { "type": "number", "minimum": 1, "maximum": 120, "unit": "초" },
+    "waitRecoverySec": { "type": "number", "minimum": 0, "maximum": 120, "unit": "초", "description": "주문 항목 하나를 제공했을 때 손님 대기 게이지에 회복하는 시간." },
+    "urgentThresholdSec": { "type": "number", "minimum": 1, "maximum": 120, "unit": "초", "description": "손님 이탈 임박 주문 박스의 느린 반복 점등과 남은 시간 게이지를 시작하는 시점." },
     "customerPool": {
       "type": "array",
       "minItems": 1,
@@ -33,11 +35,13 @@
     "timingSec": {
       "type": "object",
       "description": "영업일 루프의 조리·식사 타이밍. 자동 정책 시뮬레이션의 주문당 시간 도출에 쓴다.",
-      "required": ["assembly", "eat"],
+      "required": ["assembly", "eat", "orderThinkMin", "orderThinkMax"],
       "additionalProperties": false,
       "properties": {
         "assembly": { "type": "number", "minimum": 0, "maximum": 10, "unit": "초" },
-        "eat": { "type": "number", "minimum": 0, "maximum": 10, "unit": "초" }
+        "eat": { "type": "number", "minimum": 0, "maximum": 60, "unit": "초", "description": "전량 수령 뒤 모든 손님이 공통으로 표시하는 식사·음주 시간." },
+        "orderThinkMin": { "type": "number", "minimum": 0, "maximum": 30, "unit": "초", "description": "주문 전 고민 시간의 최소값." },
+        "orderThinkMax": { "type": "number", "minimum": 0, "maximum": 30, "unit": "초", "description": "주문 전 고민 시간의 최대값." }
       }
     },
     "autoPolicySuccessRate": {

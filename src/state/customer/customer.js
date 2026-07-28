@@ -14,11 +14,12 @@ export const CUSTOMER_STATE = {
 export const MOOD = { HAPPY: 'happy', MEH: 'meh', ANGRY: 'angry' };
 export const SATISFACTION = { GOOD: 'good', LOW: 'low', FAIL: 'fail' };
 
-// 상태 체류 시간(ms). GPL-002 미해결(타이머 값)의 잠정 기본값.
+// 상태 체류 시간(ms). 테스트 화면도 최신 손님 운영 계약의 공통 식사 시간을 사용한다.
 export const CUSTOMER_TIMERS = {
   entering: 600,
-  ordering: 400,
-  eating: 1500,
+  orderingMin: 4000,
+  orderingMax: 6000,
+  eating: 15000,
   leaving: 600,
 };
 
@@ -26,10 +27,12 @@ export const CUSTOMER_TIMERS = {
 const BASE_TIP = 10;
 
 export class Customer {
-  constructor({ type, orderSequence, patience = 'normal', tipMultiplier = 1 }) {
+  constructor({ type, orderSequence, patience = 'normal', tipMultiplier = 1, random = Math.random }) {
     this.type = type;
     this.orderSequence = orderSequence;
     this.slotIndex = 0;
+    this.random = random;
+    this.orderingDurationMs = null;
 
     this.state = CUSTOMER_STATE.ENTERING;
     this.stateStartMs = null; // 첫 update에서 설정
@@ -77,7 +80,7 @@ export class Customer {
         if (t >= CUSTOMER_TIMERS.entering) this._setState(CUSTOMER_STATE.ORDERING, nowMs);
         break;
       case CUSTOMER_STATE.ORDERING:
-        if (t >= CUSTOMER_TIMERS.ordering) this._setState(CUSTOMER_STATE.WAITING, nowMs);
+        if (t >= this.orderingDurationMs) this._setState(CUSTOMER_STATE.WAITING, nowMs);
         break;
       case CUSTOMER_STATE.WAITING:
         // 서빙은 외부 이벤트. 인내심 감소는 비활성.
@@ -139,6 +142,13 @@ export class Customer {
   _setState(next, nowMs) {
     this.state = next;
     this.stateStartMs = nowMs;
+    if (next === CUSTOMER_STATE.ORDERING) {
+      this.orderingDurationMs = randomInRange(
+        this.random,
+        CUSTOMER_TIMERS.orderingMin,
+        CUSTOMER_TIMERS.orderingMax,
+      );
+    }
   }
 
   // 가시성 (숨김/복귀) — SYS-001 백그라운드 처리와 정합.
@@ -151,6 +161,10 @@ export class Customer {
     this.stateStartMs += nowMs - this.pausedAtMs;
     this.pausedAtMs = null;
   }
+}
+
+function randomInRange(random, min, max) {
+  return Math.floor(random() * (max - min + 1)) + min;
 }
 
 // 조리 결과 → 만족도. 손님 엔티티와 영업일 루프(businessDay)가 공유하는 단일 판정 규칙.

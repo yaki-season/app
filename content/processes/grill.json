@@ -7,8 +7,8 @@
   "station": "grill",
   "faceThresholdsSec": {
     "under": 0.0,
-    "perfect": 2.5,
-    "over": 5.5,
-    "burnt": 7.0
+    "perfect": 8.0,
+    "over": 16.0,
+    "burnt": 21.0
   }
 }

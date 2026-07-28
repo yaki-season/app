@@ -1,12 +1,23 @@
 [
   {
+    "id": "regular",
+    "schemaVersion": 1,
+    "displayKey": "customer.regular",
+    "active": true,
+    "status": "candidate",
+    "groupSize": 1,
+    "patienceSec": 100,
+    "tipMultiplier": 1.0,
+    "orderSequence": ["drink", "skewer", "skewer", "skewer"]
+  },
+  {
     "id": "solo",
     "schemaVersion": 1,
     "displayKey": "customer.solo",
     "active": true,
     "status": "candidate",
     "groupSize": 1,
-    "patienceSec": 40,
+    "patienceSec": 60,
     "tipMultiplier": 1.0,
     "orderSequence": ["skewer"]
   },
@@ -17,9 +28,9 @@
     "active": true,
     "status": "candidate",
     "groupSize": 2,
-    "patienceSec": 30,
+    "patienceSec": 60,
     "tipMultiplier": 1.1,
-    "orderSequence": ["drink", "skewer", "skewer"]
+    "orderSequence": ["drink", "drink", "skewer", "skewer"]
   },
   {
     "id": "blogger",
@@ -28,7 +39,7 @@
     "active": true,
     "status": "candidate",
     "groupSize": 1,
-    "patienceSec": 30,
+    "patienceSec": 60,
     "tipMultiplier": 0.9,
     "orderSequence": ["skewer"]
   },
@@ -39,7 +50,7 @@
     "active": true,
     "status": "candidate",
     "groupSize": 2,
-    "patienceSec": 35,
+    "patienceSec": 60,
     "tipMultiplier": 1.2,
     "orderSequence": ["skewer"]
   }

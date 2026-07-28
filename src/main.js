@@ -1,5 +1,7 @@
-// 2.5D 영업 장면 진입점 (더미). 게임 상태(gameState 리듀서)를 Three.js 장면에 연결한다.
-// 조리 로직은 렌더러를 import하지 않는다 (SYS-002 §1) — 여기서만 상태→장면을 배선한다.
+// SCN-001 단일 손님 회귀·통합 테스트 화면 진입점.
+// 게임 상태(gameState 리듀서)를 Three.js 장면에 연결한다. 최신 SYS-002 프로덕션 화면은
+// 독립 손님 정보/조리 프리셋과 다중 주문 어댑터를 별도로 사용해야 한다.
+// 조리 로직은 렌더러를 import하지 않는다 — 여기서만 상태→장면을 배선한다.
 
 import * as THREE from 'three';
 import { createSceneRenderer } from './render/sceneRenderer.js';
@@ -337,6 +339,24 @@ for (const btn of document.querySelectorAll('.tab')) {
     render();
   });
 }
+
+// PC에서는 탭 버튼과 동일한 잠금 규칙으로 인접 스테이션을 이동한다.
+const STATION_ORDER = [PROCESS.ASSEMBLY, PROCESS.GRILL, PROCESS.COUNTER];
+window.addEventListener('keydown', (event) => {
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+  event.preventDefault();
+
+  const index = STATION_ORDER.indexOf(state.process);
+  const nextIndex = index + (event.key === 'ArrowLeft' ? -1 : 1);
+  const nextProcess = STATION_ORDER[nextIndex];
+  if (!nextProcess) return;
+
+  const nextState = clickTab(state, nextProcess);
+  if (nextState === state) return;
+  state = nextState;
+  render();
+});
 
 el('restartButton').addEventListener('click', () => {
   state = restart(state);

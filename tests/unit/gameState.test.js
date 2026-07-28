@@ -102,7 +102,7 @@ describe('그릴 — 앞뒤면 독립 판정', () => {
     expect(s.faceStartAtMs).toBe(0);
   });
 
-  it('너무 이른 클릭(2.5초 미만)은 무시된다', () => {
+  it('너무 이른 클릭(8초 미만)은 무시된다', () => {
     const s0 = grillReadyState();
     const s1 = clickGrillSkewer(s0, 1000);
     expect(s1).toBe(s0);
@@ -111,45 +111,45 @@ describe('그릴 — 앞뒤면 독립 판정', () => {
 
   it('적정 구간에서 클릭하면 뒤집혀 뒷면 시간이 새로 시작된다', () => {
     const s0 = grillReadyState();
-    const s1 = clickGrillSkewer(s0, 3000);
+    const s1 = clickGrillSkewer(s0, 8000);
     expect(s1.status).toBe(STATUS.GRILL_BACK);
     expect(s1.frontResult).toBe('perfect');
-    expect(s1.faceStartAtMs).toBe(3000);
+    expect(s1.faceStartAtMs).toBe(8000);
   });
 
-  it('앞뒤 조리 시간은 독립적으로 계산된다 (뒷면 시작 후 3초는 뒷면 기준 적정)', () => {
+  it('앞뒤 조리 시간은 독립적으로 계산된다 (뒷면 시작 후 8초는 뒷면 기준 적정)', () => {
     const s0 = grillReadyState();
-    const s1 = clickGrillSkewer(s0, 3000); // 앞면 3초 시점에 뒤집음
-    const s2 = clickGrillSkewer(s1, 3000 + 3000); // 뒷면 시작 후 3초 경과
+    const s1 = clickGrillSkewer(s0, 8000); // 앞면 8초 시점에 뒤집음
+    const s2 = clickGrillSkewer(s1, 8000 + 8000); // 뒷면 시작 후 8초 경과
     expect(s2.status).toBe(STATUS.PLATED);
     expect(s2.backResult).toBe('perfect');
   });
 
   it('과다 상태에서도 뒤집기·회수는 허용되고 낮은 품질로 기록된다', () => {
     const s0 = grillReadyState();
-    const s1 = clickGrillSkewer(s0, 6000); // 과다 구간
+    const s1 = clickGrillSkewer(s0, 16000); // 과다 구간
     expect(s1.status).toBe(STATUS.GRILL_BACK);
     expect(s1.frontResult).toBe('over');
   });
 
-  it('7초 이상 방치하면 tick으로 실패 상태가 된다', () => {
+  it('21초 이상 방치하면 tick으로 실패 상태가 된다', () => {
     const s0 = grillReadyState();
-    const s1 = tick(s0, 7000);
+    const s1 = tick(s0, 21000);
     expect(s1.status).toBe(STATUS.FAILED);
     expect(s1.frontResult).toBe('burnt');
   });
 
   it('실패 이후 tick을 반복 호출해도 추가 전이가 없다 (한 프레임 한 전이)', () => {
     const s0 = grillReadyState();
-    const s1 = tick(s0, 7000);
+    const s1 = tick(s0, 21000);
     const s2 = tick(s1, 999999);
     expect(s2).toBe(s1);
   });
 
   it('실패 상태에서는 그릴 클릭이 무시된다', () => {
     const s0 = grillReadyState();
-    const s1 = tick(s0, 7000);
-    const s2 = clickGrillSkewer(s1, 8000);
+    const s1 = tick(s0, 21000);
+    const s2 = clickGrillSkewer(s1, 22000);
     expect(s2).toBe(s1);
   });
 });
@@ -167,15 +167,15 @@ describe('브라우저 숨김·복귀', () => {
     const s2 = visibilityVisible(s1, 100000); // 아주 오래 뒤 복귀
     // 복귀 직후 elapsed는 여전히 1초여야 한다 (탄 상태가 아니어야 함)
     const s3 = clickGrillSkewer(s2, 100000);
-    expect(s3.status).toBe(STATUS.GRILL_FRONT); // 아직 2.5초 미만이라 뒤집히지 않음
-    const s4 = clickGrillSkewer(s2, 100000 + 1500); // 추가로 1.5초만 더 진행 = 총 2.5초
+    expect(s3.status).toBe(STATUS.GRILL_FRONT); // 아직 8초 미만이라 뒤집히지 않음
+    const s4 = clickGrillSkewer(s2, 100000 + 7000); // 추가로 7초만 더 진행 = 총 8초
     expect(s4.status).toBe(STATUS.GRILL_BACK);
   });
 
   it('숨김 중에는 그릴 클릭이 무시된다', () => {
     const s0 = grillReadyState();
-    const s1 = visibilityHidden(s0, 3000);
-    const s2 = clickGrillSkewer(s1, 3000);
+    const s1 = visibilityHidden(s0, 8000);
+    const s2 = clickGrillSkewer(s1, 8000);
     expect(s2).toBe(s1);
   });
 
@@ -192,8 +192,8 @@ describe('서빙과 재시작', () => {
     const s0 = assembleFullSkewer(readyState());
     const s1 = clickAssembledSkewer(s0);
     const s2 = placeOnGrill(s1, 0);
-    const s3 = clickGrillSkewer(s2, 3000); // 앞면 적정
-    return clickGrillSkewer(s3, 3000 + 3000); // 뒷면 적정 -> plated
+    const s3 = clickGrillSkewer(s2, 8000); // 앞면 적정
+    return clickGrillSkewer(s3, 8000 + 8000); // 뒷면 적정 -> plated
   }
 
   it('양면 적정이면 좋은 품질로 서빙된다', () => {
@@ -226,7 +226,7 @@ describe('서빙과 재시작', () => {
 
   it('탄 실패 뒤에도 재시작할 수 있다', () => {
     const s0 = placeOnGrill(clickAssembledSkewer(assembleFullSkewer(readyState())), 0);
-    const s1 = tick(s0, 7000);
+    const s1 = tick(s0, 21000);
     const s2 = restart(s1);
     expect(s2.status).toBe(STATUS.ASSEMBLY);
   });

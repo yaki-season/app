@@ -3,6 +3,7 @@
 // 이 화면이 활성화된 동안에만 애니메이션 루프를 소유한다 — 다른 화면과 중복 루프를 만들지 않는다.
 
 import { GRILL_PARAMS } from './grillShaderParams.js';
+import { COOK_THRESHOLDS_SEC, DONENESS } from '../config/recipe.js';
 
 async function loadText(url) {
   const res = await fetch(url);
@@ -71,11 +72,13 @@ function applyShaderParams(gl, prog, params) {
 }
 
 // 경과 초를 셰이더 uDoneness(0=날것, 0.5=Perfect, 1=탄 상태)로 매핑한다.
-// GPL-001 §9의 판정 구간 중심(2.5~5.5초의 중앙 4.0초 = perfect, 7.0초 = 탄 상태)에 맞춘 구간 보간.
+// 콘텐츠의 적정 구간 중심을 uDoneness=0.5로, 완전 탄 경계를 1로 맞춘다.
 export function elapsedSecToUniform(elapsedSec) {
   const clamped = Math.max(0, elapsedSec);
-  if (clamped <= 4.0) return (clamped / 4.0) * 0.5;
-  const t = Math.min((clamped - 4.0) / 3.0, 1);
+  const perfectCenter = (COOK_THRESHOLDS_SEC[DONENESS.PERFECT] + COOK_THRESHOLDS_SEC[DONENESS.OVER]) / 2;
+  const burnt = COOK_THRESHOLDS_SEC[DONENESS.BURNT];
+  if (clamped <= perfectCenter) return (clamped / perfectCenter) * 0.5;
+  const t = Math.min((clamped - perfectCenter) / (burnt - perfectCenter), 1);
   return 0.5 + t * 0.5;
 }
 

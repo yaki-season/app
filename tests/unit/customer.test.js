@@ -14,13 +14,17 @@ const T = CUSTOMER_TIMERS;
 function advanceToWaiting(c, startMs = 0) {
   c.update(startMs); // stateStartMs 설정, entering
   c.update(startMs + T.entering); // → ordering
-  c.update(startMs + T.entering + T.ordering); // → waiting
-  return startMs + T.entering + T.ordering;
+  c.update(startMs + T.entering + T.orderingMax); // → waiting
+  return startMs + T.entering + T.orderingMax;
 }
 
 const goodServe = { category: 'skewer', recipeMatched: true, frontResult: 'perfect', backResult: 'perfect' };
 
 describe('손님 base 상태 머신', () => {
+  it('모든 손님은 전량 수령 뒤 15초간 식사·음주 상태를 유지한다', () => {
+    expect(T.eating).toBe(15000);
+  });
+
   it('혼술족은 순서열 [꼬치]로 시작하고 Entering 상태다', () => {
     const c = createSolo();
     expect(c.orderSequence).toEqual(['skewer']);
@@ -33,8 +37,20 @@ describe('손님 base 상태 머신', () => {
     expect(c.state).toBe(CUSTOMER_STATE.ENTERING);
     c.update(T.entering);
     expect(c.state).toBe(CUSTOMER_STATE.ORDERING);
-    c.update(T.entering + T.ordering);
+    c.update(T.entering + T.orderingMax);
     expect(c.state).toBe(CUSTOMER_STATE.WAITING);
+  });
+
+  it('주문 고민 시간은 4~6초 범위에서 균등 무작위로 정한다', () => {
+    const earliest = new Customer({ type: 'test', orderSequence: ['skewer'], random: () => 0 });
+    earliest.update(0);
+    earliest.update(T.entering);
+    expect(earliest.orderingDurationMs).toBe(T.orderingMin);
+
+    const latest = new Customer({ type: 'test', orderSequence: ['skewer'], random: () => 0.999999 });
+    latest.update(0);
+    latest.update(T.entering);
+    expect(latest.orderingDurationMs).toBe(T.orderingMax);
   });
 
   it('한 번의 update는 최대 한 전이만 만든다', () => {

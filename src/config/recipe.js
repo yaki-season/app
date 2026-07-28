@@ -28,9 +28,9 @@ export const DONENESS = {
 // 콘텐츠 로드 실패 시의 안전 기본값이다. 부팅 시 applyBalanceContent가 데이터로 덮어쓴다.
 export const COOK_THRESHOLDS_SEC = {
   [DONENESS.UNDER]: 0.0,
-  [DONENESS.PERFECT]: 2.5,
-  [DONENESS.OVER]: 5.5,
-  [DONENESS.BURNT]: 7.0,
+  [DONENESS.PERFECT]: 8.0,
+  [DONENESS.OVER]: 16.0,
+  [DONENESS.BURNT]: 21.0,
 };
 
 // 로드·검증된 콘텐츠의 조리 공정 수치를 게임 로직에 반영한다 (DAT-001, GPL-002 데이터 구동).

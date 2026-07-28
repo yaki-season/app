@@ -42,7 +42,9 @@ test('탄 상태: 방치하면 실패하고 다시 시작할 수 있다', async 
   await placeOnGrill(page);
 
   // 뒤집지 않고 방치 → 탄 상태 실패
-  await expect(page.getByTestId('result-overlay')).toBeVisible({ timeout: 15000 });
+  // GPL-004의 완전 탄 기준은 면당 21초다. 이전 15초 제한은 적정·과다 구간만
+  // 관측하고 실패 전이를 기다리지 못했다.
+  await expect(page.getByTestId('result-overlay')).toBeVisible({ timeout: 30000 });
   await expect(page.getByTestId('result-message')).toContainText('타버렸습니다');
   expect((await getState(page)).status).toBe('failed');
 

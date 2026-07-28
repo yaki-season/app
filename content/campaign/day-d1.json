@@ -6,7 +6,9 @@
   "status": "candidate",
   "customerCount": 20,
   "spawnIntervalSec": 12,
-  "customerPool": ["solo", "office"],
+  "waitRecoverySec": 10,
+  "urgentThresholdSec": 15,
+  "customerPool": ["regular", "solo", "office"],
   "economy": {
     "basePrice": 100,
     "qualityMultGood": 1.5,
@@ -15,7 +17,9 @@
   },
   "timingSec": {
     "assembly": 2.0,
-    "eat": 1.5
+    "eat": 15,
+    "orderThinkMin": 4,
+    "orderThinkMax": 6
   },
   "autoPolicySuccessRate": 0.8
 }

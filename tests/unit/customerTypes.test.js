@@ -14,8 +14,8 @@ const T = CUSTOMER_TIMERS;
 function advanceToWaiting(c, startMs = 0) {
   c.update(startMs);
   c.update(startMs + T.entering);
-  c.update(startMs + T.entering + T.ordering);
-  return startMs + T.entering + T.ordering;
+  c.update(startMs + T.entering + T.orderingMax);
+  return startMs + T.entering + T.orderingMax;
 }
 
 // 식사 종료까지 진행시켜 다음 슬롯(재주문) 또는 퇴장으로 넘긴다
@@ -55,9 +55,9 @@ describe('다중 슬롯 재주문 (퇴근직장인)', () => {
     expect(c.slotIndex).toBe(1);
 
     // 두 번째 슬롯도 같은 흐름을 거친다
-    c.update(ate + T.ordering);
+    c.update(ate + T.orderingMax);
     expect(c.state).toBe(CUSTOMER_STATE.WAITING);
-    const accepted = c.onServed(perfectServe, ate + T.ordering);
+    const accepted = c.onServed(perfectServe, ate + T.orderingMax);
     expect(accepted).toBe(true);
     expect(c.results).toHaveLength(2);
   });
@@ -68,9 +68,9 @@ describe('다중 슬롯 재주문 (퇴근직장인)', () => {
     c.onServed(perfectServe, served);
     const ate = finishEating(c, served);
 
-    c.update(ate + T.ordering);
-    c.onServed(perfectServe, ate + T.ordering);
-    const ate2 = finishEating(c, ate + T.ordering);
+    c.update(ate + T.orderingMax);
+    c.onServed(perfectServe, ate + T.orderingMax);
+    const ate2 = finishEating(c, ate + T.orderingMax);
 
     expect(c.state).toBe(CUSTOMER_STATE.LEAVING);
     c.update(ate2 + T.leaving);

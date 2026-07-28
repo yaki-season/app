@@ -1,0 +1,31 @@
+:root { color-scheme: dark; --ink:#18110d; --paper:#f2dfba; --red:#c8572d; --green:#39855e; --line:#63432d; --muted:#c8ad85; }
+* { box-sizing:border-box; }
+body { margin:0; min-width:320px; min-height:100vh; background:radial-gradient(circle at 50% 0%,#553322,var(--ink) 65%); color:#fff4df; font:16px/1.45 system-ui,"Malgun Gothic",sans-serif; }
+button { min-width:44px; min-height:44px; border:1px solid #aa7146; border-radius:12px; padding:10px 14px; background:#342016; color:inherit; font:inherit; cursor:pointer; }
+button:hover, button:focus-visible { outline:none; border-color:#ffe0a4; box-shadow:0 0 0 3px #cf744c88; }
+.d1-screen { width:min(1100px,100%); margin:auto; padding:clamp(16px,3vw,40px); display:grid; gap:18px; }
+.order-panel,.workspace { border:1px solid #9b6a43; border-radius:18px; background:#25170fdd; box-shadow:0 16px 40px #0007; }
+.order-panel { padding:18px; }
+.eyebrow { margin:0; color:var(--muted); font-size:.82rem; letter-spacing:.07em; }
+h1,h2,p { margin-top:0; } h1 { margin-bottom:2px; font-size:clamp(1.3rem,3vw,2rem); }
+#customer-state { color:#ffd993; min-height:1.45em; margin-bottom:12px; }
+.order-items,.prepared-list { margin:0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:10px; }
+.order-item,.prepared-card { display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:#160e09; }
+.order-icon { width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:#6f4428; font-size:.8rem; }
+.order-item.done .order-icon { background:var(--green); font-weight:800; }
+.order-count { color:var(--muted); font-variant-numeric:tabular-nums; }
+.guide { margin:16px 0 0; color:#fff0ca; border-left:3px solid var(--red); padding-left:10px; }
+.workspace { padding:18px; display:grid; gap:20px; }
+.controls { display:grid; gap:12px; }
+.action-row,.skewer-grid,.grill-grid { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.action-primary { background:var(--red); border-color:#e0804e; color:white; font-weight:700; }
+.station-card { border:1px solid var(--line); border-radius:12px; padding:12px; background:#160e09; }
+.station-card h3 { margin:0 0 8px; font-size:1rem; }
+.meter { color:#ffd993; font-variant-numeric:tabular-nums; }
+.prepared { border-top:1px solid var(--line); padding-top:14px; }
+.prepared h2 { margin-bottom:10px; font-size:1rem; color:#f7dba4; }
+.prepared-card { text-align:left; }
+.quality { color:#f5c16c; font-size:.85rem; }
+.service-choice { display:flex; flex-wrap:wrap; gap:8px; padding:10px; border:1px dashed #d39665; border-radius:10px; }
+.sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+@media (max-width:600px) { .d1-screen { padding:12px; } .order-panel,.workspace { border-radius:12px; padding:14px; } button { flex:1 1 130px; } }

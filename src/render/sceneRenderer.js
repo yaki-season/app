@@ -1,7 +1,7 @@
-// SYS-002 2.5D 장면 렌더러. Three.js 렌더러 하나와 rAF 루프 하나만 쓴다 (§3).
-// 더미 도형(무광 색 평면)이 각 에셋 슬롯을 대신하며, 실제 앵커·레이어 깊이·카메라 계약을 지킨다.
+// SCN-001 단일 손님 회귀·통합 테스트 렌더러. Three.js 렌더러 하나와 rAF 루프 하나만 쓴다.
+// 더미 도형(무광 색 평면)은 테스트 슬롯을 대신한다. 최신 SYS-002 프로덕션의 독립 화면 계약과는 분리한다.
 //
-// 2.5D 핵심: 레이어를 "진짜 깊이"에 두고 카메라를 셰프 시점으로 살짝 기울인다.
+// 테스트 장면 핵심: 레이어를 "진짜 깊이"에 두고 카메라를 셰프 시점으로 살짝 기울인다.
 // 각 레이어 평면은 홈 카메라를 향한 빌보드로, 홈 포즈에서 지정 앵커에 정확히 놓인다.
 // 카메라가 프리셋 사이를 움직이면 깊이가 다른 레이어가 다른 속도로 밀린다(시차)+ 카운터가 손님을 가린다.
 
@@ -18,8 +18,8 @@ const ASPECT = 16 / 9; // 기준 뷰포트(1280×720·1920×1080 모두 16:9)
 const FOV = 42;
 const TAN_HALF = Math.tan((FOV / 2) * (Math.PI / 180));
 
-// 셰프 시점 홈 포즈: 바 안쪽에서 살짝 위·뒤에서 카운터 너머를 내려다본다 (§4~6).
-// 프리셋은 이 포즈를 기준으로 좌우 이동 + 작업대 push-in만 준다.
+// 테스트용 셰프 시점 홈 포즈: 바 안쪽에서 살짝 위·뒤에서 카운터 너머를 내려다본다.
+// 프리셋은 이 포즈를 기준으로 좌우 이동 + 작업대 push-in만 준다. 프로덕션은 이를 재사용하지 않는다.
 const HOME_EYE = new THREE.Vector3(0, 3.7, 12.2);
 const HOME_LOOK = new THREE.Vector3(0, -1.9, -5.5);
 
@@ -80,7 +80,9 @@ function slotMeshFor(cam, slot) {
 }
 
 export function createSceneRenderer(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  // 렌더 결과는 다음 프레임에만 필요하며 Playwright 캡처도 화면 합성본을 읽는다.
+  // 보존 버퍼·MSAA를 끄면 소프트웨어 WebGL 환경에서도 FHD 조리 타이머를 30fps 이상 유지한다.
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: false });
   renderer.setClearColor(0x0f0b08, 1);
 
   const scene = new THREE.Scene();
@@ -137,7 +139,7 @@ export function createSceneRenderer(canvas) {
     for (const [proc, mesh] of Object.entries(stationByProcess)) mesh.visible = proc === process;
   }
 
-  // ── 카메라 프리셋 (홈 포즈 기준 좌우 이동 + push-in) ─────────
+  // ── 테스트 카메라 프리셋 (홈 포즈 기준 좌우 이동 + push-in) ────
   const cam = { x: HOME_EYE.x, y: HOME_EYE.y, z: HOME_EYE.z, targetX: HOME_LOOK.x };
   function applyCamera() {
     camera.position.set(cam.x, cam.y, cam.z);
@@ -164,12 +166,25 @@ export function createSceneRenderer(canvas) {
     if (t >= 1) camTween = null;
   }
 
+  let lastCanvasWidth = 0;
+  let lastCanvasHeight = 0;
+  let lastDpr = 0;
   function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    // 이 테스트/가이드 장면은 픽셀 아트와 평면으로 구성된다. 고밀도 버퍼보다 안정적인
+    // 입력·타이머 프레임을 우선해 렌더 버퍼는 CSS 1배율로 고정한다.
+    const dpr = 1;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    // setPixelRatio/setSize는 내부 렌더 타깃을 다시 만들 수 있다. CSS 크기나 DPR이
+    // 달라진 프레임에서만 갱신해 조리 루프의 불필요한 GPU 작업을 없앤다.
+    if (width === lastCanvasWidth && height === lastCanvasHeight && dpr === lastDpr) return;
     renderer.setPixelRatio(dpr);
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+    renderer.setSize(width, height, false);
     camera.aspect = ASPECT; // 16:9 고정 (레터박스는 CSS가 처리)
     camera.updateProjectionMatrix();
+    lastCanvasWidth = width;
+    lastCanvasHeight = height;
+    lastDpr = dpr;
   }
 
   function renderFrame(nowMs) {

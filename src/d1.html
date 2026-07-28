@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YAKI SEASON — D1 첫 주문</title>
+  <link rel="stylesheet" href="./d1.css">
+</head>
+<body>
+  <main class="d1-screen" data-testid="d1-screen">
+    <header class="order-panel" aria-labelledby="order-title">
+      <p class="eyebrow">좌석 01 · D1-ORDER-001</p>
+      <h1 id="order-title">츠키오카의 첫 주문</h1>
+      <p id="customer-state" data-testid="customer-state" aria-live="polite"></p>
+      <ul id="order-items" class="order-items" aria-label="주문 항목"></ul>
+      <p id="guide" class="guide" data-testid="d1-guide" aria-live="polite"></p>
+    </header>
+
+    <section class="workspace" aria-label="D1 조리와 제공">
+      <div id="controls" class="controls" data-testid="d1-controls"></div>
+      <section class="prepared" aria-labelledby="prepared-title">
+        <h2 id="prepared-title">공용 준비 목록</h2>
+        <div id="prepared-list" class="prepared-list" data-testid="prepared-list"></div>
+      </section>
+    </section>
+
+    <output id="state-output" class="sr-only" data-testid="d1-state-output"></output>
+  </main>
+  <script type="module" src="./d1.js"></script>
+</body>
+</html>
