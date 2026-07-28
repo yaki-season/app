@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { createSceneRenderer } from './render/sceneRenderer.js';
 import { createGrillMaterial } from './render/grillMaterial.js';
 import { elapsedSecToUniform } from './render/grillRenderer.js';
+import { mountGrillTuner } from './render/grillTuner.js';
 import { LAYER_Z, ANCHORS } from './config/sceneLayout.js';
 import { RECIPE } from './config/recipe.js';
 import {
@@ -391,10 +392,14 @@ document.addEventListener('visibilitychange', () => {
 let lastProcess = null;
 
 // 익힘 셰이더 구동: 굽는 중이면 경과 시간→uDoneness, 항상 숯불 깜빡임용 시간 갱신.
+// donenessOverride가 있으면(튜너 미리보기) 그 값을 그대로 쓴다.
+let donenessOverride = null;
 function updateGrillVisual(now) {
   if (!grill) return;
   grill.setTime(now / 1000);
-  if (state.status === STATUS.GRILL_FRONT || state.status === STATUS.GRILL_BACK) {
+  if (donenessOverride != null) {
+    grill.setDoneness(donenessOverride);
+  } else if (state.status === STATUS.GRILL_FRONT || state.status === STATUS.GRILL_BACK) {
     grill.setDoneness(elapsedSecToUniform(faceElapsedMs(state, now) / 1000));
   }
 }
@@ -517,6 +522,13 @@ window.__sceneDebug = {
     };
   },
   renderer: R,
+  // 튜너용: 익힘 재질과 미리보기 오버라이드 접근
+  grillMaterial: () => grill,
+  setDonenessOverride: (v) => { donenessOverride = v; },
+  showGrillSkewer: (show) => { if (hotspots['grill-skewer']) hotspots['grill-skewer'].visible = show; },
 };
 // 기존 종단 헬퍼와의 이름 연속성 (DOM 뷰에서 승격됨)
 window.__yakiDebug = window.__sceneDebug;
+
+// 익힘 셰이더 실시간 튜너 (키 G) — TA 워크플로용 개발 도구
+mountGrillTuner(window.__sceneDebug);
