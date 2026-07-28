@@ -5,6 +5,8 @@
 
 import * as THREE from 'three';
 import { createSceneRenderer } from './render/sceneRenderer.js';
+import { createGrillMaterial } from './render/grillMaterial.js';
+import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { LAYER_Z, ANCHORS } from './config/sceneLayout.js';
 import { RECIPE } from './config/recipe.js';
 import {
@@ -17,6 +19,7 @@ import {
   clickAssembledSkewer,
   placeOnGrill,
   currentDoneness,
+  faceElapsedMs,
   clickGrillSkewer,
   tick,
   visibilityHidden,
@@ -36,6 +39,7 @@ let customerTimer = null; // tasting → satisfied 지연용 타이머
 let serviceInFlight = false;
 let serviceTimer = null;
 let lastHandledKey = null;
+let grill = null; // 익힘 셰이더 재질 (비동기 로드 후 grill-skewer에 물린다)
 
 // ── 인터랙티브 오브젝트 (레이캐스트 대상) ─────────────────────
 // 더미 박스. 실제 아트는 PR-*·재료 스프라이트로 교체된다.
@@ -167,11 +171,14 @@ function render() {
   visible('plate', state.process === PROCESS.COUNTER && state.status === STATUS.PLATED);
   visible('order-mat', state.process === PROCESS.COUNTER);
 
-  // 그릴 꼬치 색 = 익힘 상태
-  if (onGrill) {
+  // 그릴 꼬치 익힘 표현은 매 프레임 updateGrillVisual()이 셰이더 uDoneness로 구동한다.
+  // (재질 로드 전 폴백: 더미 박스 색)
+  if (onGrill && !grill) {
     const d = currentDoneness(state, performance.now());
     const color = { under: 0xd98a5f, perfect: 0xc97a2a, over: 0x8a5220, burnt: 0x2a1a10 }[d];
-    hotspots['grill-skewer'].material.color.setHex(color);
+    if (hotspots['grill-skewer'].material.color) {
+      hotspots['grill-skewer'].material.color.setHex(color);
+    }
   }
 
   // HUD
@@ -371,6 +378,7 @@ el('restartButton').addEventListener('click', () => {
     hotspots[key].position.copy(position);
     hotspots[key].scale.setScalar(1);
   }
+  if (grill) grill.setDoneness(0); // 날것으로 초기화
   render();
 });
 
@@ -382,6 +390,15 @@ document.addEventListener('visibilitychange', () => {
 // 공정이 바뀌면 카메라 프리셋 이동
 let lastProcess = null;
 
+// 익힘 셰이더 구동: 굽는 중이면 경과 시간→uDoneness, 항상 숯불 깜빡임용 시간 갱신.
+function updateGrillVisual(now) {
+  if (!grill) return;
+  grill.setTime(now / 1000);
+  if (state.status === STATUS.GRILL_FRONT || state.status === STATUS.GRILL_BACK) {
+    grill.setDoneness(elapsedSecToUniform(faceElapsedMs(state, now) / 1000));
+  }
+}
+
 function loop(now) {
   const prevStatus = state.status;
   state = tick(state, now);
@@ -392,10 +409,28 @@ function loop(now) {
   }
   if (state.status !== prevStatus) render();
 
+  updateGrillVisual(now);
   tickMotions(now);
   R.renderFrame(now);
   requestAnimationFrame(loop);
 }
+
+// 익힘 셰이더 재질을 비동기 로드해 grill-skewer 더미 박스와 교체한다.
+createGrillMaterial()
+  .then((g) => {
+    grill = g;
+    const mesh = hotspots['grill-skewer'];
+    mesh.material.dispose();
+    mesh.material = g.material;
+    // 셰이더 프로그램을 지금(조립 중) 미리 컴파일한다. 그러지 않으면 그릴 진입 첫 프레임에
+    // 컴파일 스톨이 걸려 실시간 클릭/판정이 밀리고, 소프트웨어 렌더(SwiftShader)에선 플레이크가 된다.
+    const wasVisible = mesh.visible;
+    mesh.visible = true;
+    R.renderFrame(performance.now());
+    mesh.visible = wasVisible;
+    if (typeof window !== 'undefined') window.__grill = g; // 튜너·디버그용
+  })
+  .catch((err) => console.error('익힘 재질 로드 실패:', err));
 
 R.goToPreset('assembly', 0);
 render();
