@@ -11,8 +11,19 @@ const orderItems = document.querySelector('#order-items');
 const customerState = document.querySelector('#customer-state');
 const guide = document.querySelector('#guide');
 const stateOutput = document.querySelector('#state-output');
+const customerArt = document.querySelector('#customer-art');
 let state = createD1Session();
 let nowMs = 0;
+
+// public/assets/manifest.json의 승인 runtime URL만 소비한다. 수량·체크·상태 텍스트는 DOM 소유다.
+const ASSET_URL = Object.freeze({
+  negima: '/assets/core/ui/order-icon-negima-r1-b1.png',
+  draftBeer: '/assets/core/ui/order-icon-draft-beer-r1-b1.png',
+  waiting: '/assets/core/customer/d1-tsukioka-waiting-r2-b1.png',
+  partialBeer: '/assets/core/customer/d1-tsukioka-partial-beer-waiting-r1-b1.png',
+  eatingNegima: '/assets/core/customer/d1-tsukioka-received-eating-negima-r1-b1.png',
+  eatingBeer: '/assets/core/customer/d1-tsukioka-received-eating-beer-r1-b1.png',
+});
 
 const labels = { entering:'손님이 입장 중입니다.', ordering:'주문을 고민하고 있습니다.', waiting:'주문을 기다리고 있습니다.', 'partially-served':'생맥주를 받았습니다. 네기마를 기다립니다.', reacting:'첫 주문을 맛보고 있습니다.', completed:'첫 주문이 완료되었습니다.' };
 const guides = {
@@ -43,7 +54,10 @@ function renderOrder() {
     const progress = orderItemProgress(state, menuId);
     const li = document.createElement('li'); li.className = `order-item ${progress.remaining === 0 ? 'done' : ''}`;
     li.dataset.testid = `order-${menuId}`;
-    li.innerHTML = `<span class="order-icon" aria-hidden="true">${progress.remaining === 0 ? '✓' : menuId === MENU.DRAFT_BEER ? '맥' : '꼬'}</span><span>${label}</span><span class="order-count">x${progress.remaining}/${progress.total}</span>`;
+    const icon = progress.remaining === 0
+      ? '✓'
+      : `<img src="${menuId === MENU.DRAFT_BEER ? ASSET_URL.draftBeer : ASSET_URL.negima}" alt="">`;
+    li.innerHTML = `<span class="order-icon" aria-hidden="true">${icon}</span><span>${label}</span><span class="order-count">x${progress.remaining}/${progress.total}</span>`;
     orderItems.append(li);
   }
 }
@@ -112,6 +126,14 @@ function render() {
   customerState.textContent = labels[state.customer.state] || state.customer.state;
   guide.textContent = guides[state.phase];
   stateOutput.value = JSON.stringify(state);
+  const customerAsset = state.customer.state === 'partially-served'
+    ? ASSET_URL.partialBeer
+    : state.phase === D1_PHASE.REACTION
+      ? ASSET_URL.eatingNegima
+      : state.phase === D1_PHASE.COMPLETE
+        ? ASSET_URL.eatingBeer
+      : ASSET_URL.waiting;
+  if (customerArt.getAttribute('src') !== customerAsset) customerArt.setAttribute('src', customerAsset);
 }
 render();
 window.__d1Debug = { getState: () => state, now: () => nowMs };

@@ -6,6 +6,9 @@ async function click(page, testId) {
 
 test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공을 완료한다', async ({ page }) => {
   await page.goto('/src/d1.html');
+  await expect(page.locator('.art-background')).toHaveAttribute('src', '/assets/core/customer/background-complete-r3-b1.png');
+  await expect(page.locator('.art-table')).toHaveAttribute('src', '/assets/core/customer/service-table-complete-r1-b1.png');
+  await expect(page.getByTestId('order-negima').locator('img')).toHaveAttribute('src', '/assets/core/ui/order-icon-negima-r1-b1.png');
 
   await page.getByRole('button', { name: '손님 입장 완료' }).click();
   await page.getByRole('button', { name: 'D1 주문 접수' }).click();
@@ -20,6 +23,7 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await expect(page.getByTestId('order-draft-beer')).toContainText('x0/1');
   await expect(page.getByTestId('order-negima')).toContainText('x3/3');
   await expect(page.getByTestId('customer-state')).toContainText('생맥주를 받았습니다');
+  await expect(page.locator('#customer-art')).toHaveAttribute('src', '/assets/core/customer/d1-tsukioka-partial-beer-waiting-r1-b1.png');
 
   await page.getByRole('button', { name: '네기마 조립 시작' }).click();
   for (let i = 0; i < 3; i += 1) {
@@ -46,4 +50,5 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await page.getByRole('button', { name: '손님 반응 확인' }).click();
   await expect(page.getByTestId('customer-state')).toContainText('완료');
   await expect(page.getByTestId('d1-guide')).toContainText('완료');
+  await expect(page.locator('#customer-art')).toHaveAttribute('src', '/assets/core/customer/d1-tsukioka-received-eating-beer-r1-b1.png');
 });
