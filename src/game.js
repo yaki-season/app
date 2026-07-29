@@ -8,10 +8,11 @@ import { createProductionRenderer } from './render/productionRenderer.js';
 import { createStationDirector } from './render/stationDirector.js';
 import { createGrillMaterial } from './render/grillMaterial.js';
 import { elapsedSecToUniform } from './render/grillRenderer.js';
-import { createCustomerAdapter, buildSeatStates } from './render/customerAdapter.js';
+import { createCustomerAdapter } from './render/customerAdapter.js';
+import { createCustomerOps } from './render/customerOps.js';
 import { createPreparedDock, qualityFromCook } from './render/preparedDock.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
-import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS } from './config/screenLayout.js';
+import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS } from './config/screenLayout.js';
 import { RECIPE } from './config/recipe.js';
 import {
   STATUS, PROCESS,
@@ -28,17 +29,16 @@ const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_S
 
 let state = assetsLoaded(createInitialState());
 let grill = null;
-let reaction = 'waiting';
-let reactionTimer = null;
 const lockUntil = {}; // 대상별 입력 잠금
 
 // 각 조작 대상 key가 속한 화면 (가시성·클릭 판정용)
 const SCREEN_OF = {};
 for (const s of SCREENS) for (const k of s.objects) if (OBJECTS[k].kind !== 'fullframe') SCREEN_OF[k] = s.id;
 
-// 손님 렌더 어댑터 (6석). 증분 2 데모: 츠키오카 1명이 seat-03에 앉는다. 006이 실제 운영을 꽂는다.
-const DEMO_SEAT = 'seat-03';
+// 손님 렌더 어댑터 (6석) + 운영 상태 머신. ops가 좌석 생애주기를 굴리고, adapter가 렌더한다.
 const customers = createCustomerAdapter({ renderer: R, container: el('bubbleLayer') });
+let ops = null; // 콘텐츠(유형·수치) 로드 후 생성
+let cleanupHold = null; // { seatId, startMs } 정리 3초 홀드
 
 // 공용 준비 목록 (완성품 선반). 조리와 서빙을 분리한다.
 const dock = createPreparedDock({ container: el('dockShelf') });
@@ -81,12 +81,26 @@ function updateLabels() {
   }
 }
 
-function occupants() {
-  return [{ seatId: DEMO_SEAT, mood: reaction, orderLabel: '네기마', waitRatio: 1 }];
+// 운영 상태 → 어댑터 렌더 상태. serve 대상은 "수령 대기 && 선반에 주문과 같은 메뉴 선택"일 때만.
+function syncCustomers(now) {
+  if (!ops) { customers.apply([]); return; }
+  const sel = dock.selected();
+  const views = ops.views(now).map((v) => ({
+    ...v,
+    serveTarget: v.canServe && !!sel && sel.menu === v.menu,
+    // 주문 접수·정리도 좌석 조작 대상으로 표시(정리 진행도 포함)
+    cleanupProgress: cleanupHold && cleanupHold.seatId === v.seatId ? (now - cleanupHold.startMs) / ops.cfg.cleanupMs : 0,
+  }));
+  // 좌석 조작 메시(seatServe)는 손님 화면에서 주문 접수·서빙·정리 중 하나라도 가능하면 보인다.
+  const onCustomers = director.activeScreenId() === 'SCR-SVC-CUSTOMERS';
+  for (const v of views) {
+    const mesh = R.objectMesh[`seatServe:${v.seatId}`];
+    if (mesh) mesh.visible = onCustomers && (v.canOrder || v.canServe || v.cleanupNeeded);
+  }
+  customers.apply(views);
 }
-function syncCustomers() {
-  // 선반에 고른 완성품이 있어야 좌석 serve 대상이 활성화된다.
-  customers.apply(buildSeatStates(occupants(), { serveReady: !!dock.selected() }));
+function seatView(seatId, now) {
+  return ops ? ops.views(now).find((v) => v.seatId === seatId) : null;
 }
 
 // ── 드링크 잔 채움 패널 ──────────────────────────────────────
@@ -190,8 +204,7 @@ function render() {
     if (R.objectMesh.grillSkewer.material.color) R.objectMesh.grillSkewer.material.color.setHex(c);
   }
 
-  // 손님 6석 렌더 어댑터 (점유·기분·주문·serve 대상)
-  syncCustomers();
+  // 손님 6석은 loop에서 매 프레임 syncCustomers(now)로 갱신한다(게이지가 실시간으로 줄기 때문).
 
   // 영업 shell HUD
   el('svcStation').textContent = SCREEN_BY_ID[director.activeScreenId()].name;
@@ -222,11 +235,6 @@ function renderReceipts() {
   });
 }
 
-function setReaction(next) {
-  reaction = next;
-  syncCustomers(); // 어댑터가 좌석 액터 기분색을 갱신
-}
-
 function showHint(text) {
   const h = el('hint');
   h.textContent = text;
@@ -254,13 +262,27 @@ canvas.addEventListener('pointerdown', (e) => {
   if (!key) return;
   const now = performance.now();
   if (LEVER_ZONE[key]) { pour.press(LEVER_ZONE[key], now); return; } // 누르는 동안 흐름
+  // 정리 필요 좌석은 3초 홀드 (§7-1). 누르는 동안 게이지가 찬다.
+  if (key.startsWith('seatServe:')) {
+    const seatId = key.slice('seatServe:'.length);
+    const v = seatView(seatId, now);
+    if (v && v.cleanupNeeded) { cleanupHold = { seatId, startMs: now }; return; }
+  }
   if ((lockUntil[key] || 0) > now) return;
   lockUntil[key] = now + 200;
   handle(key, now);
 });
-// 손을 떼면 흐름 정지 (§38). 다른 클릭에서도 무해(활성 존 없으면 no-op).
-window.addEventListener('pointerup', () => pour.release(performance.now()));
-window.addEventListener('pointercancel', () => pour.release(performance.now()));
+// 손을 떼면 흐름 정지 (§38). 정리 홀드는 3초 충족 시 완료, 아니면 취소(§7-3).
+function releasePointers() {
+  const now = performance.now();
+  pour.release(now);
+  if (cleanupHold && ops) {
+    if (now - cleanupHold.startMs >= ops.cfg.cleanupMs) { ops.cleanup(cleanupHold.seatId); showHint('정리 완료'); }
+    cleanupHold = null;
+  }
+}
+window.addEventListener('pointerup', releasePointers);
+window.addEventListener('pointercancel', releasePointers);
 
 function handle(key, now) {
   switch (key) {
@@ -290,17 +312,19 @@ function handle(key, now) {
       }
       break;
     default:
-      if (key.startsWith('seatServe:')) {
-        const item = dock.selected();
-        if (item) {
-          dock.consumeSelected(); // 선반에서 완성품을 꺼내 좌석에 제공
-          setReaction('tasting');
-          if (reactionTimer) clearTimeout(reactionTimer);
-          reactionTimer = setTimeout(() => {
-            setReaction(item.good ? 'satisfied' : 'neutral');
-          }, 900);
-        } else {
-          showHint('선반에서 완성품을 고르세요');
+      if (key.startsWith('seatServe:') && ops) {
+        const seatId = key.slice('seatServe:'.length);
+        const v = seatView(seatId, now);
+        if (!v) break;
+        if (v.canOrder) {
+          ops.acceptOrder(seatId); // 주문서 접수 → 수령 대기
+          showHint('주문을 받았어요');
+        } else if (v.canServe) {
+          const item = dock.selected();
+          if (!item) { showHint('선반에서 완성품을 고르세요'); break; }
+          const r = ops.serve(seatId, item, now);
+          if (r.ok) { dock.consumeSelected(); showHint('제공 완료'); }
+          else showHint('주문과 다른 메뉴예요'); // 메뉴 불일치
         }
       }
       break; // 그 외(드링크 구조 오브젝트 등)
@@ -330,9 +354,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 el('restartButton').addEventListener('click', () => {
-  state = restart(state);
-  setReaction('waiting');
-  if (reactionTimer) { clearTimeout(reactionTimer); reactionTimer = null; }
+  state = restart(state); // 탄 조리 job만 리셋. 손님 운영·선반은 유지.
   if (grill) grill.setDoneness(0);
   render();
 });
@@ -374,7 +396,9 @@ function loop(now) {
   }
   if (state.status !== prevStatus) render();
 
+  if (ops) ops.tick(now); // 손님 입장·생애주기 진행
   updateGrillVisual(now);
+  syncCustomers(now); // 매 프레임 좌석 렌더(게이지 실시간 감소)
   customers.tick(active); // 손님 화면일 때 말풍선·게이지 배치
   pour.tick(now); // 따르는 중이면 누적·넘침 감지
   updateDrinkPanel(active);
@@ -382,6 +406,29 @@ function loop(now) {
   R.renderFrame(now);
   requestAnimationFrame(loop);
 }
+
+// 콘텐츠(손님 유형·영업일 수치)를 로드해 운영 상태 머신을 생성한다. 실패해도 스테이션은 동작한다.
+Promise.all([
+  fetch('/content/customers/types.json').then((r) => r.json()),
+  fetch('/content/campaign/day-d1.json').then((r) => r.json()),
+])
+  .then(([types, day]) => {
+    ops = createCustomerOps({
+      seatIds: SEAT_IDS,
+      types,
+      config: {
+        spawnIntervalSec: day.spawnIntervalSec,
+        orderThinkMin: day.timingSec.orderThinkMin,
+        orderThinkMax: day.timingSec.orderThinkMax,
+        eatSec: day.timingSec.eat,
+        cleanupSec: 3,
+        leaveSec: 1,
+        maxActive: 3,
+      },
+    });
+    if (typeof window !== 'undefined') window.__ops = ops;
+  })
+  .catch((err) => console.error('손님 운영 콘텐츠 로드 실패:', err));
 
 R.goToScreen(INITIAL_SCREEN, 0, 0);
 render();
@@ -394,10 +441,18 @@ window.__prodDebug = {
   activeScreen: () => director.activeScreenId(),
   isTransitioning: () => director.isTransitioning(),
   controlsLocked: () => director.controlsLocked(),
-  reaction: () => reaction,
   seatStates: () => customers.getStates(),
+  seatViews: () => (ops ? ops.views(performance.now()) : []),
   dockItems: () => dock.items(),
   dockSelectedId: () => dock.selectedId(),
+  dockAdd: (item) => dock.add(item), // e2e: 조리 없이 선반 적재
+  // 손님 운영 (e2e): 결정론적 입장·경과.
+  opsReady: () => !!ops,
+  opsAutoSpawn: (v) => ops && ops.setAutoSpawn(v),
+  opsClear: () => ops && ops.clearAll(),
+  forceSpawn: (seatId, typeId, thinkSec) => ops && ops.forceSpawn(seatId, typeId, performance.now(), thinkSec ?? 5),
+  opsElapse: (sec) => ops && ops.debugElapse(sec),
+  acceptOrder: (seatId) => ops && ops.acceptOrder(seatId),
   pourState: () => pour.state(),
   // 결정론적 따르기 (e2e): 실제 시계 대신 명시 시간으로 맥주·거품을 채운다.
   pourExact: (beerSec, foamSec) => {

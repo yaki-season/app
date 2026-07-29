@@ -10,6 +10,7 @@ async function boot(page) {
   await page.goto('/src/game.html');
   await expect(page.getByTestId('scene-canvas')).toBeVisible();
   await expect.poll(() => active(page)).toBe('SCR-SVC-CUSTOMERS');
+  await expect.poll(() => page.evaluate(() => window.__prodDebug.opsReady())).toBe(true);
 }
 async function go(page, id) {
   await page.evaluate((s) => window.__prodDebug.requestScreen(s), id);
@@ -80,7 +81,7 @@ test('레버 아래를 누르고 있으면 맥주가 흐른다 (홀드 배선)',
   expect(s.beerSec).toBeGreaterThan(0.1); // 누른 동안 맥주가 찼다
 });
 
-test('선반의 생맥주를 손님 좌석에 낼 수 있다', async ({ page }) => {
+test('선반의 생맥주를 생맥주 주문 손님에게 낼 수 있다', async ({ page }) => {
   await boot(page);
   await go(page, 'SCR-SVC-DRINK');
   await page.evaluate(() => window.__prodDebug.pourExact(3.0, 1.0));
@@ -88,11 +89,16 @@ test('선반의 생맥주를 손님 좌석에 낼 수 있다', async ({ page }) 
   expect(await dock(page)).toHaveLength(1);
 
   await go(page, 'SCR-SVC-CUSTOMERS');
-  const pos = await page.evaluate(() => window.__prodDebug.screenPosOf('seatServe:seat-03'));
-  await page.mouse.click(pos.x, pos.y);
+  // regular 손님은 생맥주를 주문한다. 접수 후 선반의 생맥주 제공.
+  await page.evaluate(() => { window.__prodDebug.opsAutoSpawn(false); window.__prodDebug.forceSpawn('seat-03', 'regular', 0); });
+  await expect.poll(() => page.evaluate(() => window.__prodDebug.seatViews().find((v) => v.seatId === 'seat-03').phase)).toBe('ordering');
+  const seatPos = () => page.evaluate(() => window.__prodDebug.screenPosOf('seatServe:seat-03'));
+  let pos = await seatPos();
+  await page.mouse.click(pos.x, pos.y); // 주문 접수
+  await expect.poll(() => page.evaluate(() => window.__prodDebug.seatViews().find((v) => v.seatId === 'seat-03').canServe)).toBe(true);
+  await page.waitForTimeout(230); // 대상별 입력 잠금 이후
+  pos = await seatPos();
+  await page.mouse.click(pos.x, pos.y); // 제공
   await expect.poll(() => dock(page).then((d) => d.length)).toBe(0);
-  await expect.poll(
-    () => page.evaluate(() => window.__prodDebug.seatStates().find((x) => x.seatId === 'seat-03').mood),
-    { timeout: 5000 },
-  ).toBe('satisfied');
+  await expect.poll(() => page.evaluate(() => window.__prodDebug.seatViews().find((v) => v.seatId === 'seat-03').mood)).toBe('satisfied');
 });

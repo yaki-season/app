@@ -150,6 +150,12 @@ body {
   background: rgba(0,0,0,0.5); border: 1px solid var(--line);
 }
 .order-bubble .wait-fill { display: block; height: 100%; background: var(--good); }
+.order-bubble .wait-gauge[hidden] { display: none; }
+.order-bubble[data-tone="think"] .order-label { letter-spacing: 3px; color: var(--dim); }
+.order-bubble[data-tone="order"] .order-label { border-color: var(--ember); color: var(--ember); }
+.order-bubble[data-tone="cleanup"] .order-label { border-color: #6fb8ff; color: #6fb8ff; }
+.order-bubble[data-tone="cleanup"] .wait-fill { background: #6fb8ff; }
+.order-bubble[data-tone="leave"] .order-label { color: var(--warn); }
 
 .overlay {
   position: fixed; inset: auto 0 0 0; z-index: 20;

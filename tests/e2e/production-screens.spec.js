@@ -15,6 +15,7 @@ async function boot(page) {
   await page.goto('/src/game.html');
   await expect(page.getByTestId('scene-canvas')).toBeVisible();
   await expect.poll(() => active(page)).toBe('SCR-SVC-CUSTOMERS');
+  await expect.poll(() => page.evaluate(() => window.__prodDebug.opsReady())).toBe(true);
   return errs;
 }
 
@@ -122,10 +123,15 @@ test('화면을 오가며 조립→그릴→선반→좌석 서빙 루프가 돈
   await expect.poll(() => dockCount(page)).toBe(1);
   await expect.poll(() => st(page).then((s) => s.process)).toBe('assembly');
 
-  // 손님 화면으로 가 선반 완성품을 좌석 손님에게 낸다
+  // 손님 화면으로 가 네기마 손님을 앉히고 주문 받은 뒤 선반 완성품을 낸다
   await goScreen(page, 'SCR-SVC-CUSTOMERS');
-  await click(page, 'seatServe:seat-03');
+  await page.evaluate(() => { window.__prodDebug.opsAutoSpawn(false); window.__prodDebug.forceSpawn('seat-03', 'solo', 0); });
+  await expect.poll(() => page.evaluate(() => window.__prodDebug.seatViews().find((v) => v.seatId === 'seat-03').phase)).toBe('ordering');
+  await click(page, 'seatServe:seat-03'); // 주문 접수
+  await expect.poll(() => page.evaluate(() => window.__prodDebug.seatViews().find((v) => v.seatId === 'seat-03').canServe)).toBe(true);
+  await page.waitForTimeout(230); // 대상별 입력 잠금 이후
+  await click(page, 'seatServe:seat-03'); // 제공
   await expect.poll(() => dockCount(page)).toBe(0); // 선반에서 소비됨
-  await expect.poll(() => seatMood(page, 'seat-03'), { timeout: 5000 }).toBe('satisfied');
+  await expect.poll(() => seatMood(page, 'seat-03')).toBe('satisfied');
   expect(errs).toEqual([]);
 });

@@ -33,10 +33,24 @@ export function createCustomerAdapter({ renderer, container, customerScreenId = 
     el.hidden = true;
     el.innerHTML = `<span class="order-label"></span><div class="wait-gauge"><span class="wait-fill"></span></div>`;
     container.appendChild(el);
-    bubbles[seatId] = { el, label: el.querySelector('.order-label'), fill: el.querySelector('.wait-fill') };
+    bubbles[seatId] = { el, label: el.querySelector('.order-label'), gauge: el.querySelector('.wait-gauge'), fill: el.querySelector('.wait-fill') };
   }
 
   let states = buildSeatStates();
+
+  // 말풍선 내용·게이지를 phase별로 정한다. phase가 없으면(증분 2 스타일) 단순 주문 표시로 처리.
+  function bubbleFor(s) {
+    const phase = s.phase || (s.occupied ? 'waiting' : 'empty');
+    switch (phase) {
+      case 'thinking': return { text: '…', ratio: null, tone: 'think' };
+      case 'ordering': return { text: `주문서 · ${s.orderLabel}`, ratio: s.waitRatio, tone: 'order' };
+      case 'waiting': return { text: s.orderLabel, ratio: s.waitRatio, tone: 'wait' };
+      case 'eating': return { text: '식사 중', ratio: null, tone: 'eat' };
+      case 'leaving': return { text: s.mood === 'retry' ? '화남!' : '고맙습니다', ratio: null, tone: 'leave' };
+      case 'cleanup': return { text: '정리', ratio: s.cleanupProgress || 0, tone: 'cleanup' };
+      default: return { text: s.orderLabel || '', ratio: s.waitRatio, tone: 'wait' };
+    }
+  }
 
   function apply(nextStates) {
     states = nextStates;
@@ -46,12 +60,18 @@ export function createCustomerAdapter({ renderer, container, customerScreenId = 
         actor.visible = s.occupied;
         if (s.occupied) actor.material.color.setHex(SEAT_ACTOR_MOOD[s.mood] ?? SEAT_ACTOR_MOOD.waiting);
       }
-      const serve = renderer.objectMesh[`seatServe:${s.seatId}`];
-      if (serve) serve.visible = s.serveTarget;
+      // 좌석 조작 메시(seatServe) 가시성은 호출측(game.js syncCustomers)이 phase로 정한다.
 
       const b = bubbles[s.seatId];
-      b.label.textContent = s.orderLabel;
-      b.fill.style.width = `${Math.round(Math.max(0, Math.min(1, s.waitRatio)) * 100)}%`;
+      const info = bubbleFor(s);
+      b.label.textContent = info.text;
+      b.el.dataset.tone = info.tone;
+      if (info.ratio == null) {
+        b.gauge.hidden = true;
+      } else {
+        b.gauge.hidden = false;
+        b.fill.style.width = `${Math.round(Math.max(0, Math.min(1, info.ratio)) * 100)}%`;
+      }
     }
   }
 
