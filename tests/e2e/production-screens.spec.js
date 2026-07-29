@@ -103,7 +103,10 @@ test('화면을 오가도 굽던 상태가 보존된다 (§71)', async ({ page }
   expect(elapsed).not.toBeNull();
 });
 
-test('화면을 오가며 조립→그릴→서빙 루프가 돈다', async ({ page }) => {
+const dockCount = (p) => p.evaluate(() => window.__prodDebug.dockItems().length);
+const seatMood = (p, id) => p.evaluate((s) => window.__prodDebug.seatStates().find((x) => x.seatId === s).mood, id);
+
+test('화면을 오가며 조립→그릴→선반→좌석 서빙 루프가 돈다', async ({ page }) => {
   const errs = await boot(page);
   await assembleOnScreen(page);
 
@@ -114,21 +117,15 @@ test('화면을 오가며 조립→그릴→서빙 루프가 돈다', async ({ p
   await click(page, 'grillSkewer'); // 뒤집기
   await expect.poll(() => st(page).then((s) => s.status)).toBe('grillBack');
   await expect.poll(() => doneness(page), { timeout: 20000 }).toBe('perfect');
-  await click(page, 'grillSkewer'); // 회수 → 완성
-  await expect.poll(() => st(page).then((s) => s.status)).toBe('plated');
+  await click(page, 'grillSkewer'); // 회수 → 완성품이 선반으로, 조리는 다음 job으로 리셋
 
-  await click(page, 'grillPlate'); // 완성품 집기
-  await expect.poll(() => st(page).then((s) => s.plateSelected)).toBe(true);
+  await expect.poll(() => dockCount(page)).toBe(1);
+  await expect.poll(() => st(page).then((s) => s.process)).toBe('assembly');
 
-  // 손님 화면으로 들고 가 좌석 손님에게 서빙
+  // 손님 화면으로 가 선반 완성품을 좌석 손님에게 낸다
   await goScreen(page, 'SCR-SVC-CUSTOMERS');
   await click(page, 'seatServe:seat-03');
-  await expect.poll(() => st(page).then((s) => s.status)).toBe('served');
-  await expect(page.getByTestId('result-overlay')).toBeVisible();
-  await expect(page.getByTestId('result-message')).toContainText('만족');
-
-  // 재시작
-  await page.getByTestId('restart-button').click();
-  await expect.poll(() => st(page).then((s) => s.status)).toBe('assembly');
+  await expect.poll(() => dockCount(page)).toBe(0); // 선반에서 소비됨
+  await expect.poll(() => seatMood(page, 'seat-03'), { timeout: 5000 }).toBe('satisfied');
   expect(errs).toEqual([]);
 });

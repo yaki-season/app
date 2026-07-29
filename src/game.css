@@ -59,8 +59,27 @@ body {
 }
 .quick-nav button.active { border-color: var(--ember); color: var(--ember); }
 
+/* 공용 준비 목록 (완성품 선반) — 퀵 전환 위 */
+.dock-shelf {
+  position: fixed; left: 50%; bottom: 78px; transform: translateX(-50%); z-index: 11;
+  display: flex; gap: 8px; padding: 8px 10px; border-radius: 12px;
+  background: rgba(20,15,11,0.82); border: 1px solid var(--line);
+}
+.dock-shelf[hidden] { display: none; }
+.dock-card {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  min-width: 56px; min-height: 52px; padding: 6px 10px; cursor: pointer;
+  background: rgba(48,38,30,0.9); border: 1px solid var(--line); border-radius: 9px; color: var(--text);
+  font: inherit;
+}
+.dock-card.selected { border-color: var(--ember); box-shadow: 0 0 0 1px var(--ember); }
+.dock-card .dock-menu { font-size: 12px; font-weight: 600; }
+.dock-card .dock-quality { font-size: 10px; padding: 1px 6px; border-radius: 5px; }
+.dock-card .dock-quality.q-good { background: color-mix(in srgb, var(--good) 26%, transparent); color: var(--good); }
+.dock-card .dock-quality.q-low { background: color-mix(in srgb, var(--warn) 26%, transparent); color: var(--warn); }
+
 .hint {
-  position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 10;
+  position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); z-index: 10;
   font-size: 13px; color: var(--warn); background: rgba(0,0,0,0.5);
   padding: 6px 14px; border-radius: 999px; pointer-events: none;
   opacity: 0; transition: opacity 0.2s;

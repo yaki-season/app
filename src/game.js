@@ -9,6 +9,7 @@ import { createStationDirector } from './render/stationDirector.js';
 import { createGrillMaterial } from './render/grillMaterial.js';
 import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { createCustomerAdapter, buildSeatStates } from './render/customerAdapter.js';
+import { createPreparedDock, qualityFromCook } from './render/preparedDock.js';
 import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS } from './config/screenLayout.js';
 import { RECIPE } from './config/recipe.js';
 import {
@@ -16,7 +17,7 @@ import {
   createInitialState, assetsLoaded,
   clickIngredient, isAssemblyComplete, clickAssembledSkewer, placeOnGrill,
   currentDoneness, faceElapsedMs, clickGrillSkewer,
-  clickPlate, clickOrderMat, tick, restart,
+  tick, restart,
 } from './state/gameState.js';
 
 const el = (id) => document.getElementById(id);
@@ -38,11 +39,23 @@ for (const s of SCREENS) for (const k of s.objects) if (OBJECTS[k].kind !== 'ful
 const DEMO_SEAT = 'seat-03';
 const customers = createCustomerAdapter({ renderer: R, container: el('bubbleLayer') });
 
+// 공용 준비 목록 (완성품 선반). 조리와 서빙을 분리한다.
+const dock = createPreparedDock({ container: el('dockShelf') });
+
 function occupants() {
   return [{ seatId: DEMO_SEAT, mood: reaction, orderLabel: '네기마', waitRatio: 1 }];
 }
 function syncCustomers() {
-  customers.apply(buildSeatStates(occupants(), { serveReady: state.plateSelected }));
+  // 선반에 고른 완성품이 있어야 좌석 serve 대상이 활성화된다.
+  customers.apply(buildSeatStates(occupants(), { serveReady: !!dock.selected() }));
+}
+
+// 그릴 완성 → 완성품을 선반에 올리고 다음 조리로 리셋. 조리 job과 완성품 재고를 분리한다.
+// restart()는 SERVED/FAILED에서만 초기화하므로, PLATED에서는 새 초기 상태로 직접 리셋한다.
+function completeToDock() {
+  dock.add({ menu: '네기마', quality: qualityFromCook(state.frontResult, state.backResult) });
+  state = assetsLoaded(createInitialState());
+  showHint('완성품을 선반에 올렸어요');
 }
 
 // ── 상태 → 장면·HUD ─────────────────────────────────────────
@@ -62,7 +75,6 @@ function shouldShow(key) {
     case 'binLeek': return state.process === PROCESS.ASSEMBLY;
     case 'jigSkewer': return true; // 조립대 jig는 항상
     case 'grillSkewer': return isWaitingSkewer() || onGrill();
-    case 'grillPlate': return state.status === STATUS.PLATED;
     default: return true; // 손님·드링크 구조 오브젝트
   }
 }
@@ -93,15 +105,10 @@ function render() {
   el('navLeft').disabled = !director.canLeft();
   el('navRight').disabled = !director.canRight();
 
-  // 결과 오버레이
-  const done = state.status === STATUS.SERVED || state.status === STATUS.FAILED;
-  el('resultOverlay').hidden = !done;
+  // 결과 오버레이는 조리 실패(탄 상태)에만. 서빙은 좌석 반응으로 표현한다.
+  el('resultOverlay').hidden = state.status !== STATUS.FAILED;
   if (state.status === STATUS.FAILED) {
     el('resultMessage').textContent = '꼬치가 타버렸습니다. 다시 만들어 볼까요?';
-    setReaction('retry');
-  } else if (state.status === STATUS.SERVED) {
-    el('resultMessage').textContent =
-      state.servedQuality === 'good' ? '츠키오카가 만족했습니다!' : '조금 과하게 익었다고 아쉬워합니다.';
   }
 }
 
@@ -178,27 +185,21 @@ function handle(key, now) {
         const d = currentDoneness(state, now);
         state = clickGrillSkewer(state, now);
         if (state.status === before && d === 'under') showHint('아직 덜 익었어요');
-      }
-      break;
-    case 'grillPlate':
-      if (state.status === STATUS.PLATED) {
-        state = clickPlate(state); // 완성품 집기
-        showHint('완성품을 손님에게');
+        if (state.status === STATUS.PLATED) completeToDock(); // 완성 → 선반
       }
       break;
     default:
       if (key.startsWith('seatServe:')) {
-        if (state.plateSelected) {
-          state = clickOrderMat(state); // 좌석 손님에게 제공
-          if (state.status === STATUS.SERVED) {
-            setReaction('tasting');
-            if (reactionTimer) clearTimeout(reactionTimer);
-            reactionTimer = setTimeout(() => {
-              setReaction(state.servedQuality === 'good' ? 'satisfied' : 'neutral');
-            }, 900);
-          }
+        const item = dock.selected();
+        if (item) {
+          dock.consumeSelected(); // 선반에서 완성품을 꺼내 좌석에 제공
+          setReaction('tasting');
+          if (reactionTimer) clearTimeout(reactionTimer);
+          reactionTimer = setTimeout(() => {
+            setReaction(item.quality === 'good' ? 'satisfied' : 'neutral');
+          }, 900);
         } else {
-          showHint('먼저 완성품을 집으세요');
+          showHint('선반에서 완성품을 고르세요');
         }
       }
       break; // 그 외(드링크 구조 오브젝트 등)
@@ -291,6 +292,8 @@ window.__prodDebug = {
   controlsLocked: () => director.controlsLocked(),
   reaction: () => reaction,
   seatStates: () => customers.getStates(),
+  dockItems: () => dock.items(),
+  dockSelectedId: () => dock.selectedId(),
   grillMaterial: () => grill,
   requestScreen: (id) => director.request(id, performance.now()),
   navLeft: () => director.left(performance.now()),

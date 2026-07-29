@@ -36,10 +36,9 @@ export const OBJECTS = {
   binLeek: { rect: { x: 0.40, y: 0.60, width: 0.14, height: 0.16 }, layer: 'interactive', color: 0x8fc06a, kind: 'plane' },
   jigSkewer: { rect: { x: 0.62, y: 0.55, width: 0.24, height: 0.08 }, layer: 'interactive', color: 0xc9a86a, kind: 'plane' },
 
-  // 그릴 화면
+  // 그릴 화면 (완성품은 공용 준비 목록으로 자동 이동)
   grillBody: { rect: { x: 0.10, y: 0.46, width: 0.80, height: 0.46 }, layer: 'fixture', color: 0x3a3330, kind: 'plane' },
   grillSkewer: { rect: { x: 0.46, y: 0.44, width: 0.10, height: 0.26 }, layer: 'interactive', color: 0xd98a5f, kind: 'grill' },
-  grillPlate: { rect: { x: 0.66, y: 0.60, width: 0.12, height: 0.12 }, layer: 'interactive', color: 0xe8e0d0, kind: 'plane' },
 
   // 드링크 화면
   drinkTower: { rect: { x: 0.44, y: 0.30, width: 0.12, height: 0.30 }, layer: 'fixture', color: 0x6b6f72, kind: 'plane' },
@@ -80,7 +79,7 @@ export const SCREENS = [
     id: 'SCR-SVC-GRILL',
     name: '그릴',
     look: { x: 0.0, y: -2.4, z: -3.0 }, // 아래 그릴 (더 가까이)
-    objects: ['bg', 'grillBody', 'grillSkewer', 'grillPlate'],
+    objects: ['bg', 'grillBody', 'grillSkewer'],
   },
   {
     id: 'SCR-SVC-DRINK',
