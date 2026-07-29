@@ -28,7 +28,7 @@
     "active": true,
     "status": "candidate",
     "groupSize": 2,
-    "patienceSec": 60,
+    "patienceSec": 100,
     "tipMultiplier": 1.1,
     "orderSequence": ["drink", "drink", "skewer", "skewer"]
   },
@@ -39,7 +39,7 @@
     "active": true,
     "status": "candidate",
     "groupSize": 1,
-    "patienceSec": 60,
+    "patienceSec": 80,
     "tipMultiplier": 0.9,
     "orderSequence": ["skewer"]
   },
@@ -50,7 +50,7 @@
     "active": true,
     "status": "candidate",
     "groupSize": 2,
-    "patienceSec": 60,
+    "patienceSec": 120,
     "tipMultiplier": 1.2,
     "orderSequence": ["skewer"]
   }

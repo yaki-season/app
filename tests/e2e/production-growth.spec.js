@@ -53,6 +53,26 @@ test('구매: 골드 차감·소유·판매가 효과 반영', async ({ page }) 
   expect(await page.evaluate(() => window.__prodDebug.economyBasePrice())).toBe(110); // +10%
 });
 
+test('그릴 칸 업그레이드를 사면 2칸이 열려 동시에 굽는다', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__prodDebug.setWallet(9999, 9));
+  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(1);
+
+  await page.getByTestId('end-day').click();
+  await page.getByTestId('open-purchase').click();
+  await page.getByTestId('cat-equipment').click();
+  await page.getByTestId('buy-equipment-grill-slots-2').click();
+  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(2);
+
+  await page.getByTestId('purchase-close').click(); // 구매 닫고 정산으로
+  await page.getByTestId('next-day').click();
+  // 두 꼬치를 두 칸에 올려 동시 굽기
+  await page.evaluate(() => { window.__prodDebug.cookFillAssembly(); window.__prodDebug.cookFillAssembly(); });
+  await page.evaluate(() => { window.__prodDebug.cookPlace(); window.__prodDebug.cookPlace(); });
+  const s = await page.evaluate(() => window.__prodDebug.cookSlots());
+  expect(s.filter((x) => x.cooking).length).toBe(2);
+});
+
 test('게이팅: 명성·선행 조건이 구매를 막는다', async ({ page }) => {
   await boot(page);
   await page.evaluate(() => window.__prodDebug.setWallet(9999, 0)); // 골드 충분, 명성 0

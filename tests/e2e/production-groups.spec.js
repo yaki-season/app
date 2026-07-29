@@ -29,7 +29,7 @@ test('2인 그룹은 한 명의 인내심이 끝나면 함께 화난 퇴장한�
   await page.evaluate(() => window.__prodDebug.forceGroup('seat-01', 'seat-02', 'office', 0));
   await page.evaluate(() => window.__prodDebug.opsElapse(1));
   await expect.poll(() => view(page, 'seat-01').then((v) => v.phase)).toBe('ordering');
-  await page.evaluate(() => window.__prodDebug.opsElapse(61)); // office 인내심 60초 초과
+  await page.evaluate(() => window.__prodDebug.opsElapse(101)); // office 인내심 100초 초과
   await expect.poll(() => view(page, 'seat-01').then((v) => v.phase)).toBe('leaving');
   await expect.poll(() => view(page, 'seat-02').then((v) => v.phase)).toBe('leaving');
   expect((await view(page, 'seat-02')).mood).toBe('retry');

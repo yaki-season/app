@@ -11,26 +11,22 @@ import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
 import { createCustomerOps } from './render/customerOps.js';
 import { settleDay } from './render/daySettlement.js';
-import { reputationDelta, catalog, buy, effectiveEconomy } from './render/progression.js';
-import { createPreparedDock, qualityFromCook } from './render/preparedDock.js';
+import { reputationDelta, catalog, buy, effectiveEconomy, ownedEffects } from './render/progression.js';
+import { createPreparedDock } from './render/preparedDock.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
+import { createCookStations } from './render/cookStations.js';
 import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS } from './config/screenLayout.js';
 import { RECIPE } from './config/recipe.js';
-import {
-  STATUS, PROCESS,
-  createInitialState, assetsLoaded,
-  clickIngredient, isAssemblyComplete, clickAssembledSkewer, placeOnGrill,
-  currentDoneness, faceElapsedMs, clickGrillSkewer,
-  tick, restart,
-} from './state/gameState.js';
 
 const el = (id) => document.getElementById(id);
 const canvas = el('scene');
 const R = createProductionRenderer(canvas);
 const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
 
-let state = assetsLoaded(createInitialState());
-let grill = null;
+// 멀티 잡 조리: 조립(그릴과 독립) + 그릴 N칸. 슬롯 수는 업그레이드로 늘어난다.
+const cook = createCookStations({ slots: 1 });
+const SLOT_KEYS = ['grillSlot0', 'grillSlot1'];
+const grillMats = {}; // slotKey → 익힘 셰이더 재질
 const lockUntil = {}; // 대상별 입력 잠금
 
 // 각 조작 대상 key가 속한 화면 (가시성·클릭 판정용)
@@ -46,6 +42,7 @@ const wallet = { gold: 0, reputation: 0, owned: new Set() }; // 여러 날 지�
 let cleanupHold = null; // { seatId, startMs } 정리 3초 홀드
 const ownedItems = () => upgrades.filter((u) => wallet.owned.has(u.id));
 const currentEconomy = () => (baseEconomy ? effectiveEconomy(baseEconomy, ownedItems()) : null);
+const syncSlots = () => cook.setSlots(ownedEffects(ownedItems()).grillSlots); // 업그레이드 → 그릴 칸 수
 
 // 공용 준비 목록 (완성품 선반). 조리와 서빙을 분리한다.
 const dock = createPreparedDock({ container: el('dockShelf') });
@@ -167,51 +164,41 @@ finishBtn.addEventListener('click', finishDrink);
 drinkPanel.querySelector('[data-act="serve-low"]').addEventListener('click', serveOverflowLow);
 drinkPanel.querySelector('[data-act="discard"]').addEventListener('click', discardDrink);
 
-// 그릴 완성 → 완성품을 선반에 올리고 다음 조리로 리셋. 조리 job과 완성품 재고를 분리한다.
-// restart()는 SERVED/FAILED에서만 초기화하므로, PLATED에서는 새 초기 상태로 직접 리셋한다.
-function completeToDock() {
-  const q = qualityFromCook(state.frontResult, state.backResult); // 'good' | 'low'
-  dock.add({ menu: '네기마', label: q === 'good' ? '좋음' : '과다', good: q === 'good' });
-  state = assetsLoaded(createInitialState());
-  showHint('완성품을 선반에 올렸어요');
-}
-
 // ── 상태 → 장면·HUD ─────────────────────────────────────────
-function isWaitingSkewer() {
-  return state.process === PROCESS.GRILL && state.status === STATUS.ASSEMBLY && isAssemblyComplete(state);
-}
-function onGrill() {
-  return state.status === STATUS.GRILL_FRONT || state.status === STATUS.GRILL_BACK;
-}
+const slotIndexOf = (key) => SLOT_KEYS.indexOf(key);
 
-// 조작 대상이 지금 보여야 하는가 (활성 화면 && gameState 조건)
+// 조작 대상이 지금 보여야 하는가 (활성 화면 + 조리 상태).
 function shouldShow(key) {
   const active = director.activeScreenId();
   if (SCREEN_OF[key] !== active) return false;
+  const si = slotIndexOf(key);
+  if (si >= 0) return si < cook.slotCount() && cook.slotViews(performance.now())[si].status !== 'empty';
   switch (key) {
     case 'binChicken':
-    case 'binLeek': return state.process === PROCESS.ASSEMBLY;
-    case 'jigSkewer': return true; // 조립대 jig는 항상
-    case 'grillSkewer': return isWaitingSkewer() || onGrill();
+    case 'binLeek': return true; // 조립은 언제든 가능
+    case 'jigSkewer': return true; // 조립 진행 표시
+    case 'grillWaitTray': return true; // 대기 트레이는 항상
     default: return true; // 손님·드링크 구조 오브젝트
   }
 }
 
 function render() {
-  // 조작 대상 가시성 (활성 화면 + gameState). bg·고정물은 렌더러 화면 토글이 담당.
+  const now = performance.now();
   for (const key of Object.keys(SCREEN_OF)) {
     const mesh = R.objectMesh[key];
     if (mesh) mesh.visible = shouldShow(key);
   }
 
-  // 그릴 꼬치 익힘 색 (셰이더 로드 전 폴백)
-  if (!grill && R.objectMesh.grillSkewer && onGrill()) {
-    const d = currentDoneness(state, performance.now());
-    const c = { under: 0xd98a5f, perfect: 0xc97a2a, over: 0x8a5220, burnt: 0x2a1a10 }[d];
-    if (R.objectMesh.grillSkewer.material.color) R.objectMesh.grillSkewer.material.color.setHex(c);
+  // 그릴 칸 익힘 색 (셰이더 로드 전 폴백)
+  const views = cook.slotViews(now);
+  for (const key of SLOT_KEYS) {
+    const i = slotIndexOf(key);
+    const mesh = R.objectMesh[key];
+    if (!grillMats[key] && mesh && views[i] && views[i].cooking && mesh.material.color) {
+      const c = { under: 0xd98a5f, perfect: 0xc97a2a, over: 0x8a5220, burnt: 0x2a1a10 }[views[i].doneness] ?? 0xd98a5f;
+      mesh.material.color.setHex(c);
+    }
   }
-
-  // 손님 6석은 loop에서 매 프레임 syncCustomers(now)로 갱신한다(게이지가 실시간으로 줄기 때문).
 
   // 영업 shell HUD
   el('svcStation').textContent = SCREEN_BY_ID[director.activeScreenId()].name;
@@ -221,25 +208,28 @@ function render() {
   }
   el('navLeft').disabled = !director.canLeft();
   el('navRight').disabled = !director.canRight();
-
-  // 결과 오버레이는 조리 실패(탄 상태)에만. 서빙은 좌석 반응으로 표현한다.
-  el('resultOverlay').hidden = state.status !== STATUS.FAILED;
-  if (state.status === STATUS.FAILED) {
-    el('resultMessage').textContent = '꼬치가 타버렸습니다. 다시 만들어 볼까요?';
-  }
+  el('resultOverlay').hidden = true; // 조리 실패는 칸 폐기로 처리(전역 오버레이 없음)
 }
 
+// 주문서 rail: 조립 진행 + 대기 트레이 수.
 function renderReceipts() {
   const ol = el('receipts');
   ol.innerHTML = '';
+  const idx = cook.assemblyIndex();
   RECIPE.forEach((ing, i) => {
     const li = document.createElement('li');
     li.textContent = ing === 'chicken' ? '닭' : '파';
     li.dataset.testid = `order-slot-${i}`;
-    if (i < state.assemblyIndex) li.classList.add('done');
-    else if (i === state.assemblyIndex && state.status === STATUS.ASSEMBLY) li.classList.add('next');
+    if (i < idx) li.classList.add('done');
+    else if (i === idx) li.classList.add('next');
     ol.appendChild(li);
   });
+  const w = document.createElement('li');
+  w.textContent = `대기 ${cook.waitingCount()}`;
+  w.dataset.testid = 'wait-count';
+  w.style.width = 'auto';
+  w.style.padding = '0 8px';
+  ol.appendChild(w);
 }
 
 function showHint(text) {
@@ -292,32 +282,23 @@ window.addEventListener('pointerup', releasePointers);
 window.addEventListener('pointercancel', releasePointers);
 
 function handle(key, now) {
+  const si = slotIndexOf(key);
+  if (si >= 0) { clickGrillSlot(si, now); return; }
   switch (key) {
     case 'binChicken':
     case 'binLeek': {
-      const ing = key === 'binChicken' ? 'chicken' : 'leek';
-      const before = state.assemblyIndex;
-      state = clickIngredient(state, ing, now);
-      if (state.assemblyIndex === before) showHint('순서가 달라요');
+      const r = cook.clickIngredient(key === 'binChicken' ? 'chicken' : 'leek');
+      if (!r.ok) showHint('순서가 달라요');
+      else if (r.completed) showHint('꼬치 완성 → 그릴 대기');
       break;
     }
     case 'jigSkewer':
-      if (isAssemblyComplete(state) && state.process === PROCESS.ASSEMBLY) {
-        state = clickAssembledSkewer(state); // 그릴로 올림
-        showHint('그릴로 옮겼어요');
-      }
+      break; // 진행 표시 전용(완성 시 자동으로 대기 트레이로)
+    case 'grillWaitTray': {
+      const r = cook.placeToGrill(now); // 대기 꼬치를 빈 칸에
+      if (!r.ok) showHint(r.reason === 'no-waiting' ? '대기 중인 꼬치가 없어요' : '빈 그릴 칸이 없어요');
       break;
-    case 'grillSkewer':
-      if (isWaitingSkewer()) {
-        state = placeOnGrill(state, now);
-      } else if (onGrill()) {
-        const before = state.status;
-        const d = currentDoneness(state, now);
-        state = clickGrillSkewer(state, now);
-        if (state.status === before && d === 'under') showHint('아직 덜 익었어요');
-        if (state.status === STATUS.PLATED) completeToDock(); // 완성 → 선반
-      }
-      break;
+    }
     default:
       if (key.startsWith('seatServe:') && ops) {
         const seatId = key.slice('seatServe:'.length);
@@ -361,8 +342,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 el('restartButton').addEventListener('click', () => {
-  state = restart(state); // 탄 조리 job만 리셋. 손님 운영·선반은 유지.
-  if (grill) grill.setDoneness(0);
+  cook.reset(); // 조리 초기화(결과 오버레이는 현재 미사용, 안전용)
   render();
 });
 
@@ -453,6 +433,7 @@ function buyItem(id) {
   if (!r.ok) { el('purchaseFeedback').textContent = LOCK_TEXT[r.reason] ?? '구매할 수 없습니다'; return; }
   wallet.gold = r.gold;
   wallet.owned.add(r.ownedAdd);
+  syncSlots(); // 그릴 칸 업그레이드 반영
   const label = ITEM_LABELS[id] ?? { name: id };
   el('purchaseFeedback').textContent = `${label.name} 구매 완료 (남은 골드 ${wallet.gold}G)`;
   renderPurchase();
@@ -460,34 +441,55 @@ function buyItem(id) {
 el('openPurchase').addEventListener('click', openPurchase);
 el('closePurchase').addEventListener('click', () => { el('purchase').hidden = true; });
 
-// ── 익힘 셰이더 재질 ─────────────────────────────────────────
-function updateGrillVisual(now) {
-  if (!grill) return;
-  grill.setTime(now / 1000);
-  // 굽는 중이면 경과로 익힘값을 구동, 아니면(대기·조립 등) 날것으로 리셋해 이전 꼬치의 익힘이 남지 않게 한다.
-  grill.setDoneness(onGrill() ? elapsedSecToUniform(faceElapsedMs(state, now) / 1000) : 0);
+// ── 그릴 칸 클릭·익힘 셰이더 ──────────────────────────────────
+function clickGrillSlot(i, now) {
+  const r = cook.clickSlot(i, now);
+  if (r.retrieved) {
+    dock.add({ menu: '네기마', label: r.quality.good ? '좋음' : '과다', good: r.quality.good });
+    showHint('완성품을 선반에 올렸어요');
+  } else if (r.flipped) {
+    showHint('뒷면을 굽는 중');
+  } else if (!r.ok && r.reason === 'not-ready') {
+    showHint('아직 덜 익었어요');
+  }
+  render();
 }
 
-createGrillMaterial()
-  .then((g) => {
-    grill = g;
-    const mesh = R.objectMesh.grillSkewer;
-    mesh.material.dispose();
-    mesh.material = g.material;
-    // 프리워밍: 조립 화면에서 미리 컴파일해 그릴 진입 스톨 제거
-    const wasVisible = mesh.visible;
-    mesh.visible = true;
-    R.renderFrame(performance.now());
-    mesh.visible = wasVisible;
-    if (typeof window !== 'undefined') window.__grill = g;
-  })
-  .catch((err) => console.error('익힘 재질 로드 실패:', err));
+// 각 그릴 칸의 셰이더 익힘값을 매 프레임 갱신. 굽는 칸은 경과로, 그 외는 날것(0).
+function updateGrillVisual(now) {
+  const views = cook.slotViews(now);
+  for (const key of SLOT_KEYS) {
+    const g = grillMats[key];
+    if (!g) continue;
+    g.setTime(now / 1000);
+    const v = views[slotIndexOf(key)];
+    g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
+  }
+}
+
+// 그릴 칸마다 익힘 셰이더 재질을 로드해 물린다.
+for (const key of SLOT_KEYS) {
+  createGrillMaterial()
+    .then((g) => {
+      grillMats[key] = g;
+      const mesh = R.objectMesh[key];
+      if (!mesh) return;
+      mesh.material.dispose();
+      mesh.material = g.material;
+      const wasVisible = mesh.visible;
+      mesh.visible = true;
+      R.renderFrame(performance.now());
+      mesh.visible = wasVisible;
+    })
+    .catch((err) => console.error('익힘 재질 로드 실패:', err));
+}
 
 // ── 루프 ─────────────────────────────────────────────────────
 let lastActive = director.activeScreenId();
+let lastWaiting = -1;
 function loop(now) {
-  const prevStatus = state.status;
-  state = tick(state, now);
+  const discarded = cook.tickBurn(now); // 탄 칸 폐기
+  if (discarded.length) { showHint('탄 꼬치를 폐기했어요'); render(); }
 
   director.tick(now);
   const active = director.activeScreenId();
@@ -496,7 +498,8 @@ function loop(now) {
     lastActive = active;
     render();
   }
-  if (state.status !== prevStatus) render();
+  // 대기 트레이 수가 바뀌면 HUD 갱신
+  if (cook.waitingCount() !== lastWaiting) { lastWaiting = cook.waitingCount(); render(); }
 
   if (ops && !settling) ops.tick(now); // 손님 입장·생애주기 진행 (정산 중 정지)
   updateGrillVisual(now);
@@ -518,6 +521,7 @@ Promise.all([
   .then(([types, day, upgradeData]) => {
     baseEconomy = day.economy;
     upgrades = upgradeData || [];
+    syncSlots(); // 보유 업그레이드 기준 그릴 칸 수
     ops = createCustomerOps({
       seatIds: SEAT_IDS,
       types,
@@ -543,8 +547,14 @@ requestAnimationFrame(loop);
 
 // ── 개발·테스트 훅 ───────────────────────────────────────────
 window.__prodDebug = {
-  getState: () => state,
-  doneness: () => currentDoneness(state, performance.now()),
+  // 멀티 잡 조리 (e2e)
+  cookAssemble: (ing) => cook.clickIngredient(ing),
+  cookFillAssembly: () => cook.debugFillAssembly(), // 조립 5클릭 대체(대기 트레이 +1)
+  cookWaiting: () => cook.waitingCount(),
+  cookSlots: () => cook.slotViews(performance.now()),
+  cookPlace: () => cook.placeToGrill(performance.now()),
+  cookClickSlot: (i) => clickGrillSlot(i, performance.now()),
+  cookElapse: (sec) => cook.debugElapse(sec),
   activeScreen: () => director.activeScreenId(),
   isTransitioning: () => director.isTransitioning(),
   controlsLocked: () => director.controlsLocked(),
@@ -580,7 +590,7 @@ window.__prodDebug = {
   drinkFinish: () => finishDrink(),
   drinkServeLow: () => serveOverflowLow(),
   drinkDiscard: () => discardDrink(),
-  grillMaterial: () => grill,
+  grillMaterial: (slot = 0) => grillMats[SLOT_KEYS[slot]] ?? null,
   requestScreen: (id) => director.request(id, performance.now()),
   navLeft: () => director.left(performance.now()),
   navRight: () => director.right(performance.now()),
