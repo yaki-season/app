@@ -8,6 +8,7 @@ import { createProductionRenderer } from './render/productionRenderer.js';
 import { createStationDirector } from './render/stationDirector.js';
 import { createGrillMaterial } from './render/grillMaterial.js';
 import { elapsedSecToUniform } from './render/grillRenderer.js';
+import { createCustomerAdapter, buildSeatStates } from './render/customerAdapter.js';
 import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS } from './config/screenLayout.js';
 import { RECIPE } from './config/recipe.js';
 import {
@@ -33,7 +34,16 @@ const lockUntil = {}; // 대상별 입력 잠금
 const SCREEN_OF = {};
 for (const s of SCREENS) for (const k of s.objects) if (OBJECTS[k].kind !== 'fullframe') SCREEN_OF[k] = s.id;
 
-const CUSTOMER_COLOR = { waiting: 0x8a7563, tasting: 0x9c826a, satisfied: 0x8fd47a, neutral: 0xc2b3a3, retry: 0xef6a58 };
+// 손님 렌더 어댑터 (6석). 증분 2 데모: 츠키오카 1명이 seat-03에 앉는다. 006이 실제 운영을 꽂는다.
+const DEMO_SEAT = 'seat-03';
+const customers = createCustomerAdapter({ renderer: R, container: el('bubbleLayer') });
+
+function occupants() {
+  return [{ seatId: DEMO_SEAT, mood: reaction, orderLabel: '네기마', waitRatio: 1 }];
+}
+function syncCustomers() {
+  customers.apply(buildSeatStates(occupants(), { serveReady: state.plateSelected }));
+}
 
 // ── 상태 → 장면·HUD ─────────────────────────────────────────
 function isWaitingSkewer() {
@@ -71,8 +81,8 @@ function render() {
     if (R.objectMesh.grillSkewer.material.color) R.objectMesh.grillSkewer.material.color.setHex(c);
   }
 
-  // 손님 반응 색
-  if (R.objectMesh.customer) R.objectMesh.customer.material.color.setHex(CUSTOMER_COLOR[reaction] ?? CUSTOMER_COLOR.waiting);
+  // 손님 6석 렌더 어댑터 (점유·기분·주문·serve 대상)
+  syncCustomers();
 
   // 영업 shell HUD
   el('svcStation').textContent = SCREEN_BY_ID[director.activeScreenId()].name;
@@ -110,7 +120,7 @@ function renderReceipts() {
 
 function setReaction(next) {
   reaction = next;
-  if (R.objectMesh.customer) R.objectMesh.customer.material.color.setHex(CUSTOMER_COLOR[next] ?? CUSTOMER_COLOR.waiting);
+  syncCustomers(); // 어댑터가 좌석 액터 기분색을 갱신
 }
 
 function showHint(text) {
@@ -176,22 +186,22 @@ function handle(key, now) {
         showHint('완성품을 손님에게');
       }
       break;
-    case 'serveMat':
-      if (state.plateSelected) {
-        state = clickOrderMat(state);
-        if (state.status === STATUS.SERVED) {
-          setReaction('tasting');
-          if (reactionTimer) clearTimeout(reactionTimer);
-          reactionTimer = setTimeout(() => {
-            setReaction(state.servedQuality === 'good' ? 'satisfied' : 'neutral');
-          }, 900);
-        }
-      } else {
-        showHint('먼저 완성품을 집으세요');
-      }
-      break;
     default:
-      break; // 드링크 구조 오브젝트 등
+      if (key.startsWith('seatServe:')) {
+        if (state.plateSelected) {
+          state = clickOrderMat(state); // 좌석 손님에게 제공
+          if (state.status === STATUS.SERVED) {
+            setReaction('tasting');
+            if (reactionTimer) clearTimeout(reactionTimer);
+            reactionTimer = setTimeout(() => {
+              setReaction(state.servedQuality === 'good' ? 'satisfied' : 'neutral');
+            }, 900);
+          }
+        } else {
+          showHint('먼저 완성품을 집으세요');
+        }
+      }
+      break; // 그 외(드링크 구조 오브젝트 등)
   }
   render();
 }
@@ -263,6 +273,7 @@ function loop(now) {
   if (state.status !== prevStatus) render();
 
   updateGrillVisual(now);
+  customers.tick(active); // 손님 화면일 때 말풍선·게이지 배치
   R.renderFrame(now);
   requestAnimationFrame(loop);
 }
@@ -279,6 +290,7 @@ window.__prodDebug = {
   isTransitioning: () => director.isTransitioning(),
   controlsLocked: () => director.controlsLocked(),
   reaction: () => reaction,
+  seatStates: () => customers.getStates(),
   grillMaterial: () => grill,
   requestScreen: (id) => director.request(id, performance.now()),
   navLeft: () => director.left(performance.now()),

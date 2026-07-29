@@ -5,8 +5,8 @@
 // 라이브 카메라의 시선을 현재값→목표 프리셋으로 lerp하며, 재요청 시 현재값에서 다시 시작해 수렴한다(§104).
 
 import * as THREE from 'three';
-import { makeCamera, billboard, anchorToWorld, lerp } from './sceneMath.js';
-import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID } from '../config/screenLayout.js';
+import { makeCamera, billboard, worldAtScreen, anchorToWorld, lerp } from './sceneMath.js';
+import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID, SEATS, SEAT_ACTOR_MOOD } from '../config/screenLayout.js';
 
 export function createProductionRenderer(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: false });
@@ -35,6 +35,9 @@ export function createProductionRenderer(canvas) {
     return mesh;
   }
 
+  const seatActorMesh = {}; // seatId → 손님 액터 mesh
+  const seatBubbleWorld = {}; // seatId → 말풍선 앵커 월드 좌표
+
   for (const s of SCREENS) {
     const cam = presetCam[s.id];
     const group = [];
@@ -44,6 +47,30 @@ export function createProductionRenderer(canvas) {
       scene.add(mesh);
       group.push(mesh);
       if (OBJECTS[key].kind !== 'fullframe') objectMesh[key] = mesh; // bg 제외
+    }
+    // 좌석: 손님 액터(카운터 뒤) + serve 대상(카운터 위). 점유·serve 가시성은 어댑터가 구동.
+    if (s.seats) {
+      for (const seatId of s.seats) {
+        const seat = SEATS.find((x) => x.id === seatId);
+        // 좌석 표식 (빈 자리도 6석이 보이도록). 항상 표시(화면 토글만), 어댑터가 건드리지 않음.
+        const base = billboard(cam, { x: seat.serve.x, y: 0.50, width: seat.serve.width, height: 0.03 }, LAYER_Z.fixture, new THREE.MeshBasicMaterial({ color: 0x574433 }));
+        base.renderOrder = -LAYER_Z.fixture + 0.5;
+        scene.add(base); group.push(base);
+
+        const actor = billboard(cam, seat.actor, LAYER_Z.actor, new THREE.MeshBasicMaterial({ color: SEAT_ACTOR_MOOD.waiting }));
+        actor.renderOrder = -LAYER_Z.actor;
+        actor.visible = false;
+        actor.userData.seatId = seatId;
+        scene.add(actor); group.push(actor); seatActorMesh[seatId] = actor;
+
+        const serve = billboard(cam, seat.serve, LAYER_Z.interactive, new THREE.MeshBasicMaterial({ color: 0x584636, transparent: true, opacity: 0.85 }));
+        serve.renderOrder = 100;
+        serve.visible = false;
+        serve.userData.objectKey = `seatServe:${seatId}`;
+        scene.add(serve); group.push(serve); objectMesh[`seatServe:${seatId}`] = serve;
+
+        seatBubbleWorld[seatId] = worldAtScreen(cam, seat.bubble.x, seat.bubble.y, LAYER_Z.actor);
+      }
     }
     screenGroups[s.id] = group;
   }
@@ -137,11 +164,20 @@ export function createProductionRenderer(canvas) {
     return anchorToWorld(cam, c.x + c.width / 2, c.y + c.height / 2, LAYER_Z[def.layer]);
   }
 
+  // 월드 좌표 → 화면 픽셀 (라이브 카메라 기준). DOM 오버레이(말풍선·게이지) 배치용.
+  function projectToScreen(world) {
+    const v = world.clone().project(camera);
+    const rect = canvas.getBoundingClientRect();
+    return { x: rect.left + (v.x * 0.5 + 0.5) * rect.width, y: rect.top + (-v.y * 0.5 + 0.5) * rect.height };
+  }
+
   return {
     scene,
     camera,
     renderer,
     objectMesh,
+    seatActorMesh,
+    seatBubbleWorld,
     presetCam,
     activeScreenId: () => activeId,
     goToScreen,
@@ -149,6 +185,7 @@ export function createProductionRenderer(canvas) {
     resize,
     performanceStats,
     anchorFor,
+    projectToScreen,
     quaternionFor: (screenId) => presetCam[screenId].quaternion.clone(),
     dispose: () => renderer.dispose(),
   };

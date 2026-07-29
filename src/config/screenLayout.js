@@ -26,11 +26,9 @@ export const OBJECTS = {
   // 공용 배경 (전 화면)
   bg: { rect: { x: 0, y: 0, width: 1, height: 1 }, layer: 'background', color: 0x241c15, kind: 'fullframe' },
 
-  // 손님 화면
+  // 손님 화면 (좌석 액터·serve는 SEATS에서 동적 생성)
   seating: { rect: { x: 0.06, y: 0.10, width: 0.88, height: 0.40 }, layer: 'background', color: 0x2c2118, kind: 'plane' },
   counter: { rect: { x: 0.02, y: 0.52, width: 0.96, height: 0.26 }, layer: 'fixture', color: 0x4a3826, kind: 'plane' },
-  customer: { rect: { x: 0.42, y: 0.16, width: 0.16, height: 0.42 }, layer: 'actor', color: 0x8a7563, kind: 'plane' },
-  serveMat: { rect: { x: 0.40, y: 0.60, width: 0.20, height: 0.10 }, layer: 'interactive', color: 0x584636, kind: 'plane' },
 
   // 조립 화면
   workbench: { rect: { x: 0.08, y: 0.44, width: 0.84, height: 0.50 }, layer: 'fixture', color: 0x5c4630, kind: 'plane' },
@@ -50,6 +48,18 @@ export const OBJECTS = {
   drinkGlass: { rect: { x: 0.46, y: 0.62, width: 0.08, height: 0.12 }, layer: 'interactive', color: 0xdcc98a, kind: 'plane' },
 };
 
+// 6석 좌석 (손님 화면). 각 좌석은 카운터 뒤 손님 액터, 좌석 위 말풍선(DOM), 카운터 위 serve 대상을 갖는다.
+// 006/GPL-003이 실제 손님·주문 데이터를 이 인터페이스로 꽂는다. 좌표는 정규화(top-left rect / center point).
+const SEAT_X = [0.12, 0.268, 0.416, 0.564, 0.712, 0.86]; // 6석 중심 x
+export const SEATS = SEAT_X.map((cx, i) => ({
+  id: `seat-0${i + 1}`,
+  actor: { x: cx - 0.055, y: 0.15, width: 0.11, height: 0.40 }, // 카운터 뒤 상반신
+  bubble: { x: cx, y: 0.10 }, // 말풍선·게이지 DOM 앵커 (좌석 위, 정규화 center)
+  serve: { x: cx - 0.045, y: 0.55, width: 0.09, height: 0.10 }, // 카운터 위 serve 대상
+}));
+export const SEAT_IDS = SEATS.map((s) => s.id);
+export const SEAT_ACTOR_MOOD = { waiting: 0x8a7563, tasting: 0x9c826a, satisfied: 0x8fd47a, neutral: 0xc2b3a3, retry: 0xef6a58 };
+
 // 화면 레지스트리. 좌·우 순서 = 배열 순서. 각 화면은 같은 PLAYER_EYE에서 look만 달리한다.
 // look: 월드 단위 시선 지점 (손님=정면·위, 스테이션=아래, 드링크=옆).
 export const SCREENS = [
@@ -57,7 +67,8 @@ export const SCREENS = [
     id: 'SCR-SVC-CUSTOMERS',
     name: '손님',
     look: { x: 0.0, y: 0.4, z: -6.0 }, // 정면·위 (손님·카운터)
-    objects: ['bg', 'seating', 'counter', 'customer', 'serveMat'],
+    objects: ['bg', 'seating', 'counter'],
+    seats: SEAT_IDS, // 좌석 액터·serve는 렌더러가 SEATS로 생성
   },
   {
     id: 'SCR-SVC-ASSEMBLY',

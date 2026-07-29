@@ -120,9 +120,9 @@ test('화면을 오가며 조립→그릴→서빙 루프가 돈다', async ({ p
   await click(page, 'grillPlate'); // 완성품 집기
   await expect.poll(() => st(page).then((s) => s.plateSelected)).toBe(true);
 
-  // 손님 화면으로 들고 가 서빙
+  // 손님 화면으로 들고 가 좌석 손님에게 서빙
   await goScreen(page, 'SCR-SVC-CUSTOMERS');
-  await click(page, 'serveMat');
+  await click(page, 'seatServe:seat-03');
   await expect.poll(() => st(page).then((s) => s.status)).toBe('served');
   await expect(page.getByTestId('result-overlay')).toBeVisible();
   await expect(page.getByTestId('result-message')).toContainText('만족');
