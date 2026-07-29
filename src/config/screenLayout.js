@@ -40,11 +40,11 @@ export const OBJECTS = {
   grillBody: { rect: { x: 0.10, y: 0.46, width: 0.80, height: 0.46 }, layer: 'fixture', color: 0x3a3330, kind: 'plane' },
   grillSkewer: { rect: { x: 0.46, y: 0.44, width: 0.10, height: 0.26 }, layer: 'interactive', color: 0xd98a5f, kind: 'grill' },
 
-  // 드링크 화면
-  drinkTower: { rect: { x: 0.44, y: 0.30, width: 0.12, height: 0.30 }, layer: 'fixture', color: 0x6b6f72, kind: 'plane' },
-  glassRack: { rect: { x: 0.18, y: 0.58, width: 0.28, height: 0.14 }, layer: 'fixture', color: 0x3a2d20, kind: 'plane' },
-  drinkLever: { rect: { x: 0.56, y: 0.44, width: 0.06, height: 0.14 }, layer: 'interactive', color: 0xb8862c, kind: 'plane' },
-  drinkGlass: { rect: { x: 0.46, y: 0.62, width: 0.08, height: 0.12 }, layer: 'interactive', color: 0xdcc98a, kind: 'plane' },
+  // 드링크 화면 (단일 레버: 위=거품, 아래=맥주. 잔 채움은 DOM 패널)
+  drinkTower: { rect: { x: 0.44, y: 0.30, width: 0.12, height: 0.24 }, layer: 'fixture', color: 0x6b6f72, kind: 'plane' },
+  glassRack: { rect: { x: 0.16, y: 0.58, width: 0.26, height: 0.14 }, layer: 'fixture', color: 0x3a2d20, kind: 'plane' },
+  drinkLeverUpper: { rect: { x: 0.60, y: 0.40, width: 0.09, height: 0.08 }, layer: 'interactive', color: 0xe8d8a0, kind: 'plane' },
+  drinkLeverLower: { rect: { x: 0.60, y: 0.49, width: 0.09, height: 0.08 }, layer: 'interactive', color: 0xc79a3a, kind: 'plane' },
 };
 
 // 6석 좌석 (손님 화면). 각 좌석은 카운터 뒤 손님 액터, 좌석 위 말풍선(DOM), 카운터 위 serve 대상을 갖는다.
@@ -85,7 +85,7 @@ export const SCREENS = [
     id: 'SCR-SVC-DRINK',
     name: '드링크',
     look: { x: 1.8, y: -1.4, z: -4.4 }, // 옆(오른쪽) 주류
-    objects: ['bg', 'drinkTower', 'glassRack', 'drinkLever', 'drinkGlass'],
+    objects: ['bg', 'drinkTower', 'glassRack', 'drinkLeverUpper', 'drinkLeverLower'],
   },
 ];
 

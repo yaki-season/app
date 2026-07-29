@@ -10,6 +10,7 @@ import { createGrillMaterial } from './render/grillMaterial.js';
 import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { createCustomerAdapter, buildSeatStates } from './render/customerAdapter.js';
 import { createPreparedDock, qualityFromCook } from './render/preparedDock.js';
+import { createDrinkPour, DRINK } from './render/drinkStation.js';
 import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS } from './config/screenLayout.js';
 import { RECIPE } from './config/recipe.js';
 import {
@@ -42,6 +43,10 @@ const customers = createCustomerAdapter({ renderer: R, container: el('bubbleLaye
 // 공용 준비 목록 (완성품 선반). 조리와 서빙을 분리한다.
 const dock = createPreparedDock({ container: el('dockShelf') });
 
+// 생맥주 따르기 (드링크 화면). 레버 아래=맥주, 위=거품 (GPL-004).
+const pour = createDrinkPour();
+const LEVER_ZONE = { drinkLeverLower: 'beer', drinkLeverUpper: 'foam' };
+
 function occupants() {
   return [{ seatId: DEMO_SEAT, mood: reaction, orderLabel: '네기마', waitRatio: 1 }];
 }
@@ -50,10 +55,68 @@ function syncCustomers() {
   customers.apply(buildSeatStates(occupants(), { serveReady: !!dock.selected() }));
 }
 
+// ── 드링크 잔 채움 패널 ──────────────────────────────────────
+const drinkPanel = el('drinkPanel');
+const beerEl = drinkPanel.querySelector('.beer');
+const foamEl = drinkPanel.querySelector('.foam');
+const stampEl = drinkPanel.querySelector('.stamp');
+const finishBtn = drinkPanel.querySelector('[data-act="finish"]');
+const overflowEl = drinkPanel.querySelector('.drink-overflow');
+const GLASS_PX = 150;
+// 기준선: 목표 총 채움 4.0초를 cap(4.7) 대비 높이로 (한 번만).
+drinkPanel.querySelector('.target-line').style.bottom = `${(4.0 / DRINK.totalCap) * GLASS_PX}px`;
+
+function updateDrinkPanel(activeScreen) {
+  const show = activeScreen === 'SCR-SVC-DRINK';
+  drinkPanel.hidden = !show;
+  if (!show) return;
+  const s = pour.state();
+  const beerH = Math.min(1, s.beerSec / DRINK.totalCap) * GLASS_PX;
+  const foamH = Math.min(1, s.foamSec / DRINK.totalCap) * GLASS_PX;
+  beerEl.style.height = `${beerH}px`;
+  foamEl.style.height = `${foamH}px`;
+  foamEl.style.bottom = `${beerH}px`;
+  finishBtn.disabled = s.phase !== 'ready';
+  overflowEl.hidden = s.phase !== 'overflow';
+  if (s.phase === 'overflow') {
+    stampEl.hidden = false;
+    stampEl.textContent = '넘침';
+    stampEl.className = 'stamp q-Fail';
+  } else {
+    stampEl.hidden = true;
+  }
+}
+
+function finishDrink() {
+  const q = pour.finish(); // Perfect | Good | OK
+  if (q) {
+    dock.add({ menu: '생맥주', label: q, good: q === 'Perfect' || q === 'Good' });
+    showHint('생맥주를 선반에 올렸어요');
+  }
+  pour.reset();
+  render();
+}
+function serveOverflowLow() {
+  const q = pour.serveOverflow(); // Fail
+  if (q) dock.add({ menu: '생맥주', label: q, good: false });
+  pour.reset();
+  render();
+}
+function discardDrink() {
+  pour.discard();
+  pour.reset();
+  showHint('잔을 폐기했어요');
+  render();
+}
+finishBtn.addEventListener('click', finishDrink);
+drinkPanel.querySelector('[data-act="serve-low"]').addEventListener('click', serveOverflowLow);
+drinkPanel.querySelector('[data-act="discard"]').addEventListener('click', discardDrink);
+
 // 그릴 완성 → 완성품을 선반에 올리고 다음 조리로 리셋. 조리 job과 완성품 재고를 분리한다.
 // restart()는 SERVED/FAILED에서만 초기화하므로, PLATED에서는 새 초기 상태로 직접 리셋한다.
 function completeToDock() {
-  dock.add({ menu: '네기마', quality: qualityFromCook(state.frontResult, state.backResult) });
+  const q = qualityFromCook(state.frontResult, state.backResult); // 'good' | 'low'
+  dock.add({ menu: '네기마', label: q === 'good' ? '좋음' : '과다', good: q === 'good' });
   state = assetsLoaded(createInitialState());
   showHint('완성품을 선반에 올렸어요');
 }
@@ -156,10 +219,14 @@ canvas.addEventListener('pointerdown', (e) => {
   const key = hitTest(e);
   if (!key) return;
   const now = performance.now();
+  if (LEVER_ZONE[key]) { pour.press(LEVER_ZONE[key], now); return; } // 누르는 동안 흐름
   if ((lockUntil[key] || 0) > now) return;
   lockUntil[key] = now + 200;
   handle(key, now);
 });
+// 손을 떼면 흐름 정지 (§38). 다른 클릭에서도 무해(활성 존 없으면 no-op).
+window.addEventListener('pointerup', () => pour.release(performance.now()));
+window.addEventListener('pointercancel', () => pour.release(performance.now()));
 
 function handle(key, now) {
   switch (key) {
@@ -196,7 +263,7 @@ function handle(key, now) {
           setReaction('tasting');
           if (reactionTimer) clearTimeout(reactionTimer);
           reactionTimer = setTimeout(() => {
-            setReaction(item.quality === 'good' ? 'satisfied' : 'neutral');
+            setReaction(item.good ? 'satisfied' : 'neutral');
           }, 900);
         } else {
           showHint('선반에서 완성품을 고르세요');
@@ -275,6 +342,8 @@ function loop(now) {
 
   updateGrillVisual(now);
   customers.tick(active); // 손님 화면일 때 말풍선·게이지 배치
+  pour.tick(now); // 따르는 중이면 누적·넘침 감지
+  updateDrinkPanel(active);
   R.renderFrame(now);
   requestAnimationFrame(loop);
 }
@@ -294,6 +363,20 @@ window.__prodDebug = {
   seatStates: () => customers.getStates(),
   dockItems: () => dock.items(),
   dockSelectedId: () => dock.selectedId(),
+  pourState: () => pour.state(),
+  // 결정론적 따르기 (e2e): 실제 시계 대신 명시 시간으로 맥주·거품을 채운다.
+  pourExact: (beerSec, foamSec) => {
+    pour.reset();
+    pour.press('beer', 0);
+    pour.release(beerSec * 1000);
+    pour.press('foam', beerSec * 1000);
+    pour.release((beerSec + foamSec) * 1000);
+    return pour.state();
+  },
+  pourOverflow: () => { pour.reset(); pour.press('beer', 0); pour.tick(6000); return pour.state(); },
+  drinkFinish: () => finishDrink(),
+  drinkServeLow: () => serveOverflowLow(),
+  drinkDiscard: () => discardDrink(),
   grillMaterial: () => grill,
   requestScreen: (id) => director.request(id, performance.now()),
   navLeft: () => director.left(performance.now()),

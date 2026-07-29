@@ -27,6 +27,25 @@
   <button id="navLeft" class="side-nav left" data-testid="nav-left" aria-label="이전 화면">‹</button>
   <button id="navRight" class="side-nav right" data-testid="nav-right" aria-label="다음 화면">›</button>
 
+  <!-- 드링크: 잔 채움·기준선·결과 (DOM, 드링크 화면 전용) -->
+  <div id="drinkPanel" class="drink-panel" data-testid="drink-panel" hidden>
+    <div class="glass" data-testid="drink-glass">
+      <span class="foam" data-testid="drink-foam"></span>
+      <span class="beer" data-testid="drink-beer"></span>
+      <span class="target-line"></span>
+      <span class="stamp" data-testid="drink-stamp" hidden></span>
+    </div>
+    <p class="drink-hint">레버 <b>아래</b>=맥주 · <b>위</b>=거품 (눌러서 채우기)</p>
+    <div class="drink-actions">
+      <button data-act="finish" data-testid="drink-finish">완성</button>
+    </div>
+    <div class="drink-overflow" data-testid="drink-overflow" hidden>
+      <span>잔이 넘쳤어요</span>
+      <button data-act="serve-low" data-testid="drink-serve-low">낮은 품질로 제공</button>
+      <button data-act="discard" data-testid="drink-discard">폐기</button>
+    </div>
+  </div>
+
   <!-- 공용 준비 목록 (svc.preparedDock) — 완성품 선반, 전 화면 공유 -->
   <div id="dockShelf" class="dock-shelf" data-testid="dock-shelf" aria-label="공용 준비 목록" hidden></div>
 

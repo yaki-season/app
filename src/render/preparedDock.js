@@ -9,8 +9,6 @@ export function qualityFromCook(frontResult, backResult) {
   return frontResult === 'over' || backResult === 'over' ? 'low' : 'good';
 }
 
-const QUALITY_LABEL = { good: '좋음', low: '과다' };
-
 export function createPreparedDock({ container }) {
   let items = [];
   let selectedId = null;
@@ -24,16 +22,17 @@ export function createPreparedDock({ container }) {
       card.type = 'button';
       card.className = `dock-card${it.id === selectedId ? ' selected' : ''}`;
       card.dataset.testid = `dock-item-${it.id}`;
-      card.dataset.quality = it.quality;
-      card.innerHTML = `<span class="dock-menu">${it.menu}</span><span class="dock-quality q-${it.quality}">${QUALITY_LABEL[it.quality] ?? ''}</span>`;
+      card.dataset.good = it.good ? '1' : '0';
+      card.innerHTML = `<span class="dock-menu">${it.menu}</span><span class="dock-quality ${it.good ? 'q-good' : 'q-low'}">${it.label}</span>`;
       card.addEventListener('click', () => select(it.id));
       container.appendChild(card);
     }
     container.hidden = items.length === 0;
   }
 
+  // item: { menu, label, good } — 메뉴명, 품질 라벨, 손님 만족 여부.
   function add(item) {
-    const it = { id: `p${++seq}`, menu: item.menu, quality: item.quality };
+    const it = { id: `p${++seq}`, menu: item.menu, label: item.label, good: !!item.good };
     items.push(it);
     if (!selectedId) selectedId = it.id;
     render();
@@ -70,5 +69,6 @@ export function createPreparedDock({ container }) {
     items: () => items.map((i) => ({ ...i })),
     selectedId: () => selectedId,
     count: () => items.length,
+    hasGood: () => items.some((i) => i.good),
   };
 }

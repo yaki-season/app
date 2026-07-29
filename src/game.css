@@ -59,6 +59,43 @@ body {
 }
 .quick-nav button.active { border-color: var(--ember); color: var(--ember); }
 
+/* 드링크 잔 채움 패널 (드링크 화면 전용) */
+.drink-panel {
+  position: fixed; right: 84px; top: 50%; transform: translateY(-50%); z-index: 12;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 14px 16px; border-radius: 12px;
+  background: rgba(20,15,11,0.88); border: 1px solid var(--line);
+}
+.drink-panel[hidden] { display: none; }
+.drink-panel .glass {
+  position: relative; width: 72px; height: 150px;
+  border: 2px solid #b9a07a; border-top: none; border-radius: 4px 4px 10px 10px;
+  background: rgba(0,0,0,0.35); overflow: hidden;
+}
+.drink-panel .beer { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(to top,#c8871f,#e0a52e); transition: height 60ms linear; }
+.drink-panel .foam { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: #f2ead2; transition: height 60ms linear, bottom 60ms linear; }
+.drink-panel .target-line { position: absolute; left: -3px; right: -3px; border-top: 2px dashed #8fd47a; }
+.drink-panel .stamp {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%) rotate(-8deg);
+  font-size: 15px; font-weight: 800; padding: 3px 8px; border-radius: 6px;
+  border: 2px solid currentColor; background: rgba(20,15,11,0.7);
+}
+.drink-panel .stamp[hidden] { display: none; }
+.drink-panel .stamp.q-Perfect { color: #8fd47a; }
+.drink-panel .stamp.q-Good { color: #cfe08a; }
+.drink-panel .stamp.q-OK { color: var(--warn); }
+.drink-panel .stamp.q-Fail { color: #ef6a58; }
+.drink-hint { margin: 0; font-size: 11px; color: var(--dim); text-align: center; }
+.drink-hint b { color: var(--ember); }
+.drink-actions button, .drink-overflow button {
+  min-height: 34px; padding: 6px 14px; border-radius: 8px; cursor: pointer; font: inherit;
+  background: var(--ember); color: #1a120a; border: none; font-weight: 600;
+}
+.drink-actions button:disabled { opacity: 0.4; cursor: default; }
+.drink-overflow { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: var(--warn); }
+.drink-overflow[hidden] { display: none; }
+.drink-overflow button { background: rgba(48,38,30,0.9); color: var(--text); border: 1px solid var(--line); }
+
 /* 공용 준비 목록 (완성품 선반) — 퀵 전환 위 */
 .dock-shelf {
   position: fixed; left: 50%; bottom: 78px; transform: translateX(-50%); z-index: 11;
