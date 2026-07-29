@@ -38,8 +38,27 @@
         <li><span>팁</span><b data-f="tip">0</b></li>
         <li class="total"><span>합계</span><b data-f="total">0</b></li>
         <li><span>평균 만족도</span><b data-f="avgSatisfaction">0</b></li>
+        <li><span>명성 변화</span><b data-f="repDelta">0</b></li>
+        <li><span>보유 (골드 · 명성)</span><b><span data-f="walletGold">0</span> · <span data-f="walletRep">0</span></b></li>
       </ul>
-      <button id="nextDay" class="next-day" data-testid="next-day" type="button">다음 날</button>
+      <div class="settle-actions">
+        <button id="openPurchase" class="open-purchase" data-testid="open-purchase" type="button">구매</button>
+        <button id="nextDay" class="next-day" data-testid="next-day" type="button">다음 날</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 구매 카탈로그 (SCR-META-PURCHASE) -->
+  <div id="purchase" class="purchase" data-testid="purchase" hidden>
+    <div class="purchase-card">
+      <header class="purchase-head">
+        <h2>구매</h2>
+        <span class="wallet">골드 <b data-w="gold" data-testid="wallet-gold">0</b> · 명성 <b data-w="rep" data-testid="wallet-rep">0</b></span>
+      </header>
+      <nav id="catTabs" class="cat-tabs"></nav>
+      <ul id="itemList" class="item-list"></ul>
+      <p id="purchaseFeedback" class="purchase-feedback" data-testid="purchase-feedback"></p>
+      <button id="closePurchase" class="close-purchase" data-testid="purchase-close" type="button">닫기</button>
     </div>
   </div>
 

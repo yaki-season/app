@@ -11,6 +11,7 @@ import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
 import { createCustomerOps } from './render/customerOps.js';
 import { settleDay } from './render/daySettlement.js';
+import { reputationDelta, catalog, buy, effectiveEconomy } from './render/progression.js';
 import { createPreparedDock, qualityFromCook } from './render/preparedDock.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
 import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS } from './config/screenLayout.js';
@@ -39,8 +40,12 @@ for (const s of SCREENS) for (const k of s.objects) if (OBJECTS[k].kind !== 'ful
 // 손님 렌더 어댑터 (6석) + 운영 상태 머신. ops가 좌석 생애주기를 굴리고, adapter가 렌더한다.
 const customers = createCustomerAdapter({ renderer: R, container: el('bubbleLayer') });
 let ops = null; // 콘텐츠(유형·수치) 로드 후 생성
-let economy = null; // 영업일 경제 수치 (정산용)
+let baseEconomy = null; // 영업일 기본 경제 수치
+let upgrades = []; // 구매 카탈로그(업그레이드)
+const wallet = { gold: 0, reputation: 0, owned: new Set() }; // 여러 날 지속되는 성장 자원
 let cleanupHold = null; // { seatId, startMs } 정리 3초 홀드
+const ownedItems = () => upgrades.filter((u) => wallet.owned.has(u.id));
+const currentEconomy = () => (baseEconomy ? effectiveEconomy(baseEconomy, ownedItems()) : null);
 
 // 공용 준비 목록 (완성품 선반). 조리와 서빙을 분리한다.
 const dock = createPreparedDock({ container: el('dockShelf') });
@@ -364,23 +369,96 @@ el('restartButton').addEventListener('click', () => {
 // ── 영업 종료 · 정산 · 다음 날 ────────────────────────────────
 let settling = false;
 function endDay() {
-  if (!ops || !economy) return;
-  const s = settleDay(ops.records(), economy);
+  if (!ops || !baseEconomy) return;
+  const records = ops.records();
+  const s = settleDay(records, currentEconomy());
+  const repDelta = reputationDelta(records);
+  // 수익·명성을 지갑에 누적(여러 날 진행). 명성은 소비하지 않는 조건 자원이다.
+  wallet.gold += s.total;
+  wallet.reputation = Math.max(0, wallet.reputation + repDelta);
   const set = (f, v) => { const node = document.querySelector(`#settlement [data-f="${f}"]`); if (node) node.textContent = v; };
   set('visited', s.visited); set('served', s.served); set('lost', s.lost);
   set('good', s.quality.good); set('low', s.quality.low);
   set('revenue', s.revenue); set('tip', s.tip); set('total', s.total);
   set('avgSatisfaction', s.avgSatisfaction);
+  set('repDelta', repDelta >= 0 ? `+${repDelta}` : `${repDelta}`);
+  set('walletGold', wallet.gold); set('walletRep', wallet.reputation);
   el('settlement').hidden = false;
   settling = true; // 손님 시간 정지
 }
 function nextDay() {
   if (ops) { ops.resetDay(); ops.setAutoSpawn(true); }
   el('settlement').hidden = true;
+  el('purchase').hidden = true;
   settling = false;
 }
 el('endDay').addEventListener('click', endDay);
 el('nextDay').addEventListener('click', nextDay);
+
+// ── 구매 카탈로그 (SCR-META-PURCHASE) ─────────────────────────
+const ITEM_LABELS = {
+  'ingredient-chicken-t2': { name: '닭 등급 ↑', meta: '판매가 +10%' },
+  'equipment-grill-slots-2': { name: '그릴 2칸', meta: '동시 굽기 2개' },
+  'interior-seats-8': { name: '좌석 8석', meta: '좌석 확장' },
+  'interior-seats-12': { name: '좌석 12석', meta: '좌석 확장' },
+};
+const CAT_LABELS = { ingredient: '재료', equipment: '장비', interior: '인테리어', staff: '직원' };
+const LOCK_TEXT = { 'locked-rep': '명성 부족', 'locked-prereq': '선행 필요', unaffordable: '골드 부족' };
+let purchaseCat = null;
+
+function openPurchase() {
+  const cats = [...new Set(upgrades.filter((u) => u.active !== false).map((u) => u.category))];
+  if (!purchaseCat || !cats.includes(purchaseCat)) purchaseCat = cats[0];
+  el('purchaseFeedback').textContent = '';
+  el('purchase').hidden = false;
+  renderPurchase();
+}
+function renderPurchase() {
+  document.querySelector('#purchase [data-w="gold"]').textContent = wallet.gold;
+  document.querySelector('#purchase [data-w="rep"]').textContent = wallet.reputation;
+  const cats = [...new Set(upgrades.filter((u) => u.active !== false).map((u) => u.category))];
+  const tabs = el('catTabs');
+  tabs.innerHTML = '';
+  for (const c of cats) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = CAT_LABELS[c] ?? c;
+    b.dataset.testid = `cat-${c}`;
+    b.classList.toggle('active', c === purchaseCat);
+    b.addEventListener('click', () => { purchaseCat = c; renderPurchase(); });
+    tabs.appendChild(b);
+  }
+  const list = el('itemList');
+  list.innerHTML = '';
+  for (const item of catalog(upgrades, wallet).filter((i) => i.category === purchaseCat)) {
+    const label = ITEM_LABELS[item.id] ?? { name: item.id, meta: '' };
+    const li = document.createElement('li');
+    li.className = `item-card${item.state === 'owned' ? ' owned' : ''}`;
+    li.dataset.testid = `item-${item.id}`;
+    li.dataset.state = item.state;
+    let right;
+    if (item.state === 'owned') right = '<span class="held">보유</span>';
+    else if (item.state === 'buyable') right = `<button class="buy" data-buy="${item.id}" data-testid="buy-${item.id}">${item.costGold}G 구매</button>`;
+    else right = `<span class="locked">${LOCK_TEXT[item.state] ?? ''}${item.state === 'locked-rep' ? ` (명성 ${item.reputationReq})` : ''}</span>`;
+    li.innerHTML = `<span class="info"><span class="name">${label.name}</span><span class="meta">${label.meta} · ${item.costGold}G · 명성 ${item.reputationReq}</span></span>${right}`;
+    const buyBtn = li.querySelector('[data-buy]');
+    if (buyBtn) buyBtn.addEventListener('click', () => buyItem(item.id));
+    list.appendChild(li);
+  }
+}
+function buyItem(id) {
+  const item = upgrades.find((u) => u.id === id);
+  if (!item) return;
+  const r = buy(item, wallet);
+  if (!r.ok) { el('purchaseFeedback').textContent = LOCK_TEXT[r.reason] ?? '구매할 수 없습니다'; return; }
+  wallet.gold = r.gold;
+  wallet.owned.add(r.ownedAdd);
+  const label = ITEM_LABELS[id] ?? { name: id };
+  el('purchaseFeedback').textContent = `${label.name} 구매 완료 (남은 골드 ${wallet.gold}G)`;
+  renderPurchase();
+}
+el('openPurchase').addEventListener('click', openPurchase);
+el('closePurchase').addEventListener('click', () => { el('purchase').hidden = true; });
 
 // ── 익힘 셰이더 재질 ─────────────────────────────────────────
 function updateGrillVisual(now) {
@@ -434,9 +512,11 @@ function loop(now) {
 Promise.all([
   fetch('/content/customers/types.json').then((r) => r.json()),
   fetch('/content/campaign/day-d1.json').then((r) => r.json()),
+  fetch('/content/progression/upgrades.json').then((r) => r.json()).catch(() => []),
 ])
-  .then(([types, day]) => {
-    economy = day.economy;
+  .then(([types, day, upgradeData]) => {
+    baseEconomy = day.economy;
+    upgrades = upgradeData || [];
     ops = createCustomerOps({
       seatIds: SEAT_IDS,
       types,
@@ -482,6 +562,9 @@ window.__prodDebug = {
   opsElapse: (sec) => ops && ops.debugElapse(sec),
   acceptOrder: (seatId) => ops && ops.acceptOrder(seatId),
   opsRecords: () => (ops ? ops.records() : []),
+  wallet: () => ({ gold: wallet.gold, reputation: wallet.reputation, owned: [...wallet.owned] }),
+  setWallet: (gold, reputation) => { wallet.gold = gold; wallet.reputation = reputation; },
+  economyBasePrice: () => (currentEconomy() ? currentEconomy().basePrice : null),
   pourState: () => pour.state(),
   // 결정론적 따르기 (e2e): 실제 시계 대신 명시 시간으로 맥주·거품을 채운다.
   pourExact: (beerSec, foamSec) => {

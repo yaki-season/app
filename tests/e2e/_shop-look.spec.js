@@ -1,0 +1,21 @@
+import { test, expect } from '@playwright/test';
+test('shop look', async ({ page }) => {
+  const errs = [];
+  page.on('pageerror', (e) => errs.push(e.message));
+  page.on('console', (m) => m.type() === 'error' && errs.push(m.text()));
+  await page.goto('/src/game.html');
+  await expect.poll(() => page.evaluate(() => window.__prodDebug.opsReady())).toBe(true);
+  await page.evaluate(() => window.__prodDebug.setWallet(3000, 3));
+  await page.getByTestId('end-day').click();
+  await page.waitForTimeout(100);
+  await page.screenshot({ path: 'captures/shop-1-settle.png' });
+  await page.getByTestId('open-purchase').click();
+  await page.waitForTimeout(100);
+  await page.screenshot({ path: 'captures/shop-2-catalog.png' });
+  console.log('WALLET:', JSON.stringify(await page.evaluate(() => window.__prodDebug.wallet())));
+  await page.getByTestId('buy-ingredient-chicken-t2').click();
+  await page.waitForTimeout(100);
+  console.log('AFTER BUY:', JSON.stringify(await page.evaluate(() => window.__prodDebug.wallet())), 'base:', await page.evaluate(() => window.__prodDebug.economyBasePrice()));
+  console.log('ERRORS:', JSON.stringify(errs));
+  expect(errs).toEqual([]);
+});
