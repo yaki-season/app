@@ -123,6 +123,16 @@ body {
 }
 .hint.show { opacity: 1; }
 
+/* 더미 오브젝트 이름표 (아트 전 식별용) */
+.label-layer { position: fixed; inset: 0; z-index: 7; pointer-events: none; }
+.obj-label {
+  position: absolute; transform: translate(-50%, -50%);
+  font-size: 11px; color: var(--text); white-space: nowrap;
+  background: rgba(20,15,11,0.6); border: 1px solid rgba(255,255,255,0.12);
+  padding: 2px 8px; border-radius: 6px;
+}
+.obj-label[hidden] { display: none; }
+
 /* 손님 좌석 말풍선·대기 게이지 (좌석 위에 떠 있음) */
 .bubble-layer { position: fixed; inset: 0; z-index: 8; pointer-events: none; }
 .order-bubble {

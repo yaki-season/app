@@ -47,6 +47,40 @@ const dock = createPreparedDock({ container: el('dockShelf') });
 const pour = createDrinkPour();
 const LEVER_ZONE = { drinkLeverLower: 'beer', drinkLeverUpper: 'foam' };
 
+// 더미 오브젝트 이름표 (아트 전 식별용). 활성 화면의 보이는 오브젝트 위에 DOM 텍스트를 얹는다.
+const OBJECT_LABELS = {
+  seating: '좌석 배경', counter: '카운터',
+  workbench: '조립대', binChicken: '닭', binLeek: '파', jigSkewer: '완성 꼬치',
+  grillBody: '숯불 그릴', grillSkewer: '꼬치',
+  drinkTower: '맥주 타워', glassRack: '잔 랙', drinkLeverUpper: '레버·거품', drinkLeverLower: '레버·맥주',
+};
+// 큰 고정물은 라벨을 위쪽으로 올려 위에 놓인 조작 대상 라벨과 겹치지 않게 한다(화면 px 오프셋).
+const LABEL_UP = { seating: 40, counter: 44, workbench: 74, grillBody: 74, drinkTower: 46, glassRack: 24 };
+const labelEls = {};
+for (const [key, text] of Object.entries(OBJECT_LABELS)) {
+  const span = document.createElement('span');
+  span.className = 'obj-label';
+  span.textContent = text;
+  span.dataset.testid = `label-${key}`;
+  span.hidden = true;
+  el('labelLayer').appendChild(span);
+  labelEls[key] = span;
+}
+function updateLabels() {
+  for (const key of Object.keys(OBJECT_LABELS)) {
+    const mesh = R.objectMesh[key];
+    const span = labelEls[key];
+    if (mesh && mesh.visible) {
+      const p = R.projectToScreen(mesh.position);
+      span.style.left = `${p.x}px`;
+      span.style.top = `${p.y - (LABEL_UP[key] || 0)}px`;
+      span.hidden = false;
+    } else {
+      span.hidden = true;
+    }
+  }
+}
+
 function occupants() {
   return [{ seatId: DEMO_SEAT, mood: reaction, orderLabel: '네기마', waitRatio: 1 }];
 }
@@ -344,6 +378,7 @@ function loop(now) {
   customers.tick(active); // 손님 화면일 때 말풍선·게이지 배치
   pour.tick(now); // 따르는 중이면 누적·넘침 감지
   updateDrinkPanel(active);
+  updateLabels(); // 더미 오브젝트 이름표 배치
   R.renderFrame(now);
   requestAnimationFrame(loop);
 }
