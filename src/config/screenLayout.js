@@ -16,6 +16,19 @@ export const LAYER_Z = {
   foreground: 0.5,
 };
 
+// 승인 D1 손님 화면 아트(public/assets, manifest.json). 아트가 없는 스테이션은 더미로 남는다.
+const A = '/assets/core/customer';
+export const CUSTOMER_ART = {
+  background: `${A}/background-complete-r3-b1.png`,
+  counter: `${A}/service-table-complete-r1-b1.png`,
+  waiting: `${A}/d1-tsukioka-waiting-r2-b1.png`,
+  eatingNegima: `${A}/d1-tsukioka-received-eating-negima-r1-b1.png`,
+  eatingBeer: `${A}/d1-tsukioka-received-eating-beer-r1-b1.png`,
+};
+// 좌석 손님 액터에 입힐 텍스처(대기). 풀프레임 아트라 인물 영역만 UV로 잘라 쓴다.
+export const SEAT_ACTOR_TEXTURE = CUSTOMER_ART.waiting;
+export const SEAT_ACTOR_UV = { u0: 0.485, u1: 0.655, v0: 0.05, v1: 0.85 }; // 인물 bbox (하단 원점 v)
+
 // 바 안쪽 주인공의 공유 기준 위치. 모든 화면 프리셋이 여기서 파생한다(§68).
 export const PLAYER_EYE = { x: 0, y: 2.6, z: 12.0 };
 export const SCREEN_TRANSITION_MS = 300;
@@ -23,12 +36,12 @@ export const SCREEN_TRANSITION_MS = 300;
 // 더미 오브젝트 레지스트리: key → { rect(정규화 top-left), layer, color, kind }.
 // productionRenderer가 한 번 만들어두고 화면별로 visible 토글한다(단일 렌더러, §33).
 export const OBJECTS = {
-  // 공용 배경 (전 화면)
+  // 공용 배경 (조립·그릴·드링크 등 아트 없는 화면)
   bg: { rect: { x: 0, y: 0, width: 1, height: 1 }, layer: 'background', color: 0x241c15, kind: 'fullframe' },
 
-  // 손님 화면 (좌석 액터·serve는 SEATS에서 동적 생성)
-  seating: { rect: { x: 0.06, y: 0.10, width: 0.88, height: 0.40 }, layer: 'background', color: 0x2c2118, kind: 'plane' },
-  counter: { rect: { x: 0.02, y: 0.52, width: 0.96, height: 0.26 }, layer: 'fixture', color: 0x4a3826, kind: 'plane' },
+  // 손님 화면 승인 아트 레이어 (풀프레임 이미지). 좌석 액터·serve는 SEATS에서 동적 생성.
+  custBg: { kind: 'image', full: true, layer: 'background', order: 0, url: CUSTOMER_ART.background, opaque: true },
+  custCounter: { kind: 'image', full: true, layer: 'foreground', order: 50, url: CUSTOMER_ART.counter, opaque: false },
 
   // 조립 화면
   workbench: { rect: { x: 0.08, y: 0.44, width: 0.84, height: 0.50 }, layer: 'fixture', color: 0x5c4630, kind: 'plane' },
@@ -68,7 +81,7 @@ export const SCREENS = [
     id: 'SCR-SVC-CUSTOMERS',
     name: '손님',
     look: { x: 0.0, y: 0.4, z: -6.0 }, // 정면·위 (손님·카운터)
-    objects: ['bg', 'seating', 'counter'],
+    objects: ['custBg', 'custCounter'], // 승인 아트 배경·카운터
     seats: SEAT_IDS, // 좌석 액터·serve는 렌더러가 SEATS로 생성
   },
   {

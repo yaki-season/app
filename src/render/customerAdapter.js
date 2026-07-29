@@ -53,13 +53,15 @@ export function createCustomerAdapter({ renderer, container, customerScreenId = 
     }
   }
 
-  function apply(nextStates) {
+  function apply(nextStates, { actorsVisible = true } = {}) {
     states = nextStates;
     for (const s of states) {
       const actor = renderer.seatActorMesh[s.seatId];
       if (actor) {
-        actor.visible = s.occupied;
-        if (s.occupied) actor.material.color.setHex(SEAT_ACTOR_MOOD[s.mood] ?? SEAT_ACTOR_MOOD.waiting);
+        // 손님 화면에서만 좌석 손님을 보인다(다른 화면 카메라에 걸쳐 보이지 않도록).
+        actor.visible = s.occupied && actorsVisible;
+        // 아트 텍스처가 있으면 색 틴트를 하지 않는다(기분은 말풍선·게이지로 표시). 더미면 기분 색.
+        if (s.occupied && !actor.material.map) actor.material.color.setHex(SEAT_ACTOR_MOOD[s.mood] ?? SEAT_ACTOR_MOOD.waiting);
       }
       // 좌석 조작 메시(seatServe) 가시성은 호출측(game.js syncCustomers)이 phase로 정한다.
 

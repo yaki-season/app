@@ -6,12 +6,30 @@
 
 import * as THREE from 'three';
 import { makeCamera, billboard, worldAtScreen, anchorToWorld, lerp } from './sceneMath.js';
-import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID, SEATS, SEAT_ACTOR_MOOD } from '../config/screenLayout.js';
+import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID, SEATS, SEAT_ACTOR_MOOD, SEAT_ACTOR_TEXTURE, SEAT_ACTOR_UV } from '../config/screenLayout.js';
 
 export function createProductionRenderer(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: false });
   renderer.setClearColor(0x0f0b08, 1);
   const scene = new THREE.Scene();
+
+  // 승인 아트 텍스처 (있을 때만). 없거나 실패해도 스테이션은 더미로 동작한다.
+  const loader = new THREE.TextureLoader();
+  const texCache = new Map();
+  function texture(url) {
+    if (texCache.has(url)) return texCache.get(url);
+    const tex = loader.load(url);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    texCache.set(url, tex);
+    return tex;
+  }
+  // PlaneGeometry(1 세그먼트) UV를 서브렉트로 크롭 (풀프레임 아트에서 인물만 잘라 쓰기).
+  function cropUV(geo, { u0, v0, u1, v1 }) {
+    const uv = geo.attributes.uv;
+    uv.setXY(0, u0, v1); uv.setXY(1, u1, v1); uv.setXY(2, u0, v0); uv.setXY(3, u1, v0);
+    uv.needsUpdate = true;
+  }
+  const COVER = 1.3; // 이미지 레이어가 전환 중에도 화면을 덮도록 여유
 
   const eye = new THREE.Vector3(PLAYER_EYE.x, PLAYER_EYE.y, PLAYER_EYE.z);
   const lookOf = (s) => new THREE.Vector3(s.look.x, s.look.y, s.look.z);
@@ -26,6 +44,16 @@ export function createProductionRenderer(canvas) {
 
   function buildObject(cam, key) {
     const def = OBJECTS[key];
+    // 승인 아트 이미지 레이어 (배경·카운터 등 풀프레임). painter 순서(def.order)로 합성.
+    if (def.kind === 'image') {
+      const z = LAYER_Z[def.layer];
+      const mat = new THREE.MeshBasicMaterial({ map: texture(def.url), transparent: !def.opaque, depthTest: false, depthWrite: false });
+      const mesh = billboard(cam, def.full ? { x: 0, y: 0, width: 1, height: 1 } : def.rect, z, mat);
+      if (def.full) mesh.scale.multiplyScalar(COVER);
+      mesh.renderOrder = def.order ?? 0;
+      mesh.userData.objectKey = key;
+      return mesh;
+    }
     const z = LAYER_Z[def.layer];
     const mat = new THREE.MeshBasicMaterial({ color: def.color, transparent: def.kind === 'grill', depthWrite: def.kind !== 'grill' });
     const rect = def.kind === 'fullframe' ? { x: 0, y: 0, width: 1, height: 1 } : def.rect;
@@ -46,7 +74,7 @@ export function createProductionRenderer(canvas) {
       mesh.visible = s.id === SCREENS[0].id; // 첫 화면만 보이게 시작
       scene.add(mesh);
       group.push(mesh);
-      if (OBJECTS[key].kind !== 'fullframe') objectMesh[key] = mesh; // bg 제외
+      if (OBJECTS[key].kind !== 'fullframe' && OBJECTS[key].kind !== 'image') objectMesh[key] = mesh; // 배경·아트 레이어 제외
     }
     // 좌석: 손님 액터(카운터 뒤) + serve 대상(카운터 위). 점유·serve 가시성은 어댑터가 구동.
     if (s.seats) {
@@ -57,7 +85,10 @@ export function createProductionRenderer(canvas) {
         base.renderOrder = -LAYER_Z.fixture + 0.5;
         scene.add(base); group.push(base);
 
-        const actor = billboard(cam, seat.actor, LAYER_Z.actor, new THREE.MeshBasicMaterial({ color: SEAT_ACTOR_MOOD.waiting }));
+        const actorMat = new THREE.MeshBasicMaterial({ color: SEAT_ACTOR_MOOD.waiting });
+        if (SEAT_ACTOR_TEXTURE) { actorMat.map = texture(SEAT_ACTOR_TEXTURE); actorMat.transparent = true; actorMat.color.setHex(0xffffff); }
+        const actor = billboard(cam, seat.actor, LAYER_Z.actor, actorMat);
+        if (SEAT_ACTOR_TEXTURE && SEAT_ACTOR_UV) cropUV(actor.geometry, SEAT_ACTOR_UV);
         actor.renderOrder = -LAYER_Z.actor;
         actor.visible = false;
         actor.userData.seatId = seatId;
@@ -178,6 +209,14 @@ export function createProductionRenderer(canvas) {
     objectMesh,
     seatActorMesh,
     seatBubbleWorld,
+    hasSeatActorArt: () => !!SEAT_ACTOR_TEXTURE,
+    // 좌석 손님 아트 텍스처 교체 (phase 구동). UV 크롭은 지오메트리에 남는다.
+    setSeatActorTexture: (seatId, url) => {
+      const a = seatActorMesh[seatId];
+      if (!a || !SEAT_ACTOR_TEXTURE) return;
+      const tex = texture(url);
+      if (a.material.map !== tex) { a.material.map = tex; a.material.needsUpdate = true; }
+    },
     presetCam,
     activeScreenId: () => activeId,
     goToScreen,

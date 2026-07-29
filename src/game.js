@@ -15,7 +15,7 @@ import { reputationDelta, catalog, buy, effectiveEconomy, ownedEffects } from '.
 import { createPreparedDock } from './render/preparedDock.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
 import { createCookStations } from './render/cookStations.js';
-import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS } from './config/screenLayout.js';
+import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS, CUSTOMER_ART } from './config/screenLayout.js';
 import { RECIPE } from './config/recipe.js';
 
 const el = (id) => document.getElementById(id);
@@ -53,13 +53,12 @@ const LEVER_ZONE = { drinkLeverLower: 'beer', drinkLeverUpper: 'foam' };
 
 // 더미 오브젝트 이름표 (아트 전 식별용). 활성 화면의 보이는 오브젝트 위에 DOM 텍스트를 얹는다.
 const OBJECT_LABELS = {
-  seating: '좌석 배경', counter: '카운터',
   workbench: '조립대', binChicken: '닭', binLeek: '파', jigSkewer: '완성 꼬치',
   grillBody: '숯불 그릴', grillSkewer: '꼬치',
   drinkTower: '맥주 타워', glassRack: '잔 랙', drinkLeverUpper: '레버·거품', drinkLeverLower: '레버·맥주',
 };
 // 큰 고정물은 라벨을 위쪽으로 올려 위에 놓인 조작 대상 라벨과 겹치지 않게 한다(화면 px 오프셋).
-const LABEL_UP = { seating: 40, counter: 44, workbench: 74, grillBody: 74, drinkTower: 46, glassRack: 24 };
+const LABEL_UP = { workbench: 74, grillBody: 74, drinkTower: 46, glassRack: 24 };
 const labelEls = {};
 for (const [key, text] of Object.entries(OBJECT_LABELS)) {
   const span = document.createElement('span');
@@ -100,11 +99,19 @@ function syncCustomers(now) {
   for (const v of views) {
     const mesh = R.objectMesh[`seatServe:${v.seatId}`];
     if (mesh) mesh.visible = onCustomers && (v.canOrder || v.canServe || v.cleanupNeeded);
+    // 승인 아트가 있으면 좌석 손님 텍스처를 phase로 교체(식사 중/완료는 먹는 아트).
+    if (R.hasSeatActorArt()) R.setSeatActorTexture(v.seatId, seatArtFor(v));
   }
-  customers.apply(views);
+  customers.apply(views, { actorsVisible: onCustomers });
 }
 function seatView(seatId, now) {
   return ops ? ops.views(now).find((v) => v.seatId === seatId) : null;
+}
+// 좌석 손님 phase → 아트 텍스처 (아트가 있을 때만 사용).
+function seatArtFor(v) {
+  if (v.phase === 'eating') return CUSTOMER_ART.eatingNegima;
+  if (v.phase === 'done' || (v.phase === 'leaving' && v.mood !== 'retry')) return CUSTOMER_ART.eatingBeer;
+  return CUSTOMER_ART.waiting;
 }
 
 // ── 드링크 잔 채움 패널 ──────────────────────────────────────
