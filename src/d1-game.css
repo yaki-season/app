@@ -1,0 +1,13 @@
+/* D1 2.5D 플레이 전용 소품 (나머지는 game.css 재사용). */
+.order-hud { margin-left: 16px; font-size: 13px; color: var(--text); display: flex; gap: 12px; align-items: center; }
+.order-hud .oi { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; background: rgba(32,26,21,0.7); }
+.order-hud .oi.done { border-color: var(--good); color: var(--good); }
+.order-hud .oi img { width: 20px; height: 20px; object-fit: contain; }
+.d1-guide {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 96px; z-index: 9;
+  max-width: 62vw; text-align: center; color: #fff0ca; font-size: 14px;
+  border: 1px solid var(--line); border-left: 3px solid var(--ember);
+  border-radius: 8px; padding: 8px 16px; background: rgba(20,13,9,0.82);
+  pointer-events: none;
+}
+.d1-guide[hidden] { display: none; }
