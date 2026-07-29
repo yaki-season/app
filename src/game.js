@@ -107,9 +107,10 @@ function syncCustomers(now) {
 function seatView(seatId, now) {
   return ops ? ops.views(now).find((v) => v.seatId === seatId) : null;
 }
-// 좌석 손님 phase → 아트 텍스처 (아트가 있을 때만 사용).
+// 좌석 손님 phase·메뉴 → 아트 텍스처 (아트가 있을 때만 사용).
+// 생맥주를 받아 마시는 중이면 맥주 아트, 네기마를 먹는 중이면 꼬치 아트로 구분한다.
 function seatArtFor(v) {
-  if (v.phase === 'eating') return CUSTOMER_ART.eatingNegima;
+  if (v.phase === 'eating') return v.menu === '생맥주' ? CUSTOMER_ART.eatingBeer : CUSTOMER_ART.eatingNegima;
   if (v.phase === 'done' || (v.phase === 'leaving' && v.mood !== 'retry')) return CUSTOMER_ART.eatingBeer;
   return CUSTOMER_ART.waiting;
 }

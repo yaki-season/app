@@ -22,6 +22,7 @@ export const CUSTOMER_ART = {
   background: `${A}/background-complete-r3-b1.png`,
   counter: `${A}/service-table-complete-r1-b1.png`,
   waiting: `${A}/d1-tsukioka-waiting-r2-b1.png`,
+  partialBeer: `${A}/d1-tsukioka-partial-beer-waiting-r1-b1.png`,
   eatingNegima: `${A}/d1-tsukioka-received-eating-negima-r1-b1.png`,
   eatingBeer: `${A}/d1-tsukioka-received-eating-beer-r1-b1.png`,
 };
