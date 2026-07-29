@@ -22,7 +22,26 @@
   <header id="svcBar" data-testid="svc-bar">
     <span id="svcStation" class="svc-station" data-testid="svc-station">손님</span>
     <ol id="receipts" class="receipts" data-testid="svc-receipts" aria-label="주문서"></ol>
+    <button id="endDay" class="end-day" data-testid="end-day" type="button">영업 종료</button>
   </header>
+
+  <!-- 정산 (SCR-POST-SETTLEMENT) -->
+  <div id="settlement" class="settlement" data-testid="settlement" hidden>
+    <div class="settle-card">
+      <h2>영업 종료 · 정산</h2>
+      <ul class="settle-rows">
+        <li><span>방문 손님</span><b data-f="visited">0</b></li>
+        <li><span>제공 완료</span><b data-f="served">0</b></li>
+        <li><span>이탈</span><b data-f="lost">0</b></li>
+        <li><span>품질 (좋음 · 과다)</span><b><span data-f="good">0</span> · <span data-f="low">0</span></b></li>
+        <li><span>매출</span><b data-f="revenue">0</b></li>
+        <li><span>팁</span><b data-f="tip">0</b></li>
+        <li class="total"><span>합계</span><b data-f="total">0</b></li>
+        <li><span>평균 만족도</span><b data-f="avgSatisfaction">0</b></li>
+      </ul>
+      <button id="nextDay" class="next-day" data-testid="next-day" type="button">다음 날</button>
+    </div>
+  </div>
 
   <div id="hint" class="hint" data-testid="hint"></div>
 

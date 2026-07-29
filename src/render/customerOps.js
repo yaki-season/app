@@ -21,6 +21,7 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
   let lastSpawnMs = 0;
   let started = false;
   let autoSpawn = true; // 테스트에서 끌 수 있음(결정론)
+  let records = []; // 영업일 결과 기록 (정산용): { served, good, waitSec, patienceSec, tipMultiplier }
 
   const activeCount = () => seatIds.filter((id) => seats.get(id)).length;
   const emptySeats = () => seatIds.filter((id) => !seats.get(id));
@@ -35,6 +36,7 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
       phaseUntil: now + thinkMs,
       patienceMs: (type.patienceSec ?? 60) * 1000,
       patienceUntil: null,
+      tipMultiplier: type.tipMultiplier ?? 1,
       served: false,
     });
     lastSpawnMs = now;
@@ -62,6 +64,7 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
         c.mood = 'retry';
         c.served = false;
         c.phaseUntil = now + cfg.leaveMs;
+        records.push({ served: false, tipMultiplier: c.tipMultiplier }); // 이탈 기록
       } else if (c.phase === 'eating' && now >= c.phaseUntil) {
         c.phase = 'leaving';
         c.phaseUntil = now + cfg.leaveMs;
@@ -85,6 +88,9 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
     if (!item || item.menu !== c.menu) return { ok: false, reason: 'mismatch' };
     c.mood = item.good ? 'satisfied' : 'neutral';
     c.served = true;
+    // 대기 시간 = 인내심 - 남은 인내심 (정산 팁 계산용)
+    const waitSec = c.patienceUntil != null ? (c.patienceMs - (c.patienceUntil - now)) / 1000 : 0;
+    records.push({ served: true, good: !!item.good, waitSec: Math.max(0, waitSec), patienceSec: c.patienceMs / 1000, tipMultiplier: c.tipMultiplier });
     c.phase = 'eating';
     c.phaseUntil = now + cfg.eatMs;
     c.patienceUntil = null;
@@ -137,5 +143,10 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
   }
 
   function clearAll() { for (const id of seatIds) seats.set(id, null); }
-  return { tick, acceptOrder, serve, cleanup, views, debugElapse, forceSpawn, clearAll, setAutoSpawn: (v) => { autoSpawn = v; }, getSeat: (id) => seats.get(id), activeCount, cfg };
+  function resetDay() { clearAll(); records = []; }
+  return {
+    tick, acceptOrder, serve, cleanup, views, debugElapse, forceSpawn, clearAll, resetDay,
+    records: () => records.slice(),
+    setAutoSpawn: (v) => { autoSpawn = v; }, getSeat: (id) => seats.get(id), activeCount, cfg,
+  };
 }

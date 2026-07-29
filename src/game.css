@@ -35,6 +35,33 @@ body {
 .receipts li.done { border-color: var(--good); color: var(--good); }
 .receipts li.next { border-color: var(--ember); }
 
+.end-day {
+  margin-left: auto; min-height: 34px; padding: 6px 14px; border-radius: 8px; cursor: pointer;
+  background: rgba(48,38,30,0.9); border: 1px solid var(--line); color: var(--text); font: inherit;
+}
+
+/* 정산 화면 */
+.settlement {
+  position: fixed; inset: 0; z-index: 40; display: grid; place-items: center;
+  background: rgba(10,7,5,0.86); backdrop-filter: blur(3px);
+}
+.settlement[hidden] { display: none; }
+.settle-card {
+  width: min(420px, 88vw); background: var(--bg); border: 1px solid var(--line); border-radius: 16px;
+  padding: 24px 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.settle-card h2 { margin: 0 0 16px; font-size: 20px; color: var(--ember); }
+.settle-rows { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 8px; }
+.settle-rows li { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; }
+.settle-rows li span { color: var(--dim); }
+.settle-rows li b { font-variant-numeric: tabular-nums; }
+.settle-rows li.total { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 2px; }
+.settle-rows li.total span, .settle-rows li.total b { font-size: 17px; font-weight: 700; color: var(--text); }
+.next-day {
+  width: 100%; min-height: 44px; border-radius: 999px; cursor: pointer; font: inherit; font-weight: 600;
+  background: var(--ember); color: #1a120a; border: none;
+}
+
 /* 좌·우 인접 전환 */
 .side-nav {
   position: fixed; top: 50%; transform: translateY(-50%); z-index: 10;

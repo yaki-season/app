@@ -10,6 +10,7 @@ import { createGrillMaterial } from './render/grillMaterial.js';
 import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
 import { createCustomerOps } from './render/customerOps.js';
+import { settleDay } from './render/daySettlement.js';
 import { createPreparedDock, qualityFromCook } from './render/preparedDock.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
 import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS } from './config/screenLayout.js';
@@ -38,6 +39,7 @@ for (const s of SCREENS) for (const k of s.objects) if (OBJECTS[k].kind !== 'ful
 // 손님 렌더 어댑터 (6석) + 운영 상태 머신. ops가 좌석 생애주기를 굴리고, adapter가 렌더한다.
 const customers = createCustomerAdapter({ renderer: R, container: el('bubbleLayer') });
 let ops = null; // 콘텐츠(유형·수치) 로드 후 생성
+let economy = null; // 영업일 경제 수치 (정산용)
 let cleanupHold = null; // { seatId, startMs } 정리 3초 홀드
 
 // 공용 준비 목록 (완성품 선반). 조리와 서빙을 분리한다.
@@ -359,6 +361,27 @@ el('restartButton').addEventListener('click', () => {
   render();
 });
 
+// ── 영업 종료 · 정산 · 다음 날 ────────────────────────────────
+let settling = false;
+function endDay() {
+  if (!ops || !economy) return;
+  const s = settleDay(ops.records(), economy);
+  const set = (f, v) => { const node = document.querySelector(`#settlement [data-f="${f}"]`); if (node) node.textContent = v; };
+  set('visited', s.visited); set('served', s.served); set('lost', s.lost);
+  set('good', s.quality.good); set('low', s.quality.low);
+  set('revenue', s.revenue); set('tip', s.tip); set('total', s.total);
+  set('avgSatisfaction', s.avgSatisfaction);
+  el('settlement').hidden = false;
+  settling = true; // 손님 시간 정지
+}
+function nextDay() {
+  if (ops) { ops.resetDay(); ops.setAutoSpawn(true); }
+  el('settlement').hidden = true;
+  settling = false;
+}
+el('endDay').addEventListener('click', endDay);
+el('nextDay').addEventListener('click', nextDay);
+
 // ── 익힘 셰이더 재질 ─────────────────────────────────────────
 function updateGrillVisual(now) {
   if (!grill) return;
@@ -396,7 +419,7 @@ function loop(now) {
   }
   if (state.status !== prevStatus) render();
 
-  if (ops) ops.tick(now); // 손님 입장·생애주기 진행
+  if (ops && !settling) ops.tick(now); // 손님 입장·생애주기 진행 (정산 중 정지)
   updateGrillVisual(now);
   syncCustomers(now); // 매 프레임 좌석 렌더(게이지 실시간 감소)
   customers.tick(active); // 손님 화면일 때 말풍선·게이지 배치
@@ -413,6 +436,7 @@ Promise.all([
   fetch('/content/campaign/day-d1.json').then((r) => r.json()),
 ])
   .then(([types, day]) => {
+    economy = day.economy;
     ops = createCustomerOps({
       seatIds: SEAT_IDS,
       types,
@@ -453,6 +477,7 @@ window.__prodDebug = {
   forceSpawn: (seatId, typeId, thinkSec) => ops && ops.forceSpawn(seatId, typeId, performance.now(), thinkSec ?? 5),
   opsElapse: (sec) => ops && ops.debugElapse(sec),
   acceptOrder: (seatId) => ops && ops.acceptOrder(seatId),
+  opsRecords: () => (ops ? ops.records() : []),
   pourState: () => pour.state(),
   // 결정론적 따르기 (e2e): 실제 시계 대신 명시 시간으로 맥주·거품을 채운다.
   pourExact: (beerSec, foamSec) => {
