@@ -46,6 +46,7 @@ export function createCustomerAdapter({ renderer, container, customerScreenId = 
       case 'ordering': return { text: `주문서 · ${s.orderLabel}`, ratio: s.waitRatio, tone: 'order' };
       case 'waiting': return { text: s.orderLabel, ratio: s.waitRatio, tone: 'wait' };
       case 'eating': return { text: '식사 중', ratio: null, tone: 'eat' };
+      case 'done': return { text: '완료 (동행 대기)', ratio: null, tone: 'eat' };
       case 'leaving': return { text: s.mood === 'retry' ? '화남!' : '고맙습니다', ratio: null, tone: 'leave' };
       case 'cleanup': return { text: '정리', ratio: s.cleanupProgress || 0, tone: 'cleanup' };
       default: return { text: s.orderLabel || '', ratio: s.waitRatio, tone: 'wait' };

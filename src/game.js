@@ -447,7 +447,9 @@ Promise.all([
         eatSec: day.timingSec.eat,
         cleanupSec: 3,
         leaveSec: 1,
-        maxActive: 3,
+        maxActive: 4, // 활성 좌석 상한 (러시)
+        waveSize: 2, // 한 파동 입장 수
+        seed: 1, // 재현 가능한 손님 생성·재주문
       },
     });
     if (typeof window !== 'undefined') window.__ops = ops;
@@ -475,6 +477,8 @@ window.__prodDebug = {
   opsAutoSpawn: (v) => ops && ops.setAutoSpawn(v),
   opsClear: () => ops && ops.clearAll(),
   forceSpawn: (seatId, typeId, thinkSec) => ops && ops.forceSpawn(seatId, typeId, performance.now(), thinkSec ?? 5),
+  forceGroup: (a, b, typeId, thinkSec) => ops && ops.forceGroup(a, b, typeId, performance.now(), thinkSec ?? 5),
+  reorderOverride: (v) => ops && ops.setReorderOverride(v),
   opsElapse: (sec) => ops && ops.debugElapse(sec),
   acceptOrder: (seatId) => ops && ops.acceptOrder(seatId),
   opsRecords: () => (ops ? ops.records() : []),
