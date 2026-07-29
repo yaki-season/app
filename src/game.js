@@ -1,0 +1,295 @@
+// 프로덕션 영업 화면 진입점.
+// gameState(조립·그릴 판정)를 프로덕션 렌더러의 독립 화면 구조에 배선한다. 사용자는 손님·조립·그릴·
+// 드링크 화면을 자유 전환(좌·우/퀵)하고, 조리 job은 화면과 독립 진행한다. 조리 로직은 렌더러를
+// import하지 않는다 — 여기서만 상태→장면을 잇는다.
+
+import * as THREE from 'three';
+import { createProductionRenderer } from './render/productionRenderer.js';
+import { createStationDirector } from './render/stationDirector.js';
+import { createGrillMaterial } from './render/grillMaterial.js';
+import { elapsedSecToUniform } from './render/grillRenderer.js';
+import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS } from './config/screenLayout.js';
+import { RECIPE } from './config/recipe.js';
+import {
+  STATUS, PROCESS,
+  createInitialState, assetsLoaded,
+  clickIngredient, isAssemblyComplete, clickAssembledSkewer, placeOnGrill,
+  currentDoneness, faceElapsedMs, clickGrillSkewer,
+  clickPlate, clickOrderMat, tick, restart,
+} from './state/gameState.js';
+
+const el = (id) => document.getElementById(id);
+const canvas = el('scene');
+const R = createProductionRenderer(canvas);
+const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
+
+let state = assetsLoaded(createInitialState());
+let grill = null;
+let reaction = 'waiting';
+let reactionTimer = null;
+const lockUntil = {}; // 대상별 입력 잠금
+
+// 각 조작 대상 key가 속한 화면 (가시성·클릭 판정용)
+const SCREEN_OF = {};
+for (const s of SCREENS) for (const k of s.objects) if (OBJECTS[k].kind !== 'fullframe') SCREEN_OF[k] = s.id;
+
+const CUSTOMER_COLOR = { waiting: 0x8a7563, tasting: 0x9c826a, satisfied: 0x8fd47a, neutral: 0xc2b3a3, retry: 0xef6a58 };
+
+// ── 상태 → 장면·HUD ─────────────────────────────────────────
+function isWaitingSkewer() {
+  return state.process === PROCESS.GRILL && state.status === STATUS.ASSEMBLY && isAssemblyComplete(state);
+}
+function onGrill() {
+  return state.status === STATUS.GRILL_FRONT || state.status === STATUS.GRILL_BACK;
+}
+
+// 조작 대상이 지금 보여야 하는가 (활성 화면 && gameState 조건)
+function shouldShow(key) {
+  const active = director.activeScreenId();
+  if (SCREEN_OF[key] !== active) return false;
+  switch (key) {
+    case 'binChicken':
+    case 'binLeek': return state.process === PROCESS.ASSEMBLY;
+    case 'jigSkewer': return true; // 조립대 jig는 항상
+    case 'grillSkewer': return isWaitingSkewer() || onGrill();
+    case 'grillPlate': return state.status === STATUS.PLATED;
+    default: return true; // 손님·드링크 구조 오브젝트
+  }
+}
+
+function render() {
+  // 조작 대상 가시성 (활성 화면 + gameState). bg·고정물은 렌더러 화면 토글이 담당.
+  for (const key of Object.keys(SCREEN_OF)) {
+    const mesh = R.objectMesh[key];
+    if (mesh) mesh.visible = shouldShow(key);
+  }
+
+  // 그릴 꼬치 익힘 색 (셰이더 로드 전 폴백)
+  if (!grill && R.objectMesh.grillSkewer && onGrill()) {
+    const d = currentDoneness(state, performance.now());
+    const c = { under: 0xd98a5f, perfect: 0xc97a2a, over: 0x8a5220, burnt: 0x2a1a10 }[d];
+    if (R.objectMesh.grillSkewer.material.color) R.objectMesh.grillSkewer.material.color.setHex(c);
+  }
+
+  // 손님 반응 색
+  if (R.objectMesh.customer) R.objectMesh.customer.material.color.setHex(CUSTOMER_COLOR[reaction] ?? CUSTOMER_COLOR.waiting);
+
+  // 영업 shell HUD
+  el('svcStation').textContent = SCREEN_BY_ID[director.activeScreenId()].name;
+  renderReceipts();
+  for (const btn of document.querySelectorAll('.quick-nav button')) {
+    btn.classList.toggle('active', btn.dataset.screen === director.activeScreenId());
+  }
+  el('navLeft').disabled = !director.canLeft();
+  el('navRight').disabled = !director.canRight();
+
+  // 결과 오버레이
+  const done = state.status === STATUS.SERVED || state.status === STATUS.FAILED;
+  el('resultOverlay').hidden = !done;
+  if (state.status === STATUS.FAILED) {
+    el('resultMessage').textContent = '꼬치가 타버렸습니다. 다시 만들어 볼까요?';
+    setReaction('retry');
+  } else if (state.status === STATUS.SERVED) {
+    el('resultMessage').textContent =
+      state.servedQuality === 'good' ? '츠키오카가 만족했습니다!' : '조금 과하게 익었다고 아쉬워합니다.';
+  }
+}
+
+function renderReceipts() {
+  const ol = el('receipts');
+  ol.innerHTML = '';
+  RECIPE.forEach((ing, i) => {
+    const li = document.createElement('li');
+    li.textContent = ing === 'chicken' ? '닭' : '파';
+    li.dataset.testid = `order-slot-${i}`;
+    if (i < state.assemblyIndex) li.classList.add('done');
+    else if (i === state.assemblyIndex && state.status === STATUS.ASSEMBLY) li.classList.add('next');
+    ol.appendChild(li);
+  });
+}
+
+function setReaction(next) {
+  reaction = next;
+  if (R.objectMesh.customer) R.objectMesh.customer.material.color.setHex(CUSTOMER_COLOR[next] ?? CUSTOMER_COLOR.waiting);
+}
+
+function showHint(text) {
+  const h = el('hint');
+  h.textContent = text;
+  h.classList.add('show');
+  setTimeout(() => h.classList.remove('show'), 900);
+}
+
+// ── 입력: 레이캐스트 ─────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const ptr = new THREE.Vector2();
+
+function hitTest(e) {
+  const rect = canvas.getBoundingClientRect();
+  ptr.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  ptr.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(ptr, R.camera);
+  const targets = Object.values(R.objectMesh).filter((m) => m.visible);
+  const hit = raycaster.intersectObjects(targets, false)[0];
+  return hit ? hit.object.userData.objectKey : null;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (director.controlsLocked()) return; // 전환 중 새 화면 조작 잠금 (§71)
+  const key = hitTest(e);
+  if (!key) return;
+  const now = performance.now();
+  if ((lockUntil[key] || 0) > now) return;
+  lockUntil[key] = now + 200;
+  handle(key, now);
+});
+
+function handle(key, now) {
+  switch (key) {
+    case 'binChicken':
+    case 'binLeek': {
+      const ing = key === 'binChicken' ? 'chicken' : 'leek';
+      const before = state.assemblyIndex;
+      state = clickIngredient(state, ing, now);
+      if (state.assemblyIndex === before) showHint('순서가 달라요');
+      break;
+    }
+    case 'jigSkewer':
+      if (isAssemblyComplete(state) && state.process === PROCESS.ASSEMBLY) {
+        state = clickAssembledSkewer(state); // 그릴로 올림
+        showHint('그릴로 옮겼어요');
+      }
+      break;
+    case 'grillSkewer':
+      if (isWaitingSkewer()) {
+        state = placeOnGrill(state, now);
+      } else if (onGrill()) {
+        const before = state.status;
+        const d = currentDoneness(state, now);
+        state = clickGrillSkewer(state, now);
+        if (state.status === before && d === 'under') showHint('아직 덜 익었어요');
+      }
+      break;
+    case 'grillPlate':
+      if (state.status === STATUS.PLATED) {
+        state = clickPlate(state); // 완성품 집기
+        showHint('완성품을 손님에게');
+      }
+      break;
+    case 'serveMat':
+      if (state.plateSelected) {
+        state = clickOrderMat(state);
+        if (state.status === STATUS.SERVED) {
+          setReaction('tasting');
+          if (reactionTimer) clearTimeout(reactionTimer);
+          reactionTimer = setTimeout(() => {
+            setReaction(state.servedQuality === 'good' ? 'satisfied' : 'neutral');
+          }, 900);
+        }
+      } else {
+        showHint('먼저 완성품을 집으세요');
+      }
+      break;
+    default:
+      break; // 드링크 구조 오브젝트 등
+  }
+  render();
+}
+
+// ── 화면 전환 (svc.sideNav / svc.quickNav / 키보드) ───────────
+function buildQuickNav() {
+  const nav = el('quickNav');
+  for (const s of SCREENS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.name;
+    b.dataset.screen = s.id;
+    b.dataset.testid = `quicknav-${s.id}`;
+    b.addEventListener('click', () => director.request(s.id, performance.now()));
+    nav.appendChild(b);
+  }
+}
+buildQuickNav();
+el('navLeft').addEventListener('click', () => director.left(performance.now()));
+el('navRight').addEventListener('click', () => director.right(performance.now()));
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') director.left(performance.now());
+  else if (e.key === 'ArrowRight') director.right(performance.now());
+});
+
+el('restartButton').addEventListener('click', () => {
+  state = restart(state);
+  setReaction('waiting');
+  if (reactionTimer) { clearTimeout(reactionTimer); reactionTimer = null; }
+  if (grill) grill.setDoneness(0);
+  render();
+});
+
+// ── 익힘 셰이더 재질 ─────────────────────────────────────────
+function updateGrillVisual(now) {
+  if (!grill) return;
+  grill.setTime(now / 1000);
+  if (onGrill()) grill.setDoneness(elapsedSecToUniform(faceElapsedMs(state, now) / 1000));
+}
+
+createGrillMaterial()
+  .then((g) => {
+    grill = g;
+    const mesh = R.objectMesh.grillSkewer;
+    mesh.material.dispose();
+    mesh.material = g.material;
+    // 프리워밍: 조립 화면에서 미리 컴파일해 그릴 진입 스톨 제거
+    const wasVisible = mesh.visible;
+    mesh.visible = true;
+    R.renderFrame(performance.now());
+    mesh.visible = wasVisible;
+    if (typeof window !== 'undefined') window.__grill = g;
+  })
+  .catch((err) => console.error('익힘 재질 로드 실패:', err));
+
+// ── 루프 ─────────────────────────────────────────────────────
+let lastActive = director.activeScreenId();
+function loop(now) {
+  const prevStatus = state.status;
+  state = tick(state, now);
+
+  director.tick(now);
+  const active = director.activeScreenId();
+  if (active !== lastActive) {
+    R.goToScreen(active, now, SCREEN_TRANSITION_MS);
+    lastActive = active;
+    render();
+  }
+  if (state.status !== prevStatus) render();
+
+  updateGrillVisual(now);
+  R.renderFrame(now);
+  requestAnimationFrame(loop);
+}
+
+R.goToScreen(INITIAL_SCREEN, 0, 0);
+render();
+requestAnimationFrame(loop);
+
+// ── 개발·테스트 훅 ───────────────────────────────────────────
+window.__prodDebug = {
+  getState: () => state,
+  doneness: () => currentDoneness(state, performance.now()),
+  activeScreen: () => director.activeScreenId(),
+  isTransitioning: () => director.isTransitioning(),
+  controlsLocked: () => director.controlsLocked(),
+  reaction: () => reaction,
+  grillMaterial: () => grill,
+  requestScreen: (id) => director.request(id, performance.now()),
+  navLeft: () => director.left(performance.now()),
+  navRight: () => director.right(performance.now()),
+  screenPosOf: (key) => {
+    const m = R.objectMesh[key];
+    if (!m || !m.visible) return null;
+    const v = m.position.clone().project(R.camera);
+    const rect = canvas.getBoundingClientRect();
+    return { x: rect.left + (v.x * 0.5 + 0.5) * rect.width, y: rect.top + (-v.y * 0.5 + 0.5) * rect.height };
+  },
+  performanceStats: () => R.performanceStats(),
+  renderer: R,
+};

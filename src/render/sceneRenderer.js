@@ -13,10 +13,7 @@ import {
   CAMERA_TRANSITION_MS,
   DUMMY_SLOTS,
 } from '../config/sceneLayout.js';
-
-const ASPECT = 16 / 9; // 기준 뷰포트(1280×720·1920×1080 모두 16:9)
-const FOV = 42;
-const TAN_HALF = Math.tan((FOV / 2) * (Math.PI / 180));
+import { ASPECT, makeCamera, worldAtScreen, billboard, anchorToWorld, lerp } from './sceneMath.js';
 
 // 테스트용 셰프 시점 홈 포즈: 바 안쪽에서 살짝 위·뒤에서 카운터 너머를 내려다본다.
 // 프리셋은 이 포즈를 기준으로 좌우 이동 + 작업대 push-in만 준다. 프로덕션은 이를 재사용하지 않는다.
@@ -25,35 +22,7 @@ const HOME_LOOK = new THREE.Vector3(0, -1.9, -5.5);
 
 // 홈 카메라 하나로 배치를 계산하고, 같은 카메라를 라이브로 움직인다.
 function makeHomeCamera() {
-  const c = new THREE.PerspectiveCamera(FOV, ASPECT, 0.1, 200);
-  c.position.copy(HOME_EYE);
-  c.lookAt(HOME_LOOK);
-  c.updateMatrixWorld(true);
-  c.updateProjectionMatrix();
-  return c;
-}
-
-// 정규화 화면 앵커(nx,ny top-left) → 카메라에서 쏜 광선이 평면 z=const를 만나는 월드 좌표.
-const _v = new THREE.Vector3();
-function worldAtScreen(cam, nx, ny, z) {
-  _v.set(nx * 2 - 1, -(ny * 2 - 1), 0.5).unproject(cam);
-  _v.sub(cam.position);
-  const t = (z - cam.position.z) / _v.z;
-  return cam.position.clone().add(_v.multiplyScalar(t));
-}
-
-// 홈 카메라를 향한 빌보드 평면. rect(정규화 top-left)만큼의 화면을 덮도록 z 거리에 맞춰 크기 계산.
-function billboard(cam, rect, z, material) {
-  const cx = rect.x + rect.width / 2;
-  const cy = rect.y + rect.height / 2;
-  const center = worldAtScreen(cam, cx, cy, z);
-  const dist = center.distanceTo(cam.position);
-  const fullH = 2 * dist * TAN_HALF; // 이 거리에서 화면 전체 높이
-  const geo = new THREE.PlaneGeometry(fullH * ASPECT * rect.width, fullH * rect.height);
-  const mesh = new THREE.Mesh(geo, material);
-  mesh.position.copy(center);
-  mesh.quaternion.copy(cam.quaternion); // 홈 카메라 정면을 향함
-  return mesh;
+  return makeCamera(HOME_EYE, HOME_LOOK);
 }
 
 function slotMeshFor(cam, slot) {
@@ -224,10 +193,7 @@ export function createSceneRenderer(canvas) {
   // main.js 핫스팟 배치용: 홈 포즈 기준 앵커→월드 + 채움 크기. (이름은 하위호환 유지)
   const homeRef = makeHomeCamera();
   function nToWorldAtZ(nx, ny, z) {
-    const p = worldAtScreen(homeRef, nx, ny, z);
-    const dist = p.distanceTo(homeRef.position);
-    const fullH = 2 * dist * TAN_HALF;
-    return { x: p.x, y: p.y, z: p.z, fw: fullH * ASPECT, fh: fullH };
+    return anchorToWorld(homeRef, nx, ny, z);
   }
 
   return {
@@ -245,8 +211,4 @@ export function createSceneRenderer(canvas) {
     homeQuaternion: homeRef.quaternion.clone(),
     dispose: () => renderer.dispose(),
   };
-}
-
-function lerp(a, b, t) {
-  return a + (b - a) * t;
 }

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YAKI SEASON — 영업 화면</title>
+<link rel="stylesheet" href="./game.css">
+<script type="importmap">
+{ "imports": { "three": "/node_modules/three/build/three.module.js" } }
+</script>
+</head>
+<body>
+  <canvas id="scene" data-testid="scene-canvas"></canvas>
+
+  <!-- 영업 공통 shell (UI-003 §321) -->
+  <header id="svcBar" data-testid="svc-bar">
+    <span id="svcStation" class="svc-station" data-testid="svc-station">손님</span>
+    <ol id="receipts" class="receipts" data-testid="svc-receipts" aria-label="주문서"></ol>
+  </header>
+
+  <div id="hint" class="hint" data-testid="hint"></div>
+
+  <!-- 좌·우 인접 전환 (svc.sideNav) -->
+  <button id="navLeft" class="side-nav left" data-testid="nav-left" aria-label="이전 화면">‹</button>
+  <button id="navRight" class="side-nav right" data-testid="nav-right" aria-label="다음 화면">›</button>
+
+  <!-- 퀵 전환 (svc.quickNav) -->
+  <nav id="quickNav" class="quick-nav" data-testid="quick-nav" aria-label="화면 빠른 전환"></nav>
+
+  <div id="resultOverlay" class="overlay" data-testid="result-overlay" hidden>
+    <p id="resultMessage" data-testid="result-message"></p>
+    <button id="restartButton" data-testid="restart-button">한 번 더 만들기</button>
+  </div>
+
+  <script type="module" src="./game.js"></script>
+</body>
+</html>
