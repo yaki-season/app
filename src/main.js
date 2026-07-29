@@ -401,6 +401,8 @@ function updateGrillVisual(now) {
     grill.setDoneness(donenessOverride);
   } else if (state.status === STATUS.GRILL_FRONT || state.status === STATUS.GRILL_BACK) {
     grill.setDoneness(elapsedSecToUniform(faceElapsedMs(state, now) / 1000));
+  } else {
+    grill.setDoneness(0); // 굽지 않을 때 날것으로 리셋 (이전 꼬치 익힘 잔상 방지)
   }
 }
 

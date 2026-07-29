@@ -464,7 +464,8 @@ el('closePurchase').addEventListener('click', () => { el('purchase').hidden = tr
 function updateGrillVisual(now) {
   if (!grill) return;
   grill.setTime(now / 1000);
-  if (onGrill()) grill.setDoneness(elapsedSecToUniform(faceElapsedMs(state, now) / 1000));
+  // 굽는 중이면 경과로 익힘값을 구동, 아니면(대기·조립 등) 날것으로 리셋해 이전 꼬치의 익힘이 남지 않게 한다.
+  grill.setDoneness(onGrill() ? elapsedSecToUniform(faceElapsedMs(state, now) / 1000) : 0);
 }
 
 createGrillMaterial()

@@ -107,6 +107,18 @@ test('화면을 오가도 굽던 상태가 보존된다 (§71)', async ({ page }
 const dockCount = (p) => p.evaluate(() => window.__prodDebug.dockItems().length);
 const seatMood = (p, id) => p.evaluate((s) => window.__prodDebug.seatStates().find((x) => x.seatId === s).mood, id);
 
+test('그릴 대기 꼬치는 이전 꼬치의 익힘이 남지 않고 날것으로 보인다', async ({ page }) => {
+  await boot(page);
+  await expect.poll(() => page.evaluate(() => !!window.__prodDebug.grillMaterial())).toBe(true);
+  await assembleOnScreen(page); // 조립 완료 → 그릴 대기 꼬치(굽기 전)
+  await goScreen(page, 'SCR-SVC-GRILL');
+  // 이전 꼬치가 남긴 익힘을 흉내 내 셰이더를 익은 상태로 오염시킨다.
+  await page.evaluate(() => window.__prodDebug.grillMaterial().setDoneness(0.5));
+  await page.waitForTimeout(120); // 몇 프레임 뒤
+  const d = await page.evaluate(() => window.__prodDebug.grillMaterial().uniforms.uDoneness.value);
+  expect(d).toBeLessThan(0.05); // 날것으로 리셋됨
+});
+
 test('화면을 오가며 조립→그릴→선반→좌석 서빙 루프가 돈다', async ({ page }) => {
   const errs = await boot(page);
   await assembleOnScreen(page);
