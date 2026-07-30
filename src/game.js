@@ -16,7 +16,7 @@ import { createPreparedDock } from './render/preparedDock.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
 import { createCookStations } from './render/cookStations.js';
 import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS, CUSTOMER_ART } from './config/screenLayout.js';
-import { RECIPE } from './config/recipe.js';
+import { RECIPE, COOK_THRESHOLDS_SEC, DONENESS, canAdvance } from './config/recipe.js';
 
 const el = (id) => document.getElementById(id);
 const canvas = el('scene');
@@ -496,6 +496,50 @@ for (const key of SLOT_KEYS) {
     .catch((err) => console.error('익힘 재질 로드 실패:', err));
 }
 
+// ── 그릴 칸 익힘 상태 게이지 (DOM 오버레이, 그릴 화면 전용) ──────
+// 셰이더 색을 보완해, 굽는 각 칸의 면·익힘 단계·적정 구간까지의 진행도를 읽을 수 있게 한다.
+const DONE_LABEL = { [DONENESS.UNDER]: '덜 익음', [DONENESS.PERFECT]: '적정', [DONENESS.OVER]: '과다', [DONENESS.BURNT]: '탄' };
+const BURNT_SEC = COOK_THRESHOLDS_SEC[DONENESS.BURNT];
+const grillGauges = {}; // slotKey → { node, label, marker }
+for (const key of SLOT_KEYS) {
+  const node = document.createElement('div');
+  node.className = 'grill-gauge';
+  node.dataset.testid = `grill-gauge-${slotIndexOf(key)}`;
+  node.hidden = true;
+  // 구간 폭을 임계값(탄=100%)으로 정규화. 매직 넘버 없이 recipe 데이터에서 파생.
+  const uW = (COOK_THRESHOLDS_SEC[DONENESS.PERFECT] / BURNT_SEC) * 100;
+  const pW = ((COOK_THRESHOLDS_SEC[DONENESS.OVER] - COOK_THRESHOLDS_SEC[DONENESS.PERFECT]) / BURNT_SEC) * 100;
+  const oW = ((BURNT_SEC - COOK_THRESHOLDS_SEC[DONENESS.OVER]) / BURNT_SEC) * 100;
+  node.innerHTML = `<span class="gg-label" data-testid="grill-gauge-label-${slotIndexOf(key)}"></span>`
+    + '<div class="gg-track">'
+    + `<span class="gg-zone under" style="width:${uW}%"></span>`
+    + `<span class="gg-zone perfect" style="width:${pW}%"></span>`
+    + `<span class="gg-zone over" style="width:${oW}%"></span>`
+    + '<span class="gg-marker"></span></div>';
+  el('grillLayer').appendChild(node);
+  grillGauges[key] = { node, label: node.querySelector('.gg-label'), marker: node.querySelector('.gg-marker') };
+}
+
+function updateGrillOverlays(now, activeScreen) {
+  const onGrill = activeScreen === 'SCR-SVC-GRILL';
+  const views = cook.slotViews(now);
+  for (const key of SLOT_KEYS) {
+    const g = grillGauges[key];
+    const v = views[slotIndexOf(key)];
+    const mesh = R.objectMesh[key];
+    if (!onGrill || !mesh || !v || !v.cooking) { g.node.hidden = true; continue; }
+    const p = R.projectToScreen(mesh.position);
+    g.node.style.left = `${p.x}px`;
+    g.node.style.top = `${p.y - 70}px`;
+    g.node.hidden = false;
+    g.node.dataset.stage = v.doneness;
+    const face = v.status === 'front' ? '앞면' : '뒷면';
+    const action = canAdvance(v.doneness) ? (v.status === 'front' ? ' · 뒤집기' : ' · 회수') : '';
+    g.label.textContent = `${face} · ${DONE_LABEL[v.doneness] ?? ''}${action}`;
+    g.marker.style.left = `${Math.min(1, v.faceElapsedSec / BURNT_SEC) * 100}%`;
+  }
+}
+
 // ── 루프 ─────────────────────────────────────────────────────
 let lastActive = director.activeScreenId();
 let lastWaiting = -1;
@@ -515,6 +559,7 @@ function loop(now) {
 
   if (ops && !settling) ops.tick(now); // 손님 입장·생애주기 진행 (정산 중 정지)
   updateGrillVisual(now);
+  updateGrillOverlays(now, active); // 그릴 칸 익힘 게이지
   syncCustomers(now); // 매 프레임 좌석 렌더(게이지 실시간 감소)
   customers.tick(active); // 손님 화면일 때 말풍선·게이지 배치
   pour.tick(now); // 따르는 중이면 누적·넘침 감지

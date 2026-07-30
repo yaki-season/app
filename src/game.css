@@ -211,6 +211,32 @@ body {
 .order-bubble[data-tone="cleanup"] .order-label { border-color: #6fb8ff; color: #6fb8ff; }
 .order-bubble[data-tone="cleanup"] .wait-fill { background: #6fb8ff; }
 .order-bubble[data-tone="leave"] .order-label { color: var(--warn); }
+
+/* 그릴 칸 익힘 상태 게이지 (그릴 화면 전용 오버레이) */
+.grill-layer { position: fixed; inset: 0; z-index: 8; pointer-events: none; }
+.grill-gauge { position: absolute; transform: translate(-50%, -100%); width: 144px; text-align: center; }
+.grill-gauge[hidden] { display: none; }
+.grill-gauge .gg-label {
+  display: inline-block; font-size: 11px; margin-bottom: 4px; padding: 1px 7px;
+  border: 1px solid var(--line); border-radius: 6px; background: rgba(20,13,9,0.85);
+  color: var(--text); white-space: nowrap;
+}
+.grill-gauge .gg-track {
+  position: relative; display: flex; height: 9px; border: 1px solid #000;
+  border-radius: 5px; overflow: hidden; background: #1a130d;
+}
+.grill-gauge .gg-zone { display: block; height: 100%; }
+.grill-gauge .gg-zone.under { background: #5a5148; }
+.grill-gauge .gg-zone.perfect { background: #3f7d4e; }
+.grill-gauge .gg-zone.over { background: #a86a2a; }
+.grill-gauge .gg-marker {
+  position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1.5px;
+  background: #fff; box-shadow: 0 0 3px #000;
+}
+.grill-gauge[data-stage="perfect"] .gg-label { border-color: var(--good); color: var(--good); }
+.grill-gauge[data-stage="over"] .gg-label { border-color: var(--warn); color: var(--warn); }
+.grill-gauge[data-stage="burnt"] .gg-label { border-color: #ef6a58; color: #ff8a78; animation: urgentPulse 0.6s ease-in-out infinite; }
+
 /* 긴급: 인내심이 임박하면 게이지를 붉게·깜빡여 경고한다. */
 .order-bubble[data-urgent="1"] .wait-fill { background: #ef6a58; }
 .order-bubble[data-urgent="1"] .order-label { border-color: #ef6a58; color: #ff8a78; animation: urgentPulse 0.7s ease-in-out infinite; }
