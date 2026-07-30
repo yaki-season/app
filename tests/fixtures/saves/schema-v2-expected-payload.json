@@ -1,0 +1,11 @@
+{
+  "economy": {
+    "balance": 120,
+    "reputation": 3
+  },
+  "story": {
+    "flagIds": [
+      "s0-complete"
+    ]
+  }
+}
