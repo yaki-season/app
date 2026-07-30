@@ -80,11 +80,11 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
     };
   }
 
-  // 인접한(연속 인덱스) 빈 좌석 쌍을 찾는다 (§10,11). capacity 범위 안에서만.
-  function adjacentEmptyPair() {
+  // 인접한(연속 인덱스) 빈 좌석 n개를 찾는다 (§10,11 분리 착석 금지). capacity 범위 안에서만.
+  function adjacentEmptyRun(n) {
     const active = activeSeatIds();
-    for (let i = 0; i < active.length - 1; i++) {
-      if (!seats.get(active[i]) && !seats.get(active[i + 1])) return [active[i], active[i + 1]];
+    for (let i = 0; i + n <= active.length; i++) {
+      if (active.slice(i, i + n).every((id) => !seats.get(id))) return active.slice(i, i + n);
     }
     return null;
   }
@@ -92,21 +92,27 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
   function spawnSingle(now, seatId, type) {
     seats.set(seatId, makeCustomer(now, type, null));
   }
-  function spawnGroup(now, pair, type) {
+  // N인 그룹을 연속 좌석에 함께 앉힌다(같은 groupId → 공동 퇴장·동기화).
+  function spawnGroupRun(now, run, type, thinkSec) {
     const gid = `g${++groupSeq}`;
-    seats.set(pair[0], makeCustomer(now, type, gid));
-    seats.set(pair[1], makeCustomer(now, type, gid));
+    for (const id of run) {
+      const c = makeCustomer(now, type, gid);
+      if (thinkSec != null) c.phaseUntil = now + thinkSec * 1000;
+      seats.set(id, c);
+    }
+    return gid;
   }
 
   // 한 번의 입장 시도. 성공하면 채운 인원 수를 반환.
   function trySpawnOne(now) {
     const type = pickRng(types.filter((t) => t.active !== false));
     if (!type) return 0;
-    if (type.groupSize === 2) {
-      const pair = adjacentEmptyPair();
-      if (pair && activeCount() + 2 <= cfg.maxActive) { spawnGroup(now, pair, type); return 2; }
+    const size = type.groupSize ?? 1;
+    if (size >= 2) {
+      const run = adjacentEmptyRun(size);
+      if (run && activeCount() + size <= cfg.maxActive) { spawnGroupRun(now, run, type); return size; }
       // 인접석이 없으면 이번 파동은 단일 손님으로 대체(§166 분리 착석 금지)
-      const singles = types.filter((t) => t.groupSize === 1 && t.active !== false);
+      const singles = types.filter((t) => (t.groupSize ?? 1) === 1 && t.active !== false);
       const empty = emptySeats();
       if (singles.length && empty.length && activeCount() < cfg.maxActive) { spawnSingle(now, pickRng(empty), pickRng(singles)); return 1; }
       return 0;
@@ -114,6 +120,28 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
     const empty = emptySeats();
     if (empty.length && activeCount() < cfg.maxActive) { spawnSingle(now, pickRng(empty), type); return 1; }
     return 0;
+  }
+
+  // ── 예약(대형 그룹): 예약 시각에 연속 좌석 n개가 비면 함께 입장한다(§8인 예약) ──
+  let reservations = [];
+  let resSeq = 0;
+  function addReservation({ typeId, size, dueMs = 0, thinkSec = 5 }) {
+    const id = `r${++resSeq}`;
+    reservations.push({ id, typeId, size: Math.max(1, size), dueMs, thinkSec });
+    return id;
+  }
+  function processReservations(now) {
+    for (const r of [...reservations]) {
+      if (now < r.dueMs) continue;
+      const type = types.find((t) => t.id === r.typeId) || types.find((t) => (t.groupSize ?? 1) === 1) || types[0];
+      if (!type) continue;
+      const run = adjacentEmptyRun(r.size);
+      if (run && activeCount() + r.size <= cfg.maxActive) {
+        spawnGroupRun(now, run, type, r.thinkSec); // 좌석 확보 → 함께 착석
+        reservations = reservations.filter((x) => x.id !== r.id);
+      }
+      // 좌석이 부족하면 예약은 유지(다음 tick 재시도).
+    }
   }
 
   function tick(now) {
@@ -130,6 +158,8 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
       }
       if (filled > 0) lastSpawnMs = now;
     }
+
+    processReservations(now); // 예약(대형 그룹) 입장 (autoSpawn과 무관하게 예약 시각에 착석 시도)
 
     // 개별 진행
     for (const id of seatIds) {
@@ -312,7 +342,7 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
   }
 
   function clearAll() { for (const id of seatIds) seats.set(id, null); }
-  function resetDay() { clearAll(); records = []; }
+  function resetDay() { clearAll(); records = []; reservations = []; }
   // 좌석 수 조정(seatCap 업그레이드). 동시 활성 상한(rush)도 좌석 수에 맞춘다.
   function setCapacity(n) {
     capacity = Math.max(1, Math.min(seatIds.length, n));
@@ -324,5 +354,6 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
     records: () => records.slice(),
     setAutoSpawn: (v) => { autoSpawn = v; }, getSeat: (id) => seats.get(id), activeCount, cfg,
     setCapacity, capacity: () => capacity,
+    addReservation, reservations: () => reservations.map((r) => ({ ...r })),
   };
 }

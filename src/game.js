@@ -44,6 +44,12 @@ const ownedItems = () => upgrades.filter((u) => wallet.owned.has(u.id));
 const currentEconomy = () => (baseEconomy ? effectiveEconomy(baseEconomy, ownedItems()) : null);
 const syncSlots = () => cook.setSlots(ownedEffects(ownedItems()).grillSlots); // 업그레이드 → 그릴 칸 수
 const syncSeats = () => { const cap = ownedEffects(ownedItems()).seatCap; if (ops) ops.setCapacity(cap); R.setSeatCapacity(cap); }; // 업그레이드 → 좌석 수
+// 좌석 8석 이상이면 하루에 8인 예약 파티가 예약 시각에 함께 입장한다(대형 그룹).
+const scheduleReservation = () => {
+  if (ops && ownedEffects(ownedItems()).seatCap >= 8) {
+    ops.addReservation({ typeId: 'office', size: 8, dueMs: performance.now() + 20000, thinkSec: 4 });
+  }
+};
 
 // 공용 준비 목록 (완성품 선반). 조리와 서빙을 분리한다.
 const dock = createPreparedDock({ container: el('dockShelf') });
@@ -380,7 +386,7 @@ function endDay() {
   settling = true; // 손님 시간 정지
 }
 function nextDay() {
-  if (ops) { ops.resetDay(); ops.setAutoSpawn(true); }
+  if (ops) { ops.resetDay(); ops.setAutoSpawn(true); scheduleReservation(); }
   el('settlement').hidden = true;
   el('purchase').hidden = true;
   settling = false;
@@ -599,6 +605,7 @@ Promise.all([
       },
     });
     syncSeats(); // 좌석 수 반영(렌더러 + maxActive)
+    scheduleReservation(); // 좌석이 충분하면 8인 예약 예약
     if (typeof window !== 'undefined') window.__ops = ops;
   })
   .catch((err) => console.error('손님 운영 콘텐츠 로드 실패:', err));
@@ -633,6 +640,8 @@ window.__prodDebug = {
   opsClear: () => ops && ops.clearAll(),
   forceSpawn: (seatId, typeId, thinkSec) => ops && ops.forceSpawn(seatId, typeId, performance.now(), thinkSec ?? 5),
   forceGroup: (a, b, typeId, thinkSec) => ops && ops.forceGroup(a, b, typeId, performance.now(), thinkSec ?? 5),
+  opsReserve: (typeId, size, dueSec, thinkSec) => ops && ops.addReservation({ typeId, size, dueMs: performance.now() + (dueSec ?? 0) * 1000, thinkSec: thinkSec ?? 5 }),
+  opsReservations: () => (ops ? ops.reservations() : []),
   reorderOverride: (v) => ops && ops.setReorderOverride(v),
   opsElapse: (sec) => ops && ops.debugElapse(sec),
   acceptOrder: (seatId) => ops && ops.acceptOrder(seatId),

@@ -167,6 +167,36 @@ describe('createCustomerOps', () => {
     expect(SEATS.filter((id) => ops.getSeat(id)).length).toBeGreaterThan(2);
   });
 
+  it('예약: 예약 시각에 연속 좌석이 비면 대형 그룹이 함께 입장한다', () => {
+    const ops = make(() => 0.9);
+    ops.setCapacity(8);
+    ops.setAutoSpawn(false);
+    ops.addReservation({ typeId: 'office', size: 4, dueMs: 5000, thinkSec: 0 });
+    ops.tick(1000); // 예약 시각 전 → 입장 없음
+    expect(SEATS.filter((id) => ops.getSeat(id)).length).toBe(0);
+    ops.tick(5000); // 예약 시각 → 4인 함께 착석
+    const occ = SEATS.filter((id) => ops.getSeat(id));
+    expect(occ.length).toBe(4);
+    const gids = new Set(occ.map((id) => ops.getSeat(id).groupId));
+    expect(gids.size).toBe(1); // 한 그룹
+    expect([...gids][0]).toBeTruthy();
+    expect(ops.reservations().length).toBe(0);
+  });
+
+  it('예약: 좌석이 부족하면 대기했다가 자리가 나면 입장한다', () => {
+    const ops = make(() => 0.9);
+    ops.setCapacity(4);
+    ops.setAutoSpawn(false);
+    ops.forceSpawn('seat-01', 'solo', 0, 0); // 연속 4석을 막는다
+    ops.addReservation({ typeId: 'solo', size: 4, dueMs: 1000, thinkSec: 0 });
+    ops.tick(2000); // 연속 4석 없음 → 예약 대기
+    expect(ops.reservations().length).toBe(1);
+    ops.clearAll(); // 자리가 남
+    ops.tick(3000);
+    expect(ops.reservations().length).toBe(0);
+    expect(SEATS.filter((id) => ops.getSeat(id)).length).toBe(4);
+  });
+
   it('2인 그룹: 인접 좌석에 함께 입장한다', () => {
     const ops = make(() => 0); // rng 0 → 항상 첫 후보(solo) … 그룹은 forceGroup으로 검증
     ops.setAutoSpawn(false);
