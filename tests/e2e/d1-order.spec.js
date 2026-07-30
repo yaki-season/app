@@ -10,9 +10,14 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await expect(page.locator('.art-table')).toHaveAttribute('src', '/public/assets/core/customer/service-table-complete-r1-b1.png');
   await expect(page.locator('.art-background')).toHaveJSProperty('naturalWidth', 1920);
   await expect(page.getByTestId('order-negima').locator('img')).toHaveAttribute('src', '/public/assets/core/ui/order-icon-negima-r1-b1.png');
+  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-manifest-id', 'D1-TSUKIOKA-WAITING');
 
   await page.getByRole('button', { name: '손님 입장 완료' }).click();
   await page.getByRole('button', { name: 'D1 주문 접수' }).click();
+  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-asset-state', 'placeholder');
+  await expect(page.getByTestId('d1-scene-status')).toContainText('개발 중');
+  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-missing-asset-ids', /MDL-BEER-LEVER/);
+  await expect(page.locator('#customer-art-stage')).toBeHidden();
   await expect(page.getByTestId('order-draft-beer')).toContainText('x1/1');
   await expect(page.getByTestId('order-negima')).toContainText('x3/3');
 
@@ -25,14 +30,17 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await expect(page.getByTestId('order-negima')).toContainText('x3/3');
   await expect(page.getByTestId('customer-state')).toContainText('생맥주를 받았습니다');
   await expect(page.locator('#customer-art')).toHaveAttribute('src', '/public/assets/core/customer/d1-tsukioka-partial-beer-waiting-r1-b1.png');
+  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-manifest-id', 'D1-TSUKIOKA-PARTIAL-BEER-WAITING');
 
   await page.getByRole('button', { name: '네기마 조립 시작' }).click();
+  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-missing-asset-ids', /BG-WORKSPACE-ASSEMBLY/);
   for (let i = 0; i < 3; i += 1) {
     for (const ingredient of ['닭', '파', '닭', '파', '닭']) {
       await page.getByRole('button', { name: new RegExp(`negima-${i + 1} · ${ingredient} 넣기`) }).click();
     }
   }
   await page.getByRole('button', { name: '조립한 3개를 그릴로' }).click();
+  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-missing-asset-ids', /MDL-NEGIMA-GRILL-COOKING-SECOND-FACE/);
 
   await page.getByRole('button', { name: 'negima-1 → 1번 칸' }).click();
   await page.getByRole('button', { name: 'negima-2 → 2번 칸' }).click();
@@ -52,4 +60,5 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await expect(page.getByTestId('customer-state')).toContainText('완료');
   await expect(page.getByTestId('d1-guide')).toContainText('완료');
   await expect(page.locator('#customer-art')).toHaveAttribute('src', '/public/assets/core/customer/d1-tsukioka-received-eating-beer-r1-b1.png');
+  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-manifest-id', 'D1-TSUKIOKA-RECEIVED-EATING');
 });

@@ -10,22 +10,10 @@ import {
   beginServing, collectSkewer, completeReaction, confirmServing, createD1Session,
   enterCustomer, finishBeer, orderItemProgress, placeOnGrill, pourBeerFor, turnSkewer,
 } from '../state/d1/session.js';
-
-// public/assets/manifest.json의 승인 runtime URL만 소비한다.
-// Python 정적 개발 서버는 public을 /public으로 노출하므로 /src/ 미리보기에서만 접두사를 붙인다.
-export const runtimeAssetUrl = (url) => location.pathname.startsWith('/src/') ? `/public${url}` : url;
-const ASSET_PATH = Object.freeze({
-  negima: '/assets/core/ui/order-icon-negima-r1-b1.png',
-  draftBeer: '/assets/core/ui/order-icon-draft-beer-r1-b1.png',
-  orderPanel: '/assets/core/ui/customer-order-wait-panel-skin-r3-b1.png',
-  waiting: '/assets/core/customer/d1-tsukioka-waiting-r2-b1.png',
-  partialBeer: '/assets/core/customer/d1-tsukioka-partial-beer-waiting-r1-b1.png',
-  eatingNegima: '/assets/core/customer/d1-tsukioka-received-eating-negima-r1-b1.png',
-  eatingBeer: '/assets/core/customer/d1-tsukioka-received-eating-beer-r1-b1.png',
-});
-export const ASSET_URL = Object.freeze(Object.fromEntries(
-  Object.entries(ASSET_PATH).map(([key, path]) => [key, runtimeAssetUrl(path)]),
-));
+import {
+  D1_PENDING_RUNTIME_ASSET_IDS,
+  resolveD1CustomerAsset,
+} from '../assets/runtimeAssetResolver.js';
 
 const labels = { entering:'손님이 입장 중입니다.', ordering:'주문을 고민하고 있습니다.', waiting:'주문을 기다리고 있습니다.', 'partially-served':'생맥주를 받았습니다. 네기마를 기다립니다.', reacting:'첫 주문을 맛보고 있습니다.', completed:'첫 주문이 완료되었습니다.' };
 const guides = {
@@ -40,16 +28,16 @@ const guides = {
   [D1_PHASE.COMPLETE]:'D1 첫 주문을 완료했습니다.',
 };
 
-// 현재 상태에 해당하는 손님 아트 URL.
-function customerArtUrl(state) {
-  if (state.customer.state === 'partially-served') return ASSET_URL.partialBeer;
-  if (state.phase === D1_PHASE.REACTION) return ASSET_URL.eatingNegima;
-  if (state.phase === D1_PHASE.COMPLETE) return ASSET_URL.eatingBeer;
-  return ASSET_URL.waiting;
+function sceneKind(phase) {
+  if (phase === D1_PHASE.DRINK) return 'drink';
+  if (phase === D1_PHASE.ASSEMBLY) return 'assembly';
+  if (phase === D1_PHASE.GRILL) return 'grill';
+  return 'customer';
 }
 
-// D1 세션을 DOM 컨트롤에 마운트한다. onArt(url, phase)는 손님 아트를 그릴 진입점이 제공한다.
-export function mountD1({ onArt } = {}) {
+// D1 세션을 DOM 컨트롤에 마운트한다. assets는 manifest ID로 해석된 승인 runtime만 받는다.
+export function mountD1({ assets, onArt, onScene } = {}) {
+  if (!assets) throw new Error('D1 승인 runtime asset resolver 결과가 필요합니다.');
   const controls = document.querySelector('#controls');
   const preparedList = document.querySelector('#prepared-list');
   const orderItems = document.querySelector('#order-items');
@@ -78,7 +66,7 @@ export function mountD1({ onArt } = {}) {
       li.dataset.testid = `order-${menuId}`;
       const icon = progress.remaining === 0
         ? '✓'
-        : `<img src="${menuId === MENU.DRAFT_BEER ? ASSET_URL.draftBeer : ASSET_URL.negima}" alt="">`;
+        : `<img src="${menuId === MENU.DRAFT_BEER ? assets.ORDER_DRAFT_BEER.url : assets.ORDER_NEGIMA.url}" alt="">`;
       li.innerHTML = `<span class="order-icon" aria-hidden="true">${icon}</span><span>${label}</span><span class="order-count">x${progress.remaining}/${progress.total}</span>`;
       orderItems.append(li);
     }
@@ -148,9 +136,21 @@ export function mountD1({ onArt } = {}) {
     customerState.textContent = labels[state.customer.state] || state.customer.state;
     guide.textContent = guides[state.phase];
     if (stateOutput) stateOutput.value = JSON.stringify(state);
-    if (onArt) onArt(customerArtUrl(state), state.phase);
+    const customerAsset = resolveD1CustomerAsset(assets, state.customer.state);
+    if (onArt) onArt(customerAsset, state.phase);
+    const kind = sceneKind(state.phase);
+    if (onScene) onScene({
+      kind,
+      phase: state.phase,
+      customerAsset,
+      pendingAssetIds: kind === 'customer' ? [] : D1_PENDING_RUNTIME_ASSET_IDS[kind],
+    });
   }
   render();
 
-  return { getState: () => state, now: () => nowMs, artUrl: () => customerArtUrl(state) };
+  return {
+    getState: () => state,
+    now: () => nowMs,
+    artUrl: () => resolveD1CustomerAsset(assets, state.customer.state).url,
+  };
 }

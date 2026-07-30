@@ -7,9 +7,15 @@
 import * as THREE from 'three';
 import { makeCamera, billboard } from './render/sceneMath.js';
 import { PLAYER_EYE } from './config/screenLayout.js';
-import { mountD1, ASSET_URL } from './d1/view.js';
+import { loadD1RuntimeAssets } from './assets/runtimeAssetResolver.js';
+import { mountD1 } from './d1/view.js';
 
 const canvas = document.querySelector('#scene-canvas');
+const sceneStatus = document.querySelector('#scene-status');
+const sceneTitle = document.querySelector('#scene-title');
+const sceneDescription = document.querySelector('#scene-description');
+const assets = await loadD1RuntimeAssets();
+document.documentElement.style.setProperty('--order-panel-skin', `url("${assets.ORDER_PANEL.url}")`);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
 renderer.setClearColor(0x0f0b08, 1);
 const scene = new THREE.Scene();
@@ -46,11 +52,11 @@ function layer(url, z, order, opaque) {
   return { mesh, mat };
 }
 
-const bgLayer = layer('/assets/core/customer/background-complete-r3-b1.png', -9, 0, true);
-const customerLayer = layer(ASSET_URL.waiting, -6, 1, false);
-const tableLayer = layer('/assets/core/customer/service-table-complete-r1-b1.png', -3.5, 2, false);
+const bgLayer = layer(assets.CUSTOMER_BACKGROUND.url, -9, 0, true);
+const customerLayer = layer(assets.TSUKIOKA_WAITING.url, -6, 1, false);
+const tableLayer = layer(assets.SERVICE_TABLE.url, -3.5, 2, false);
 
-let currentCustomerUrl = ASSET_URL.waiting;
+let currentCustomerUrl = assets.TSUKIOKA_WAITING.url;
 function setCustomer(url) {
   if (url === currentCustomerUrl) return;
   currentCustomerUrl = url;
@@ -83,7 +89,31 @@ function frame(nowMs) {
 requestAnimationFrame(frame);
 
 // ── D1 세션 구동: 손님 아트를 phase에 따라 텍스처로 교체 ──────────
-const session = mountD1({ onArt: (url) => setCustomer(url) });
+function renderScene({ kind, customerAsset, pendingAssetIds }) {
+  if (kind === 'customer') {
+    canvas.hidden = false;
+    sceneStatus.classList.add('approved');
+    sceneStatus.dataset.assetState = 'approved';
+    sceneStatus.dataset.manifestId = customerAsset.id;
+    sceneStatus.removeAttribute('data-missing-asset-ids');
+    sceneTitle.textContent = '승인 runtime 아트 적용';
+    sceneDescription.textContent = `gameplay 상태 → ${customerAsset.id}@R${customerAsset.sourceRevision}-B${customerAsset.runtimeBuild}`;
+    return;
+  }
+  canvas.hidden = true;
+  sceneStatus.classList.remove('approved');
+  sceneStatus.dataset.assetState = 'placeholder';
+  sceneStatus.dataset.missingAssetIds = pendingAssetIds.join(',');
+  sceneStatus.removeAttribute('data-manifest-id');
+  sceneTitle.textContent = kind === 'drink' ? '생맥주 작업 화면' : kind === 'assembly' ? '네기마 조립 화면' : '숯불 그릴 화면';
+  sceneDescription.textContent = `승인됐지만 finalizer runtime handoff가 없어 개발 중 placeholder로 표시합니다. 대기 asset ID: ${pendingAssetIds.join(', ')}`;
+}
+
+const session = mountD1({
+  assets,
+  onArt: (asset) => setCustomer(asset.url),
+  onScene: renderScene,
+});
 
 window.__d1SceneDebug = {
   getState: session.getState,
@@ -91,9 +121,9 @@ window.__d1SceneDebug = {
   customerTextureUrl: () => currentCustomerUrl,
   ready: () => pending === 0,
   layers: () => [
-    { name: 'background', url: '/assets/core/customer/background-complete-r3-b1.png', z: -9 },
+    { name: 'background', url: assets.CUSTOMER_BACKGROUND.url, z: -9 },
     { name: 'customer', url: currentCustomerUrl, z: -6 },
-    { name: 'table', url: '/assets/core/customer/service-table-complete-r1-b1.png', z: -3.5 },
+    { name: 'table', url: assets.SERVICE_TABLE.url, z: -3.5 },
   ],
   stop: () => { running = false; },
 };

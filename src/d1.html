@@ -7,10 +7,10 @@
   <link rel="stylesheet" href="./d1.css">
 </head>
 <body>
-  <div class="art-stage" aria-hidden="true">
-    <img class="art-layer art-background" data-runtime-src="/assets/core/customer/background-complete-r3-b1.png" alt="">
-    <img id="customer-art" class="art-layer art-customer" data-runtime-src="/assets/core/customer/d1-tsukioka-waiting-r2-b1.png" alt="">
-    <img class="art-layer art-table" data-runtime-src="/assets/core/customer/service-table-complete-r1-b1.png" alt="">
+  <div id="customer-art-stage" class="art-stage" aria-hidden="true">
+    <img class="art-layer art-background" data-runtime-asset="CUSTOMER_BACKGROUND" alt="">
+    <img id="customer-art" class="art-layer art-customer" data-runtime-asset="TSUKIOKA_WAITING" alt="">
+    <img class="art-layer art-table" data-runtime-asset="SERVICE_TABLE" alt="">
   </div>
   <main class="d1-screen" data-testid="d1-screen">
     <header class="order-panel" aria-labelledby="order-title">
@@ -22,6 +22,11 @@
     </header>
 
     <section class="workspace" aria-label="D1 조리와 제공">
+      <section id="scene-status" class="scene-status" data-testid="d1-scene-status" aria-live="polite">
+        <strong id="scene-title">승인 runtime 아트 확인 중</strong>
+        <span class="development-label">개발 중</span>
+        <p id="scene-description">manifest ID를 검증하고 있습니다.</p>
+      </section>
       <div id="controls" class="controls" data-testid="d1-controls"></div>
       <section class="prepared" aria-labelledby="prepared-title">
         <h2 id="prepared-title">공용 준비 목록</h2>
