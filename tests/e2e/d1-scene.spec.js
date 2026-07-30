@@ -25,6 +25,20 @@ test('D1 2.5D: 배경·손님·카운터 레이어를 합성하고 손님 텍스
 
   await page.getByRole('button', { name: '손님 입장 완료' }).click();
   await page.getByRole('button', { name: 'D1 주문 접수' }).click();
+  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute(
+    'data-manifest-id',
+    'BG-WORKSPACE-DRINK',
+  );
+  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute(
+    'data-missing-asset-ids',
+    /MDL-BEER-LEVER/,
+  );
+  await expect(page.getByTestId('d1-scene-status')).not.toHaveAttribute(
+    'data-missing-asset-ids',
+    /BG-WORKSPACE-DRINK/,
+  );
+  expect(await page.evaluate(() => window.__d1SceneDebug.backgroundTextureUrl()))
+    .toBe('/public/assets/core/drink/bg-workspace-drink-r2-b1.png');
   await expect(page.getByTestId('order-draft-beer')).toContainText('x1/1');
   await expect(page.getByTestId('order-negima').locator('img')).toHaveAttribute('src', '/public/assets/core/ui/order-icon-negima-r1-b1.png');
 
@@ -37,6 +51,8 @@ test('D1 2.5D: 배경·손님·카운터 레이어를 합성하고 손님 텍스
   await expect(page.getByTestId('customer-state')).toContainText('생맥주를 받았습니다');
   expect(await page.evaluate(() => window.__d1SceneDebug.customerTextureUrl()))
     .toBe('/public/assets/core/customer/d1-tsukioka-partial-beer-waiting-r1-b1.png');
+  expect(await page.evaluate(() => window.__d1SceneDebug.backgroundTextureUrl()))
+    .toBe('/public/assets/core/customer/background-complete-r3-b1.png');
 
   // 조립 → 2칸 그릴 → 네기마 제공 → 반응
   await page.getByRole('button', { name: '네기마 조립 시작' }).click();

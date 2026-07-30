@@ -29,6 +29,9 @@ async function serveCustomer(page, seatId, good) {
 
 test('영업 종료 → 정산 집계 → 다음 날 리셋', async ({ page }) => {
   await boot(page);
+  const content = await page.evaluate(() => window.__prodDebug.contentContract());
+  expect(content.urls.day).toBe('/content/campaign/day-d1.json');
+  expect(content.applied.economy).toEqual(content.day.economy);
 
   // 좋은 서빙 1, 낮은 서빙 1
   await serveCustomer(page, 'seat-02', true);
@@ -49,7 +52,11 @@ test('영업 종료 → 정산 집계 → 다음 날 리셋', async ({ page }) =
   await expect(field(page, 'lost')).toHaveText('1');
   await expect(field(page, 'good')).toHaveText('1');
   await expect(field(page, 'low')).toHaveText('1');
-  await expect(field(page, 'revenue')).toHaveText('250'); // 150 + 100
+  const expectedRevenue = Math.round(
+    content.day.economy.basePrice * content.day.economy.qualityMultGood
+    + content.day.economy.basePrice * content.day.economy.qualityMultLow,
+  );
+  await expect(field(page, 'revenue')).toHaveText(String(expectedRevenue));
   await expect(field(page, 'total')).toHaveText(/\d+/);
 
   // 다음 날 → 리셋

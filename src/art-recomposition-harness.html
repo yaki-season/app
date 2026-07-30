@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YAKI SEASON — S0·D1 아트 재조립 harness</title>
+  <link rel="stylesheet" href="./art-recomposition-harness.css">
+</head>
+<body>
+  <main id="art-harness" class="art-harness" data-testid="art-harness">
+    <section id="logical-stage" class="logical-stage" data-testid="logical-stage" aria-labelledby="harness-title">
+      <div id="art-camera" class="art-camera" data-testid="art-camera" aria-hidden="true">
+        <div id="scene-grid" class="scene-grid"></div>
+        <img id="approved-asset" class="approved-asset" alt="" hidden>
+        <div id="asset-placeholder" class="asset-placeholder">
+          <span>개발 중</span>
+          <strong id="placeholder-asset-id"></strong>
+        </div>
+        <div id="interaction-bounds" class="bounds interaction-bounds"></div>
+      </div>
+      <div id="semantic-dom" class="semantic-dom" data-testid="semantic-dom">
+        <header class="harness-header">
+          <p>binding contract <span id="contract-version"></span></p>
+          <h1 id="harness-title"></h1>
+        </header>
+        <button class="skip" type="button">건너뛰기</button>
+        <section id="dom-safe-primary" class="dom-safe-primary" aria-label="상태 안내">
+          <p id="state-identity"></p>
+          <button id="state-action" type="button">상태 확인</button>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="./art-recomposition-harness.js"></script>
+</body>
+</html>

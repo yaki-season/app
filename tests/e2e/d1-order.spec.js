@@ -6,6 +6,18 @@ async function click(page, testId) {
 
 test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공을 완료한다', async ({ page }) => {
   await page.goto('/src/d1.html');
+  await expect(page.locator('body')).toHaveAttribute('data-runtime-assets-ready', 'false');
+  await expect(page.locator('body')).toHaveAttribute('data-runtime-contract-valid', 'true');
+  await expect(page.locator('body')).toHaveAttribute('data-asset-placeholder-count', '33');
+  const readiness = await page.evaluate(() => window.__d1Debug.assetReadiness());
+  expect(readiness.placeholderIdsByScene).toMatchObject({
+    drink: expect.any(Array),
+    assembly: expect.any(Array),
+    grill: expect.any(Array),
+  });
+  expect(readiness.contractAudit.valid).toBe(true);
+  expect(readiness.placeholderIdsByScene.grill).toContain('MDL-NEGIMA-GRILL-PROPER-SECOND-FACE');
+  expect(readiness.placeholderIdsByScene.grill).toContain('CMP-GRILL-FINISHED-PROPER-NEGIMA');
   await expect(page.locator('.art-background')).toHaveAttribute('src', '/public/assets/core/customer/background-complete-r3-b1.png');
   await expect(page.locator('.art-table')).toHaveAttribute('src', '/public/assets/core/customer/service-table-complete-r1-b1.png');
   await expect(page.locator('.art-background')).toHaveJSProperty('naturalWidth', 1920);
@@ -14,10 +26,24 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
 
   await page.getByRole('button', { name: '손님 입장 완료' }).click();
   await page.getByRole('button', { name: 'D1 주문 접수' }).click();
-  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-asset-state', 'placeholder');
+  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-asset-state', 'partial');
+  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute(
+    'data-manifest-id',
+    'BG-WORKSPACE-DRINK',
+  );
   await expect(page.getByTestId('d1-scene-status')).toContainText('개발 중');
   await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-missing-asset-ids', /MDL-BEER-LEVER/);
-  await expect(page.locator('#customer-art-stage')).toBeHidden();
+  await expect(page.getByTestId('d1-scene-status')).not.toHaveAttribute(
+    'data-missing-asset-ids',
+    /BG-WORKSPACE-DRINK/,
+  );
+  await expect(page.locator('#customer-art-stage')).toBeVisible();
+  await expect(page.locator('.art-background')).toHaveAttribute(
+    'src',
+    '/public/assets/core/drink/bg-workspace-drink-r2-b1.png',
+  );
+  await expect(page.locator('#customer-art')).toBeHidden();
+  await expect(page.locator('.art-table')).toBeHidden();
   await expect(page.getByTestId('order-draft-beer')).toContainText('x1/1');
   await expect(page.getByTestId('order-negima')).toContainText('x3/3');
 

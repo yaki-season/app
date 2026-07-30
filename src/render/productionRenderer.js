@@ -44,6 +44,7 @@ export function createProductionRenderer(canvas) {
   // 오브젝트를 화면별로 만든다. 같은 key가 여러 화면에 있으면(bg) 화면마다 별도 평면을 둔다.
   const screenGroups = {}; // screenId → [mesh]
   const objectMesh = {}; // key → mesh (조작 대상은 화면 유일 → 모호하지 않음)
+  const interactionMesh = {}; // key → visual과 분리된 투명 hitRect mesh
 
   function buildObject(cam, key) {
     const def = OBJECTS[key];
@@ -67,6 +68,22 @@ export function createProductionRenderer(canvas) {
   }
 
   const seatBaseMesh = {}; // seatId → 좌석 표식 mesh
+  function buildInteraction(cam, key) {
+    const def = OBJECTS[key];
+    if (!def.hitRect) return null;
+    const mat = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+      colorWrite: false,
+    });
+    const mesh = billboard(cam, def.hitRect, LAYER_Z.interactive + 0.01, mat);
+    mesh.renderOrder = 200;
+    mesh.userData.objectKey = key;
+    mesh.userData.interactionTarget = true;
+    return mesh;
+  }
   const seatActorMesh = {}; // seatId → 손님 액터 mesh
   const seatBubbleWorld = {}; // seatId → 말풍선 앵커 월드 좌표
   const inactiveSeats = new Set(); // 현재 좌석 수(capacity)를 넘어 비활성인 좌석
@@ -81,6 +98,13 @@ export function createProductionRenderer(canvas) {
       scene.add(mesh);
       group.push(mesh);
       if (OBJECTS[key].kind !== 'fullframe' && OBJECTS[key].kind !== 'image') objectMesh[key] = mesh; // 배경·아트 레이어 제외
+      const hit = buildInteraction(cam, key);
+      if (hit) {
+        hit.visible = mesh.visible;
+        scene.add(hit);
+        group.push(hit);
+        interactionMesh[key] = hit;
+      }
     }
     // 좌석: 손님 액터(카운터 뒤) + serve 대상(카운터 위). 최대 좌석 수만큼 만들고 capacity로 배치·표시.
     if (s.seats) {
@@ -100,7 +124,14 @@ export function createProductionRenderer(canvas) {
         actor.userData.seatId = seatId;
         scene.add(actor); group.push(actor); seatActorMesh[seatId] = actor;
 
-        const serve = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.05 }, LAYER_Z.interactive, new THREE.MeshBasicMaterial({ color: 0x584636, transparent: true, opacity: 0.85 }));
+        // 주문·서빙은 시각 좌석과 분리된 투명 raycast 대상으로 처리한다.
+        const serve = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.05 }, LAYER_Z.interactive, new THREE.MeshBasicMaterial({
+          transparent: true,
+          opacity: 0,
+          depthTest: false,
+          depthWrite: false,
+          colorWrite: false,
+        }));
         serve.renderOrder = 100;
         serve.visible = false;
         serve.userData.objectKey = `seatServe:${seatId}`;
@@ -246,6 +277,11 @@ export function createProductionRenderer(canvas) {
     camera,
     renderer,
     objectMesh,
+    interactionMesh,
+    setObjectVisible: (key, visible) => {
+      if (objectMesh[key]) objectMesh[key].visible = visible;
+      if (interactionMesh[key]) interactionMesh[key].visible = visible;
+    },
     seatActorMesh,
     seatBaseMesh,
     seatBubbleWorld,

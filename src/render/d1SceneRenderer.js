@@ -35,6 +35,7 @@ export function createD1SceneRenderer(canvas) {
 
   const screenGroups = {}; // screenId → [mesh]
   const objectMesh = {}; // key → mesh (조작 대상 + 스왑 가능한 이미지)
+  const interactionMesh = {}; // key → visual과 분리된 투명 hitRect mesh
 
   function buildObject(cam, key) {
     const def = OBJECTS[key];
@@ -63,6 +64,23 @@ export function createD1SceneRenderer(canvas) {
     return mesh;
   }
 
+  function buildInteraction(cam, key) {
+    const def = OBJECTS[key];
+    if (!def.hitRect) return null;
+    const mat = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+      colorWrite: false,
+    });
+    const mesh = billboard(cam, def.hitRect, LAYER_Z.interactive + 0.01, mat);
+    mesh.renderOrder = 200;
+    mesh.userData.objectKey = key;
+    mesh.userData.interactionTarget = true;
+    return mesh;
+  }
+
   for (const s of SCREENS) {
     const cam = presetCam[s.id];
     const group = [];
@@ -72,6 +90,13 @@ export function createD1SceneRenderer(canvas) {
       scene.add(mesh);
       group.push(mesh);
       if (OBJECTS[key].kind !== 'fullframe') objectMesh[key] = mesh; // sbg만 제외
+      const hit = buildInteraction(cam, key);
+      if (hit) {
+        hit.visible = mesh.visible;
+        scene.add(hit);
+        group.push(hit);
+        interactionMesh[key] = hit;
+      }
     }
     screenGroups[s.id] = group;
   }
@@ -143,6 +168,11 @@ export function createD1SceneRenderer(canvas) {
     camera,
     renderer,
     objectMesh,
+    interactionMesh,
+    setObjectVisible: (key, visible) => {
+      if (objectMesh[key]) objectMesh[key].visible = visible;
+      if (interactionMesh[key]) interactionMesh[key].visible = visible;
+    },
     presetCam,
     activeScreenId: () => activeId,
     setCustomerTexture,

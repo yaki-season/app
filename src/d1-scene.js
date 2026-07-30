@@ -15,6 +15,9 @@ const sceneStatus = document.querySelector('#scene-status');
 const sceneTitle = document.querySelector('#scene-title');
 const sceneDescription = document.querySelector('#scene-description');
 const assets = await loadD1RuntimeAssets();
+document.body.dataset.assetPlaceholderCount = String(assets.readiness.placeholderCount);
+document.body.dataset.runtimeAssetsReady = String(assets.readiness.ready);
+document.body.dataset.runtimeContractValid = String(assets.readiness.contractAudit.valid);
 document.documentElement.style.setProperty('--order-panel-skin', `url("${assets.ORDER_PANEL.url}")`);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
 renderer.setClearColor(0x0f0b08, 1);
@@ -57,6 +60,13 @@ const customerLayer = layer(assets.TSUKIOKA_WAITING.url, -6, 1, false);
 const tableLayer = layer(assets.SERVICE_TABLE.url, -3.5, 2, false);
 
 let currentCustomerUrl = assets.TSUKIOKA_WAITING.url;
+let currentBackgroundUrl = assets.CUSTOMER_BACKGROUND.url;
+function setBackground(url) {
+  if (url === currentBackgroundUrl) return;
+  currentBackgroundUrl = url;
+  bgLayer.mat.map = texture(url);
+  bgLayer.mat.needsUpdate = true;
+}
 function setCustomer(url) {
   if (url === currentCustomerUrl) return;
   currentCustomerUrl = url;
@@ -92,6 +102,9 @@ requestAnimationFrame(frame);
 function renderScene({ kind, customerAsset, pendingAssetIds }) {
   if (kind === 'customer') {
     canvas.hidden = false;
+    setBackground(assets.CUSTOMER_BACKGROUND.url);
+    customerLayer.mesh.visible = true;
+    tableLayer.mesh.visible = true;
     sceneStatus.classList.add('approved');
     sceneStatus.dataset.assetState = 'approved';
     sceneStatus.dataset.manifestId = customerAsset.id;
@@ -100,12 +113,28 @@ function renderScene({ kind, customerAsset, pendingAssetIds }) {
     sceneDescription.textContent = `gameplay 상태 → ${customerAsset.id}@R${customerAsset.sourceRevision}-B${customerAsset.runtimeBuild}`;
     return;
   }
+  if (kind === 'drink') {
+    canvas.hidden = false;
+    setBackground(assets.DRINK_BACKGROUND.url);
+    customerLayer.mesh.visible = false;
+    tableLayer.mesh.visible = false;
+    sceneStatus.classList.remove('approved');
+    sceneStatus.dataset.assetState = 'partial';
+    sceneStatus.dataset.manifestId = assets.DRINK_BACKGROUND.id;
+    sceneStatus.dataset.missingAssetIds = pendingAssetIds.join(',');
+    sceneTitle.textContent = '승인 생맥주 작업 배경 적용';
+    sceneDescription.textContent =
+      `gameplay drink.scene → ${assets.DRINK_BACKGROUND.id}@R`
+      + `${assets.DRINK_BACKGROUND.sourceRevision}-B${assets.DRINK_BACKGROUND.runtimeBuild}; `
+      + `개발 중 asset ID: ${pendingAssetIds.join(', ')}`;
+    return;
+  }
   canvas.hidden = true;
   sceneStatus.classList.remove('approved');
   sceneStatus.dataset.assetState = 'placeholder';
   sceneStatus.dataset.missingAssetIds = pendingAssetIds.join(',');
   sceneStatus.removeAttribute('data-manifest-id');
-  sceneTitle.textContent = kind === 'drink' ? '생맥주 작업 화면' : kind === 'assembly' ? '네기마 조립 화면' : '숯불 그릴 화면';
+  sceneTitle.textContent = kind === 'assembly' ? '네기마 조립 화면' : '숯불 그릴 화면';
   sceneDescription.textContent = `승인됐지만 finalizer runtime handoff가 없어 개발 중 placeholder로 표시합니다. 대기 asset ID: ${pendingAssetIds.join(', ')}`;
 }
 
@@ -118,10 +147,12 @@ const session = mountD1({
 window.__d1SceneDebug = {
   getState: session.getState,
   now: session.now,
+  assetReadiness: () => assets.readiness,
   customerTextureUrl: () => currentCustomerUrl,
+  backgroundTextureUrl: () => currentBackgroundUrl,
   ready: () => pending === 0,
   layers: () => [
-    { name: 'background', url: assets.CUSTOMER_BACKGROUND.url, z: -9 },
+    { name: 'background', url: currentBackgroundUrl, z: -9 },
     { name: 'customer', url: currentCustomerUrl, z: -6 },
     { name: 'table', url: assets.SERVICE_TABLE.url, z: -3.5 },
   ],

@@ -11,22 +11,30 @@ import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
 import { createCustomerOps } from './render/customerOps.js';
 import { settleDay } from './render/daySettlement.js';
-import { reputationDelta, catalog, buy, effectiveEconomy, ownedEffects } from './render/progression.js';
+import { reputationDelta, catalog, buy, effectiveEconomy } from './render/progression.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
-import { createCookStations } from './render/cookStations.js';
+import { createD1CookStations } from './render/cookStations.js';
 import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS, CUSTOMER_ART } from './config/screenLayout.js';
+import { D1_GRILL_SLOT_KEYS, D1_GRILL_SLOTS, D1_GRILL_FINISHED_TRAY } from './config/d1GrillLayout.js';
 import { RECIPE, COOK_THRESHOLDS_SEC, DONENESS, canAdvance } from './config/recipe.js';
 
 const el = (id) => document.getElementById(id);
 const canvas = el('scene');
 const R = createProductionRenderer(canvas);
 const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
+const PRODUCTION_CONTENT_URLS = Object.freeze({
+  customerTypes: '/content/customers/types.json',
+  day: '/content/campaign/day-d1.json',
+  upgrades: '/content/progression/upgrades.json',
+});
 
-// 멀티 잡 조리: 조립(그릴과 독립) + 그릴 N칸. 슬롯 수는 업그레이드로 늘어난다.
-const cook = createCookStations({ slots: 1 });
-const SLOT_KEYS = ['grillSlot0', 'grillSlot1'];
+// D1 프로덕션 그릴은 처음부터 끝까지 고정 6칸이며, 첫 주문 3개를 모두 올린 순간 함께 굽기 시작한다.
+const cook = createD1CookStations();
+const SLOT_KEYS = D1_GRILL_SLOT_KEYS;
 const grillMats = {}; // slotKey → 익힘 셰이더 재질
+const GRILL_FLIP_AXIS = new THREE.Vector3(0, 1, 0);
+const grillFlipQuaternion = new THREE.Quaternion();
 const lockUntil = {}; // 대상별 입력 잠금
 
 // 각 조작 대상 key가 속한 화면 (가시성·클릭 판정용)
@@ -38,6 +46,7 @@ const customers = createCustomerAdapter({ renderer: R, container: el('bubbleLaye
 let ops = null; // 콘텐츠(유형·수치) 로드 후 생성
 let baseEconomy = null; // 영업일 기본 경제 수치
 let upgrades = []; // 구매 카탈로그(업그레이드)
+let loadedDay = null; // production이 실제로 읽은 day 원본(E2E 데이터 계약 확인용)
 const wallet = { gold: 0, reputation: 0, owned: new Set() }; // 여러 날 지속되는 성장 자원
 let cleanupHold = null; // { seatId, startMs } 정리 3초 홀드
 const ownedItems = () => upgrades.filter((u) => wallet.owned.has(u.id));
@@ -61,7 +70,7 @@ const LEVER_ZONE = { drinkLeverLower: 'beer', drinkLeverUpper: 'foam' };
 // 더미 오브젝트 이름표 (아트 전 식별용). 활성 화면의 보이는 오브젝트 위에 DOM 텍스트를 얹는다.
 const OBJECT_LABELS = {
   workbench: '조립대', binChicken: '닭', binLeek: '파', jigSkewer: '완성 꼬치',
-  grillBody: '숯불 그릴', grillSkewer: '꼬치',
+  grillBody: '숯불 그릴', grillSkewer: '꼬치', grillFinishedTray: '완료 트레이 (개발)',
   drinkTower: '맥주 타워', glassRack: '잔 랙', drinkLeverUpper: '레버·거품', drinkLeverLower: '레버·맥주',
 };
 // 큰 고정물은 라벨을 위쪽으로 올려 위에 놓인 조작 대상 라벨과 겹치지 않게 한다(화면 px 오프셋).
@@ -200,8 +209,7 @@ function shouldShow(key) {
 function render() {
   const now = performance.now();
   for (const key of Object.keys(SCREEN_OF)) {
-    const mesh = R.objectMesh[key];
-    if (mesh) mesh.visible = shouldShow(key);
+    R.setObjectVisible(key, shouldShow(key));
   }
 
   // 그릴 칸 익힘 색 (셰이더 로드 전 폴백)
@@ -263,7 +271,9 @@ function hitTest(e) {
   ptr.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   ptr.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(ptr, R.camera);
-  const targets = Object.values(R.objectMesh).filter((m) => m.visible);
+  const targets = Object.keys(R.objectMesh)
+    .map((key) => R.interactionMesh[key] ?? R.objectMesh[key])
+    .filter((mesh) => mesh.visible);
   const hit = raycaster.intersectObjects(targets, false)[0];
   return hit ? hit.object.userData.objectKey : null;
 }
@@ -312,8 +322,16 @@ function handle(key, now) {
     case 'grillWaitTray': {
       const r = cook.placeToGrill(now); // 대기 꼬치를 빈 칸에
       if (!r.ok) showHint(r.reason === 'no-waiting' ? '대기 중인 꼬치가 없어요' : '빈 그릴 칸이 없어요');
+      else if (r.staged) showHint(`첫 3개 동시 시작 · 꼬치 ${r.remainingForBatch}개를 더 올리세요`);
+      else if (r.batchStarted) showHint('3개 동시 조리 시작 · 8초 뒤 꼬치를 클릭해 뒤집으세요');
+      else showHint('앞면 조리 시작 · 8초 뒤 꼬치를 클릭해 뒤집으세요');
       break;
     }
+    case 'grillFinishedTray':
+      showHint(dock.items().some((item) => item.menu === '네기마')
+        ? '완료 트레이 · 완성품은 아래 선반에서 선택하세요'
+        : '완료된 네기마가 아직 없어요');
+      break;
     default:
       if (key.startsWith('seatServe:') && ops) {
         const seatId = key.slice('seatServe:'.length);
@@ -397,7 +415,6 @@ el('nextDay').addEventListener('click', nextDay);
 // ── 구매 카탈로그 (SCR-META-PURCHASE) ─────────────────────────
 const ITEM_LABELS = {
   'ingredient-chicken-t2': { name: '닭 등급 ↑', meta: '판매가 +10%' },
-  'equipment-grill-slots-2': { name: '그릴 2칸', meta: '동시 굽기 2개' },
   'interior-seats-8': { name: '좌석 8석', meta: '좌석 확장' },
   'interior-seats-12': { name: '좌석 12석', meta: '좌석 확장' },
 };
@@ -468,9 +485,13 @@ function clickGrillSlot(i, now) {
     dock.add({ menu: '네기마', label: r.quality.good ? '좋음' : '과다', good: r.quality.good });
     showHint('완성품을 선반에 올렸어요');
   } else if (r.flipped) {
-    showHint('뒷면을 굽는 중');
+    showHint('꼬치를 뒤집는 중 · 0.3초 뒤 뒷면 조리가 시작됩니다');
   } else if (!r.ok && r.reason === 'not-ready') {
-    showHint('아직 덜 익었어요');
+    const view = cook.slotViews(now)[i];
+    const remaining = Math.max(1, Math.ceil(
+      COOK_THRESHOLDS_SEC[DONENESS.PERFECT] - view.faceElapsedSec,
+    ));
+    showHint(`${remaining}초 더 굽고 꼬치를 클릭해 ${view.contactFace === 'front' ? '뒤집으세요' : '완성하세요'}`);
   }
   render();
 }
@@ -484,6 +505,12 @@ function updateGrillVisual(now) {
     g.setTime(now / 1000);
     const v = views[slotIndexOf(key)];
     g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
+    const mesh = R.objectMesh[key];
+    if (!mesh) continue;
+    mesh.userData.grillBaseQuaternion ??= mesh.quaternion.clone();
+    mesh.quaternion.copy(mesh.userData.grillBaseQuaternion).multiply(
+      grillFlipQuaternion.setFromAxisAngle(GRILL_FLIP_AXIS, v?.visualRotationRad ?? 0),
+    );
   }
 }
 
@@ -579,14 +606,15 @@ function loop(now) {
 
 // 콘텐츠(손님 유형·영업일 수치)를 로드해 운영 상태 머신을 생성한다. 실패해도 스테이션은 동작한다.
 Promise.all([
-  fetch('/content/customers/types.json').then((r) => r.json()),
-  fetch('/content/campaign/day-d1.json').then((r) => r.json()),
-  fetch('/content/progression/upgrades.json').then((r) => r.json()).catch(() => []),
+  fetch(PRODUCTION_CONTENT_URLS.customerTypes).then((r) => r.json()),
+  fetch(PRODUCTION_CONTENT_URLS.day).then((r) => r.json()),
+  fetch(PRODUCTION_CONTENT_URLS.upgrades).then((r) => r.json()).catch(() => []),
 ])
   .then(([types, day, upgradeData]) => {
+    loadedDay = day;
     baseEconomy = day.economy;
-    upgrades = upgradeData || [];
-    syncSlots(); // 보유 업그레이드 기준 그릴 칸 수
+    // GPL-004의 고정 6칸 계약: 구형 grillSlots 항목은 D1 구매 화면과 소비 경로에서 제외한다.
+    upgrades = (upgradeData || []).filter((item) => item.effect?.kind !== 'grillSlots');
     ops = createCustomerOps({
       seatIds: SEAT_IDS,
       types,
@@ -646,6 +674,25 @@ window.__prodDebug = {
   opsElapse: (sec) => ops && ops.debugElapse(sec),
   acceptOrder: (seatId) => ops && ops.acceptOrder(seatId),
   opsRecords: () => (ops ? ops.records() : []),
+  // production fetch 원본과 runtime 적용값을 함께 노출한다. E2E는 별도 수치 상수 대신 이 계약을 쓴다.
+  contentContract: () => ({
+    urls: { ...PRODUCTION_CONTENT_URLS },
+    day: loadedDay ? {
+      id: loadedDay.id,
+      spawnIntervalSec: loadedDay.spawnIntervalSec,
+      economy: { ...loadedDay.economy },
+    } : null,
+    applied: {
+      spawnIntervalSec: ops ? ops.cfg.spawnIntervalMs / 1000 : null,
+      economy: baseEconomy ? { ...baseEconomy } : null,
+    },
+    upgrades: upgrades.map((item) => ({
+      id: item.id,
+      costGold: item.costGold,
+      reputationReq: item.reputationReq,
+      effect: item.effect ? { ...item.effect } : null,
+    })),
+  }),
   wallet: () => ({ gold: wallet.gold, reputation: wallet.reputation, owned: [...wallet.owned] }),
   setWallet: (gold, reputation) => { wallet.gold = gold; wallet.reputation = reputation; },
   economyBasePrice: () => (currentEconomy() ? currentEconomy().basePrice : null),
@@ -664,11 +711,15 @@ window.__prodDebug = {
   drinkServeLow: () => serveOverflowLow(),
   drinkDiscard: () => discardDrink(),
   grillMaterial: (slot = 0) => grillMats[SLOT_KEYS[slot]] ?? null,
+  grillContract: () => ({
+    slots: D1_GRILL_SLOTS,
+    finishedTray: D1_GRILL_FINISHED_TRAY,
+  }),
   requestScreen: (id) => director.request(id, performance.now()),
   navLeft: () => director.left(performance.now()),
   navRight: () => director.right(performance.now()),
   screenPosOf: (key) => {
-    const m = R.objectMesh[key];
+    const m = R.interactionMesh[key] ?? R.objectMesh[key];
     if (!m || !m.visible) return null;
     const v = m.position.clone().project(R.camera);
     const rect = canvas.getBoundingClientRect();

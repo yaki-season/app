@@ -1,99 +1,363 @@
-// D1 첫 주문 — 2.5D 플레이 진입점. game.html과 같은 조작 모델(스테이션 좌·우/퀵 전환, 화면 오브젝트
-// 레이캐스트 클릭, 실시간 조리)로 단일 손님(츠키오카)을 접수→조리(조립·그릴·드링크)→서빙→반응까지
-// 플레이한다. 손님 화면은 승인 D1 아트(배경·손님·카운터), 조립·그릴·드링크는 더미다.
+// D1 전체 영업 프로덕션 진입점. D1BusinessDayRuntime의 상태를 D1BusinessDayUiPort로만 소비해
+// S0 종료→4주문 영업→마감 drain→숯불→정산 5단계→단일 저장 commit→D2 전환을 연결한다.
+// 조리 모델은 영업 도메인과 독립이며 이 파일이 완성품·위험 공정 intent만 번역한다.
 
 import * as THREE from 'three';
-import { createD1SceneRenderer } from './render/d1SceneRenderer.js';
+import { createProductionRenderer } from './render/productionRenderer.js';
 import { createStationDirector } from './render/stationDirector.js';
 import { createGrillMaterial } from './render/grillMaterial.js';
 import { elapsedSecToUniform } from './render/grillRenderer.js';
-import { createCookStations } from './render/cookStations.js';
+import {
+  COOK_SLOT_NEXT_ACTION,
+  createD1CookStations,
+} from './render/cookStations.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
 import { createPreparedDock } from './render/preparedDock.js';
-import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, CUSTOMER_ART } from './config/d1Layout.js';
+import { createCustomerAdapter } from './render/customerAdapter.js';
+import {
+  SCREENS,
+  SCREEN_IDS,
+  SCREEN_BY_ID,
+  INITIAL_SCREEN,
+  SCREEN_TRANSITION_MS,
+  OBJECTS,
+  SEAT_IDS,
+} from './config/screenLayout.js';
+import { D1_GRILL_SLOT_KEYS, D1_GRILL_SLOTS, D1_GRILL_FINISHED_TRAY } from './config/d1GrillLayout.js';
 import { RECIPE } from './config/recipe.js';
 import { runtimeAssetUrl } from './assets/runtimeAssetResolver.js';
+import {
+  D1_UI_INTENT,
+  canServeD1MenuToSeat,
+} from './application/businessDay/d1BusinessDayUiPort.js';
+import {
+  createD1BusinessDayBrowserSession,
+} from './application/businessDay/d1BusinessDayBrowserSession.js';
+import {
+  D1_BUSINESS_DAY_RELEASE_DEFINITION_URL,
+  loadD1BusinessDayReleaseDefinition,
+} from './application/ports/d1BusinessDayDefinition.js';
 
 const el = (id) => document.getElementById(id);
 const canvas = el('scene');
-const R = createD1SceneRenderer(canvas);
+const R = createProductionRenderer(canvas);
 const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
 
-const cook = createCookStations({ slots: 2 }); // D1은 2칸 그릴로 진행(GPL-004 §18-2)
-const SLOT_KEYS = ['grillSlot0', 'grillSlot1'];
+const cook = createD1CookStations();
+const SLOT_KEYS = D1_GRILL_SLOT_KEYS;
 const grillMats = {};
+const grillStatusLayer = el('grillStatusLayer');
+const customerServePanel = el('customerServePanel');
+const customerServeTargets = el('customerServeTargets');
+const selectedPreparedItem = el('selectedPreparedItem');
+const GRILL_FLIP_AXIS = new THREE.Vector3(0, 1, 0);
+const grillFlipQuaternion = new THREE.Quaternion();
 const lockUntil = {};
 const dock = createPreparedDock({ container: el('dockShelf') });
 const pour = createDrinkPour();
 const LEVER_ZONE = { drinkLeverLower: 'beer', drinkLeverUpper: 'foam' };
+const customers = createCustomerAdapter({ renderer: R, container: el('bubbleLayer') });
 
 // 각 조작 대상이 속한 화면 + 레이캐스트로 클릭 가능한 키(이미지 레이어는 제외).
 const SCREEN_OF = {};
-for (const s of SCREENS) for (const k of s.objects) if (OBJECTS[k].kind !== 'fullframe') SCREEN_OF[k] = s.id;
-const CLICKABLE = new Set(['custServe', 'binChicken', 'binLeek', 'jigSkewer', 'grillWaitTray', 'grillSlot0', 'grillSlot1', 'drinkLeverUpper', 'drinkLeverLower']);
-
-// ── 단일 손님 주문 상태 ───────────────────────────────────────
-const ORDER_ICON = { '생맥주': runtimeAssetUrl('/assets/core/ui/order-icon-draft-beer-r1-b1.png'), '네기마': runtimeAssetUrl('/assets/core/ui/order-icon-negima-r1-b1.png') };
-const order = { '생맥주': { need: 1, done: 0 }, '네기마': { need: 3, done: 0 } };
-let custPhase = 'entering'; // entering → ordered → reacting → complete
-let satisfaction = 0;
-
-const allServed = () => Object.values(order).every((o) => o.done >= o.need);
-function servableSelected() {
-  const sel = dock.selected();
-  if (!sel) return null;
-  const line = order[sel.menu];
-  return line && line.done < line.need ? sel : null;
-}
-function canTakeOrder() { return custPhase === 'entering'; }
-function canServeCustomer() { return (custPhase === 'ordered') && !!servableSelected(); }
-
-function customerArt() {
-  if (custPhase === 'complete') return CUSTOMER_ART.eatingBeer;
-  if (custPhase === 'reacting') return CUSTOMER_ART.eatingNegima;
-  if (custPhase === 'ordered' && order['생맥주'].done > 0) return CUSTOMER_ART.partialBeer;
-  return CUSTOMER_ART.waiting;
-}
-
-const GUIDES = {
-  entering: '손님(츠키오카)을 눌러 주문을 받으세요.',
-  ordered: '드링크·조립·그릴에서 생맥주와 네기마 3개를 만들어 선반에서 골라 손님에게 내세요.',
-  reacting: '츠키오카가 첫 주문을 맛보고 있어요.',
-  complete: 'D1 첫 주문 완료!',
-};
-
-function serveCustomer(now) {
-  const sel = servableSelected();
-  if (!sel) { showHint('선반에서 낼 완성품을 고르세요'); return; }
-  order[sel.menu].done += 1;
-  if (sel.good) satisfaction += sel.menu === '생맥주' ? 20 : 20; else satisfaction += 8;
-  dock.consumeSelected();
-  showHint(`${sel.menu} 제공`);
-  if (allServed()) {
-    custPhase = 'reacting';
-    render();
-    setTimeout(() => { custPhase = 'complete'; finishOrder(); }, 1400);
+for (const s of SCREENS) {
+  for (const k of s.objects) {
+    if (OBJECTS[k].kind !== 'fullframe' && OBJECTS[k].kind !== 'image') SCREEN_OF[k] = s.id;
   }
-  render();
 }
-function finishOrder() {
-  el('resultMessage').textContent = `첫 주문 완료 · 만족도 ${Math.min(100, satisfaction)}점`;
-  el('resultOverlay').hidden = false;
-  render();
+const SEAT_KEYS = SEAT_IDS.map((seatId) => `seatServe:${seatId}`);
+const CLICKABLE = new Set([
+  ...SEAT_KEYS,
+  'binChicken',
+  'binLeek',
+  'jigSkewer',
+  'grillWaitTray',
+  ...SLOT_KEYS,
+  'grillFinishedTray',
+  'drinkLeverUpper',
+  'drinkLeverLower',
+]);
+
+// ── D1BusinessDayUiPort 화면 소비 상태 ───────────────────────
+const ORDER_ICON = { '생맥주': '/assets/core/ui/order-icon-draft-beer-r1-b1.png', '네기마': '/assets/core/ui/order-icon-negima-r1-b1.png' };
+const PHASE_LABEL = {
+  open: '영업 중',
+  'closing-drain': '마감 정리',
+  'charcoal-down': '숯불',
+  settlement: '정산',
+  complete: 'D2 준비',
+};
+const SETTLEMENT_LABEL = {
+  'customers-orders': '1. 방문 손님과 완료 주문',
+  'quality-wait': '2. 조리 품질과 대기',
+  'revenue-tip': '3. 매출과 팁',
+  'reputation-review': '4. 명성과 리뷰',
+  'recipe-goal': '5. 레시피와 다음 목표',
+};
+const EXTRA_ASSET = {
+  office: 'CH-EXTRA-COMMUTER-SERVICE',
+  solo: 'CH-EXTRA-SOLO-SERVICE',
+};
+let businessSession = null;
+let businessPort = null;
+let businessBootError = null;
+let businessIntentSequence = 0;
+let cleanupSeatId = null;
+let reportedRiskCount = 0;
+let businessRenderDue = true;
+let lastBusinessFrameAt = null;
+let finalizing = false;
+
+const nextIntentId = (type) => `d1-screen:${type}:${++businessIntentSequence}`;
+const businessView = () => businessPort?.getViewModel() ?? null;
+
+function dispatchBusiness(type, fields = {}, intentId = nextIntentId(type)) {
+  if (!businessPort) return { ok: false };
+  const result = businessPort.dispatch({ intentId, type, ...fields });
+  businessRenderDue = true;
+  if (!result.ok) showHint(result.error.message);
+  return result;
 }
-function takeOrder() {
-  custPhase = 'ordered';
-  showHint('주문을 받았어요: 생맥주 1 · 네기마 3');
-  render();
+
+function seatView(seatId) {
+  return businessView()?.seats.find((seat) => seat.seatId === seatId) ?? null;
+}
+
+function seatCanReceiveSelected(seat, selected = dock.selected()) {
+  return Boolean(selected && canServeD1MenuToSeat(seat, selected.menu));
+}
+
+function serveSeat(seatId) {
+  const selected = dock.selected();
+  if (!selected) {
+    showHint('선반에서 낼 완성품을 고르세요');
+    return;
+  }
+  const seat = seatView(seatId);
+  if (!seatCanReceiveSelected(seat, selected)) {
+    showHint(`선택한 ${selected.menu} 주문이 남은 손님을 고르세요`);
+    return;
+  }
+  const result = dispatchBusiness(D1_UI_INTENT.SERVE_ITEM, {
+    seatId,
+    menu: selected.menu,
+    quality: selected.label,
+  });
+  if (!result.ok) return;
+  if (result.applied) dock.consumeSelected();
+  showHint(result.completedOrder ? '최종 제공 완료' : `부분 제공 · 남은 ${result.remaining}개`);
+}
+
+function activateSeat(seatId) {
+  const seat = seatView(seatId);
+  if (!seat) return;
+  if (seat.canOrder) {
+    const result = dispatchBusiness(D1_UI_INTENT.ACCEPT_ORDER, { seatId });
+    if (result.ok) showHint(`${seat.customerId === 'REGULAR_TSUKIOKA' ? '츠키오카' : '엑스트라'} 주문 접수`);
+  } else if (seat.canServe) {
+    serveSeat(seatId);
+  } else if (seat.cleanupNeeded) {
+    showHint('좌석을 3초 동안 눌러 정리하세요');
+  }
+}
+
+const FACE_COPY = Object.freeze({
+  front: Object.freeze({ label: '앞면', symbol: '○', className: 'front' }),
+  back: Object.freeze({ label: '뒷면', symbol: '◆', className: 'back' }),
+});
+const grillStatusEls = SLOT_KEYS.map((_, index) => {
+  const card = document.createElement('article');
+  card.className = 'grill-slot-status';
+  card.dataset.testid = `grill-status-${index}`;
+  card.hidden = true;
+  card.innerHTML = `
+    <div class="grill-face">
+      <span class="grill-face-icon front" aria-hidden="true"><span>○</span></span>
+      <span class="grill-face-text"></span>
+    </div>
+    <div class="grill-times">
+      <span class="grill-front-time"></span>
+      <span class="grill-back-time"></span>
+    </div>
+    <p class="grill-preserved"></p>
+    <p class="grill-action"></p>`;
+  grillStatusLayer.appendChild(card);
+  return {
+    card,
+    icon: card.querySelector('.grill-face-icon'),
+    iconGlyph: card.querySelector('.grill-face-icon > span'),
+    face: card.querySelector('.grill-face-text'),
+    front: card.querySelector('.grill-front-time'),
+    back: card.querySelector('.grill-back-time'),
+    preserved: card.querySelector('.grill-preserved'),
+    action: card.querySelector('.grill-action'),
+  };
+});
+
+function elapsedLabel(value) {
+  return Number(value ?? 0).toFixed(1);
+}
+
+const GRILL_NEXT_ACTION_COPY = Object.freeze({
+  [COOK_SLOT_NEXT_ACTION.NONE]: '현재 행동 · 대기',
+  [COOK_SLOT_NEXT_ACTION.WAIT]: '현재 행동 · 회전/입력 잠금 대기',
+  [COOK_SLOT_NEXT_ACTION.FLIP]: '현재 행동 · 뒤집기',
+  [COOK_SLOT_NEXT_ACTION.RETRIEVE]: '현재 행동 · 회수',
+});
+
+function grillNextActionCopy(slot) {
+  return GRILL_NEXT_ACTION_COPY[slot.nextAction]
+    ?? GRILL_NEXT_ACTION_COPY[COOK_SLOT_NEXT_ACTION.WAIT];
+}
+
+function grillStatusCopy(slot) {
+  const front = elapsedLabel(slot.frontElapsedSec);
+  const back = elapsedLabel(slot.backElapsedSec);
+  if (slot.status === 'staged') {
+    return {
+      face: '접촉면 없음',
+      icon: { symbol: 'Ⅱ', className: 'airborne' },
+      preserved: '앞면 0.0초 · 뒷면 0.0초 보존',
+      action: grillNextActionCopy(slot),
+    };
+  }
+  if (slot.flipping) {
+    return {
+      face: '공중 회전',
+      icon: { symbol: '↻', className: 'airborne' },
+      preserved: `앞면 ${front}초 · 뒷면 ${back}초 · 양면 정지`,
+      action: grillNextActionCopy(slot),
+    };
+  }
+  const contact = FACE_COPY[slot.contactFace] ?? {
+    label: '접촉면 없음',
+    symbol: 'Ⅱ',
+    className: 'airborne',
+  };
+  const preservedFace = slot.contactFace === 'back' ? '앞면' : '뒷면';
+  const preservedElapsed = slot.contactFace === 'back' ? front : back;
+  const cookingFace = slot.contactFace === 'back' ? '뒷면' : '앞면';
+  return {
+    face: `현재 접촉면 · ${contact.label}`,
+    icon: contact,
+    preserved: `${preservedFace} ${preservedElapsed}초 보존 · ${cookingFace} 조리 중`,
+    action: grillNextActionCopy(slot),
+  };
+}
+
+function updateGrillStatus(now) {
+  const onGrill = director.activeScreenId() === 'SCR-SVC-GRILL';
+  grillStatusLayer.hidden = !onGrill;
+  if (!onGrill) return;
+  const views = cook.slotViews(now);
+  views.forEach((slot, index) => {
+    const ui = grillStatusEls[index];
+    const active = slot.status !== 'empty';
+    ui.card.hidden = !active;
+    if (!active) return;
+    const copy = grillStatusCopy(slot);
+    ui.card.dataset.contactFace = slot.contactFace ?? 'none';
+    ui.card.dataset.flipping = String(slot.flipping);
+    ui.card.dataset.nextAction = slot.nextAction;
+    ui.card.dataset.frontElapsedSec = elapsedLabel(slot.frontElapsedSec);
+    ui.card.dataset.backElapsedSec = elapsedLabel(slot.backElapsedSec);
+    ui.icon.className = `grill-face-icon ${copy.icon.className}`;
+    ui.iconGlyph.textContent = copy.icon.symbol;
+    ui.face.textContent = copy.face;
+    ui.front.textContent = `앞면 ${elapsedLabel(slot.frontElapsedSec)}초`;
+    ui.back.textContent = `뒷면 ${elapsedLabel(slot.backElapsedSec)}초`;
+    ui.preserved.textContent = copy.preserved;
+    ui.action.textContent = copy.action;
+    ui.card.setAttribute(
+      'aria-label',
+      `${index + 1}번 꼬치. ${copy.face}. ${ui.front.textContent}. ${ui.back.textContent}. ${copy.preserved}. ${copy.action}.`,
+    );
+  });
+}
+
+const serveTargetButtons = new Map(SEAT_IDS.map((seatId, index) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'customer-serve-target';
+  button.dataset.testid = `serve-target-${seatId}`;
+  button.dataset.seatId = seatId;
+  button.addEventListener('click', () => {
+    activateSeat(seatId);
+    render();
+  });
+  customerServeTargets.appendChild(button);
+  return [seatId, { button, index }];
+}));
+
+function renderPreparedSelection() {
+  const selected = dock.selected();
+  selectedPreparedItem.textContent = selected
+    ? `선택 완성품 · ${selected.menu} · ${selected.label}`
+    : '완성품을 먼저 선택하세요';
+  for (const card of el('dockShelf').querySelectorAll('.dock-card')) {
+    const selectedCard = card.dataset.testid === `dock-item-${dock.selectedId()}`;
+    card.setAttribute('aria-pressed', String(selectedCard));
+    const menu = card.querySelector('.dock-menu')?.textContent ?? '완성품';
+    const quality = card.querySelector('.dock-quality')?.textContent ?? '';
+    card.setAttribute('aria-label', `${menu} ${quality} 완성품${selectedCard ? ' · 선택됨' : ''}`);
+  }
+}
+
+function renderServeTargets() {
+  const onCustomers = director.activeScreenId() === 'SCR-SVC-CUSTOMERS';
+  const view = businessView();
+  customerServePanel.hidden = !onCustomers || !view?.ready;
+  if (customerServePanel.hidden) return;
+  renderPreparedSelection();
+  const selected = dock.selected();
+  for (const seatId of SEAT_IDS) {
+    const seat = view.seats.find((item) => item.seatId === seatId);
+    const { button, index } = serveTargetButtons.get(seatId);
+    const eligible = seatCanReceiveSelected(seat, selected);
+    const canActivate = Boolean(seat?.canOrder || eligible);
+    const seatLabel = `${index + 1}번 좌석`;
+    const customerLabel = seat?.customerId === 'REGULAR_TSUKIOKA'
+      ? '츠키오카'
+      : seat?.occupied ? '이름 없는 손님' : '빈 자리';
+    const remaining = seat?.remainingOrderLabel || '남은 주문 없음';
+    button.disabled = !canActivate;
+    button.dataset.eligible = String(eligible);
+    button.dataset.remainingMenuIds = (seat?.remainingItems ?? [])
+      .map((item) => item.menuId)
+      .join(',');
+    button.innerHTML = `<strong>${seatLabel} · ${customerLabel}</strong><span>${remaining}</span>`;
+    button.setAttribute(
+      'aria-label',
+      `${seatLabel} ${customerLabel}. ${remaining}.${seat?.canOrder ? ' 주문 접수 가능.' : ''}${eligible ? ` 선택한 ${selected.menu} 제공 가능.` : ''}`,
+    );
+  }
+}
+
+const dockObserver = new MutationObserver(() => {
+  renderPreparedSelection();
+  renderServeTargets();
+  syncCustomers();
+});
+dockObserver.observe(el('dockShelf'), { childList: true, subtree: true });
+
+function syncRiskCount(now = performance.now()) {
+  if (!businessPort) return;
+  // 뒤집기 공중·그릴 밖에서는 접촉면 시간은 멈추지만, 제작물이 그릴 공정에 남아 있는 동안은
+  // 마감 숯불을 낮출 수 없도록 위험 공정 1건을 유지한다.
+  const riskCount = cook.slotViews(now).some((slot) => slot.status !== 'empty') ? 1 : 0;
+  if (riskCount === reportedRiskCount) return;
+  const result = dispatchBusiness(D1_UI_INTENT.SET_RISK_COUNT, { count: riskCount });
+  if (result.ok) reportedRiskCount = riskCount;
 }
 
 // ── 더미 오브젝트 이름표 ──────────────────────────────────────
 const OBJECT_LABELS = {
-  custServe: '손님', workbench: '조립대', binChicken: '닭', binLeek: '파', jigSkewer: '완성 꼬치',
-  grillBody: '숯불 그릴', grillWaitTray: '대기', drinkTower: '맥주 타워', glassRack: '잔 랙',
+  workbench: '조립대', binChicken: '닭', binLeek: '파', jigSkewer: '완성 꼬치',
+  grillBody: '숯불 그릴', grillWaitTray: '대기', grillFinishedTray: '완료 트레이 (개발)',
+  drinkTower: '맥주 타워', glassRack: '잔 랙',
   drinkLeverUpper: '레버·거품', drinkLeverLower: '레버·맥주',
 };
-const LABEL_UP = { workbench: 74, grillBody: 74, drinkTower: 46, glassRack: 24, custServe: 60 };
+const LABEL_UP = { workbench: 74, grillBody: 74, drinkTower: 46, glassRack: 24 };
 const labelEls = {};
 for (const [key, text] of Object.entries(OBJECT_LABELS)) {
   const span = document.createElement('span');
@@ -168,15 +432,59 @@ function shouldShow(key) {
   if (SCREEN_OF[key] !== active) return false;
   const si = slotIndexOf(key);
   if (si >= 0) return si < cook.slotCount() && cook.slotViews(performance.now())[si].status !== 'empty';
-  if (key === 'custServe') return canTakeOrder() || canServeCustomer();
   return true;
+}
+
+const defaultSeatMaps = Object.fromEntries(
+  SEAT_IDS.map((seatId) => [seatId, R.seatActorMesh[seatId]?.material.map ?? null]),
+);
+
+function extraKind(customerId) {
+  if (customerId?.startsWith('D1-OFFICE')) return 'office';
+  if (customerId?.startsWith('D1-SOLO')) return 'solo';
+  return null;
+}
+
+function syncCustomers() {
+  const view = businessView();
+  const seats = view?.seats ?? [];
+  const onCustomers = director.activeScreenId() === 'SCR-SVC-CUSTOMERS';
+  for (const seatId of SEAT_IDS) {
+    const seat = seats.find((item) => item.seatId === seatId);
+    const target = R.objectMesh[`seatServe:${seatId}`];
+    if (target) {
+      target.visible = onCustomers && !!seat
+        && (seat.canOrder || seatCanReceiveSelected(seat) || seat.cleanupNeeded);
+    }
+    const actor = R.seatActorMesh[seatId];
+    const kind = extraKind(seat?.customerId);
+    if (actor) {
+      actor.material.map = kind ? null : defaultSeatMaps[seatId];
+      actor.material.needsUpdate = true;
+    }
+    const bubble = document.querySelector(`[data-testid="bubble-${seatId}"]`);
+    if (bubble) {
+      bubble.dataset.serveEligible = String(seatCanReceiveSelected(seat));
+      if (kind) {
+        bubble.dataset.placeholder = 'development';
+        bubble.dataset.componentId = kind === 'office'
+          ? 'customers.actor.commuter'
+          : 'customers.actor.solo';
+        bubble.dataset.requiredAssetId = EXTRA_ASSET[kind];
+      } else {
+        delete bubble.dataset.placeholder;
+        delete bubble.dataset.componentId;
+        delete bubble.dataset.requiredAssetId;
+      }
+    }
+  }
+  customers.apply(seats, { actorsVisible: onCustomers });
 }
 
 function render() {
   const now = performance.now();
   for (const key of Object.keys(SCREEN_OF)) {
-    const mesh = R.objectMesh[key];
-    if (mesh) mesh.visible = shouldShow(key);
+    R.setObjectVisible(key, shouldShow(key));
   }
   // 그릴 칸 익힘 색 폴백(셰이더 로드 전)
   const views = cook.slotViews(now);
@@ -188,17 +496,17 @@ function render() {
       mesh.material.color.setHex(c);
     }
   }
-  R.setCustomerTexture(customerArt());
 
   el('svcStation').textContent = SCREEN_BY_ID[director.activeScreenId()].name;
   renderReceipts();
   renderOrderHud();
-  const g = el('guide');
-  g.textContent = GUIDES[custPhase] || '';
-  g.hidden = !g.textContent;
+  renderBusiness();
+  syncCustomers();
+  renderServeTargets();
   for (const btn of document.querySelectorAll('.quick-nav button')) btn.classList.toggle('active', btn.dataset.screen === director.activeScreenId());
   el('navLeft').disabled = !director.canLeft();
   el('navRight').disabled = !director.canRight();
+  businessRenderDue = false;
 }
 
 function renderReceipts() {
@@ -222,10 +530,89 @@ function renderReceipts() {
 }
 function renderOrderHud() {
   const hud = el('orderHud');
-  if (custPhase === 'entering') { hud.innerHTML = ''; return; }
-  hud.innerHTML = Object.entries(order).map(([menu, o]) =>
-    `<span class="oi ${o.done >= o.need ? 'done' : ''}" data-testid="order-${menu}"><img src="${ORDER_ICON[menu]}" alt="">${menu} ${o.done}/${o.need}</span>`
-  ).join('');
+  const orders = businessView()?.orders ?? [];
+  hud.innerHTML = orders
+    .filter((order) => !['completed', 'failed', 'abandoned'].includes(order.status))
+    .flatMap((order) => order.lines.map((line) => {
+      const menu = line.menuLabel;
+      return `<span class="oi ${line.remaining === 0 ? 'done' : ''}" data-testid="order-${order.orderId}-${line.menuId}">`
+        + `<img src="${ORDER_ICON[menu]}" alt="">${menu} ${line.served}/${line.quantity}</span>`;
+    }))
+    .join('');
+}
+
+function guideText(view) {
+  if (businessBootError) return `D1 시작 실패 · ${businessBootError.message ?? businessBootError.code}`;
+  if (!view) return 'S0 저장을 확인하고 D1 영업을 준비하는 중입니다.';
+  if (view.phase === 'closing-drain') {
+    return `마감했습니다. 남은 주문 ${view.closing.unfinishedOrderCount}건과 좌석 정리 ${view.closing.cleanupSeatCount}건을 끝내세요.`;
+  }
+  if (view.phase === 'charcoal-down') return '모든 주문을 drain했습니다. 남은 숯불을 낮추세요.';
+  if (view.phase === 'settlement') return '영업 결과를 다섯 단계로 확인한 뒤 한 번만 저장합니다.';
+  if (view.phase === 'complete') return 'D1 완료 저장 성공 · D2 영업 전 상태로 전환했습니다.';
+  const cleanup = view.seats.find((seat) => seat.cleanupNeeded);
+  if (cleanup) return `${cleanup.seatId} 좌석을 3초 동안 눌러 정리하세요.`;
+  const ordering = view.seats.find((seat) => seat.canOrder);
+  if (ordering) return `${ordering.customerId === 'REGULAR_TSUKIOKA' ? '츠키오카' : '엑스트라'} 좌석을 눌러 주문을 받으세요.`;
+  const waiting = view.seats.find((seat) => seat.canServe);
+  const selected = dock.selected();
+  if (waiting && selected) {
+    const eligibleCount = view.seats.filter((seat) => seatCanReceiveSelected(seat, selected)).length;
+    return `선택한 ${selected.menu} · 제공 가능한 손님 ${eligibleCount}명을 직접 고르세요.`;
+  }
+  if (waiting) return '선반에서 완성품을 고른 뒤 일치하는 남은 주문이 있는 손님을 선택하세요.';
+  return '다음 손님을 기다리며 조립·그릴·드링크를 준비할 수 있습니다.';
+}
+
+function renderBusiness() {
+  const view = businessView();
+  el('businessClock').textContent = view?.clock?.label ?? '--:--';
+  el('businessPhase').textContent = PHASE_LABEL[view?.phase] ?? (businessBootError ? '오류' : '준비');
+  const guide = el('guide');
+  guide.textContent = guideText(view);
+  guide.hidden = !guide.textContent;
+
+  const panel = el('postBusinessPanel');
+  const action = el('postBusinessAction');
+  const steps = el('settlementSteps');
+  const showPost = view?.phase === 'charcoal-down' || view?.phase === 'settlement';
+  panel.hidden = !showPost;
+  steps.innerHTML = '';
+  if (view?.phase === 'charcoal-down') {
+    panel.dataset.componentId = 'closing.charcoal';
+    panel.dataset.requiredAssetId = 'ST-CHARCOAL-CORE';
+    el('postBusinessTitle').textContent = '마감 · 숯불 낮추기';
+    el('postBusinessSummary').textContent = `남은 준비품 ${dock.count()}개는 폐기 수량으로 정산됩니다.`;
+    action.textContent = '숯불 낮추기';
+    action.disabled = !view.closing.canLowerCharcoal;
+  } else if (view?.phase === 'settlement') {
+    panel.dataset.componentId = 'settlement.ledger.economy';
+    panel.dataset.requiredAssetId = 'UI-ECONOMY-ICONS';
+    const summary = view.settlement.summary;
+    el('postBusinessTitle').textContent = 'D1 정산 · 5단계';
+    el('postBusinessSummary').textContent = summary
+      ? `방문 ${summary.customers.visited} · 완료 주문 ${summary.orders.completed}\n매출 ${summary.economy.revenue} + 팁 ${summary.economy.tip} = ${summary.economy.total}`
+      : '';
+    const revealed = new Set(view.settlement.revealedSteps);
+    for (const stepId of view.settlement.steps) {
+      const row = document.createElement('li');
+      row.dataset.testid = `settlement-step-${stepId}`;
+      row.classList.toggle('revealed', revealed.has(stepId));
+      row.textContent = revealed.has(stepId) ? `${SETTLEMENT_LABEL[stepId]} · 확인` : SETTLEMENT_LABEL[stepId];
+      steps.appendChild(row);
+    }
+    action.textContent = view.settlement.ready
+      ? (finalizing ? '저장 중…' : 'D1 보상 저장 · D2 전환')
+      : `다음 결과 확인 (${view.settlement.revealedSteps.length + 1}/5)`;
+    action.disabled = finalizing;
+  }
+
+  const completed = view?.phase === 'complete' || businessSession?.completed;
+  el('resultOverlay').hidden = !completed;
+  if (completed) {
+    const campaign = businessSession?.bridge?.getState?.();
+    el('resultMessage').textContent = `D1 완료 · 보상 ${campaign?.economy?.balance ?? 44} · 명성 ${campaign?.economy?.reputation ?? 12} · D2 저장 완료`;
+  }
 }
 
 function showHint(text) {
@@ -243,7 +630,9 @@ function hitTest(e) {
   ptr.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   ptr.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(ptr, R.camera);
-  const targets = Object.entries(R.objectMesh).filter(([k, m]) => m.visible && CLICKABLE.has(k)).map(([, m]) => m);
+  const targets = [...CLICKABLE]
+    .map((key) => R.interactionMesh[key] ?? R.objectMesh[key])
+    .filter((mesh) => mesh?.visible);
   const hit = raycaster.intersectObjects(targets, false)[0];
   return hit ? hit.object.userData.objectKey : null;
 }
@@ -253,11 +642,31 @@ canvas.addEventListener('pointerdown', (e) => {
   if (!key) return;
   const now = performance.now();
   if (LEVER_ZONE[key]) { pour.press(LEVER_ZONE[key], now); return; }
+  if (key.startsWith('seatServe:')) {
+    const seatId = key.slice('seatServe:'.length);
+    const seat = seatView(seatId);
+    if (seat?.cleanupNeeded) {
+      const result = dispatchBusiness(D1_UI_INTENT.BEGIN_CLEANUP, { seatId });
+      if (result.ok) cleanupSeatId = seatId;
+      render();
+      return;
+    }
+  }
   if ((lockUntil[key] || 0) > now) return;
   lockUntil[key] = now + 200;
   handle(key, now);
 });
-function releasePointers() { pour.release(performance.now()); }
+function releasePointers() {
+  pour.release(performance.now());
+  if (!cleanupSeatId) return;
+  const seatId = cleanupSeatId;
+  cleanupSeatId = null;
+  if (seatView(seatId)?.cleanupNeeded) {
+    dispatchBusiness(D1_UI_INTENT.CANCEL_CLEANUP, { seatId });
+    showHint('좌석 정리를 멈췄어요');
+    render();
+  }
+}
 window.addEventListener('pointerup', releasePointers);
 window.addEventListener('pointercancel', releasePointers);
 
@@ -277,13 +686,19 @@ function handle(key, now) {
     case 'grillWaitTray': {
       const r = cook.placeToGrill(now);
       if (!r.ok) showHint(r.reason === 'no-waiting' ? '대기 중인 꼬치가 없어요' : '빈 그릴 칸이 없어요');
+      else if (r.staged) showHint(`첫 3개 동시 시작 · 꼬치 ${r.remainingForBatch}개를 더 올리세요`);
+      else if (r.batchStarted) showHint('3개 동시 조리 시작 · 각 꼬치에서 앞면 누적과 뒤집기를 확인하세요');
+      else showHint('앞면 조리 시작 · 꼬치를 눌러 뒤집을 수 있어요');
+      syncRiskCount(now);
       break;
     }
-    case 'custServe':
-      if (canTakeOrder()) takeOrder();
-      else if (canServeCustomer()) serveCustomer(now);
+    case 'grillFinishedTray':
+      showHint(dock.items().some((item) => item.menu === '네기마')
+        ? '완료 트레이 · 완성품은 아래 선반에서 선택하세요'
+        : '완료된 네기마가 아직 없어요');
       break;
     default:
+      if (key.startsWith('seatServe:')) activateSeat(key.slice('seatServe:'.length));
       break;
   }
   render();
@@ -291,9 +706,14 @@ function handle(key, now) {
 
 function clickGrillSlot(i, now) {
   const r = cook.clickSlot(i, now);
-  if (r.retrieved) { dock.add({ menu: '네기마', label: r.quality.good ? '좋음' : '과다', good: r.quality.good }); showHint('완성품을 선반에 올렸어요'); }
-  else if (r.flipped) showHint('뒷면을 굽는 중');
-  else if (!r.ok && r.reason === 'not-ready') showHint('아직 덜 익었어요');
+  if (r.retrieved) { dock.add({ menu: '네기마', label: r.quality.grade, good: r.quality.good }); showHint('완성품을 선반에 올렸어요'); }
+  else if (r.flipped) showHint('꼬치를 뒤집는 중 · 0.3초 동안 양면 시간이 멈춥니다');
+  else if (!r.ok && r.reason === 'not-ready') {
+    const view = cook.slotViews(now)[i];
+    const face = view.contactFace === 'front' ? '앞면' : '뒷면';
+    showHint(`${face} ${view.faceElapsedSec.toFixed(1)}초 누적 · 반대 면 시간은 보존됩니다`);
+  }
+  syncRiskCount(now);
   render();
 }
 
@@ -305,6 +725,12 @@ function updateGrillVisual(now) {
     g.setTime(now / 1000);
     const v = views[slotIndexOf(key)];
     g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
+    const mesh = R.objectMesh[key];
+    if (!mesh) continue;
+    mesh.userData.grillBaseQuaternion ??= mesh.quaternion.clone();
+    mesh.quaternion.copy(mesh.userData.grillBaseQuaternion).multiply(
+      grillFlipQuaternion.setFromAxisAngle(GRILL_FLIP_AXIS, v?.visualRotationRad ?? 0),
+    );
   }
 }
 for (const key of SLOT_KEYS) {
@@ -341,59 +767,250 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') director.left(performance.now());
   else if (e.key === 'ArrowRight') director.right(performance.now());
 });
-el('restartButton').addEventListener('click', () => {
-  cook.reset(); dock.clear(); pour.reset();
-  order['생맥주'].done = 0; order['네기마'].done = 0; satisfaction = 0; custPhase = 'entering';
-  el('resultOverlay').hidden = true;
+
+async function finalizeBusinessDay() {
+  if (!businessPort || finalizing) return null;
+  finalizing = true;
+  render();
+  const result = await businessPort.finalize();
+  finalizing = false;
+  if (!result.ok) {
+    showHint(result.error.message);
+  } else {
+    showHint(result.duplicate ? '이미 저장된 D1 보상입니다.' : 'D1 저장 완료 · D2로 전환했습니다.');
+  }
+  render();
+  return result;
+}
+
+async function handlePostBusinessAction() {
+  const view = businessView();
+  if (view?.phase === 'charcoal-down') {
+    const result = dispatchBusiness(D1_UI_INTENT.LOWER_CHARCOAL, {
+      disposedPreparedItems: dock.count(),
+    });
+    if (result.ok) {
+      dock.clear();
+      showHint('숯불을 낮췄습니다. 정산을 시작합니다.');
+    }
+    render();
+    return;
+  }
+  if (view?.phase !== 'settlement') return;
+  if (!view.settlement.ready) {
+    dispatchBusiness(D1_UI_INTENT.REVEAL_SETTLEMENT_STEP);
+    render();
+    return;
+  }
+  await finalizeBusinessDay();
+}
+el('postBusinessAction').addEventListener('click', handlePostBusinessAction);
+
+async function bootBusinessDay() {
+  try {
+    const consumed = await loadD1BusinessDayReleaseDefinition({
+      url: D1_BUSINESS_DAY_RELEASE_DEFINITION_URL,
+    });
+    if (!consumed.ok) {
+      businessBootError = consumed.error;
+      businessRenderDue = true;
+      render();
+      return;
+    }
+    const resetDevelopment = new URLSearchParams(window.location.search).get('reset') === '1';
+    businessSession = await createD1BusinessDayBrowserSession({
+      definition: consumed.definition,
+      browserStorage: window.localStorage,
+      resetDevelopment,
+    });
+    if (resetDevelopment) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    if (!businessSession.ok) {
+      businessBootError = businessSession.error;
+    } else {
+      businessPort = businessSession.port;
+      reportedRiskCount = businessView()?.limits.riskProcessCount ?? 0;
+      lastBusinessFrameAt = performance.now();
+    }
+  } catch (error) {
+    businessBootError = error;
+  }
+  businessRenderDue = true;
+  render();
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!businessPort) return;
+  if (document.hidden) {
+    dispatchBusiness(D1_UI_INTENT.PAUSE);
+  } else {
+    dispatchBusiness(D1_UI_INTENT.RESUME);
+    lastBusinessFrameAt = performance.now();
+  }
   render();
 });
 
 // ── 루프 ─────────────────────────────────────────────────────
 let lastActive = director.activeScreenId();
 let lastWaiting = -1;
+let businessDeltaMs = 0;
 function loop(now) {
   const discarded = cook.tickBurn(now);
-  if (discarded.length) { showHint('탄 꼬치를 폐기했어요'); render(); }
+  if (discarded.length) {
+    showHint('양면이 탄 꼬치를 폐기했어요');
+    syncRiskCount(now);
+    render();
+  }
   director.tick(now);
   const active = director.activeScreenId();
   if (active !== lastActive) { R.goToScreen(active, now, SCREEN_TRANSITION_MS); lastActive = active; render(); }
   if (cook.waitingCount() !== lastWaiting) { lastWaiting = cook.waitingCount(); render(); }
+  if (businessPort && lastBusinessFrameAt !== null) {
+    businessDeltaMs += Math.max(0, Math.min(1_000, now - lastBusinessFrameAt));
+    if (businessDeltaMs >= 100) {
+      businessPort.advance(businessDeltaMs);
+      businessDeltaMs = 0;
+      businessRenderDue = true;
+    }
+  }
+  lastBusinessFrameAt = now;
   updateGrillVisual(now);
+  updateGrillStatus(now);
   pour.tick(now);
   updateDrinkPanel(active);
   updateLabels();
+  customers.tick(active);
+  if (businessRenderDue) render();
   R.renderFrame(now);
   requestAnimationFrame(loop);
 }
 R.goToScreen(INITIAL_SCREEN, 0, 0);
 render();
 requestAnimationFrame(loop);
+bootBusinessDay();
 
 // ── 개발·테스트 훅 ───────────────────────────────────────────
+R.texturesReady = R.texturesReady ?? (() => true);
+R.textureErrors = R.textureErrors ?? (() => 0);
+function legacyFirstOrder() {
+  const order = businessView()?.orders.find((item) => item.orderId === 'D1-ORDER-001');
+  return {
+    생맥주: {
+      need: order?.lines.find((line) => line.menuId === 'beer')?.quantity ?? 1,
+      done: order?.lines.find((line) => line.menuId === 'beer')?.served ?? 0,
+    },
+    네기마: {
+      need: order?.lines.find((line) => line.menuId === 'negima')?.quantity ?? 3,
+      done: order?.lines.find((line) => line.menuId === 'negima')?.served ?? 0,
+    },
+  };
+}
+function legacyCustomerPhase() {
+  const view = businessView();
+  const order = view?.orders.find((item) => item.orderId === 'D1-ORDER-001');
+  const seat = view?.seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');
+  if (!order || order.status === 'unaccepted') return 'entering';
+  if (order.status === 'completed' && !seat) return 'complete';
+  if (order.status === 'completed') return 'reacting';
+  return 'ordered';
+}
 window.__d1GameDebug = {
   activeScreen: () => director.activeScreenId(),
   isTransitioning: () => director.isTransitioning(),
   controlsLocked: () => director.controlsLocked(),
   requestScreen: (id) => director.request(id, performance.now()),
-  custPhase: () => custPhase,
-  order: () => JSON.parse(JSON.stringify(order)),
-  customerArt: () => customerArt(),
+  businessReady: () => businessSession !== null || businessBootError !== null,
+  businessSession: () => ({
+    ok: businessSession?.ok ?? false,
+    completed: businessSession?.completed ?? false,
+    resumed: businessSession?.resumed ?? false,
+    startedFromS0: businessSession?.startedFromS0 ?? false,
+    error: businessBootError,
+  }),
+  businessView: () => businessView(),
+  businessAdvance: (deltaMs) => {
+    const result = businessPort?.advance(deltaMs) ?? { ok: false };
+    businessRenderDue = true;
+    render();
+    return result;
+  },
+  businessAdvanceTo: (elapsedMs) => {
+    const current = businessView()?.clock.elapsedMs ?? 0;
+    const result = businessPort?.advance(Math.max(0, elapsedMs - current)) ?? { ok: false };
+    businessRenderDue = true;
+    render();
+    return result;
+  },
+  businessDispatch: (intent) => {
+    const result = businessPort?.dispatch(intent) ?? { ok: false };
+    businessRenderDue = true;
+    render();
+    return result;
+  },
+  businessClickSeat: (seatId) => { activateSeat(seatId); render(); },
+  businessBeginCleanup: (seatId) => {
+    const result = dispatchBusiness(D1_UI_INTENT.BEGIN_CLEANUP, { seatId });
+    if (result.ok) cleanupSeatId = seatId;
+    render();
+    return result;
+  },
+  businessPostAction: () => handlePostBusinessAction(),
+  businessFinalize: () => businessPort?.finalize(),
+  campaignState: () => businessSession?.bridge?.getState?.() ?? null,
+  custPhase: () => legacyCustomerPhase(),
+  order: () => legacyFirstOrder(),
+  customerArt: () => legacyFirstOrder().생맥주.done > 0 ? 'partial-beer' : 'waiting',
   texturesReady: () => R.texturesReady(),
   dockItems: () => dock.items(),
   dockSelectedId: () => dock.selectedId(),
   dockAdd: (item) => dock.add(item),
   dockSelect: (id) => dock.select(id),
   cookFillAssembly: () => cook.debugFillAssembly(),
+  cookAssemblyIndex: () => cook.assemblyIndex(),
   cookWaiting: () => cook.waitingCount(),
   cookSlots: () => cook.slotViews(performance.now()),
-  cookPlace: () => cook.placeToGrill(performance.now()),
+  grillStatusSnapshot: () => grillStatusEls.map(({ card }) => ({
+    hidden: card.hidden,
+    contactFace: card.dataset.contactFace,
+    flipping: card.dataset.flipping,
+    nextAction: card.dataset.nextAction,
+    frontElapsedSec: card.dataset.frontElapsedSec,
+    backElapsedSec: card.dataset.backElapsedSec,
+    text: card.textContent.replace(/\s+/g, ' ').trim(),
+    ariaLabel: card.getAttribute('aria-label'),
+    rect: card.getBoundingClientRect().toJSON(),
+  })),
+  serveTargetSnapshot: () => [...serveTargetButtons.entries()].map(([seatId, { button }]) => ({
+    seatId,
+    disabled: button.disabled,
+    eligible: button.dataset.eligible,
+    remainingMenuIds: button.dataset.remainingMenuIds,
+    text: button.textContent.replace(/\s+/g, ' ').trim(),
+    ariaLabel: button.getAttribute('aria-label'),
+  })),
+  cookPlace: () => {
+    const now = performance.now();
+    const result = cook.placeToGrill(now);
+    syncRiskCount(now);
+    render();
+    return result;
+  },
   cookClickSlot: (i) => clickGrillSlot(i, performance.now()),
   cookElapse: (sec) => cook.debugElapse(sec),
-  clickCustomer: () => handle('custServe', performance.now()),
+  grillContract: () => ({
+    slots: D1_GRILL_SLOTS,
+    finishedTray: D1_GRILL_FINISHED_TRAY,
+  }),
+  clickCustomer: () => {
+    const seat = businessView()?.seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');
+    if (seat) activateSeat(seat.seatId);
+    render();
+  },
   pourExact: (beerSec, foamSec) => { pour.reset(); pour.press('beer', 0); pour.release(beerSec * 1000); pour.press('foam', beerSec * 1000); pour.release((beerSec + foamSec) * 1000); return pour.state(); },
   drinkFinish: () => finishDrink(),
   screenPosOf: (key) => {
-    const m = R.objectMesh[key];
+    const m = R.interactionMesh[key] ?? R.objectMesh[key];
     if (!m || !m.visible) return null;
     const v = m.position.clone().project(R.camera);
     const rect = canvas.getBoundingClientRect();

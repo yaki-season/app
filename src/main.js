@@ -526,7 +526,12 @@ window.__sceneDebug = {
   renderer: R,
   // 튜너용: 익힘 재질과 미리보기 오버라이드 접근
   grillMaterial: () => grill,
-  setDonenessOverride: (v) => { donenessOverride = v; },
+  setDonenessOverride: (v) => {
+    donenessOverride = v;
+    // 튜너 입력은 프레임 루프가 지연돼도 즉시 보여야 한다. 특히 0은 유효한 override이므로
+    // 다음 loop까지 이전 단계(예: 탄 상태 1)가 남지 않게 uniform에도 바로 반영한다.
+    if (grill && v != null) grill.setDoneness(v);
+  },
   showGrillSkewer: (show) => { if (hotspots['grill-skewer']) hotspots['grill-skewer'].visible = show; },
 };
 // 기존 종단 헬퍼와의 이름 연속성 (DOM 뷰에서 승격됨)
