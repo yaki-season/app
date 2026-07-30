@@ -47,7 +47,12 @@ test('익힘 단계 미리보기가 대기 없이 uDoneness를 고정한다', as
   expect(burnt).toBeCloseTo(1.0, 3);
 
   await page.evaluate(() => window.__grillTuner.previewStage(0.0));
-  await page.waitForTimeout(50);
+  // 0은 override 해제 값이 아니라 유효한 날것 단계다. 즉시 반영되고 다음 프레임에도 유지돼야 한다.
+  const immediateRaw = await page.evaluate(
+    () => window.__sceneDebug.grillMaterial().uniforms.uDoneness.value,
+  );
+  expect(immediateRaw).toBeCloseTo(0.0, 3);
+  await page.evaluate(() => new Promise(requestAnimationFrame));
   const raw = await page.evaluate(() => window.__sceneDebug.grillMaterial().uniforms.uDoneness.value);
   expect(raw).toBeCloseTo(0.0, 3);
 });

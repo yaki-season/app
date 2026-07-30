@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SCR-SVC-GRILL UI 비침범 하네스</title>
+  <link rel="stylesheet" href="./grill-ui-harness.css">
+</head>
+<body>
+  <main id="harness" aria-labelledby="harness-title">
+    <section id="frame" data-testid="grill-ui-frame">
+      <div id="art-layer" class="layer art-layer" data-layer-owner="art-runtime" aria-hidden="true">
+        <p class="development-label">개발 placeholder · 승인 master 좌표 대조</p>
+        <div class="art-zone waiting-zone">waiting</div>
+        <div class="art-zone grill-zone">6-slot grill</div>
+        <div class="art-zone finished-zone">finished tray art</div>
+        <div class="art-zone discard-zone">discard</div>
+      </div>
+
+      <div id="interaction-layer" class="layer interaction-layer" data-layer-owner="runtime-interaction"></div>
+
+      <div id="ui-layer" class="layer ui-layer" data-layer-owner="dom-ui">
+        <div class="safe-frame" data-testid="safe-frame"></div>
+        <header class="service-status" data-testid="grill-service-status">
+          <strong id="harness-title">그릴 · 영업 중</strong>
+          <span>17:42 · 주문 6</span>
+          <button type="button">일시정지</button>
+        </header>
+        <ol class="receipt-rail" data-testid="grill-receipt-rail" aria-label="접수 순서 주문서 최대 6장"></ol>
+        <section class="order-detail-rail" data-testid="grill-order-detail" aria-label="선택 주문 상태">
+          <strong>선택 주문 03</strong>
+          <span>네기마 1/1 · 제공 가능</span>
+        </section>
+        <aside class="help-rail" data-testid="grill-help">앞면 적정 · 뒤집을 꼬치를 선택하세요</aside>
+        <section class="prepared-dock" data-testid="grill-prepared-dock" aria-label="공용 준비 목록">
+          <strong>준비 목록</strong>
+          <button type="button">네기마 · Perfect ×2</button>
+          <button type="button">생맥주 · Good ×1</button>
+        </section>
+        <div class="reserved-zone" data-testid="finished-tray-reserved">
+          <span>UI 금지 · reserved</span>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="./grill-ui-harness.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "id": "D6-GRILL-VALID-FAN-CURRENT-CONTACT",
+  "schemaVersion": 1,
+  "expectedValid": true,
+  "productStates": [
+    {
+      "id": "KAWA-ACTIVE-FAN-01",
+      "grillPlacementState": "active",
+      "orientationFaceDown": "back",
+      "contactFace": "back",
+      "elapsedSec": { "front": 10, "back": 10 }
+    }
+  ],
+  "tickTransitions": [
+    {
+      "id": "FAN-BACK-FACE-ONLY",
+      "scenarioId": "d6",
+      "tick": { "kind": "fan", "elapsedSec": 4 },
+      "previous": {
+        "id": "KAWA-ACTIVE-FAN-01",
+        "grillPlacementState": "active",
+        "orientationFaceDown": "back",
+        "contactFace": "back",
+        "elapsedSec": { "front": 10, "back": 10 }
+      },
+      "next": {
+        "id": "KAWA-ACTIVE-FAN-01",
+        "grillPlacementState": "active",
+        "orientationFaceDown": "back",
+        "contactFace": "back",
+        "elapsedSec": { "front": 10, "back": 14 }
+      }
+    }
+  ]
+}

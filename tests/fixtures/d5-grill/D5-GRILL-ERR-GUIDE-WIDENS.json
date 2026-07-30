@@ -1,0 +1,16 @@
+{
+  "id": "D5-GRILL-ERR-GUIDE-WIDENS",
+  "schemaVersion": 1,
+  "expectedValid": false,
+  "contractPatch": { "d5Guide": { "qualityWindowAdjustmentSec": 1 } },
+  "productStates": [
+    {
+      "id": "KAWA-STAGED-02",
+      "grillPlacementState": "staged",
+      "orientationFaceDown": "front",
+      "contactFace": null,
+      "elapsedSec": { "front": 0, "back": 0 }
+    }
+  ],
+  "tickTransitions": []
+}

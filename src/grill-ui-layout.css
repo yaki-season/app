@@ -1,0 +1,123 @@
+/* SCR-SVC-GRILL 전용 override.
+ * 승인 master의 우상단 완료 tray reserved zone:
+ * FHD x=1502~1832, y=91~509 (승인 R6 alpha x=1534~1800, y=123~477).
+ * 다른 서비스 화면에는 :has(...GRILL.active)가 성립하지 않아 공통 shell 규칙이 그대로 유지된다.
+ */
+
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) #svcBar {
+  top: 2.962963vh;
+  right: auto;
+  left: 3.333333vw;
+  width: 72.395833vw;
+  min-height: max(44px, 5.925926vh);
+  padding: 6px 10px;
+  border: 1px solid rgba(128, 93, 63, 0.58);
+  border-radius: 10px;
+  background: rgba(16, 11, 8, 0.88);
+}
+
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) #receipts {
+  position: fixed;
+  z-index: 12;
+  top: 9.62963vh;
+  left: 9.166667vw;
+  width: 66.5625vw;
+  min-height: max(44px, 5.925926vh);
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: max(6px, 0.625vw);
+}
+
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) #receipts > li {
+  width: auto !important;
+  min-width: 0;
+  height: auto;
+  min-height: max(44px, 5.925926vh);
+  padding: 4px 6px !important;
+  overflow: hidden;
+  border-color: rgba(181, 134, 84, 0.72);
+  background: rgba(20, 14, 10, 0.92);
+  color: var(--text);
+  font-size: clamp(10px, 0.625vw, 12px);
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+}
+
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .order-hud {
+  position: fixed;
+  z-index: 12;
+  top: 16.296296vh;
+  left: 9.166667vw;
+  width: 66.5625vw;
+  max-height: 6.666667vh;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  overflow: hidden;
+  align-content: flex-start;
+}
+
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .order-hud .oi {
+  min-height: 28px;
+  padding: 3px 8px;
+  background: rgba(20, 14, 10, 0.92);
+  white-space: nowrap;
+}
+
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide,
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .hint {
+  top: 73.333333vh;
+  right: auto;
+  bottom: auto;
+  left: 9.166667vw;
+  width: 66.5625vw;
+  min-height: 44px;
+  transform: none;
+  display: grid;
+  place-items: center;
+  margin: 0;
+}
+
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active):has(.hint.show) .d1-guide {
+  opacity: 0;
+}
+
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .end-day {
+  min-height: 44px;
+}
+
+@media (max-width: 1320px), (max-height: 760px) {
+  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) #svcBar {
+    gap: 6px;
+    padding: 4px 7px;
+  }
+
+  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) #receipts > li {
+    padding-inline: 3px !important;
+    font-size: 10px;
+  }
+
+  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) #receipts {
+    top: 11.111111vh;
+  }
+
+  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .order-hud {
+    top: 18.055556vh;
+    max-width: none;
+  }
+
+  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide,
+  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .hint {
+    max-width: none;
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) #navRight {
+    right: 12px;
+    width: 44px;
+    min-width: 44px;
+  }
+}

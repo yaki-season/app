@@ -22,8 +22,13 @@ test('그릴 익힘 게이지: 굽는 칸에 면·단계·행동 힌트를 표�
   await goScreen(page, 'SCR-SVC-GRILL');
   await expect(gauge(page)).toBeHidden(); // 빈 칸: 표시 없음
 
-  // 꼬치를 칸에 올림 → 덜 익음(행동 힌트 없음)
-  await page.evaluate(() => { window.__prodDebug.cookFillAssembly(); window.__prodDebug.cookPlace(); });
+  // 첫 3개를 모두 올린 순간 함께 시작 → 덜 익음(행동 힌트 없음)
+  await page.evaluate(() => {
+    for (let index = 0; index < 3; index += 1) window.__prodDebug.cookFillAssembly();
+    window.__prodDebug.cookPlace();
+    window.__prodDebug.cookPlace();
+    window.__prodDebug.cookPlace();
+  });
   await expect(gauge(page)).toBeVisible();
   await expect(label(page)).toContainText('앞면');
   await expect(label(page)).toContainText('덜 익음');

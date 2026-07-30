@@ -172,6 +172,7 @@ export async function createGrillMaterial() {
     fragmentShader: fragBody,
     transparent: true,
     depthWrite: false,
+    side: THREE.DoubleSide,
   });
 
   return {

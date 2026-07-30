@@ -1,0 +1,35 @@
+{
+  "id": "D5-GRILL-ERR-DUAL-FACE-TICK",
+  "schemaVersion": 1,
+  "expectedValid": false,
+  "productStates": [
+    {
+      "id": "KAWA-ACTIVE-02",
+      "grillPlacementState": "active",
+      "orientationFaceDown": "front",
+      "contactFace": "front",
+      "elapsedSec": { "front": 9, "back": 7 }
+    }
+  ],
+  "tickTransitions": [
+    {
+      "id": "TICK-BOTH-FACES-ADVANCE",
+      "scenarioId": "d5",
+      "tick": { "kind": "elapsed", "elapsedSec": 1 },
+      "previous": {
+        "id": "KAWA-ACTIVE-02",
+        "grillPlacementState": "active",
+        "orientationFaceDown": "front",
+        "contactFace": "front",
+        "elapsedSec": { "front": 9, "back": 7 }
+      },
+      "next": {
+        "id": "KAWA-ACTIVE-02",
+        "grillPlacementState": "active",
+        "orientationFaceDown": "front",
+        "contactFace": "front",
+        "elapsedSec": { "front": 10, "back": 8 }
+      }
+    }
+  ]
+}

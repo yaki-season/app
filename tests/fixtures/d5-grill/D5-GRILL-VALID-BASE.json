@@ -1,0 +1,49 @@
+{
+  "id": "D5-GRILL-VALID-BASE",
+  "schemaVersion": 1,
+  "expectedValid": true,
+  "productStates": [
+    {
+      "id": "KAWA-STAGED-01",
+      "grillPlacementState": "staged",
+      "orientationFaceDown": "front",
+      "contactFace": null,
+      "elapsedSec": { "front": 0, "back": 0 }
+    },
+    {
+      "id": "KAWA-ACTIVE-01",
+      "grillPlacementState": "active",
+      "orientationFaceDown": "front",
+      "contactFace": "front",
+      "elapsedSec": { "front": 9, "back": 7 }
+    },
+    {
+      "id": "KAWA-OFF-01",
+      "grillPlacementState": "offGrill",
+      "orientationFaceDown": "back",
+      "contactFace": null,
+      "elapsedSec": { "front": 10, "back": 14 }
+    }
+  ],
+  "tickTransitions": [
+    {
+      "id": "TICK-ACTIVE-FRONT-ONLY",
+      "scenarioId": "d5",
+      "tick": { "kind": "elapsed", "elapsedSec": 1 },
+      "previous": {
+        "id": "KAWA-ACTIVE-01",
+        "grillPlacementState": "active",
+        "orientationFaceDown": "front",
+        "contactFace": "front",
+        "elapsedSec": { "front": 9, "back": 7 }
+      },
+      "next": {
+        "id": "KAWA-ACTIVE-01",
+        "grillPlacementState": "active",
+        "orientationFaceDown": "front",
+        "contactFace": "front",
+        "elapsedSec": { "front": 10, "back": 7 }
+      }
+    }
+  ]
+}

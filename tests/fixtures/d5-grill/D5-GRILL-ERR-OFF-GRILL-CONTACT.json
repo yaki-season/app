@@ -1,0 +1,15 @@
+{
+  "id": "D5-GRILL-ERR-OFF-GRILL-CONTACT",
+  "schemaVersion": 1,
+  "expectedValid": false,
+  "productStates": [
+    {
+      "id": "KAWA-OFF-02",
+      "grillPlacementState": "offGrill",
+      "orientationFaceDown": "back",
+      "contactFace": "back",
+      "elapsedSec": { "front": 10, "back": 14 }
+    }
+  ],
+  "tickTransitions": []
+}
