@@ -12,14 +12,20 @@ import {
 } from '../state/d1/session.js';
 
 // public/assets/manifest.json의 승인 runtime URL만 소비한다.
-export const ASSET_URL = Object.freeze({
+// Python 정적 개발 서버는 public을 /public으로 노출하므로 /src/ 미리보기에서만 접두사를 붙인다.
+export const runtimeAssetUrl = (url) => location.pathname.startsWith('/src/') ? `/public${url}` : url;
+const ASSET_PATH = Object.freeze({
   negima: '/assets/core/ui/order-icon-negima-r1-b1.png',
   draftBeer: '/assets/core/ui/order-icon-draft-beer-r1-b1.png',
+  orderPanel: '/assets/core/ui/customer-order-wait-panel-skin-r3-b1.png',
   waiting: '/assets/core/customer/d1-tsukioka-waiting-r2-b1.png',
   partialBeer: '/assets/core/customer/d1-tsukioka-partial-beer-waiting-r1-b1.png',
   eatingNegima: '/assets/core/customer/d1-tsukioka-received-eating-negima-r1-b1.png',
   eatingBeer: '/assets/core/customer/d1-tsukioka-received-eating-beer-r1-b1.png',
 });
+export const ASSET_URL = Object.freeze(Object.fromEntries(
+  Object.entries(ASSET_PATH).map(([key, path]) => [key, runtimeAssetUrl(path)]),
+));
 
 const labels = { entering:'손님이 입장 중입니다.', ordering:'주문을 고민하고 있습니다.', waiting:'주문을 기다리고 있습니다.', 'partially-served':'생맥주를 받았습니다. 네기마를 기다립니다.', reacting:'첫 주문을 맛보고 있습니다.', completed:'첫 주문이 완료되었습니다.' };
 const guides = {

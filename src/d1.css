@@ -10,7 +10,7 @@ button:hover, button:focus-visible { outline:none; border-color:#ffe0a4; box-sha
 .art-stage::after { content:""; position:absolute; inset:0; z-index:3; background:linear-gradient(90deg,rgba(7,4,2,.62),transparent 40%,rgba(7,4,2,.32)),linear-gradient(0deg,rgba(8,4,2,.25),transparent 46%); }
 .d1-screen { position:relative; z-index:4; width:min(1100px,100%); margin:auto; padding:clamp(16px,3vw,40px); display:grid; gap:18px; }
 .order-panel,.workspace { border:1px solid #9b6a43; border-radius:18px; background:#25170fee; box-shadow:0 16px 40px #0009; }
-.order-panel { padding:18px; background-image:linear-gradient(#25170fe8,#25170fe8),url('/assets/core/ui/customer-order-wait-panel-skin-r3-b1.png'); background-size:cover,100% 100%; background-position:center; }
+.order-panel { padding:18px; background-image:linear-gradient(#25170fe8,#25170fe8),var(--order-panel-skin); background-size:cover,100% 100%; background-position:center; }
 .eyebrow { margin:0; color:var(--muted); font-size:.82rem; letter-spacing:.07em; }
 h1,h2,p { margin-top:0; } h1 { margin-bottom:2px; font-size:clamp(1.3rem,3vw,2rem); }
 #customer-state { color:#ffd993; min-height:1.45em; margin-bottom:12px; }
