@@ -1,0 +1,102 @@
+{
+  "id": "d2",
+  "schemaVersion": 2,
+  "displayKey": "day.d2",
+  "active": true,
+  "status": "candidate",
+  "customerCount": 6,
+  "spawnIntervalSec": 25,
+  "waitRecoverySec": 10,
+  "urgentThresholdSec": 15,
+  "customerPool": ["regular", "office", "solo", "commuter"],
+  "economy": {
+    "basePrice": 3,
+    "qualityMultGood": 1,
+    "qualityMultLow": 0.4,
+    "tipBase": 2
+  },
+  "timingSec": {
+    "assembly": 2,
+    "eat": 15,
+    "orderThinkMin": 4,
+    "orderThinkMax": 6
+  },
+  "autoPolicySuccessRate": 0.85,
+  "businessWindow": {
+    "startMinute": 1050,
+    "endMinute": 1590,
+    "spansMidnight": true,
+    "targetSessionSec": 420
+  },
+  "segments": [
+    {
+      "id": "d2-open",
+      "startMinute": 1050,
+      "endMinute": 1140,
+      "customerCount": { "min": 1, "max": 1 },
+      "orderCount": { "min": 1, "max": 1 },
+      "itemCount": { "min": 2, "max": 2 },
+      "maxActiveOrders": 1,
+      "maxRiskProcesses": 1
+    },
+    {
+      "id": "d2-office-pair",
+      "startMinute": 1140,
+      "endMinute": 1260,
+      "customerCount": { "min": 2, "max": 2 },
+      "orderCount": { "min": 1, "max": 1 },
+      "itemCount": { "min": 4, "max": 4 },
+      "maxActiveOrders": 2,
+      "maxRiskProcesses": 1
+    },
+    {
+      "id": "d2-review-flow",
+      "startMinute": 1260,
+      "endMinute": 1380,
+      "customerCount": { "min": 2, "max": 2 },
+      "orderCount": { "min": 2, "max": 2 },
+      "itemCount": { "min": 2, "max": 2 },
+      "maxActiveOrders": 2,
+      "maxRiskProcesses": 2
+    },
+    {
+      "id": "d2-late",
+      "startMinute": 1380,
+      "endMinute": 1590,
+      "customerCount": { "min": 1, "max": 1 },
+      "orderCount": { "min": 1, "max": 1 },
+      "itemCount": { "min": 2, "max": 2 },
+      "maxActiveOrders": 2,
+      "maxRiskProcesses": 2
+    }
+  ],
+  "totals": {
+    "customers": { "min": 6, "max": 6 },
+    "orders": { "min": 5, "max": 5 },
+    "items": { "min": 10, "max": 10 }
+  },
+  "maxActiveOrders": 2,
+  "maxRiskProcesses": 2,
+  "plannedOrderIds": [
+    "D2-ORDER-001",
+    "D2-ORDER-002",
+    "D2-ORDER-003",
+    "D2-ORDER-004",
+    "D2-ORDER-005"
+  ],
+  "availableMenuIds": ["negima", "beer", "momo"],
+  "newActionId": "d2-reduced-guidance",
+  "reviewActionIds": ["assembly-grill-basic", "shared-prepared-serving"],
+  "tutorialPolicy": {
+    "guidanceLevel": "reduced",
+    "helpCanBeReenabled": true,
+    "failurePolicy": "standard"
+  },
+  "settlement": {
+    "goalId": "goal-d2-complete-with-reduced-help",
+    "bonusGoalIds": ["goal-d2-serve-momo"],
+    "growthResultIds": ["day-d3"],
+    "nextNodeId": "d3",
+    "rewardSource": "settlement-ledger"
+  }
+}

@@ -4,6 +4,15 @@
 // bundle: { processes, recipes, customers, days, upgrades, staff, scenarios } — 각각 레코드 배열
 export function checkContentRules(bundle) {
   const errors = [];
+  const hasCollection = (kind) => Object.prototype.hasOwnProperty.call(bundle, kind);
+  const inRange = (value, range) => (
+    Number.isInteger(value)
+    && range
+    && Number.isInteger(range.min)
+    && Number.isInteger(range.max)
+    && range.min <= value
+    && value <= range.max
+  );
 
   // 모든 컬렉션의 식별자 유일성 (DAT-001 §공통 2) + id 집합 수집
   const idSets = {};
@@ -32,6 +41,11 @@ export function checkContentRules(bundle) {
     for (const t of d.customerPool || []) {
       if (!has('customers', t)) errors.push(`[day:${d.id}] 미정의 손님 유형 참조: ${t}`);
     }
+    if (hasCollection('menus')) {
+      for (const menuId of d.availableMenuIds || []) {
+        if (!has('menus', menuId)) errors.push(`[day:${d.id}] 미정의 메뉴 참조: ${menuId}`);
+      }
+    }
   }
   for (const u of bundle.upgrades || []) {
     if (u.requiresUpgradeId && !has('upgrades', u.requiresUpgradeId)) {
@@ -46,6 +60,233 @@ export function checkContentRules(bundle) {
     if (s.nextDay != null && !has('scenarios', s.nextDay)) {
       errors.push(`[scenario:${s.id}] 끊긴 다음 날짜 참조: ${s.nextDay}`);
     }
+    if (s.prevDay != null) {
+      const previous = (bundle.scenarios || []).find((candidate) => candidate.id === s.prevDay);
+      if (previous && previous.nextDay !== s.id) {
+        errors.push(`[scenario:${s.id}] 이전 날짜의 다음 참조가 맞지 않음: ${s.prevDay} -> ${previous.nextDay}`);
+      }
+    }
+    if (s.nextDay != null) {
+      const next = (bundle.scenarios || []).find((candidate) => candidate.id === s.nextDay);
+      if (next && next.prevDay !== s.id) {
+        errors.push(`[scenario:${s.id}] 다음 날짜의 이전 참조가 맞지 않음: ${s.nextDay} <- ${next.prevDay}`);
+      }
+    }
+    if (s.dayDataId && hasCollection('days') && !has('days', s.dayDataId)) {
+      errors.push(`[scenario:${s.id}] 미정의 영업일 참조: ${s.dayDataId}`);
+    }
+    if (s.kind === 'preview') {
+      if (
+        s.readOnly !== true
+        || s.nextDay !== null
+        || (s.gameplayCommandIds || []).length > 0
+        || (s.economyCommandIds || []).length > 0
+        || s.reward !== null
+      ) {
+        errors.push(`[scenario:${s.id}] preview는 읽기 전용이며 gameplay·경제 command·reward를 가질 수 없음`);
+      }
+    }
+  }
+
+  const earlyChain = ['s0', 'd1', 'd2', 'd3', 'd4-preview'];
+  if (earlyChain.every((id) => has('scenarios', id))) {
+    earlyChain.forEach((id, index) => {
+      const record = (bundle.scenarios || []).find((scenario) => scenario.id === id);
+      const expectedPrev = earlyChain[index - 1] ?? null;
+      const expectedNext = earlyChain[index + 1] ?? null;
+      if (record.prevDay !== expectedPrev || record.nextDay !== expectedNext) {
+        errors.push(`[scenario:${id}] 초기 캠페인 chain 위반`);
+      }
+    });
+  }
+
+  if (hasCollection('campaignCharacters')) {
+    const fixedIds = (bundle.campaignCharacters || [])
+      .filter((character) => character.fixed)
+      .map((character) => character.id)
+      .sort();
+    const expected = ['CHAR-AKI', 'CHAR-TSUKIOKA'];
+    if (fixedIds.length !== expected.length || fixedIds.some((id, index) => id !== expected[index])) {
+      errors.push('[campaignCharacters] S0~D3 고정 인물은 CHAR-AKI·CHAR-TSUKIOKA만 허용됨');
+    }
+    for (const character of bundle.campaignCharacters || []) {
+      if (
+        character.customerTypeId != null
+        && hasCollection('customers')
+        && !has('customers', character.customerTypeId)
+      ) {
+        errors.push(`[campaignCharacter:${character.id}] 미정의 손님 유형 참조: ${character.customerTypeId}`);
+      }
+    }
+  }
+
+  if (hasCollection('menus') && hasCollection('scenarios')) {
+    for (const menu of bundle.menus || []) {
+      if (!has('scenarios', menu.introducedOn)) {
+        errors.push(`[menu:${menu.id}] 미정의 도입 날짜 참조: ${menu.introducedOn}`);
+      }
+    }
+  }
+
+  if (hasCollection('orders')) {
+    const orderById = new Map((bundle.orders || []).map((order) => [order.id, order]));
+    for (const order of bundle.orders || []) {
+      const day = (bundle.days || []).find((candidate) => candidate.id === order.dayId);
+      if (!day) {
+        errors.push(`[order:${order.id}] 미정의 영업일 참조: ${order.dayId}`);
+        continue;
+      }
+      if (!day.segments?.some((segment) => segment.id === order.arrivalSegmentId)) {
+        errors.push(`[order:${order.id}] 미정의 시간대 참조: ${order.arrivalSegmentId}`);
+      }
+      if (order.source?.kind === 'fixed-character' && !has('campaignCharacters', order.source.characterId)) {
+        errors.push(`[order:${order.id}] 미정의 고정 인물 참조: ${order.source.characterId}`);
+      }
+      if (order.source?.kind === 'extra-type' && !has('customers', order.source.customerTypeId)) {
+        errors.push(`[order:${order.id}] 미정의 엑스트라 유형 참조: ${order.source.customerTypeId}`);
+      }
+      for (const item of order.items || []) {
+        const menu = (bundle.menus || []).find((candidate) => candidate.id === item.menuId);
+        if (!menu) {
+          errors.push(`[order:${order.id}] 미정의 메뉴 참조: ${item.menuId}`);
+          continue;
+        }
+        if (!day.availableMenuIds?.includes(item.menuId)) {
+          errors.push(`[order:${order.id}] ${order.dayId}에 비활성 메뉴 사용: ${item.menuId}`);
+        }
+        if (!menu.seasoningOptions?.includes(item.seasoning)) {
+          errors.push(`[order:${order.id}] 메뉴가 지원하지 않는 seasoning: ${item.menuId}/${item.seasoning}`);
+        }
+        if (item.seasoning === 'tare' && order.dayId !== 'd3') {
+          errors.push(`[order:${order.id}] tare 주문은 d3 이전에 사용할 수 없음`);
+        }
+      }
+      for (const requiredId of order.requiresOrderCompletionIds || []) {
+        const required = orderById.get(requiredId);
+        if (!required) errors.push(`[order:${order.id}] 미정의 선행 주문 참조: ${requiredId}`);
+        else if (required.dayId !== order.dayId) {
+          errors.push(`[order:${order.id}] 다른 날짜 선행 주문 참조: ${requiredId}`);
+        }
+      }
+    }
+  }
+
+  for (const day of bundle.days || []) {
+    for (const [field, range] of Object.entries(day.totals || {})) {
+      if (range.min > range.max) {
+        errors.push(`[day:${day.id}] totals.${field} 최소값이 최대값보다 큼`);
+      }
+    }
+    const segments = day.segments || [];
+    if (segments.length > 0) {
+      if (segments[0].startMinute !== day.businessWindow?.startMinute) {
+        errors.push(`[day:${day.id}] 첫 시간대가 영업 시작 시각과 맞지 않음`);
+      }
+      if (segments.at(-1).endMinute !== day.businessWindow?.endMinute) {
+        errors.push(`[day:${day.id}] 마지막 시간대가 영업 종료 시각과 맞지 않음`);
+      }
+      segments.forEach((segment, index) => {
+        if (segment.startMinute >= segment.endMinute) {
+          errors.push(`[day:${day.id}] 시간대 범위 역전: ${segment.id}`);
+        }
+        if (index > 0 && segments[index - 1].endMinute !== segment.startMinute) {
+          errors.push(`[day:${day.id}] 시간대 chain 단절: ${segments[index - 1].id} -> ${segment.id}`);
+        }
+        for (const [field, range] of Object.entries({
+          customerCount: segment.customerCount,
+          orderCount: segment.orderCount,
+          itemCount: segment.itemCount,
+        })) {
+          if (range?.min > range?.max) {
+            errors.push(`[day:${day.id}] ${segment.id}.${field} 최소값이 최대값보다 큼`);
+          }
+        }
+        if (segment.maxActiveOrders > day.maxActiveOrders) {
+          errors.push(`[day:${day.id}] ${segment.id} 활성 주문 상한이 날짜 상한을 초과함`);
+        }
+        if (segment.maxRiskProcesses > day.maxRiskProcesses) {
+          errors.push(`[day:${day.id}] ${segment.id} 위험 공정 상한이 날짜 상한을 초과함`);
+        }
+      });
+    }
+
+    if (hasCollection('orders')) {
+      const planned = (bundle.orders || []).filter((order) => order.dayId === day.id);
+      const plannedIds = planned.map((order) => order.id);
+      for (const orderId of day.plannedOrderIds || []) {
+        if (!plannedIds.includes(orderId)) errors.push(`[day:${day.id}] 미정의 계획 주문 참조: ${orderId}`);
+      }
+      for (const order of planned) {
+        if (!day.plannedOrderIds?.includes(order.id)) {
+          errors.push(`[day:${day.id}] 계획 목록에 없는 주문: ${order.id}`);
+        }
+      }
+
+      const totals = {
+        customers: planned.reduce((sum, order) => sum + order.customerCount, 0),
+        orders: planned.length,
+        items: planned.reduce(
+          (sum, order) => sum + (order.items || []).reduce((itemSum, item) => itemSum + item.quantity, 0),
+          0,
+        ),
+      };
+      for (const [field, value] of Object.entries(totals)) {
+        if (!inRange(value, day.totals?.[field])) {
+          errors.push(`[day:${day.id}] 계획 ${field} 합계가 날짜 범위를 벗어남: ${value}`);
+        }
+      }
+      if (day.customerCount !== totals.customers) {
+        errors.push(`[day:${day.id}] legacy customerCount와 계획 손님 합계 불일치`);
+      }
+
+      for (const segment of segments) {
+        const segmentOrders = planned.filter((order) => order.arrivalSegmentId === segment.id);
+        const segmentTotals = {
+          customerCount: segmentOrders.reduce((sum, order) => sum + order.customerCount, 0),
+          orderCount: segmentOrders.length,
+          itemCount: segmentOrders.reduce(
+            (sum, order) => sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
+            0,
+          ),
+        };
+        for (const [field, value] of Object.entries(segmentTotals)) {
+          if (!inRange(value, segment[field])) {
+            errors.push(`[day:${day.id}] ${segment.id}.${field} 계획 합계 범위 위반: ${value}`);
+          }
+        }
+      }
+    }
+  }
+
+  const d1First = (bundle.orders || []).find((order) => order.id === 'D1-ORDER-001');
+  if (d1First) {
+    const beer = d1First.items?.[0];
+    const negima = d1First.items?.[1];
+    if (
+      d1First.source?.characterId !== 'CHAR-TSUKIOKA'
+      || d1First.runtimeCustomerId !== 'REGULAR_TSUKIOKA'
+      || beer?.menuId !== 'beer'
+      || beer.quantity !== 1
+      || negima?.menuId !== 'negima'
+      || negima.quantity !== 3
+    ) {
+      errors.push('[order:D1-ORDER-001] 츠키오카 고정 주문은 생맥주 1잔→네기마 3개여야 함');
+    }
+  }
+
+  const d2 = (bundle.days || []).find((day) => day.id === 'd2');
+  if (d2 && (
+    d2.tutorialPolicy?.guidanceLevel !== 'reduced'
+    || d2.tutorialPolicy?.helpCanBeReenabled !== true
+  )) {
+    errors.push('[day:d2] 도움 감소와 도움말 다시 켜기 계약 위반');
+  }
+  const d3 = (bundle.days || []).find((day) => day.id === 'd3');
+  if (d3 && (
+    d3.newActionId !== 'd3-tare-brush'
+    || d3.tutorialPolicy?.failurePolicy !== 'safe-first-use'
+  )) {
+    errors.push('[day:d3] 타레 신규 행동의 안전 안내 계약 위반');
   }
 
   // 익힘 구간 순서 (DAT-001 §공통 6: 최소는 최대보다 클 수 없다)

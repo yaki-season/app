@@ -1,0 +1,35 @@
+[
+  {
+    "id": "negima",
+    "schemaVersion": 1,
+    "displayKey": "menu.negima",
+    "active": true,
+    "status": "approved",
+    "category": "skewer",
+    "stationId": "assembly-grill",
+    "introducedOn": "d1",
+    "seasoningOptions": ["none", "salt", "tare"]
+  },
+  {
+    "id": "beer",
+    "schemaVersion": 1,
+    "displayKey": "menu.draft-beer",
+    "active": true,
+    "status": "approved",
+    "category": "drink",
+    "stationId": "drink",
+    "introducedOn": "d1",
+    "seasoningOptions": ["none"]
+  },
+  {
+    "id": "momo",
+    "schemaVersion": 1,
+    "displayKey": "menu.momo",
+    "active": true,
+    "status": "approved",
+    "category": "skewer",
+    "stationId": "assembly-grill",
+    "introducedOn": "d2",
+    "seasoningOptions": ["none", "salt", "tare"]
+  }
+]

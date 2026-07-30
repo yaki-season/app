@@ -1,0 +1,303 @@
+[
+  {
+    "id": "D1-ORDER-001",
+    "schemaVersion": 1,
+    "displayKey": "order.d1.001",
+    "active": true,
+    "status": "approved",
+    "dayId": "d1",
+    "arrivalSegmentId": "d1-guided-open",
+    "runtimeCustomerId": "REGULAR_TSUKIOKA",
+    "source": { "kind": "fixed-character", "characterId": "CHAR-TSUKIOKA" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "beer", "quantity": 1, "seasoning": "none" },
+      { "menuId": "negima", "quantity": 3, "seasoning": "none" }
+    ],
+    "guidanceId": "d1-full-first-order-guide",
+    "memoryFlagIds": ["d1-first-order-complete"],
+    "requiresOrderCompletionIds": []
+  },
+  {
+    "id": "D1-ORDER-002-A",
+    "schemaVersion": 1,
+    "displayKey": "order.d1.002-a",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d1",
+    "arrivalSegmentId": "d1-office-pair",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "office" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "beer", "quantity": 1, "seasoning": "none" },
+      { "menuId": "negima", "quantity": 1, "seasoning": "none" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": [],
+    "requiresOrderCompletionIds": ["D1-ORDER-001"]
+  },
+  {
+    "id": "D1-ORDER-002-B",
+    "schemaVersion": 1,
+    "displayKey": "order.d1.002-b",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d1",
+    "arrivalSegmentId": "d1-office-pair",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "office" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "beer", "quantity": 1, "seasoning": "none" },
+      { "menuId": "negima", "quantity": 1, "seasoning": "none" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": [],
+    "requiresOrderCompletionIds": ["D1-ORDER-001"]
+  },
+  {
+    "id": "D1-ORDER-003",
+    "schemaVersion": 1,
+    "displayKey": "order.d1.003",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d1",
+    "arrivalSegmentId": "d1-late-solo",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "solo" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "negima", "quantity": 1, "seasoning": "none" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": [],
+    "requiresOrderCompletionIds": ["D1-ORDER-002-A", "D1-ORDER-002-B"]
+  },
+  {
+    "id": "D2-ORDER-001",
+    "schemaVersion": 1,
+    "displayKey": "order.d2.001",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d2",
+    "arrivalSegmentId": "d2-open",
+    "runtimeCustomerId": "REGULAR_TSUKIOKA",
+    "source": { "kind": "fixed-character", "characterId": "CHAR-TSUKIOKA" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "momo", "quantity": 1, "seasoning": "none" },
+      { "menuId": "beer", "quantity": 1, "seasoning": "none" }
+    ],
+    "guidanceId": "d2-reduced-guidance",
+    "memoryFlagIds": ["d2-tsukioka-returned"],
+    "requiresOrderCompletionIds": []
+  },
+  {
+    "id": "D2-ORDER-002",
+    "schemaVersion": 1,
+    "displayKey": "order.d2.002",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d2",
+    "arrivalSegmentId": "d2-office-pair",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "office" },
+    "customerCount": 2,
+    "items": [
+      { "menuId": "beer", "quantity": 2, "seasoning": "none" },
+      { "menuId": "negima", "quantity": 2, "seasoning": "none" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": [],
+    "requiresOrderCompletionIds": ["D2-ORDER-001"]
+  },
+  {
+    "id": "D2-ORDER-003",
+    "schemaVersion": 1,
+    "displayKey": "order.d2.003",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d2",
+    "arrivalSegmentId": "d2-review-flow",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "solo" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "momo", "quantity": 1, "seasoning": "none" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": ["extra-return-intent"],
+    "requiresOrderCompletionIds": []
+  },
+  {
+    "id": "D2-ORDER-004",
+    "schemaVersion": 1,
+    "displayKey": "order.d2.004",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d2",
+    "arrivalSegmentId": "d2-review-flow",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "commuter" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "negima", "quantity": 1, "seasoning": "none" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": [],
+    "requiresOrderCompletionIds": []
+  },
+  {
+    "id": "D2-ORDER-005",
+    "schemaVersion": 1,
+    "displayKey": "order.d2.005",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d2",
+    "arrivalSegmentId": "d2-late",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "solo" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "beer", "quantity": 1, "seasoning": "none" },
+      { "menuId": "momo", "quantity": 1, "seasoning": "none" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": [],
+    "requiresOrderCompletionIds": []
+  },
+  {
+    "id": "D3-ORDER-001",
+    "schemaVersion": 1,
+    "displayKey": "order.d3.001",
+    "active": true,
+    "status": "approved",
+    "dayId": "d3",
+    "arrivalSegmentId": "d3-tare-intro",
+    "runtimeCustomerId": "REGULAR_TSUKIOKA",
+    "source": { "kind": "fixed-character", "characterId": "CHAR-TSUKIOKA" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "negima", "quantity": 1, "seasoning": "tare" },
+      { "menuId": "beer", "quantity": 1, "seasoning": "none" }
+    ],
+    "guidanceId": "d3-tare-brush",
+    "memoryFlagIds": ["d3-tare-introduced"],
+    "requiresOrderCompletionIds": []
+  },
+  {
+    "id": "D3-ORDER-002",
+    "schemaVersion": 1,
+    "displayKey": "order.d3.002",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d3",
+    "arrivalSegmentId": "d3-office-cross",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "office" },
+    "customerCount": 2,
+    "items": [
+      { "menuId": "beer", "quantity": 2, "seasoning": "none" },
+      { "menuId": "negima", "quantity": 1, "seasoning": "salt" },
+      { "menuId": "negima", "quantity": 1, "seasoning": "tare" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": [],
+    "requiresOrderCompletionIds": ["D3-ORDER-001"]
+  },
+  {
+    "id": "D3-ORDER-003",
+    "schemaVersion": 1,
+    "displayKey": "order.d3.003",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d3",
+    "arrivalSegmentId": "d3-rush",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "solo" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "momo", "quantity": 1, "seasoning": "tare" },
+      { "menuId": "beer", "quantity": 1, "seasoning": "none" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": [],
+    "requiresOrderCompletionIds": []
+  },
+  {
+    "id": "D3-ORDER-004",
+    "schemaVersion": 1,
+    "displayKey": "order.d3.004",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d3",
+    "arrivalSegmentId": "d3-rush",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "commuter" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "negima", "quantity": 2, "seasoning": "salt" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": [],
+    "requiresOrderCompletionIds": []
+  },
+  {
+    "id": "D3-ORDER-005",
+    "schemaVersion": 1,
+    "displayKey": "order.d3.005",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d3",
+    "arrivalSegmentId": "d3-rush",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "solo" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "momo", "quantity": 1, "seasoning": "salt" },
+      { "menuId": "beer", "quantity": 1, "seasoning": "none" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": [],
+    "requiresOrderCompletionIds": []
+  },
+  {
+    "id": "D3-ORDER-006",
+    "schemaVersion": 1,
+    "displayKey": "order.d3.006",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d3",
+    "arrivalSegmentId": "d3-late",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "commuter" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "negima", "quantity": 1, "seasoning": "tare" },
+      { "menuId": "beer", "quantity": 1, "seasoning": "none" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": ["extra-shop-introduction-asked"],
+    "requiresOrderCompletionIds": []
+  },
+  {
+    "id": "D3-ORDER-007",
+    "schemaVersion": 1,
+    "displayKey": "order.d3.007",
+    "active": true,
+    "status": "candidate",
+    "dayId": "d3",
+    "arrivalSegmentId": "d3-late",
+    "runtimeCustomerId": null,
+    "source": { "kind": "extra-type", "customerTypeId": "solo" },
+    "customerCount": 1,
+    "items": [
+      { "menuId": "momo", "quantity": 1, "seasoning": "tare" },
+      { "menuId": "negima", "quantity": 1, "seasoning": "salt" }
+    ],
+    "guidanceId": null,
+    "memoryFlagIds": [],
+    "requiresOrderCompletionIds": []
+  }
+]

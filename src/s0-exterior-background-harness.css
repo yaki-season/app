@@ -1,0 +1,85 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, "Malgun Gothic", sans-serif;
+  color: #fff4de;
+  background: #0b0a09;
+}
+
+* { box-sizing: border-box; }
+body { width: 100vw; height: 100vh; margin: 0; overflow: hidden; }
+button { min-width: 44px; min-height: 44px; font: inherit; }
+.harness { display: grid; width: 100%; height: 100%; place-items: center; }
+.logical-stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  transform-origin: center;
+  background: #15120f;
+}
+.art-camera, .semantic-dom { position: absolute; inset: 0; }
+.art-camera { overflow: hidden; }
+.exterior-guide {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(#17130e40, #17130ed9),
+    linear-gradient(152deg, #494539 0 35%, #2e332d 35% 58%, #161713 58%);
+}
+.approved-asset, .asset-placeholder {
+  position: absolute;
+  object-fit: contain;
+}
+.approved-asset { display: block; }
+.approved-asset[hidden], .asset-placeholder[hidden] { display: none; }
+.asset-placeholder {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  border: 5px dashed #dca25e;
+  background: #4a311fd9;
+  color: #ffe3b5;
+  text-align: center;
+}
+.asset-placeholder span {
+  padding: 8px 20px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  font-size: 30px;
+  font-weight: 900;
+}
+.asset-placeholder strong { margin-top: 18px; font-size: 34px; }
+.semantic-dom { pointer-events: none; }
+.semantic-dom button {
+  padding: 10px 22px;
+  border: 2px solid #dba35e;
+  border-radius: 14px;
+  color: inherit;
+  background: #2c1b13;
+  pointer-events: auto;
+}
+.contract-label {
+  position: absolute;
+  top: 40px;
+  left: 64px;
+  width: 760px;
+  min-height: 140px;
+  padding: 12px 18px;
+  border-left: 8px solid #d26a3d;
+  background: #17110ee8;
+}
+.contract-label p { margin: 0 0 4px; color: #d8bc91; font-size: 21px; }
+.contract-label h1 { margin: 0 0 4px; font-size: 38px; }
+.skip { position: absolute; top: 40px; right: 64px; }
+.dom-safe {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 28px;
+  border: 3px solid #f0bf75;
+  border-radius: 18px;
+  background: #17110ef0;
+}
+.dom-safe p { margin: 0; font-size: 28px; font-weight: 800; }

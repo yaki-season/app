@@ -1,0 +1,5 @@
+{
+  "id": "D1-RELEASE-ERR-TIMING",
+  "expectedValid": false,
+  "inputPatch": { "kind": "timing", "field": "eat", "value": 16000 }
+}

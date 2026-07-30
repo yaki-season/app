@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  auditD1RuntimeAssetBindingContract,
   D1_PENDING_RUNTIME_ASSET_IDS,
   D1_RUNTIME_ASSET_ID,
   indexApprovedRuntimeAssets,
+  reportD1RuntimeAssetReadiness,
   resolveApprovedRuntimeAsset,
   resolveD1CustomerAsset,
   runtimeAssetUrl,
 } from '../../src/assets/runtimeAssetResolver.js';
+import { D1_RUNTIME_COMPONENT_INVENTORY } from '../../src/assets/d1RuntimeInventory.js';
+import { ART_SEMANTIC_OWNER_ID } from '../../src/assets/artSemanticOwnerIds.js';
 
 const manifest = {
   assets: [
@@ -61,7 +65,113 @@ describe('D1 runtime asset resolver', () => {
   it('handoff 없는 조리 상태는 승인 아트 ID로 대체하지 않는다', () => {
     expect(D1_PENDING_RUNTIME_ASSET_IDS.assembly).toContain('BG-WORKSPACE-ASSEMBLY');
     expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('MDL-NEGIMA-GRILL-RAW');
+    expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('MDL-NEGIMA-GRILL-PROPER-FIRST-FACE');
+    expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('MDL-NEGIMA-GRILL-PROPER-SECOND-FACE');
+    expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('ST-GRILL-FINISHED-TRAY');
+    expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('CMP-GRILL-FINISHED-PROPER-NEGIMA');
     expect(D1_PENDING_RUNTIME_ASSET_IDS.drink).toContain('MDL-BEER-LEVER');
+    expect(D1_PENDING_RUNTIME_ASSET_IDS.drink).not.toContain('BG-WORKSPACE-DRINK');
+    expect(D1_RUNTIME_ASSET_ID.DRINK_BACKGROUND).toBe('BG-WORKSPACE-DRINK');
+  });
+
+  it('BG-WORKSPACE-DRINK binding 뒤 전체 35·drink 5 placeholder를 집계한다', () => {
+    const approvedBoundManifest = {
+      assets: Object.values(D1_RUNTIME_ASSET_ID).map((id) => ({
+        id,
+        status: 'approved',
+        url: `/assets/${id}.png`,
+      })),
+    };
+    const readiness = reportD1RuntimeAssetReadiness(approvedBoundManifest);
+
+    expect(readiness).toMatchObject({
+      ready: false,
+      requiredRuntimeCount: 44,
+      approvedRuntimeCount: 9,
+      boundRuntimeCount: 9,
+      placeholderCount: 35,
+      unboundApprovedIds: [],
+      contractAudit: {
+        valid: true,
+        missingResolverBindingIds: [],
+        unexpectedResolverBindingIds: [],
+        semanticOwnerConflicts: [],
+      },
+    });
+    expect(readiness.placeholderIdsByScene.drink).toHaveLength(5);
+    expect(readiness.placeholderIdsByScene.drink).not.toContain('BG-WORKSPACE-DRINK');
+    expect(readiness.placeholderIdsByScene.drink).toContain('TEX-BEER-LIQUID');
+    expect(readiness.placeholderIdsByScene.drink).toContain('VFX-BEER-CORE');
+    expect(readiness.placeholderIdsByScene.assembly).toHaveLength(5);
+    expect(readiness.placeholderIdsByScene.grill).toHaveLength(10);
+    expect(readiness.placeholderIdsByScene.customer).toHaveLength(10);
+    expect(readiness.placeholderIdsByScene.closing).toHaveLength(2);
+    expect(readiness.placeholderIdsByScene.settlement).toHaveLength(3);
+    expect(readiness.missingManifestIds).toContain('MDL-NEGIMA-GRILL-PROPER-SECOND-FACE');
+    expect(readiness.missingManifestIds).toContain('CMP-GRILL-FINISHED-PROPER-NEGIMA');
+  });
+
+  it('manifest 등록만으로 binding 미완료 placeholder를 준비 완료로 오인하지 않는다', () => {
+    const allRequiredIds = D1_RUNTIME_COMPONENT_INVENTORY
+      .map((entry) => entry.requiredAssetId);
+    const manifestWithUnboundAssets = {
+      assets: allRequiredIds.map((id) => ({
+        id,
+        status: 'approved',
+        url: `/assets/${id}.png`,
+      })),
+    };
+
+    const awaitingBinding = reportD1RuntimeAssetReadiness(manifestWithUnboundAssets);
+    expect(awaitingBinding.ready).toBe(false);
+    expect(awaitingBinding.placeholderCount).toBe(35);
+    expect(awaitingBinding.missingManifestIds).toEqual([]);
+    expect(awaitingBinding.unboundApprovedIds).toHaveLength(35);
+  });
+
+  it('inventory와 실제 binding·조리 placeholder 목록이 정확히 대응한다', () => {
+    const audit = auditD1RuntimeAssetBindingContract();
+
+    expect(audit.valid).toBe(true);
+    expect(audit.inventoryBoundIds).toHaveLength(9);
+    expect(audit.resolverBoundIds).toHaveLength(9);
+    expect(audit.pendingScenes.assembly.missingResolverPendingIds).toEqual([]);
+    expect(audit.pendingScenes.grill.unexpectedResolverPendingIds).toEqual([]);
+    expect(audit.pendingScenes.drink.missingResolverPendingIds).toEqual([]);
+  });
+
+  it('stable ID의 semanticOwner 충돌과 stale placeholder를 차단한다', () => {
+    const conflictedInventory = [
+      ...D1_RUNTIME_COMPONENT_INVENTORY,
+      {
+        ...D1_RUNTIME_COMPONENT_INVENTORY[0],
+        componentId: 'conflicting.owner',
+        semanticOwner: ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING,
+      },
+    ];
+    const stalePending = {
+      ...D1_PENDING_RUNTIME_ASSET_IDS,
+      grill: D1_PENDING_RUNTIME_ASSET_IDS.grill
+        .filter((id) => id !== 'CMP-GRILL-FINISHED-PROPER-NEGIMA'),
+    };
+    const audit = auditD1RuntimeAssetBindingContract(
+      conflictedInventory,
+      D1_RUNTIME_ASSET_ID,
+      stalePending,
+    );
+
+    expect(audit.valid).toBe(false);
+    expect(audit.semanticOwnerConflicts).toEqual([
+      {
+        assetId: 'ARTIST-010-BACKGROUND-COMPLETE',
+        semanticOwners: [
+          ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE,
+          ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING,
+        ],
+      },
+    ]);
+    expect(audit.pendingScenes.grill.missingResolverPendingIds)
+      .toEqual(['CMP-GRILL-FINISHED-PROPER-NEGIMA']);
   });
 
   it('src 정적 미리보기에서만 public 접두사를 붙인다', () => {

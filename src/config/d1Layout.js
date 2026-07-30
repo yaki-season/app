@@ -4,6 +4,13 @@
 // 화면 프리셋은 game.html과 같은 방식(같은 PLAYER_EYE에서 시선만 달리)으로, 조립/그릴/드링크 더미 좌표는
 // screenLayout과 동일하게 맞춰 조작감이 이어지게 한다. 손님 화면만 정면·수평 시선으로 풀프레임 아트를 합성한다.
 
+import {
+  D1_GRILL_FINISHED_TRAY,
+  D1_GRILL_SLOT_KEYS,
+  D1_GRILL_WAITING_TRAY,
+  createD1GrillObjects,
+} from './d1GrillLayout.js';
+
 export const LAYER_Z = {
   background: -8,
   fixture: -4,
@@ -46,9 +53,24 @@ export const OBJECTS = {
 
   // ── 그릴 화면 (더미 + 익힘 셰이더) ──
   grillBody: { rect: { x: 0.10, y: 0.42, width: 0.80, height: 0.50 }, layer: 'fixture', color: 0x3a3330, kind: 'plane' },
-  grillWaitTray: { rect: { x: 0.13, y: 0.50, width: 0.14, height: 0.14 }, layer: 'interactive', color: 0xc9a86a, kind: 'plane' },
-  grillSlot0: { rect: { x: 0.40, y: 0.42, width: 0.10, height: 0.26 }, layer: 'interactive', color: 0xd98a5f, kind: 'grill' },
-  grillSlot1: { rect: { x: 0.56, y: 0.42, width: 0.10, height: 0.26 }, layer: 'interactive', color: 0xd98a5f, kind: 'grill' },
+  grillWaitTray: { rect: D1_GRILL_WAITING_TRAY.rect, anchor: D1_GRILL_WAITING_TRAY.anchor, layer: 'interactive', color: 0xc9a86a, kind: 'plane' },
+  ...createD1GrillObjects(),
+  grillFinishedTray: {
+    key: D1_GRILL_FINISHED_TRAY.key,
+    rect: D1_GRILL_FINISHED_TRAY.visualRect,
+    visualRect: D1_GRILL_FINISHED_TRAY.visualRect,
+    hitRect: D1_GRILL_FINISHED_TRAY.hitRect,
+    hitTarget: D1_GRILL_FINISHED_TRAY.hitRect,
+    reservedBounds: D1_GRILL_FINISHED_TRAY.reservedBounds,
+    anchor: D1_GRILL_FINISHED_TRAY.anchor,
+    componentId: D1_GRILL_FINISHED_TRAY.componentId,
+    stableAssetId: D1_GRILL_FINISHED_TRAY.stableAssetId,
+    sourceMasterId: D1_GRILL_FINISHED_TRAY.sourceMasterId,
+    sourceMasterRevision: D1_GRILL_FINISHED_TRAY.sourceMasterRevision,
+    layer: 'fixture',
+    color: 0x6f5437,
+    kind: 'plane',
+  },
 
   // ── 드링크 화면 (더미) ──
   drinkTower: { rect: { x: 0.44, y: 0.30, width: 0.12, height: 0.24 }, layer: 'fixture', color: 0x6b6f72, kind: 'plane' },
@@ -65,7 +87,7 @@ export const SCREENS = [
     objects: ['custBg', 'custCustomer', 'custCounter', 'custServe'],
   },
   { id: 'SCR-SVC-ASSEMBLY', name: '조립', look: { x: 0.0, y: -2.6, z: -3.6 }, objects: ['sbg', 'workbench', 'binChicken', 'binLeek', 'jigSkewer'] },
-  { id: 'SCR-SVC-GRILL', name: '그릴', look: { x: 0.0, y: -2.4, z: -3.0 }, objects: ['sbg', 'grillBody', 'grillWaitTray', 'grillSlot0', 'grillSlot1'] },
+  { id: 'SCR-SVC-GRILL', name: '그릴', look: { x: 0.0, y: -2.4, z: -3.0 }, objects: ['sbg', 'grillBody', 'grillWaitTray', ...D1_GRILL_SLOT_KEYS, 'grillFinishedTray'] },
   { id: 'SCR-SVC-DRINK', name: '드링크', look: { x: 1.8, y: -1.4, z: -4.4 }, objects: ['sbg', 'drinkTower', 'glassRack', 'drinkLeverUpper', 'drinkLeverLower'] },
 ];
 

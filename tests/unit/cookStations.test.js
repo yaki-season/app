@@ -1,6 +1,10 @@
 // 멀티 잡 조리 모델 검증 (GPL-004). 익힘 임계값은 recipe.js 기본값(적정 8s·과다 16s·탄 21s).
 import { describe, it, expect } from 'vitest';
-import { createCookStations } from '../../src/render/cookStations.js';
+import {
+  COOK_SLOT_NEXT_ACTION,
+  createCookStations,
+  createD1CookStations,
+} from '../../src/render/cookStations.js';
 
 const NEGIMA = ['chicken', 'leek', 'chicken', 'leek', 'chicken'];
 const assemble = (cook) => NEGIMA.forEach((ing) => cook.clickIngredient(ing));
@@ -32,15 +36,20 @@ describe('createCookStations', () => {
     const cook = createCookStations({ slots: 1 });
     assemble(cook);
     expect(cook.placeToGrill(0).ok).toBe(true);
-    // 덜 익었을 때 클릭은 무효
-    expect(cook.clickSlot(0, 1000).ok).toBe(false);
-    // 적정(8s~)에서 뒤집기
-    const flip = cook.clickSlot(0, 9000);
+    // 덜 익었어도 반대 면으로 뒤집을 수 있다.
+    const flip = cook.clickSlot(0, 3000);
     expect(flip.flipped).toBe(true);
-    // 뒷면 적정에서 회수 → 완성품 good
-    const done = cook.clickSlot(0, 9000 + 9000);
+    // 앞면 3+5초, 뒷면 4+4초를 번갈아 누적한 뒤 최종 시간으로 Perfect를 판정한다.
+    expect(cook.clickSlot(0, 7300).flipped).toBe(true);
+    expect(cook.clickSlot(0, 12600).flipped).toBe(true);
+    const done = cook.clickSlot(0, 16900);
     expect(done.retrieved).toBe(true);
-    expect(done.quality.good).toBe(true);
+    expect(done.quality).toMatchObject({
+      good: true,
+      grade: 'Perfect',
+      frontResult: 'perfect',
+      backResult: 'perfect',
+    });
   });
 
   it('빈 칸이 없으면 올리지 못한다', () => {
@@ -61,12 +70,14 @@ describe('createCookStations', () => {
     expect(v[0].cooking && v[1].cooking).toBe(true);
   });
 
-  it('방치하면 탄 칸이 폐기된다', () => {
+  it('한 면 탄은 Fail 제공 대상으로 보존하고 양면 완전 탄만 폐기한다', () => {
     const cook = createCookStations({ slots: 1 });
     assemble(cook); cook.placeToGrill(0);
-    const discarded = cook.tickBurn(21100); // 21초 초과 → 탄 상태
+    expect(cook.tickBurn(21100)).toEqual([]);
+    expect(cook.clickSlot(0, 21100).flipped).toBe(true);
+    const discarded = cook.tickBurn(21100 + 300 + 21100);
     expect(discarded).toEqual([0]);
-    expect(cook.slotViews(21100)[0].status).toBe('empty');
+    expect(cook.slotViews(50000)[0].status).toBe('empty');
   });
 
   it('setSlots로 그릴 칸을 늘린다 (업그레이드)', () => {
@@ -74,5 +85,226 @@ describe('createCookStations', () => {
     expect(cook.slotCount()).toBe(1);
     cook.setSlots(2);
     expect(cook.slotCount()).toBe(2);
+  });
+
+  it('접촉면 한 면만 진행하고 공중 회전 0.3초 동안 양면이 정지한다', () => {
+    const cook = createCookStations({ slots: 1 });
+    assemble(cook);
+    cook.placeToGrill(0);
+    expect(cook.slotViews(9000)[0]).toMatchObject({
+      orientationFaceDown: 'front',
+      contactFace: 'front',
+      frontElapsedSec: 9,
+      backElapsedSec: 0,
+    });
+    expect(cook.beginFlip(0, 9000).ok).toBe(true);
+    expect(cook.slotViews(9200)[0]).toMatchObject({
+      status: 'flipping',
+      contactFace: null,
+      frontElapsedSec: 9,
+      backElapsedSec: 0,
+      flipProgress: expect.closeTo(2 / 3, 6),
+      visualRotationRad: expect.closeTo((Math.PI * 2) / 3, 6),
+    });
+    expect(cook.completeFlip(0, 9300)).toMatchObject({
+      ok: true,
+      orientationFaceDown: 'back',
+      contactFace: 'back',
+    });
+    expect(cook.slotViews(10300)[0]).toMatchObject({
+      frontElapsedSec: 9,
+      backElapsedSec: 1,
+      flipProgress: null,
+      visualRotationRad: Math.PI,
+    });
+  });
+
+  it('조기 뒤집기를 반복할 수 있지만 0.3초 공중 회전 잠금 중에는 중복 입력을 막는다', () => {
+    const cook = createCookStations({ slots: 1 });
+    assemble(cook);
+    cook.placeToGrill(0);
+
+    expect(cook.beginFlip(0, 1000)).toMatchObject({
+      ok: true,
+      fromFace: 'front',
+      targetFace: 'back',
+    });
+    expect(cook.clickSlot(0, 1100)).toEqual({ ok: false, reason: 'flipping' });
+    expect(cook.clickSlot(0, 1299)).toEqual({ ok: false, reason: 'flipping' });
+    expect(cook.clickSlot(0, 1300)).toMatchObject({
+      ok: true,
+      flipped: true,
+      fromFace: 'back',
+      targetFace: 'front',
+    });
+    expect(cook.slotViews(1300)[0]).toMatchObject({
+      contactFace: null,
+      frontElapsedSec: 1,
+      backElapsedSec: 0,
+      flipping: true,
+    });
+  });
+
+  it('slotViews는 빈 칸·초기 staged·공중 회전의 다음 행동을 도메인 값으로 제공한다', () => {
+    const cook = createD1CookStations();
+    expect(cook.slotViews(0)[0].nextAction).toBe(COOK_SLOT_NEXT_ACTION.NONE);
+
+    cook.debugFillAssembly();
+    expect(cook.placeToGrill(0)).toMatchObject({ slot: 0, staged: true });
+    expect(cook.slotViews(10_000)[0]).toMatchObject({
+      status: 'staged',
+      nextAction: COOK_SLOT_NEXT_ACTION.WAIT,
+    });
+
+    cook.debugFillAssembly();
+    cook.debugFillAssembly();
+    cook.placeToGrill(0);
+    cook.placeToGrill(0);
+    expect(cook.clickSlot(0, 3_000)).toMatchObject({ ok: true, flipped: true });
+    expect(cook.slotViews(3_200)[0]).toMatchObject({
+      status: 'flipping',
+      inputLocked: true,
+      nextAction: COOK_SLOT_NEXT_ACTION.WAIT,
+    });
+  });
+
+  it('앞면 3초 뒤 0.3초 회전 잠금이 끝나면 뒷면 0초 상태의 다음 행동은 flip이다', () => {
+    const cook = createCookStations({ slots: 1 });
+    assemble(cook);
+    cook.placeToGrill(0);
+
+    expect(cook.slotViews(3_000)[0].nextAction).toBe(COOK_SLOT_NEXT_ACTION.FLIP);
+    expect(cook.clickSlot(0, 3_000)).toMatchObject({ ok: true, flipped: true });
+    expect(cook.slotViews(3_300)[0]).toMatchObject({
+      status: 'back',
+      frontElapsedSec: 3,
+      backElapsedSec: 0,
+      inputLocked: false,
+      nextAction: COOK_SLOT_NEXT_ACTION.FLIP,
+    });
+  });
+
+  it('앞면과 뒷면이 모두 적정 구간에 도달한 상태만 retrieve를 제공한다', () => {
+    const cook = createCookStations({ slots: 1 });
+    assemble(cook);
+    cook.placeToGrill(0);
+
+    expect(cook.slotViews(8_000)[0]).toMatchObject({
+      frontElapsedSec: 8,
+      backElapsedSec: 0,
+      nextAction: COOK_SLOT_NEXT_ACTION.FLIP,
+    });
+    expect(cook.clickSlot(0, 8_000)).toMatchObject({ ok: true, flipped: true });
+    expect(cook.slotViews(8_300)[0]).toMatchObject({
+      frontElapsedSec: 8,
+      backElapsedSec: 0,
+      nextAction: COOK_SLOT_NEXT_ACTION.FLIP,
+    });
+    expect(cook.slotViews(16_300)[0]).toMatchObject({
+      frontElapsedSec: 8,
+      backElapsedSec: 8,
+      nextAction: COOK_SLOT_NEXT_ACTION.RETRIEVE,
+    });
+    expect(cook.clickSlot(0, 16_300)).toMatchObject({
+      ok: true,
+      retrieved: true,
+      quality: {
+        grade: 'Perfect',
+        frontResult: 'perfect',
+        backResult: 'perfect',
+      },
+    });
+  });
+
+  it('그릴 밖에서는 정지하고 재투입하면 보존된 방향 면만 이어서 굽는다', () => {
+    const cook = createCookStations({ slots: 1 });
+    assemble(cook);
+    cook.placeToGrill(0);
+    expect(cook.removeFromGrill(0, 9000)).toMatchObject({
+      ok: true,
+      orientationFaceDown: 'front',
+    });
+    expect(cook.slotViews(19000)[0]).toMatchObject({
+      status: 'off-grill',
+      contactFace: null,
+      frontElapsedSec: 9,
+      backElapsedSec: 0,
+    });
+    expect(cook.reinsertToGrill(0, 19000)).toEqual({ ok: true, contactFace: 'front' });
+    expect(cook.slotViews(20000)[0]).toMatchObject({
+      frontElapsedSec: 10,
+      backElapsedSec: 0,
+    });
+  });
+
+  it('snapshot 복구 뒤 숨김 경과 시간을 더하지 않고 방향·양면 시간을 보존한다', () => {
+    const source = createCookStations({ slots: 1 });
+    assemble(source);
+    source.placeToGrill(0);
+    source.clickSlot(0, 3000);
+    source.clickSlot(0, 7300);
+    const saved = source.snapshot(9600);
+    expect(saved.stateVersion).toBe(1);
+    expect(saved.grill[0]).not.toHaveProperty('nextAction');
+
+    const restored = createCookStations({ slots: 1 });
+    expect(restored.restore(saved, 100000)).toEqual({ ok: true });
+    expect(restored.slotViews(100000)[0]).toMatchObject({
+      orientationFaceDown: 'front',
+      contactFace: 'front',
+      frontElapsedSec: 5,
+      backElapsedSec: 4,
+    });
+    expect(restored.clickSlot(0, 103000)).toMatchObject({
+      ok: true,
+      flipped: true,
+      fromFace: 'front',
+      targetFace: 'back',
+    });
+    expect(restored.clickSlot(0, 107300)).toMatchObject({
+      ok: true,
+      retrieved: true,
+      quality: {
+        grade: 'Perfect',
+        frontResult: 'perfect',
+        backResult: 'perfect',
+      },
+    });
+  });
+
+  it('D1은 6칸을 처음부터 열고 첫 3개가 놓인 시점에 앞면 타이머를 함께 시작한다', () => {
+    const cook = createD1CookStations();
+    expect(cook.slotCount()).toBe(6);
+    cook.debugFillAssembly();
+    cook.debugFillAssembly();
+    cook.debugFillAssembly();
+
+    expect(cook.placeToGrill(1_000)).toMatchObject({
+      slot: 0,
+      staged: true,
+      batchStarted: false,
+      remainingForBatch: 2,
+    });
+    expect(cook.placeToGrill(2_000)).toMatchObject({
+      slot: 1,
+      staged: true,
+      batchStarted: false,
+      remainingForBatch: 1,
+    });
+    expect(cook.slotViews(10_000).slice(0, 2)).toEqual([
+      expect.objectContaining({ status: 'staged', cooking: false, frontElapsedSec: 0 }),
+      expect.objectContaining({ status: 'staged', cooking: false, frontElapsedSec: 0 }),
+    ]);
+
+    expect(cook.placeToGrill(3_000)).toMatchObject({
+      slot: 2,
+      batchStarted: true,
+      startedSlots: [0, 1, 2],
+    });
+    expect(cook.slotViews(11_000).slice(0, 3)).toEqual([
+      expect.objectContaining({ status: 'front', frontElapsedSec: 8 }),
+      expect.objectContaining({ status: 'front', frontElapsedSec: 8 }),
+      expect.objectContaining({ status: 'front', frontElapsedSec: 8 }),
+    ]);
   });
 });

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>YAKI SEASON — D1 첫 주문 (2.5D 플레이)</title>
+<title>YAKI SEASON — D1 전체 영업</title>
 <link rel="stylesheet" href="./game.css">
 <link rel="stylesheet" href="./d1-game.css">
 <script type="importmap">
@@ -16,11 +16,26 @@
   <!-- 더미 오브젝트 이름표 (아트 전 스테이션 식별용) -->
   <div id="labelLayer" class="label-layer" data-testid="label-layer"></div>
 
+  <!-- D1BusinessDayUiPort의 6석 상태를 투영하는 말풍선·대기 게이지 -->
+  <div id="bubbleLayer" class="bubble-layer" data-testid="bubble-layer"></div>
+
+  <!-- 그릴 6칸의 접촉면·양면 누적·현재 행동을 색과 무관하게 읽는 semantic DOM -->
+  <section
+    id="grillStatusLayer"
+    class="grill-status-layer"
+    data-testid="grill-status-layer"
+    aria-label="그릴 꼬치 면별 누적 상태"
+    aria-live="polite"
+    hidden
+  ></section>
+
   <!-- 영업 공통 shell -->
   <header id="svcBar" data-testid="svc-bar">
     <span id="svcStation" class="svc-station" data-testid="svc-station">손님</span>
     <ol id="receipts" class="receipts" data-testid="svc-receipts" aria-label="조립 진행"></ol>
     <span id="orderHud" class="order-hud" data-testid="order-hud"></span>
+    <span id="businessClock" class="business-clock" data-testid="business-clock">17:30</span>
+    <span id="businessPhase" class="business-phase" data-testid="business-phase">준비</span>
   </header>
 
   <!-- 손님 안내(가이드) -->
@@ -52,15 +67,46 @@
   <!-- 공용 준비 목록 (완성품 선반) -->
   <div id="dockShelf" class="dock-shelf" data-testid="dock-shelf" aria-label="공용 준비 목록" hidden></div>
 
+  <!-- 선택 완성품과 일치하는 모든 손님을 포인터·키보드 대상으로 제공 -->
+  <section
+    id="customerServePanel"
+    class="customer-serve-panel"
+    data-testid="customer-serve-panel"
+    aria-labelledby="customerServeTitle"
+    hidden
+  >
+    <div class="customer-serve-heading">
+      <h2 id="customerServeTitle">손님별 남은 주문</h2>
+      <p id="selectedPreparedItem" aria-live="polite">완성품을 선택하세요</p>
+    </div>
+    <div id="customerServeTargets" class="customer-serve-targets"></div>
+  </section>
+
   <!-- 퀵 전환 -->
   <nav id="quickNav" class="quick-nav" data-testid="quick-nav" aria-label="화면 빠른 전환"></nav>
 
   <div id="hint" class="hint" data-testid="hint"></div>
 
-  <!-- 완료 오버레이 -->
+  <!-- 마감·숯불·5단계 정산. 정식 아트가 오기 전 stable ID 기반 개발 placeholder. -->
+  <section
+    id="postBusinessPanel"
+    class="post-business-panel"
+    data-testid="post-business-panel"
+    data-component-id="closing.charcoal"
+    data-required-asset-id="ST-CHARCOAL-CORE"
+    data-placeholder="development"
+    hidden
+  >
+    <p id="postBusinessTitle" class="post-business-title" data-testid="post-business-title"></p>
+    <p id="postBusinessSummary" class="post-business-summary" data-testid="post-business-summary"></p>
+    <ol id="settlementSteps" class="settlement-steps" data-testid="settlement-steps"></ol>
+    <button id="postBusinessAction" type="button" data-testid="post-business-action"></button>
+  </section>
+
+  <!-- 완료 오버레이: day-complete 저장 성공 뒤 D2 pre-open -->
   <div id="resultOverlay" class="overlay" data-testid="result-overlay" hidden>
     <p id="resultMessage" data-testid="result-message"></p>
-    <button id="restartButton" data-testid="restart-button">한 번 더</button>
+    <a id="continueButton" class="continue-button" data-testid="continue-button" href="./s0-d3.html">D2로 계속</a>
   </div>
 
   <script type="module" src="./d1-game.js"></script>

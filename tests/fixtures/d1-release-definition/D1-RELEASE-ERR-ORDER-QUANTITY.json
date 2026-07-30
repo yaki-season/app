@@ -1,0 +1,9 @@
+{
+  "id": "D1-RELEASE-ERR-ORDER-QUANTITY",
+  "expectedValid": false,
+  "inputPatch": {
+    "kind": "order-line",
+    "orderId": "D1-ORDER-003",
+    "lines": [{ "menuId": "negima", "quantity": 2 }]
+  }
+}

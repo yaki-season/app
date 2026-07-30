@@ -40,6 +40,17 @@ async function assembleOne(page) {
   }
   await expect.poll(() => waiting(page)).toBe(before + 1);
 }
+async function startInitialBatch(page) {
+  await page.evaluate(() => {
+    for (let index = 0; index < 3; index += 1) window.__prodDebug.cookFillAssembly();
+  });
+  await goScreen(page, 'SCR-SVC-GRILL');
+  for (let index = 0; index < 3; index += 1) {
+    await click(page, 'grillWaitTray');
+    await page.waitForTimeout(230);
+  }
+  await expect.poll(() => slots(page).then((state) => state.slice(0, 3).every((slot) => slot.cooking))).toBe(true);
+}
 
 test('4개 독립 화면을 좌·우/퀵/키보드로 전환하고 svc.station이 갱신된다', async ({ page }) => {
   const errs = await boot(page);
@@ -77,11 +88,8 @@ test('전환 중에는 조작이 잠긴다 (§71)', async ({ page }) => {
 
 test('굽는 동안 다음 꼬치를 조립할 수 있다 (조립·그릴 독립)', async ({ page }) => {
   await boot(page);
-  await assembleOne(page); // 대기 1
-  await goScreen(page, 'SCR-SVC-GRILL');
-  await click(page, 'grillWaitTray'); // 빈 칸에 올림 → 굽는 중, 대기 0
+  await startInitialBatch(page);
   await expect.poll(() => waiting(page)).toBe(0);
-  await expect.poll(() => slots(page).then((s) => s[0].cooking)).toBe(true);
   // 굽는 동안 조립대로 가 또 하나 조립
   await assembleOne(page);
   expect(await waiting(page)).toBe(1);
@@ -89,10 +97,7 @@ test('굽는 동안 다음 꼬치를 조립할 수 있다 (조립·그릴 독립
 
 test('화면을 오가도 굽던 칸 상태가 보존된다 (§71)', async ({ page }) => {
   await boot(page);
-  await assembleOne(page);
-  await goScreen(page, 'SCR-SVC-GRILL');
-  await click(page, 'grillWaitTray');
-  await expect.poll(() => slots(page).then((s) => s[0].cooking)).toBe(true);
+  await startInitialBatch(page);
   const e1 = (await slots(page))[0].faceElapsedSec;
   await goScreen(page, 'SCR-SVC-CUSTOMERS');
   await page.waitForTimeout(500);
@@ -107,16 +112,14 @@ test('그릴 칸은 이전 꼬치의 익힘이 남지 않고 날것으로 리셋
   await expect.poll(() => page.evaluate(() => !!window.__prodDebug.grillMaterial(0))).toBe(true);
   await goScreen(page, 'SCR-SVC-GRILL');
   await page.evaluate(() => window.__prodDebug.grillMaterial(0).setDoneness(0.5)); // 오염
-  await page.waitForTimeout(120);
-  const d = await page.evaluate(() => window.__prodDebug.grillMaterial(0).uniforms.uDoneness.value);
-  expect(d).toBeLessThan(0.05); // 굽지 않는 칸은 날것
+  await expect.poll(
+    () => page.evaluate(() => window.__prodDebug.grillMaterial(0).uniforms.uDoneness.value),
+  ).toBeLessThan(0.05); // 굽지 않는 칸은 다음 렌더 프레임에 날것
 });
 
 test('조립→그릴(앞·뒤)→선반→좌석 서빙 루프가 돈다', async ({ page }) => {
   const errs = await boot(page);
-  await assembleOne(page);
-  await goScreen(page, 'SCR-SVC-GRILL');
-  await click(page, 'grillWaitTray'); // 칸에 올림
+  await startInitialBatch(page);
   await expect.poll(() => slots(page).then((s) => s[0].status)).toBe('front');
 
   await page.evaluate(() => window.__prodDebug.cookElapse(8)); // 앞면 적정

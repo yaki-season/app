@@ -23,6 +23,7 @@ import {
   validatePromotionReceipt,
 } from './promotion-receipt.mjs';
 import { atomicPromoteBundle } from './promotion-transaction.mjs';
+import { assertPromotionSemanticOwnerAlignment } from '../../src/assets/artSemanticOwnerContract.js';
 
 const stagingRoot = path.join(appRoot, '.asset-promotion-staging');
 const evidenceSchemas = {
@@ -275,6 +276,10 @@ async function validateHandoff(handoffFile) {
   ) {
     throw new Error('profile approval은 사용자 승인 상태여야 합니다.');
   }
+  assertPromotionSemanticOwnerAlignment({
+    assetId: handoff.id,
+    metadataSemanticOwner: profileApproval.semanticOwner,
+  });
   await verifyProfileApprovalFiles(evidence.profileApproval);
 
   const provenanceDirectory = path.dirname(evidence.provenance.file);

@@ -1,7 +1,7 @@
 {
   "$schema": "https://yaki-season.local/assets/manifest.schema.json",
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-07-28",
+  "generatedAt": "2026-07-30",
   "specRefs": [
     "ART-002 v3.6.1",
     "ART-003 v5.0.0",
@@ -330,6 +330,157 @@
       "dimensions": {
         "width": 192,
         "height": 192
+      },
+      "format": "png"
+    },
+    {
+      "id": "BG-WORKSPACE-DRINK",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-DRINK",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:BG-WORKSPACE-DRINK:R2",
+      "provenance": "PROV:BG-WORKSPACE-DRINK:R2",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0",
+        "UI-003 v1.2.0",
+        "Developer 2 task 007 binding contract v1.0.0"
+      ],
+      "reviewedAt": "2026-07-30",
+      "url": "/assets/core/drink/bg-workspace-drink-r2-b1.png",
+      "sha256": "a30b2d44635ba52eef5d5461d4ea9b86ea80a2ab12e47f5377b58279dddeafce",
+      "bytes": 2859834,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "BG-EXTERIOR-S0-CLOSED",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-PROLOGUE:S0-STATE-KEY",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:BG-EXTERIOR-S0-CLOSED:R2",
+      "provenance": "PROV:BG-EXTERIOR-S0-CLOSED:R2",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-002 v3.6.1",
+        "ART-003 v5.0.0",
+        "UI-003 v1.2.0",
+        "Developer 2 exterior contract v2.0.0"
+      ],
+      "reviewedAt": "2026-07-30",
+      "url": "/assets/core/s0/prologue/bg-exterior-s0-closed-r2-b1.png",
+      "sha256": "504bc88e874a53e6a69e7dcfaad11cc949b654166d17815cae15a9948e67be21",
+      "bytes": 2616094,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "BG-EXTERIOR-S0-GATE-OPEN",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-PROLOGUE:S0-STATE-GATE",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:BG-EXTERIOR-S0-GATE-OPEN:R1",
+      "provenance": "PROV:BG-EXTERIOR-S0-GATE-OPEN:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-002 v3.6.1",
+        "ART-003 v5.0.0",
+        "UI-003 v1.2.0",
+        "Developer 2 exterior contract v2.0.0"
+      ],
+      "reviewedAt": "2026-07-30",
+      "url": "/assets/core/s0/prologue/bg-exterior-s0-gate-open-r1-b1.png",
+      "sha256": "c97f4c435a2d5ab78e8603879dfbad79a5a4569963d939b9ae354aefb42d6f6a",
+      "bytes": 2774152,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "PR-SHOP-KEY",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-PROLOGUE:S0-STATE-KEY",
+      "profile": "standalone-raster",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:PR-SHOP-KEY:R1",
+      "provenance": "PROV:PR-SHOP-KEY:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-002 v3.6.1",
+        "ART-003 v5.0.0",
+        "UI-003 v1.2.0",
+        "Developer 2 S0 art binding contract v1.0.0"
+      ],
+      "reviewedAt": "2026-07-30",
+      "url": "/assets/core/s0/prologue/pr-shop-key-placed-r1-b1.png",
+      "sha256": "a8a22c3beaa6a4ffa1b45dad6eb4438eda729d325740ad9bcb265d3363229eeb",
+      "bytes": 268103,
+      "dimensions": {
+        "width": 1254,
+        "height": 1254
       },
       "format": "png"
     }

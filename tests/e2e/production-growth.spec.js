@@ -38,39 +38,56 @@ test('정산이 매출·명성을 지갑에 누적한다', async ({ page }) => {
 
 test('구매: 골드 차감·소유·판매가 효과 반영', async ({ page }) => {
   await boot(page);
-  await page.evaluate(() => window.__prodDebug.setWallet(3000, 3));
-  expect(await page.evaluate(() => window.__prodDebug.economyBasePrice())).toBe(100);
+  const content = await page.evaluate(() => window.__prodDebug.contentContract());
+  const upgrade = content.upgrades.find((item) => item.id === 'ingredient-chicken-t2');
+  const startGold = upgrade.costGold + 2000;
+  const expectedPrice = Math.round(content.day.economy.basePrice * upgrade.effect.value);
+  expect(content.urls.day).toBe('/content/campaign/day-d1.json');
+  expect(content.applied.economy).toEqual(content.day.economy);
+  await page.evaluate(
+    ({ gold, reputation }) => window.__prodDebug.setWallet(gold, reputation),
+    { gold: startGold, reputation: Math.max(3, upgrade.reputationReq) },
+  );
+  expect(await page.evaluate(() => window.__prodDebug.economyBasePrice())).toBe(content.day.economy.basePrice);
 
   await page.getByTestId('end-day').click();
   await page.getByTestId('open-purchase').click();
   await expect(page.getByTestId('purchase')).toBeVisible();
-  await expect(page.getByTestId('wallet-gold')).toHaveText('3000');
+  await expect(page.getByTestId('wallet-gold')).toHaveText(String(startGold));
 
   await page.getByTestId('buy-ingredient-chicken-t2').click();
   const w = await wallet(page);
-  expect(w.gold).toBe(2000); // 3000 - 1000
+  expect(w.gold).toBe(startGold - upgrade.costGold);
   expect(w.owned).toContain('ingredient-chicken-t2');
-  expect(await page.evaluate(() => window.__prodDebug.economyBasePrice())).toBe(110); // +10%
+  expect(await page.evaluate(() => window.__prodDebug.economyBasePrice())).toBe(expectedPrice);
 });
 
-test('그릴 칸 업그레이드를 사면 2칸이 열려 동시에 굽는다', async ({ page }) => {
+test('D1 그릴은 처음부터 고정 6칸이며 구형 grillSlots 구매를 노출·소비하지 않는다', async ({ page }) => {
   await boot(page);
   await page.evaluate(() => window.__prodDebug.setWallet(9999, 9));
-  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(1);
+  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(6);
 
   await page.getByTestId('end-day').click();
   await page.getByTestId('open-purchase').click();
-  await page.getByTestId('cat-equipment').click();
-  await page.getByTestId('buy-equipment-grill-slots-2').click();
-  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(2);
+  await expect(page.getByTestId('cat-equipment')).toHaveCount(0);
+  await expect(page.getByTestId('item-equipment-grill-slots-2')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(6);
 
   await page.getByTestId('purchase-close').click(); // 구매 닫고 정산으로
   await page.getByTestId('next-day').click();
-  // 두 꼬치를 두 칸에 올려 동시 굽기
-  await page.evaluate(() => { window.__prodDebug.cookFillAssembly(); window.__prodDebug.cookFillAssembly(); });
-  await page.evaluate(() => { window.__prodDebug.cookPlace(); window.__prodDebug.cookPlace(); });
-  const s = await page.evaluate(() => window.__prodDebug.cookSlots());
-  expect(s.filter((x) => x.cooking).length).toBe(2);
+  await page.evaluate(() => {
+    for (let index = 0; index < 3; index += 1) window.__prodDebug.cookFillAssembly();
+    window.__prodDebug.cookPlace();
+    window.__prodDebug.cookPlace();
+  });
+  expect((await page.evaluate(() => window.__prodDebug.cookSlots())).slice(0, 2)).toEqual([
+    expect.objectContaining({ status: 'staged', contactFace: null, frontElapsedSec: 0 }),
+    expect.objectContaining({ status: 'staged', contactFace: null, frontElapsedSec: 0 }),
+  ]);
+  await page.evaluate(() => window.__prodDebug.cookPlace());
+  const started = (await page.evaluate(() => window.__prodDebug.cookSlots())).slice(0, 3);
+  expect(started.every((slot) => slot.status === 'front' && slot.contactFace === 'front')).toBe(true);
+  expect(new Set(started.map((slot) => slot.frontElapsedSec)).size).toBe(1);
 });
 
 test('게이팅: 명성·선행 조건이 구매를 막는다', async ({ page }) => {

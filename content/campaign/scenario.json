@@ -1,41 +1,250 @@
 [
   {
     "id": "s0",
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "displayKey": "scenario.s0",
     "active": true,
-    "status": "candidate",
-    "stage": "프롤로그",
-    "emotionKey": "상속",
+    "status": "approved",
+    "kind": "prologue",
+    "stage": "S0",
+    "emotionKey": "남겨진 열쇠",
     "prevDay": null,
     "nextDay": "d1",
-    "unlocks": ["negima"],
-    "fallbackNote": "튜토리얼 메뉴 네기마만 사용. 스토리 장면은 건너뛸 수 있다."
+    "unlocks": ["menu-negima"],
+    "fallbackNote": "세 상호작용은 실패·점수·경제 결과 없이 순서대로 완료한다.",
+    "entryConditionId": "campaign-start",
+    "completionConditionId": "s0-three-interactions-complete",
+    "scenes": [
+      {
+        "id": "SCN-S0-DECISION",
+        "timing": "post-interaction",
+        "skipSummary": [
+          "할아버지의 열쇠로 가게를 다시 열었다.",
+          "열쇠·대문·숯불 조작을 익혔다.",
+          "D1 목표: 네기마와 생맥주로 첫 손님을 맞는다."
+        ]
+      }
+    ],
+    "skipSummary": [
+      "열쇠로 닫힌 가게를 열었다.",
+      "숯불을 실패 없이 살렸다.",
+      "하루만 영업하기로 했다."
+    ],
+    "interactions": [
+      {
+        "id": "S0-KEY-SELECT",
+        "sequence": 1,
+        "failurePolicy": "no-failure",
+        "commandId": "select-inherited-key"
+      },
+      {
+        "id": "S0-GATE-OPEN",
+        "sequence": 2,
+        "failurePolicy": "no-failure",
+        "commandId": "open-shop-gate"
+      },
+      {
+        "id": "S0-CHARCOAL-IGNITE",
+        "sequence": 3,
+        "failurePolicy": "no-failure",
+        "commandId": "ignite-charcoal"
+      }
+    ],
+    "readOnly": false,
+    "gameplayCommandIds": [
+      "select-inherited-key",
+      "open-shop-gate",
+      "ignite-charcoal"
+    ],
+    "economyCommandIds": [],
+    "reward": {
+      "growthResultIds": ["menu-negima"],
+      "storyFlagIds": ["s0-complete"]
+    }
   },
   {
     "id": "d1",
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "displayKey": "scenario.d1",
     "active": true,
-    "status": "candidate",
+    "status": "approved",
+    "kind": "business-day",
     "stage": "D1",
     "emotionKey": "첫 영업",
     "prevDay": "s0",
     "nextDay": "d2",
-    "unlocks": ["momo"],
-    "fallbackNote": "모모 미복원 시 네기마만으로 진행 가능."
+    "dayDataId": "d1",
+    "unlocks": ["menu-momo", "day-d2"],
+    "fallbackNote": "첫 주문은 네기마와 생맥주로 고정하며 일반 손님은 같은 수량의 엑스트라 유형으로 대체할 수 있다.",
+    "entryConditionId": "s0-complete",
+    "completionConditionId": "d1-settlement-complete",
+    "scenes": [
+      {
+        "id": "SCN-D1-PREOPEN",
+        "timing": "pre-open",
+        "skipSummary": [
+          "첫 손님 츠키오카 세이지가 찾아왔다.",
+          "생맥주 부분 제공과 네기마 3개 조리를 배운다.",
+          "D1 목표: 첫 주문을 끝까지 안전하게 완성한다."
+        ]
+      },
+      {
+        "id": "SCN-D1-POST",
+        "timing": "post-settlement",
+        "skipSummary": [
+          "첫 영업과 정산을 마쳤다.",
+          "모모 페이지의 일부가 읽히기 시작했다.",
+          "D2 목표: 도움 없이 기본 조리 흐름을 반복한다."
+        ]
+      }
+    ],
+    "skipSummary": [
+      "츠키오카의 첫 주문을 완전 가이드로 완료한다.",
+      "직장인 둘과 혼술 손님을 응대한다.",
+      "정산 뒤 모모와 D2를 연다."
+    ],
+    "interactions": [],
+    "readOnly": false,
+    "gameplayCommandIds": ["begin-day", "accept-order", "serve-item", "cleanup-seat", "complete-settlement"],
+    "economyCommandIds": ["record-sale", "record-tip", "apply-settlement"],
+    "reward": {
+      "growthResultIds": ["menu-momo", "day-d2"],
+      "storyFlagIds": ["d1-complete", "momo-restored"]
+    }
   },
   {
     "id": "d2",
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "displayKey": "scenario.d2",
     "active": true,
-    "status": "candidate",
+    "status": "approved",
+    "kind": "business-day",
     "stage": "D2",
-    "emotionKey": "단골의 시작",
+    "emotionKey": "손의 리듬",
     "prevDay": "d1",
+    "nextDay": "d3",
+    "dayDataId": "d2",
+    "unlocks": ["day-d3"],
+    "fallbackNote": "엑스트라 유형이 없으면 같은 그룹 크기의 혼술족 또는 직장인 유형으로 대체한다.",
+    "entryConditionId": "d1-settlement-complete",
+    "completionConditionId": "d2-settlement-complete",
+    "scenes": [
+      {
+        "id": "SCN-D2-PREOPEN",
+        "timing": "pre-open",
+        "skipSummary": [
+          "D2에 모모와 재방문 손님이 들어온다.",
+          "기본 조리 안내가 줄어든다.",
+          "D2 목표: 주문과 준비 목록을 스스로 확인한다."
+        ]
+      },
+      {
+        "id": "SCN-D2-POST",
+        "timing": "post-settlement",
+        "skipSummary": [
+          "모모 첫 판매와 기본 조리를 마쳤다.",
+          "이름 없는 손님이 재방문 의사를 남겼다.",
+          "D3 목표: 타레 마감과 화면 밖 위험을 익힌다."
+        ]
+      }
+    ],
+    "skipSummary": [
+      "도움이 줄어든 기본 조리를 복습한다.",
+      "모모를 처음 판매한다.",
+      "정산 뒤 D3를 연다."
+    ],
+    "interactions": [],
+    "readOnly": false,
+    "gameplayCommandIds": ["begin-day", "accept-order", "serve-item", "cleanup-seat", "complete-settlement"],
+    "economyCommandIds": ["record-sale", "record-tip", "apply-settlement"],
+    "reward": {
+      "growthResultIds": ["day-d3"],
+      "storyFlagIds": ["d2-complete", "momo-first-sale"]
+    }
+  },
+  {
+    "id": "d3",
+    "schemaVersion": 2,
+    "displayKey": "scenario.d3",
+    "active": true,
+    "status": "approved",
+    "kind": "business-day",
+    "stage": "D3",
+    "emotionKey": "화면 밖의 불",
+    "prevDay": "d2",
+    "nextDay": "d4-preview",
+    "dayDataId": "d3",
+    "unlocks": ["d4-preview"],
+    "fallbackNote": "타레 주문은 유지하며 특수 엑스트라가 없으면 기본 엑스트라 유형으로 대체한다.",
+    "entryConditionId": "d2-settlement-complete",
+    "completionConditionId": "d3-settlement-complete",
+    "scenes": [
+      {
+        "id": "SCN-D3-PREOPEN",
+        "timing": "pre-open",
+        "skipSummary": [
+          "D3에 타레 주문과 붓 마감이 열린다.",
+          "그릴과 생맥주가 동시에 진행된다.",
+          "D3 목표: 화면 밖 위험을 확인하며 주문을 완성한다."
+        ]
+      },
+      {
+        "id": "SCN-D3-POST",
+        "timing": "post-settlement",
+        "skipSummary": [
+          "타레와 교차 작업을 안전하게 마쳤다.",
+          "가게를 소개해도 되는지 묻는 손님이 생겼다.",
+          "다음 목표: D4의 즉시 제공 메뉴를 준비한다."
+        ]
+      }
+    ],
+    "skipSummary": [
+      "타레 붓 공정을 안전하게 배운다.",
+      "그릴과 생맥주 교차 위험을 복습한다.",
+      "정산 뒤 읽기 전용 D4 예고를 연다."
+    ],
+    "interactions": [],
+    "readOnly": false,
+    "gameplayCommandIds": ["begin-day", "accept-order", "apply-tare", "serve-item", "cleanup-seat", "complete-settlement"],
+    "economyCommandIds": ["record-sale", "record-tip", "apply-settlement"],
+    "reward": {
+      "growthResultIds": ["d4-preview"],
+      "storyFlagIds": ["d3-complete", "tare-introduced"]
+    }
+  },
+  {
+    "id": "d4-preview",
+    "schemaVersion": 2,
+    "displayKey": "scenario.d4-preview",
+    "active": true,
+    "status": "approved",
+    "kind": "preview",
+    "stage": "D4 예고",
+    "emotionKey": "다음 불빛",
+    "prevDay": "d3",
     "nextDay": null,
     "unlocks": [],
-    "fallbackNote": "이후 날짜는 캠페인 확장에서 이어진다(현재 스텁)."
+    "fallbackNote": "예고 화면을 닫아도 D3 정산과 저장 상태는 그대로 유지한다.",
+    "entryConditionId": "d3-settlement-complete",
+    "completionConditionId": "preview-dismissed",
+    "scenes": [
+      {
+        "id": "SCN-D4-PREVIEW",
+        "timing": "preview",
+        "skipSummary": [
+          "D4에는 즉시 제공 메뉴가 추가될 예정이다.",
+          "현재 빌드에서는 영업·보상·저장을 실행하지 않는다."
+        ]
+      }
+    ],
+    "skipSummary": [
+      "D4는 읽기 전용 예고다.",
+      "게임플레이와 경제 상태를 바꾸지 않는다."
+    ],
+    "interactions": [],
+    "readOnly": true,
+    "gameplayCommandIds": [],
+    "economyCommandIds": [],
+    "reward": null
   }
 ]

@@ -1,0 +1,84 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, "Malgun Gothic", sans-serif;
+  background: #0c0907;
+  color: #fff4de;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; width: 100vw; height: 100vh; overflow: hidden; }
+button { min-width: 44px; min-height: 44px; font: inherit; }
+.art-harness { width: 100%; height: 100%; display: grid; place-items: center; background: #0c0907; }
+.logical-stage {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  transform-origin: center;
+  background: #211610;
+}
+.art-camera, .semantic-dom { position: absolute; inset: 0; }
+.art-camera { overflow: hidden; background: linear-gradient(145deg, #312116, #14100d); }
+.scene-grid {
+  position: absolute;
+  inset: 0;
+  opacity: .22;
+  background-image:
+    linear-gradient(#d29a5b33 1px, transparent 1px),
+    linear-gradient(90deg, #d29a5b33 1px, transparent 1px);
+  background-size: 96px 96px;
+}
+.approved-asset, .asset-placeholder {
+  position: absolute;
+  object-fit: contain;
+}
+.approved-asset { display: block; }
+.approved-asset[hidden] { display: none; }
+.asset-placeholder {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  border: 5px dashed #dfa15e;
+  border-radius: 28px;
+  background: #4c2e1cd9;
+  color: #ffe3b5;
+  text-align: center;
+}
+.asset-placeholder[hidden] { display: none; }
+.asset-placeholder span {
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  padding: 8px 20px;
+  font-size: 26px;
+  font-weight: 900;
+}
+.asset-placeholder strong { margin-top: 18px; max-width: 90%; font-size: 30px; overflow-wrap: anywhere; }
+.bounds { position: absolute; pointer-events: none; }
+.interaction-bounds { border: 4px solid #7adba7; border-radius: 20px; }
+.semantic-dom { pointer-events: none; }
+.semantic-dom button { pointer-events: auto; border: 2px solid #dba35e; border-radius: 14px; background: #2c1b13; color: inherit; padding: 10px 22px; }
+.harness-header {
+  position: absolute;
+  left: 64px;
+  top: 40px;
+  width: 720px;
+  min-height: 120px;
+  padding: 12px 18px;
+  border-left: 8px solid #d26a3d;
+  background: #17110ed9;
+}
+.harness-header p { margin: 0 0 4px; color: #d8bc91; font-size: 22px; }
+.harness-header h1 { margin: 0; font-size: 38px; }
+.skip { position: absolute; right: 64px; top: 40px; }
+.dom-safe-primary {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 28px;
+  border: 3px solid #f0bf75;
+  border-radius: 18px;
+  background: #17110ee8;
+}
+.dom-safe-primary p { margin: 0; font-size: 28px; font-weight: 800; }

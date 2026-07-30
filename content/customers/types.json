@@ -28,9 +28,20 @@
     "active": true,
     "status": "candidate",
     "groupSize": 2,
-    "patienceSec": 100,
-    "tipMultiplier": 1.1,
+    "patienceSec": 60,
+    "tipMultiplier": 1.0,
     "orderSequence": ["drink", "drink", "skewer", "skewer"]
+  },
+  {
+    "id": "commuter",
+    "schemaVersion": 1,
+    "displayKey": "customer.commuter",
+    "active": true,
+    "status": "candidate",
+    "groupSize": 1,
+    "patienceSec": 60,
+    "tipMultiplier": 1.0,
+    "orderSequence": ["drink", "skewer"]
   },
   {
     "id": "blogger",

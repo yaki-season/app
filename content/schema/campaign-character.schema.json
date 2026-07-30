@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "campaign-character.schema.json",
+  "title": "캠페인 고정 인물",
+  "type": "object",
+  "required": [
+    "id",
+    "schemaVersion",
+    "displayKey",
+    "active",
+    "status",
+    "fixed",
+    "role",
+    "runtimeId",
+    "customerTypeId",
+    "memoryFlagIds"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^CHAR-[A-Z0-9-]+$" },
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "displayKey": { "type": "string", "minLength": 1 },
+    "active": { "type": "boolean" },
+    "status": { "enum": ["candidate", "approved"] },
+    "fixed": { "const": true },
+    "role": { "enum": ["owner", "customer"] },
+    "runtimeId": { "type": ["string", "null"] },
+    "customerTypeId": { "type": ["string", "null"] },
+    "memoryFlagIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

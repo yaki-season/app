@@ -1,0 +1,16 @@
+{
+  "id": "D5-GRILL-ERR-SLOT-UPGRADE",
+  "schemaVersion": 1,
+  "expectedValid": false,
+  "contractPatch": { "grill": { "slotUpgradeEnabled": true } },
+  "productStates": [
+    {
+      "id": "KAWA-STAGED-03",
+      "grillPlacementState": "staged",
+      "orientationFaceDown": "front",
+      "contactFace": null,
+      "elapsedSec": { "front": 0, "back": 0 }
+    }
+  ],
+  "tickTransitions": []
+}

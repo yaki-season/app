@@ -1,0 +1,96 @@
+{
+  "id": "d1",
+  "sessionTargetMs": 420000,
+  "seatIds": ["seat-01", "seat-02", "seat-03", "seat-04", "seat-05", "seat-06"],
+  "timingMs": {
+    "thinkMin": 4000,
+    "thinkMax": 6000,
+    "eat": 15000,
+    "leave": 1000,
+    "cleanup": 3000,
+    "waitRecovery": 10000
+  },
+  "limits": {
+    "maxActiveOrders": 2,
+    "maxRiskProcesses": 1
+  },
+  "economy": {
+    "baseTip": 2,
+    "menuPrices": {
+      "beer": 6,
+      "negima": 3
+    }
+  },
+  "waves": [
+    {
+      "id": "d1-guided-first-order",
+      "atMs": 0,
+      "customers": [
+        {
+          "id": "REGULAR_TSUKIOKA",
+          "typeId": "regular",
+          "patienceMs": 100000,
+          "order": {
+            "id": "D1-ORDER-001",
+            "guided": true,
+            "lines": [
+              { "menuId": "beer", "quantity": 1 },
+              { "menuId": "negima", "quantity": 3 }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "d1-office-pair",
+      "atMs": 100000,
+      "requiresOrderCompletionIds": ["D1-ORDER-001"],
+      "customers": [
+        {
+          "id": "D1-OFFICE-A",
+          "typeId": "office",
+          "groupId": "D1-GROUP-OFFICE",
+          "patienceMs": 60000,
+          "order": {
+            "id": "D1-ORDER-002-A",
+            "lines": [
+              { "menuId": "beer", "quantity": 1 },
+              { "menuId": "negima", "quantity": 1 }
+            ]
+          }
+        },
+        {
+          "id": "D1-OFFICE-B",
+          "typeId": "office",
+          "groupId": "D1-GROUP-OFFICE",
+          "patienceMs": 60000,
+          "order": {
+            "id": "D1-ORDER-002-B",
+            "lines": [
+              { "menuId": "beer", "quantity": 1 },
+              { "menuId": "negima", "quantity": 1 }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "d1-late-solo",
+      "atMs": 220000,
+      "requiresOrderCompletionIds": ["D1-ORDER-002-A", "D1-ORDER-002-B"],
+      "customers": [
+        {
+          "id": "D1-SOLO-A",
+          "typeId": "solo",
+          "patienceMs": 60000,
+          "order": {
+            "id": "D1-ORDER-003",
+            "lines": [
+              { "menuId": "negima", "quantity": 1 }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

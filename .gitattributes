@@ -1,0 +1,8 @@
+# 콘텐츠·소스는 플랫폼 무관 LF로 고정한다(윈도우 autocrlf로 인한 CRLF 회귀 방지).
+# 릴리스 artifact 등은 바이트 단위 비교가 있어 LF가 아니면 테스트가 깨진다.
+*.json text eol=lf
+*.mjs text eol=lf
+*.js text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.md text eol=lf

@@ -33,8 +33,10 @@ export function billboard(cam, rect, z, material) {
   const cx = rect.x + rect.width / 2;
   const cy = rect.y + rect.height / 2;
   const center = worldAtScreen(cam, cx, cy, z);
-  const dist = center.distanceTo(cam.position);
-  const fullH = 2 * dist * TAN_HALF; // 이 거리에서 화면 전체 높이
+  // 원근 투영의 화면 크기는 카메라 전방축 깊이로 결정된다. 화면 가장자리의 대각선 거리로 계산하면
+  // off-axis rect일수록 visual/hit mesh가 계약보다 커져 rect 바깥까지 클릭되는 문제가 생긴다.
+  const cameraDepth = Math.abs(center.clone().applyMatrix4(cam.matrixWorldInverse).z);
+  const fullH = 2 * cameraDepth * TAN_HALF; // 이 전방축 깊이에서 화면 전체 높이
   const geo = new THREE.PlaneGeometry(fullH * ASPECT * rect.width, fullH * rect.height);
   const mesh = new THREE.Mesh(geo, material);
   mesh.position.copy(center);

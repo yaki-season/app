@@ -26,19 +26,20 @@ const config = () => buildConfigFromContent(contentBundle(), { dayId: 'd1' });
 describe('콘텐츠 구동 영업일 루프', () => {
   it('검증된 콘텐츠에서 config를 만든다', () => {
     const c = config();
-    expect(c.customerCount).toBe(20);
-    expect(c.spawnIntervalSec).toBe(12);
-    // day-d1의 customerPool은 regular·solo·office → 세 유형 순환
+    expect(c.customerCount).toBe(4);
+    expect(c.spawnIntervalSec).toBe(30);
+    // task 005 D1 전체 영업 계약의 츠키오카·직장인·혼술 엑스트라 유형
     expect(c.types.map((t) => t.id)).toEqual(['regular', 'solo', 'office']);
     expect(c.cookTimeSec).toBeCloseTo(39.4, 1); // assembly 2 + 2*11.2 + eat 15
   });
 
   it('한 영업일이 손님 수만큼 처리되고 정산 지표를 낸다', () => {
     const r = simulateBusinessDay(config(), 1);
-    expect(r.customers).toBe(20);
-    expect(r.served + r.left).toBe(20);
+    expect(r.customers).toBe(4);
+    expect(r.served + r.left).toBe(4);
     expect(r.good + r.low).toBe(r.served);
-    expect(r.total).toBe(r.revenue + r.tip);
+    // 개별 지표와 총합은 각각 반올림하므로 최대 1G 차이가 날 수 있다.
+    expect(Math.abs(r.total - (r.revenue + r.tip))).toBeLessThanOrEqual(1);
   });
 });
 

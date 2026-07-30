@@ -79,12 +79,13 @@ export class CampaignRuntime {
     return { ok: true, value: this.getState() };
   }
 
-  async completeDay({ dayId, completionId, reward }) {
+  async completeDay({ dayId, completionId, reward, summary = null }) {
     this.ensureState();
     const candidate = completeBusinessDay(this.state, this.definition, {
       dayId,
       completionId,
       reward,
+      summary,
     });
     if (!candidate.applied) {
       return {

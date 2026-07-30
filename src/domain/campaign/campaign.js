@@ -217,6 +217,7 @@ export function completeBusinessDay(state, definition, {
   dayId,
   completionId,
   reward,
+  summary = null,
 }) {
   if (typeof completionId !== 'string' || completionId.length === 0) {
     throw new TypeError('중복 정산 방지 completionId가 필요합니다.');
@@ -239,6 +240,7 @@ export function completeBusinessDay(state, definition, {
     completionId,
     dayId,
     reward: normalizedReward,
+    summary: summary === null ? null : structuredClone(summary),
   };
   const next = transitionToNode({
     ...state,

@@ -6,6 +6,13 @@
 //
 // 증분 1은 더미 도형으로 구조만 세운다. 승인 아트가 오면 색·에셋만 교체한다(작업 022 인계 전 금지).
 
+import {
+  D1_GRILL_FINISHED_TRAY,
+  D1_GRILL_SLOT_KEYS,
+  D1_GRILL_WAITING_TRAY,
+  createD1GrillObjects,
+} from './d1GrillLayout.js';
+
 // 레이어 z 깊이 (카메라는 +z에서 -z를 바라본다. 값이 작을수록 멀다.)
 export const LAYER_Z = {
   background: -8,
@@ -26,9 +33,9 @@ export const CUSTOMER_ART = {
   eatingNegima: `${A}/d1-tsukioka-received-eating-negima-r1-b1.png`,
   eatingBeer: `${A}/d1-tsukioka-received-eating-beer-r1-b1.png`,
 };
-// 좌석 손님 액터에 입힐 텍스처(대기). 풀프레임 아트라 인물 영역만 UV로 잘라 쓴다.
+// 좌석 손님 액터에 입힐 텍스처(대기). 풀프레임 아트에서 테이블 위로 보여야 하는 상체만 잘라 쓴다.
 export const SEAT_ACTOR_TEXTURE = CUSTOMER_ART.waiting;
-export const SEAT_ACTOR_UV = { u0: 0.485, u1: 0.655, v0: 0.05, v1: 0.85 }; // 인물 bbox (하단 원점 v)
+export const SEAT_ACTOR_UV = { u0: 0.485, u1: 0.655, v0: 0.48, v1: 0.85 }; // 상체 bbox (하단 원점 v)
 
 // 바 안쪽 주인공의 공유 기준 위치. 모든 화면 프리셋이 여기서 파생한다(§68).
 export const PLAYER_EYE = { x: 0, y: 2.6, z: 12.0 };
@@ -52,9 +59,24 @@ export const OBJECTS = {
 
   // 그릴 화면 (다중 칸). 대기 트레이의 꼬치를 빈 칸에 올려 각각 독립적으로 굽는다.
   grillBody: { rect: { x: 0.10, y: 0.42, width: 0.80, height: 0.50 }, layer: 'fixture', color: 0x3a3330, kind: 'plane' },
-  grillWaitTray: { rect: { x: 0.13, y: 0.50, width: 0.14, height: 0.14 }, layer: 'interactive', color: 0xc9a86a, kind: 'plane' },
-  grillSlot0: { rect: { x: 0.40, y: 0.42, width: 0.10, height: 0.26 }, layer: 'interactive', color: 0xd98a5f, kind: 'grill' },
-  grillSlot1: { rect: { x: 0.56, y: 0.42, width: 0.10, height: 0.26 }, layer: 'interactive', color: 0xd98a5f, kind: 'grill' },
+  grillWaitTray: { rect: D1_GRILL_WAITING_TRAY.rect, anchor: D1_GRILL_WAITING_TRAY.anchor, layer: 'interactive', color: 0xc9a86a, kind: 'plane' },
+  ...createD1GrillObjects(),
+  grillFinishedTray: {
+    key: D1_GRILL_FINISHED_TRAY.key,
+    rect: D1_GRILL_FINISHED_TRAY.visualRect,
+    visualRect: D1_GRILL_FINISHED_TRAY.visualRect,
+    hitRect: D1_GRILL_FINISHED_TRAY.hitRect,
+    hitTarget: D1_GRILL_FINISHED_TRAY.hitRect,
+    reservedBounds: D1_GRILL_FINISHED_TRAY.reservedBounds,
+    anchor: D1_GRILL_FINISHED_TRAY.anchor,
+    componentId: D1_GRILL_FINISHED_TRAY.componentId,
+    stableAssetId: D1_GRILL_FINISHED_TRAY.stableAssetId,
+    sourceMasterId: D1_GRILL_FINISHED_TRAY.sourceMasterId,
+    sourceMasterRevision: D1_GRILL_FINISHED_TRAY.sourceMasterRevision,
+    layer: 'fixture',
+    color: 0x6f5437,
+    kind: 'plane',
+  },
 
   // 드링크 화면 (단일 레버: 위=거품, 아래=맥주. 잔 채움은 DOM 패널)
   drinkTower: { rect: { x: 0.44, y: 0.30, width: 0.12, height: 0.24 }, layer: 'fixture', color: 0x6b6f72, kind: 'plane' },
@@ -81,6 +103,7 @@ export function computeSeats(cap) {
       actor: { x: cx - halfW, y: 0.15, width: halfW * 2, height: 0.40 }, // 카운터 뒤 상반신
       bubble: { x: cx, y: 0.10 }, // 말풍선·게이지 DOM 앵커 (좌석 위, 정규화 center)
       serve: { x: cx - halfW * 0.82, y: 0.55, width: halfW * 1.64, height: 0.10 }, // 카운터 위 serve 대상
+      hit: { x: cx - halfW, y: 0.13, width: halfW * 2, height: 0.52 }, // 손님과 빈 좌석 정리용 투명 조작 영역
     };
   });
 }
@@ -109,7 +132,7 @@ export const SCREENS = [
     id: 'SCR-SVC-GRILL',
     name: '그릴',
     look: { x: 0.0, y: -2.4, z: -3.0 }, // 아래 그릴 (더 가까이)
-    objects: ['bg', 'grillBody', 'grillWaitTray', 'grillSlot0', 'grillSlot1'],
+    objects: ['bg', 'grillBody', 'grillWaitTray', ...D1_GRILL_SLOT_KEYS, 'grillFinishedTray'],
   },
   {
     id: 'SCR-SVC-DRINK',

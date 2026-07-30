@@ -58,7 +58,13 @@ test('재주문: 만족한 손님이 식사 후 다음 항목을 주문한다', 
 
 test('러시: 자동 입장 파동이 여러 좌석을 채운다', async ({ page }) => {
   await boot(page);
-  await page.evaluate(() => { window.__prodDebug.opsAutoSpawn(true); window.__prodDebug.opsElapse(12); }); // 입장 간격 경과
+  const content = await page.evaluate(() => window.__prodDebug.contentContract());
+  expect(content.urls.day).toBe('/content/campaign/day-d1.json');
+  expect(content.applied.spawnIntervalSec).toBe(content.day.spawnIntervalSec);
+  await page.evaluate((spawnIntervalSec) => {
+    window.__prodDebug.opsAutoSpawn(true);
+    window.__prodDebug.opsElapse(spawnIntervalSec);
+  }, content.day.spawnIntervalSec);
   // 한 파동에 waveSize(2)만큼 채워진다
   await expect.poll(() => occupied(page), { timeout: 4000 }).toBeGreaterThanOrEqual(2);
 });
