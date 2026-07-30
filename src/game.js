@@ -322,6 +322,7 @@ function handle(key, now) {
           if (r.ok) {
             dock.consumeSelected();
             if (r.left) showHint('실패한 음식! 손님이 화나서 나갔어요');
+            else if (r.partial) showHint(`제공 (남은 ${r.remaining}개)`);
             else showHint(r.quality === 'good' ? '제공 완료 (만족)' : '제공 완료 (낮은 품질)');
           } else showHint('주문과 다른 메뉴예요'); // 메뉴 불일치
         }

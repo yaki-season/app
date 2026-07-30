@@ -96,6 +96,29 @@ test('Fail 품질(넘친 맥주 등)을 내면 손님이 화나서 즉시 떠난
   expect(await page.evaluate(() => window.__prodDebug.dockItems().length)).toBe(0); // 소비됨
 });
 
+test('부분 서빙: 수량 주문은 전량을 채워야 식사한다', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__prodDebug.forceSpawn('seat-01', 'office', 0)); // 첫 주문 생맥주 ×2
+  await page.evaluate(() => window.__prodDebug.opsElapse(1));
+  await expect.poll(() => view(page, 'seat-01').then((v) => v.phase)).toBe('ordering');
+  expect((await view(page, 'seat-01')).qtyNeeded).toBe(2);
+  await click(page, 'seatServe:seat-01'); // 주문 접수
+  await expect.poll(() => view(page, 'seat-01').then((v) => v.canServe)).toBe(true);
+
+  // 1잔 제공 → 부분(아직 수령 대기)
+  await page.evaluate(() => window.__prodDebug.dockAdd({ menu: '생맥주', label: 'Perfect', good: true }));
+  await page.waitForTimeout(230);
+  await click(page, 'seatServe:seat-01');
+  await expect.poll(() => view(page, 'seat-01').then((v) => v.qtyServed)).toBe(1);
+  expect((await view(page, 'seat-01')).phase).toBe('waiting'); // 아직 대기
+
+  // 2잔째 제공 → 전량 → 식사
+  await page.evaluate(() => window.__prodDebug.dockAdd({ menu: '생맥주', label: 'Perfect', good: true }));
+  await page.waitForTimeout(230);
+  await click(page, 'seatServe:seat-01');
+  await expect.poll(() => view(page, 'seat-01').then((v) => v.phase)).toBe('eating');
+});
+
 test('정리 필요 좌석을 3초 눌러 비운다', async ({ page }) => {
   await boot(page);
   await page.evaluate(() => window.__prodDebug.forceSpawn('seat-05', 'solo', 0));

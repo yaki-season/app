@@ -79,6 +79,29 @@ describe('createCustomerOps', () => {
     expect(ops.getSeat('seat-03').patienceUntil).toBe(before - 10000);
   });
 
+  it('부분 서빙: 수량이 여러 개면 전량을 채워야 식사한다', () => {
+    const ops = createCustomerOps({
+      seatIds: SEATS,
+      types: [{ id: 'double', groupSize: 1, patienceSec: 100, tipMultiplier: 1, orderSequence: ['skewer', 'skewer'] }],
+      config: { ...BASE, rng: () => 0.9 },
+    });
+    ops.setAutoSpawn(false);
+    ops.forceSpawn('seat-01', 'double', 0, 0);
+    ops.tick(1);
+    expect(view(ops, 'seat-01', 1).qtyNeeded).toBe(2);
+    ops.acceptOrder('seat-01');
+    // 1개 제공 → 부분(아직 대기)
+    const r1 = ops.serve('seat-01', { menu: '네기마', good: true }, 2);
+    expect(r1.partial).toBe(true);
+    expect(r1.remaining).toBe(1);
+    expect(view(ops, 'seat-01', 2).phase).toBe('waiting');
+    expect(view(ops, 'seat-01', 2).orderLabel).toBe('네기마 1/2');
+    // 2개째 제공 → 전량 → 식사
+    const r2 = ops.serve('seat-01', { menu: '네기마', good: true }, 3);
+    expect(r2.partial).toBeFalsy();
+    expect(view(ops, 'seat-01', 3).phase).toBe('eating');
+  });
+
   it('재주문: 만족도 100%면 확률 통과 시 다음 항목을 주문한다', () => {
     const ops = make(() => 0.1); // 0.1 < 0.4 → 재주문
     ops.setAutoSpawn(false);

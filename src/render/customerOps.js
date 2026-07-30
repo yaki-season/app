@@ -41,13 +41,29 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
   const pickRng = (arr) => arr[Math.floor(rng() * arr.length)];
   const thinkMs = () => cfg.thinkMinMs + rng() * (cfg.thinkMaxMs - cfg.thinkMinMs);
 
+  // 주문서를 "라인"으로 만든다: 연속된 같은 메뉴 토큰을 수량으로 묶어 부분 서빙 대상으로 삼는다(§).
+  // 예: ['drink','drink','skewer','skewer'] → [생맥주×2, 네기마×2].
+  function orderLinesFrom(seq) {
+    const lines = [];
+    for (const tok of seq) {
+      const menu = MENU[tok] ?? '네기마';
+      const last = lines[lines.length - 1];
+      if (last && last.menu === menu) last.qty += 1;
+      else lines.push({ menu, qty: 1 });
+    }
+    return lines.length ? lines : [{ menu: '네기마', qty: 1 }];
+  }
+
   function makeCustomer(now, type, groupId) {
     const seq = type.orderSequence && type.orderSequence.length ? type.orderSequence : ['skewer'];
+    const lines = orderLinesFrom(seq);
     return {
       typeId: type.id,
-      orderSeq: seq,
-      orderIndex: 0,
-      menu: MENU[seq[0]] ?? '네기마',
+      orderLines: lines,
+      orderIndex: 0, // 현재 주문 라인
+      menu: lines[0].menu,
+      qtyNeeded: lines[0].qty,
+      qtyServed: 0,
       groupId: groupId ?? null,
       phase: 'thinking',
       mood: 'waiting',
@@ -139,11 +155,14 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
 
   // 식사 종료(§27): 다음 항목이 있고 만족도별 확률을 통과하면 재주문, 아니면 완료.
   function finishMeal(c, now) {
-    const hasNext = c.orderIndex + 1 < c.orderSeq.length;
+    const hasNext = c.orderIndex + 1 < c.orderLines.length;
     const roll = reorderOverride === 'always' ? true : reorderOverride === 'never' ? false : rng() < reorderProb(c.lastSatisfaction);
     if (hasNext && roll) {
       c.orderIndex += 1;
-      c.menu = MENU[c.orderSeq[c.orderIndex]] ?? '네기마';
+      const line = c.orderLines[c.orderIndex];
+      c.menu = line.menu;
+      c.qtyNeeded = line.qty;
+      c.qtyServed = 0;
       c.phase = 'thinking';
       c.phaseUntil = now + thinkMs();
       c.patienceUntil = null;
@@ -202,7 +221,7 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
     const tier = serveTier(item);
     if (tier === 'fail') {
       // 실패 음식 → 손님이 화나서 즉시 퇴장(이탈 기록). 그룹이면 syncGroups가 동반 퇴장 처리.
-      leaveAngry(c, now); // c.served=false 상태라 이탈로 기록
+      leaveAngry(c, now); // 이미 일부라도 서빙됐으면(c.served) 추가 이탈 기록 없음
       c.patienceUntil = null;
       return { ok: true, quality: 'fail', left: true };
     }
@@ -211,6 +230,11 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
     c.lastSatisfaction = tier === 'good' ? 100 : 40;
     const waitSec = c.patienceUntil != null ? (c.patienceMs - (c.patienceUntil - now)) / 1000 : 0;
     records.push({ served: true, good: tier === 'good', waitSec: Math.max(0, waitSec), patienceSec: c.patienceMs / 1000, tipMultiplier: c.tipMultiplier });
+    c.qtyServed += 1;
+    // 부분 서빙: 아직 남았으면 계속 수령 대기(인내심 유지). 전량 채우면 식사.
+    if (c.qtyServed < c.qtyNeeded) {
+      return { ok: true, quality: tier, partial: true, remaining: c.qtyNeeded - c.qtyServed };
+    }
     c.phase = 'eating';
     c.phaseUntil = now + cfg.eatMs;
     c.patienceUntil = null;
@@ -229,13 +253,19 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
       if (!c) return { seatId: id, occupied: false, phase: 'empty', mood: 'waiting', orderLabel: '', waitRatio: 0 };
       const counting = (c.phase === 'ordering' || c.phase === 'waiting') && c.patienceUntil != null;
       const waitRatio = counting ? Math.max(0, Math.min(1, (c.patienceUntil - now) / c.patienceMs)) : 1;
+      const remaining = Math.max(0, c.qtyNeeded - c.qtyServed);
+      // 수량이 여러 개면 진행도를 라벨에 표시(부분 서빙): 예 "네기마 1/2".
+      const orderLabel = c.qtyNeeded > 1 ? `${c.menu} ${c.qtyServed}/${c.qtyNeeded}` : c.menu;
       return {
         seatId: id,
         occupied: true,
         phase: c.phase,
         mood: c.mood,
         menu: c.menu,
-        orderLabel: c.menu,
+        orderLabel,
+        qtyNeeded: c.qtyNeeded,
+        qtyServed: c.qtyServed,
+        remaining,
         waitRatio,
         group: !!c.groupId,
         thinking: c.phase === 'thinking',
