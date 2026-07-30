@@ -38,6 +38,31 @@ describe(`S0·D1 art binding contract v${S0_D1_ART_BINDING_CONTRACT_VERSION}`, (
     );
   });
 
+  it('S0 모든 상태가 component/asset/variant/bounds/layer를 가지며 신체 부위는 0개다', () => {
+    for (const entry of S0_ART_BINDING_INVENTORY) {
+      expect(entry).toMatchObject({
+        screenId: 'SCR-STORY-PROLOGUE',
+        componentId: expect.stringMatching(/^prologue\./),
+        requiredAssetId: expect.any(String),
+        stateVariant: expect.any(String),
+        semanticOwner: 'artist-2.s0-prologue-story',
+        layer: { name: expect.any(String), zOrder: expect.any(Number) },
+        bodyPartCount: 0,
+      });
+      expect(entry.bounds.fhd).toMatchObject({
+        visualBounds: expect.any(Object),
+        interactionBounds: expect.any(Object),
+        domSafeRect: expect.any(Object),
+      });
+      expect(entry.bounds.hd.visualBounds).toEqual(scaleRect(entry.bounds.fhd.visualBounds));
+      expect(entry.bounds.hd.interactionBounds).toEqual(
+        scaleRect(entry.bounds.fhd.interactionBounds),
+      );
+      expect(entry.bounds.hd.domSafeRect).toEqual(scaleRect(entry.bounds.fhd.domSafeRect));
+    }
+    expect(ART_BINDING_VIEWPORTS.hd).toMatchObject({ width: 1280, height: 720, scale: 2 / 3 });
+  });
+
   it(`화로 layer contract v${S0_BRAZIER_LAYER_CONTRACT_VERSION}는 primary와 ignition companion을 분리한다`, () => {
     expect(S0_BRAZIER_LAYER_CONTRACT).toMatchObject({
       sourceMasterId: 'CM-PROLOGUE-INHERITANCE-R1',
@@ -72,31 +97,6 @@ describe(`S0·D1 art binding contract v${S0_D1_ART_BINDING_CONTRACT_VERSION}`, (
     expect(S0_BRAZIER_LAYER_CONTRACT.companion.pixelOwnership.join(' ')).toMatch(
       /모든 보이는 숯 조각/,
     );
-  });
-
-  it('S0 모든 상태가 component/asset/variant/bounds/layer를 가지며 신체 부위는 0개다', () => {
-    for (const entry of S0_ART_BINDING_INVENTORY) {
-      expect(entry).toMatchObject({
-        screenId: 'SCR-STORY-PROLOGUE',
-        componentId: expect.stringMatching(/^prologue\./),
-        requiredAssetId: expect.any(String),
-        stateVariant: expect.any(String),
-        semanticOwner: 'artist-2.s0-prologue-story',
-        layer: { name: expect.any(String), zOrder: expect.any(Number) },
-        bodyPartCount: 0,
-      });
-      expect(entry.bounds.fhd).toMatchObject({
-        visualBounds: expect.any(Object),
-        interactionBounds: expect.any(Object),
-        domSafeRect: expect.any(Object),
-      });
-      expect(entry.bounds.hd.visualBounds).toEqual(scaleRect(entry.bounds.fhd.visualBounds));
-      expect(entry.bounds.hd.interactionBounds).toEqual(
-        scaleRect(entry.bounds.fhd.interactionBounds),
-      );
-      expect(entry.bounds.hd.domSafeRect).toEqual(scaleRect(entry.bounds.fhd.domSafeRect));
-    }
-    expect(ART_BINDING_VIEWPORTS.hd).toMatchObject({ width: 1280, height: 720, scale: 2 / 3 });
   });
 
   it('D1 드링크 첫 묶음 네 ID를 고정한다', () => {
