@@ -28,6 +28,7 @@ export {
   assertStoragePort,
   createPersistenceError,
 } from './application/ports/persistence.js';
+export { createSaveFilePort } from './application/ports/saveFile.js';
 export {
   CampaignSaveRepository,
   DiagnosticsRepository,
