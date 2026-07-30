@@ -5,8 +5,8 @@
 // 라이브 카메라의 시선을 현재값→목표 프리셋으로 lerp하며, 재요청 시 현재값에서 다시 시작해 수렴한다(§104).
 
 import * as THREE from 'three';
-import { makeCamera, billboard, worldAtScreen, anchorToWorld, lerp } from './sceneMath.js';
-import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID, SEATS, SEAT_ACTOR_MOOD, SEAT_ACTOR_TEXTURE, SEAT_ACTOR_UV } from '../config/screenLayout.js';
+import { makeCamera, billboard, worldAtScreen, anchorToWorld, lerp, ASPECT, TAN_HALF } from './sceneMath.js';
+import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID, SEAT_IDS, SEAT_ACTOR_MOOD, SEAT_ACTOR_TEXTURE, SEAT_ACTOR_UV, computeSeats, DEFAULT_SEAT_CAP } from '../config/screenLayout.js';
 
 export function createProductionRenderer(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: false });
@@ -63,8 +63,11 @@ export function createProductionRenderer(canvas) {
     return mesh;
   }
 
+  const seatBaseMesh = {}; // seatId → 좌석 표식 mesh
   const seatActorMesh = {}; // seatId → 손님 액터 mesh
   const seatBubbleWorld = {}; // seatId → 말풍선 앵커 월드 좌표
+  const inactiveSeats = new Set(); // 현재 좌석 수(capacity)를 넘어 비활성인 좌석
+  let seatCam = null; // 손님 화면 프리셋 카메라 (좌석 재배치용)
 
   for (const s of SCREENS) {
     const cam = presetCam[s.id];
@@ -76,31 +79,30 @@ export function createProductionRenderer(canvas) {
       group.push(mesh);
       if (OBJECTS[key].kind !== 'fullframe' && OBJECTS[key].kind !== 'image') objectMesh[key] = mesh; // 배경·아트 레이어 제외
     }
-    // 좌석: 손님 액터(카운터 뒤) + serve 대상(카운터 위). 점유·serve 가시성은 어댑터가 구동.
+    // 좌석: 손님 액터(카운터 뒤) + serve 대상(카운터 위). 최대 좌석 수만큼 만들고 capacity로 배치·표시.
     if (s.seats) {
-      for (const seatId of s.seats) {
-        const seat = SEATS.find((x) => x.id === seatId);
-        // 좌석 표식 (빈 자리도 6석이 보이도록). 항상 표시(화면 토글만), 어댑터가 건드리지 않음.
-        const base = billboard(cam, { x: seat.serve.x, y: 0.50, width: seat.serve.width, height: 0.03 }, LAYER_Z.fixture, new THREE.MeshBasicMaterial({ color: 0x574433 }));
+      seatCam = cam;
+      for (const seatId of SEAT_IDS) {
+        const base = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.03 }, LAYER_Z.fixture, new THREE.MeshBasicMaterial({ color: 0x574433 }));
         base.renderOrder = -LAYER_Z.fixture + 0.5;
-        scene.add(base); group.push(base);
+        base.userData.seatId = seatId;
+        base.visible = false;
+        scene.add(base); group.push(base); seatBaseMesh[seatId] = base;
 
         const actorMat = new THREE.MeshBasicMaterial({ color: SEAT_ACTOR_MOOD.waiting });
         if (SEAT_ACTOR_TEXTURE) { actorMat.map = texture(SEAT_ACTOR_TEXTURE); actorMat.transparent = true; actorMat.color.setHex(0xffffff); }
-        const actor = billboard(cam, seat.actor, LAYER_Z.actor, actorMat);
-        if (SEAT_ACTOR_TEXTURE && SEAT_ACTOR_UV) cropUV(actor.geometry, SEAT_ACTOR_UV);
+        const actor = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.05 }, LAYER_Z.actor, actorMat);
         actor.renderOrder = -LAYER_Z.actor;
         actor.visible = false;
         actor.userData.seatId = seatId;
         scene.add(actor); group.push(actor); seatActorMesh[seatId] = actor;
 
-        const serve = billboard(cam, seat.serve, LAYER_Z.interactive, new THREE.MeshBasicMaterial({ color: 0x584636, transparent: true, opacity: 0.85 }));
+        const serve = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.05 }, LAYER_Z.interactive, new THREE.MeshBasicMaterial({ color: 0x584636, transparent: true, opacity: 0.85 }));
         serve.renderOrder = 100;
         serve.visible = false;
         serve.userData.objectKey = `seatServe:${seatId}`;
+        serve.userData.seatId = seatId;
         scene.add(serve); group.push(serve); objectMesh[`seatServe:${seatId}`] = serve;
-
-        seatBubbleWorld[seatId] = worldAtScreen(cam, seat.bubble.x, seat.bubble.y, LAYER_Z.actor);
       }
     }
     screenGroups[s.id] = group;
@@ -109,8 +111,40 @@ export function createProductionRenderer(canvas) {
   function setActiveScreenObjects(screenId) {
     for (const [id, group] of Object.entries(screenGroups)) {
       const show = id === screenId;
-      for (const mesh of group) mesh.visible = show;
+      for (const mesh of group) {
+        mesh.visible = show && !(mesh.userData.seatId && inactiveSeats.has(mesh.userData.seatId));
+      }
     }
+  }
+
+  // 빌보드를 새 rect로 제자리 재배치(지오메트리·위치 갱신). 좌석 확장 시 좌석 재배치에 쓴다.
+  function placeBillboard(mesh, cam, rect, z) {
+    const center = worldAtScreen(cam, rect.x + rect.width / 2, rect.y + rect.height / 2, z);
+    const dist = center.distanceTo(cam.position);
+    const fullH = 2 * dist * TAN_HALF;
+    mesh.geometry.dispose();
+    mesh.geometry = new THREE.PlaneGeometry(fullH * ASPECT * rect.width, fullH * rect.height);
+    mesh.position.copy(center);
+  }
+
+  // 좌석 수(capacity)에 맞춰 활성 좌석을 카운터에 균등 재배치하고 나머지는 숨긴다(seatCap 업그레이드).
+  function setSeatCapacity(cap) {
+    if (!seatCam) return;
+    const seats = computeSeats(cap);
+    inactiveSeats.clear();
+    SEAT_IDS.forEach((seatId, i) => {
+      if (i < seats.length) {
+        const seat = seats[i];
+        placeBillboard(seatBaseMesh[seatId], seatCam, { x: seat.serve.x, y: 0.50, width: seat.serve.width, height: 0.03 }, LAYER_Z.fixture);
+        placeBillboard(seatActorMesh[seatId], seatCam, seat.actor, LAYER_Z.actor);
+        if (SEAT_ACTOR_TEXTURE && SEAT_ACTOR_UV) cropUV(seatActorMesh[seatId].geometry, SEAT_ACTOR_UV);
+        placeBillboard(objectMesh[`seatServe:${seatId}`], seatCam, seat.serve, LAYER_Z.interactive);
+        seatBubbleWorld[seatId] = worldAtScreen(seatCam, seat.bubble.x, seat.bubble.y, LAYER_Z.actor);
+      } else {
+        inactiveSeats.add(seatId);
+      }
+    });
+    setActiveScreenObjects(activeId);
   }
 
   // ── 라이브 카메라 + 시선 트윈 ─────────────────────────────
@@ -202,13 +236,17 @@ export function createProductionRenderer(canvas) {
     return { x: rect.left + (v.x * 0.5 + 0.5) * rect.width, y: rect.top + (-v.y * 0.5 + 0.5) * rect.height };
   }
 
+  setSeatCapacity(DEFAULT_SEAT_CAP); // 초기 좌석 배치(기본 6석). activeId 정의 후 호출.
+
   return {
     scene,
     camera,
     renderer,
     objectMesh,
     seatActorMesh,
+    seatBaseMesh,
     seatBubbleWorld,
+    setSeatCapacity,
     hasSeatActorArt: () => !!SEAT_ACTOR_TEXTURE,
     // 좌석 손님 아트 텍스처 교체 (phase 구동). UV 크롭은 지오메트리에 남는다.
     setSeatActorTexture: (seatId, url) => {

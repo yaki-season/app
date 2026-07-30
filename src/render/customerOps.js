@@ -31,6 +31,7 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
   };
   const rng = config.rng ?? mulberry32(config.seed ?? 1); // 재현 가능한 난수(§176)
   const seats = new Map(seatIds.map((id) => [id, null]));
+  let capacity = config.seatCap ?? seatIds.length; // 현재 사용 가능한 좌석 수(seatCap 업그레이드)
   let lastSpawnMs = 0;
   let started = false;
   let autoSpawn = true;
@@ -38,8 +39,9 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
   let groupSeq = 0;
   let reorderOverride = null; // 'always' | 'never' | null (테스트 결정론)
 
-  const activeCount = () => seatIds.filter((id) => seats.get(id)).length;
-  const emptySeats = () => seatIds.filter((id) => !seats.get(id));
+  const activeSeatIds = () => seatIds.slice(0, capacity); // capacity 범위 안의 좌석만 사용
+  const activeCount = () => activeSeatIds().filter((id) => seats.get(id)).length;
+  const emptySeats = () => activeSeatIds().filter((id) => !seats.get(id));
   const pickRng = (arr) => arr[Math.floor(rng() * arr.length)];
   const thinkMs = () => cfg.thinkMinMs + rng() * (cfg.thinkMaxMs - cfg.thinkMinMs);
 
@@ -78,10 +80,11 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
     };
   }
 
-  // 인접한(연속 인덱스) 빈 좌석 쌍을 찾는다 (§10,11).
+  // 인접한(연속 인덱스) 빈 좌석 쌍을 찾는다 (§10,11). capacity 범위 안에서만.
   function adjacentEmptyPair() {
-    for (let i = 0; i < seatIds.length - 1; i++) {
-      if (!seats.get(seatIds[i]) && !seats.get(seatIds[i + 1])) return [seatIds[i], seatIds[i + 1]];
+    const active = activeSeatIds();
+    for (let i = 0; i < active.length - 1; i++) {
+      if (!seats.get(active[i]) && !seats.get(active[i + 1])) return [active[i], active[i + 1]];
     }
     return null;
   }
@@ -251,7 +254,7 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
   }
 
   function views(now) {
-    return seatIds.map((id) => {
+    return activeSeatIds().map((id) => {
       const c = seats.get(id);
       if (!c) return { seatId: id, occupied: false, phase: 'empty', mood: 'waiting', orderLabel: '', waitRatio: 0 };
       const counting = (c.phase === 'ordering' || c.phase === 'waiting') && c.patienceUntil != null;
@@ -310,10 +313,16 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
 
   function clearAll() { for (const id of seatIds) seats.set(id, null); }
   function resetDay() { clearAll(); records = []; }
+  // 좌석 수 조정(seatCap 업그레이드). 동시 활성 상한(rush)도 좌석 수에 맞춘다.
+  function setCapacity(n) {
+    capacity = Math.max(1, Math.min(seatIds.length, n));
+    cfg.maxActive = capacity;
+  }
   return {
     tick, acceptOrder, serve, cleanup, views, debugElapse, forceSpawn, forceGroup, clearAll, resetDay,
     setReorderOverride: (v) => { reorderOverride = v; },
     records: () => records.slice(),
     setAutoSpawn: (v) => { autoSpawn = v; }, getSeat: (id) => seats.get(id), activeCount, cfg,
+    setCapacity, capacity: () => capacity,
   };
 }

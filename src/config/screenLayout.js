@@ -63,16 +63,30 @@ export const OBJECTS = {
   drinkLeverLower: { rect: { x: 0.60, y: 0.49, width: 0.09, height: 0.08 }, layer: 'interactive', color: 0xc79a3a, kind: 'plane' },
 };
 
-// 6석 좌석 (손님 화면). 각 좌석은 카운터 뒤 손님 액터, 좌석 위 말풍선(DOM), 카운터 위 serve 대상을 갖는다.
-// 006/GPL-003이 실제 손님·주문 데이터를 이 인터페이스로 꽂는다. 좌표는 정규화(top-left rect / center point).
-const SEAT_X = [0.12, 0.268, 0.416, 0.564, 0.712, 0.86]; // 6석 중심 x
-export const SEATS = SEAT_X.map((cx, i) => ({
-  id: `seat-0${i + 1}`,
-  actor: { x: cx - 0.055, y: 0.15, width: 0.11, height: 0.40 }, // 카운터 뒤 상반신
-  bubble: { x: cx, y: 0.10 }, // 말풍선·게이지 DOM 앵커 (좌석 위, 정규화 center)
-  serve: { x: cx - 0.045, y: 0.55, width: 0.09, height: 0.10 }, // 카운터 위 serve 대상
-}));
-export const SEAT_IDS = SEATS.map((s) => s.id);
+// 좌석 (손님 화면). 좌석 수는 좌석 확장 업그레이드(seatCap 6→8→12)로 늘어난다. 좌석은 카운터 뒤 손님
+// 액터, 좌석 위 말풍선(DOM), 카운터 위 serve 대상을 갖는다. 좌표는 정규화(top-left rect / center point).
+export const MAX_SEATS = 12;
+export const DEFAULT_SEAT_CAP = 6;
+// cap개의 좌석을 카운터 폭에 균등 배치한다. cap=6은 기존 좌표(0.12~0.86)와 동일해 무회귀.
+export function computeSeats(cap) {
+  const n = Math.max(1, Math.min(MAX_SEATS, cap));
+  const left = n <= 6 ? 0.12 : 0.06;
+  const right = n <= 6 ? 0.86 : 0.94;
+  const step = n > 1 ? (right - left) / (n - 1) : 0;
+  const halfW = Math.min(0.055, step > 0 ? step * 0.42 : 0.055); // 액터 반폭(밀집 시 축소)
+  return Array.from({ length: n }, (_, i) => {
+    const cx = n === 1 ? 0.5 : left + step * i;
+    return {
+      id: `seat-${String(i + 1).padStart(2, '0')}`,
+      actor: { x: cx - halfW, y: 0.15, width: halfW * 2, height: 0.40 }, // 카운터 뒤 상반신
+      bubble: { x: cx, y: 0.10 }, // 말풍선·게이지 DOM 앵커 (좌석 위, 정규화 center)
+      serve: { x: cx - halfW * 0.82, y: 0.55, width: halfW * 1.64, height: 0.10 }, // 카운터 위 serve 대상
+    };
+  });
+}
+// 최대 좌석 id·기본 배치. 렌더러는 MAX_SEATS를 만들고 capacity에 맞춰 재배치·표시한다.
+export const SEAT_IDS = Array.from({ length: MAX_SEATS }, (_, i) => `seat-${String(i + 1).padStart(2, '0')}`);
+export const SEATS = computeSeats(DEFAULT_SEAT_CAP);
 export const SEAT_ACTOR_MOOD = { waiting: 0x8a7563, tasting: 0x9c826a, satisfied: 0x8fd47a, neutral: 0xc2b3a3, retry: 0xef6a58 };
 
 // 화면 레지스트리. 좌·우 순서 = 배열 순서. 각 화면은 같은 PLAYER_EYE에서 look만 달리한다.

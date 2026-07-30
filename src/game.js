@@ -43,6 +43,7 @@ let cleanupHold = null; // { seatId, startMs } 정리 3초 홀드
 const ownedItems = () => upgrades.filter((u) => wallet.owned.has(u.id));
 const currentEconomy = () => (baseEconomy ? effectiveEconomy(baseEconomy, ownedItems()) : null);
 const syncSlots = () => cook.setSlots(ownedEffects(ownedItems()).grillSlots); // 업그레이드 → 그릴 칸 수
+const syncSeats = () => { const cap = ownedEffects(ownedItems()).seatCap; if (ops) ops.setCapacity(cap); R.setSeatCapacity(cap); }; // 업그레이드 → 좌석 수
 
 // 공용 준비 목록 (완성품 선반). 조리와 서빙을 분리한다.
 const dock = createPreparedDock({ container: el('dockShelf') });
@@ -446,6 +447,7 @@ function buyItem(id) {
   wallet.gold = r.gold;
   wallet.owned.add(r.ownedAdd);
   syncSlots(); // 그릴 칸 업그레이드 반영
+  syncSeats(); // 좌석 확장 업그레이드 반영
   const label = ITEM_LABELS[id] ?? { name: id };
   el('purchaseFeedback').textContent = `${label.name} 구매 완료 (남은 골드 ${wallet.gold}G)`;
   renderPurchase();
@@ -591,11 +593,12 @@ Promise.all([
         urgentThresholdSec: day.urgentThresholdSec, // 긴급 대기 임계
         cleanupSec: 3,
         leaveSec: 1,
-        maxActive: 4, // 활성 좌석 상한 (러시)
+        seatCap: ownedEffects(ownedItems()).seatCap, // 초기 좌석 수(업그레이드 반영)
         waveSize: 2, // 한 파동 입장 수
         seed: 1, // 재현 가능한 손님 생성·재주문
       },
     });
+    syncSeats(); // 좌석 수 반영(렌더러 + maxActive)
     if (typeof window !== 'undefined') window.__ops = ops;
   })
   .catch((err) => console.error('손님 운영 콘텐츠 로드 실패:', err));
@@ -619,6 +622,8 @@ window.__prodDebug = {
   controlsLocked: () => director.controlsLocked(),
   seatStates: () => customers.getStates(),
   seatViews: () => (ops ? ops.views(performance.now()) : []),
+  seatCapacity: () => (ops ? ops.capacity() : null),
+  seatBaseVisible: (id) => !!R.seatBaseMesh[id]?.visible,
   dockItems: () => dock.items(),
   dockSelectedId: () => dock.selectedId(),
   dockAdd: (item) => dock.add(item), // e2e: 조리 없이 선반 적재

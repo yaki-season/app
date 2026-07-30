@@ -153,6 +153,20 @@ describe('createCustomerOps', () => {
     expect(view(ops, 'seat-04', 17002).phase).toBe('leaving');
   });
 
+  it('좌석 수(capacity)를 넘겨 앉히지 않는다', () => {
+    const ops = make(() => 0.5); // regular 단일 손님을 뽑는 고정 난수
+    ops.setCapacity(2); // 좌석 2개만 활성
+    ops.setAutoSpawn(true);
+    for (let t = 0; t < 5; t += 1) ops.tick(t * 13000); // 여러 입장 파동
+    const occupied = SEATS.filter((id) => ops.getSeat(id)).length;
+    expect(occupied).toBeLessThanOrEqual(2);
+    expect(ops.getSeat('seat-03')).toBeNull(); // 3번 이후는 비활성
+    // 좌석을 늘리면 그 자리도 채울 수 있다
+    ops.setCapacity(4);
+    ops.tick(6 * 13000);
+    expect(SEATS.filter((id) => ops.getSeat(id)).length).toBeGreaterThan(2);
+  });
+
   it('2인 그룹: 인접 좌석에 함께 입장한다', () => {
     const ops = make(() => 0); // rng 0 → 항상 첫 후보(solo) … 그룹은 forceGroup으로 검증
     ops.setAutoSpawn(false);
