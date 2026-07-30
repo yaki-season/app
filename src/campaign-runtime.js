@@ -15,6 +15,41 @@ export {
 } from './domain/campaign/campaign.js';
 export { CampaignRuntime } from './application/campaign/campaignRuntime.js';
 export {
+  D1_BUSINESS_DAY_RELEASE_DEFINITION_URL,
+  D1_BUSINESS_DAY_RELEASE_SCHEMA_VERSION,
+  D1_DEFINITION_CONSUMER_ERROR_CODE,
+  consumeD1BusinessDayReleaseDefinition,
+  loadD1BusinessDayReleaseDefinition,
+} from './application/ports/d1BusinessDayDefinition.js';
+export { D1BusinessDayRuntime } from './application/businessDay/d1BusinessDayRuntime.js';
+export {
+  D1BusinessDayUiPort,
+  D1_UI_ERROR_CODE,
+  D1_UI_INTENT,
+  buildD1BusinessDayViewModel,
+} from './application/businessDay/d1BusinessDayUiPort.js';
+export { createD1CookStations } from './render/cookStations.js';
+export {
+  D1_RUNTIME_COMPONENT_INVENTORY,
+  reportD1RuntimeComponentInventory,
+} from './assets/d1RuntimeInventory.js';
+export {
+  D1_CUSTOMER_PHASE,
+  D1_DAY_PHASE,
+  D1_ORDER_STATUS,
+  D1_QUALITY,
+  D1_SETTLEMENT_STEPS,
+  advanceD1BusinessDay,
+  buildD1CampaignReward,
+  createD1BusinessDayDefinition,
+  createD1BusinessDayState,
+  d1DebugView,
+  dispatchD1Command,
+  markD1BusinessDayComplete,
+  summarizeD1Settlement,
+  validateD1BusinessDayState,
+} from './domain/businessDay/d1BusinessDay.js';
+export {
   CHECKPOINT_TYPE,
   FIRST_PUBLIC_SAVE_SCHEMA_VERSION,
   createMigrationRegistry,

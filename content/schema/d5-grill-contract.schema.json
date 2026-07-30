@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "d5-grill-contract.schema.json",
+  "title": "006-A 격리 D5 고정 그릴·양면 품질 계약",
+  "type": "object",
+  "required": ["id", "schemaVersion", "status", "grill", "qualityTables", "menuQualityBindings", "recipes", "d5Guide", "fanBoost"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "const": "d5-grill-contract" },
+    "schemaVersion": { "const": 1 },
+    "status": { "const": "candidate" },
+    "grill": {
+      "type": "object",
+      "required": ["slotCount", "slotUpgradeEnabled"],
+      "additionalProperties": false,
+      "properties": {
+        "slotCount": { "const": 6 },
+        "slotUpgradeEnabled": { "const": false }
+      }
+    },
+    "qualityTables": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "faceResults"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "faceResults": {
+            "type": "object",
+            "required": ["perfectPerfect", "perfectOver", "ok", "fail", "discard"],
+            "additionalProperties": false,
+            "properties": {
+              "perfectPerfect": { "const": "Perfect" },
+              "perfectOver": { "const": "Good" },
+              "ok": { "const": "OK" },
+              "fail": { "const": "Fail" },
+              "discard": { "const": "discard" }
+            }
+          }
+        }
+      }
+    },
+    "menuQualityBindings": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["menuId", "qualityTableId"],
+        "additionalProperties": false,
+        "properties": {
+          "menuId": { "enum": ["negima", "kawa"] },
+          "qualityTableId": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "recipes": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/definitions/recipe" }
+    },
+    "d5Guide": {
+      "type": "object",
+      "required": ["scenarioId", "properHighlight", "qualityWindowAdjustmentSec"],
+      "additionalProperties": false,
+      "properties": {
+        "scenarioId": { "const": "d5" },
+        "properHighlight": { "const": true },
+        "qualityWindowAdjustmentSec": { "const": 0 }
+      }
+    },
+    "fanBoost": {
+      "type": "object",
+      "required": ["boostElapsedSec", "cooldownSec", "unlockScenarioId", "availableFromScenarioId", "scope"],
+      "additionalProperties": false,
+      "properties": {
+        "boostElapsedSec": { "const": 4 },
+        "cooldownSec": { "const": 9 },
+        "unlockScenarioId": { "const": "d5" },
+        "availableFromScenarioId": { "const": "d6" },
+        "scope": { "const": "currentContactFace" }
+      }
+    }
+  },
+  "definitions": {
+    "recipe": {
+      "type": "object",
+      "required": ["id", "status", "ingredients", "seasoningOptions", "faceThresholdsSec", "qualityTableId"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "enum": ["negima", "kawa"] },
+        "status": { "const": "candidate" },
+        "sourceRecipeId": { "type": "string" },
+        "ingredients": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "seasoningOptions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["salt", "tare"] }
+        },
+        "faceThresholdsSec": {
+          "type": "object",
+          "required": ["perfect", "over", "burnt"],
+          "additionalProperties": false,
+          "properties": {
+            "perfect": { "type": "number", "minimum": 0 },
+            "over": { "type": "number", "minimum": 0 },
+            "burnt": { "type": "number", "minimum": 0 }
+          }
+        },
+        "qualityTableId": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

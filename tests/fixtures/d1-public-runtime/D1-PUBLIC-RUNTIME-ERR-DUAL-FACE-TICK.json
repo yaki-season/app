@@ -1,0 +1,12 @@
+{
+  "id": "D1-PUBLIC-RUNTIME-ERR-DUAL-FACE-TICK",
+  "expectedValid": false,
+  "initialBatchStartedAtMs": [1000, 1000, 1000],
+  "tickTransitions": [
+    {
+      "id": "BOTH-FACES-ADVANCE",
+      "previous": { "contactFace": "front", "elapsedSec": { "front": 8, "back": 0 } },
+      "next": { "contactFace": "front", "elapsedSec": { "front": 9, "back": 1 } }
+    }
+  ]
+}

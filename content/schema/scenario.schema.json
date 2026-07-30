@@ -1,21 +1,146 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "scenario.schema.json",
-  "title": "영업일 시나리오",
+  "title": "캠페인 노드",
   "type": "object",
-  "required": ["id", "schemaVersion", "displayKey", "active", "status", "stage", "emotionKey", "prevDay", "nextDay", "unlocks"],
+  "required": [
+    "id",
+    "schemaVersion",
+    "displayKey",
+    "active",
+    "status",
+    "kind",
+    "stage",
+    "emotionKey",
+    "prevDay",
+    "nextDay",
+    "unlocks",
+    "fallbackNote",
+    "entryConditionId",
+    "completionConditionId",
+    "scenes",
+    "skipSummary",
+    "interactions",
+    "readOnly",
+    "gameplayCommandIds",
+    "economyCommandIds",
+    "reward"
+  ],
   "additionalProperties": false,
   "properties": {
-    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "id": { "type": "string", "pattern": "^(s0|d[1-9][0-9]*|d[1-9][0-9]*-preview)$" },
     "schemaVersion": { "type": "integer", "minimum": 1 },
     "displayKey": { "type": "string", "minLength": 1 },
     "active": { "type": "boolean" },
     "status": { "enum": ["candidate", "approved"] },
+    "kind": { "enum": ["prologue", "business-day", "preview"] },
     "stage": { "type": "string", "minLength": 1 },
     "emotionKey": { "type": "string", "minLength": 1 },
-    "prevDay": { "type": ["string", "null"], "description": "이전 날짜 ID. 첫 날은 null. 끊긴 참조 금지 (DAT-001 §15)." },
-    "nextDay": { "type": ["string", "null"], "description": "다음 날짜 ID. 마지막 날은 null. 끊긴 참조 금지." },
-    "unlocks": { "type": "array", "items": { "type": "string" }, "description": "이 날 해금되는 메뉴·업그레이드 ID." },
-    "fallbackNote": { "type": "string", "description": "필수 메뉴·손님 잠김 시 대체 흐름 요약 (DAT-001 §16)." }
-  }
+    "prevDay": { "type": ["string", "null"] },
+    "nextDay": { "type": ["string", "null"] },
+    "dayDataId": { "type": "string", "pattern": "^d[1-9][0-9]*$" },
+    "unlocks": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "fallbackNote": { "type": "string", "minLength": 1 },
+    "entryConditionId": { "type": "string", "minLength": 1 },
+    "completionConditionId": { "type": "string", "minLength": 1 },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "timing", "skipSummary"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "timing": { "enum": ["pre-open", "post-interaction", "post-settlement", "preview"] },
+          "skipSummary": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "skipSummary": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "interactions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "sequence", "failurePolicy", "commandId"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "sequence": { "type": "integer", "minimum": 1 },
+          "failurePolicy": { "const": "no-failure" },
+          "commandId": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "readOnly": { "type": "boolean" },
+    "gameplayCommandIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "economyCommandIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "reward": {
+      "type": ["object", "null"],
+      "required": ["growthResultIds", "storyFlagIds"],
+      "additionalProperties": false,
+      "properties": {
+        "growthResultIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "storyFlagIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "business-day" } } },
+      "then": { "required": ["dayDataId"] }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "prologue" } } },
+      "then": {
+        "properties": {
+          "interactions": { "minItems": 3, "maxItems": 3 },
+          "readOnly": { "const": false }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "preview" } } },
+      "then": {
+        "properties": {
+          "nextDay": { "type": "null" },
+          "interactions": { "maxItems": 0 },
+          "readOnly": { "const": true },
+          "gameplayCommandIds": { "maxItems": 0 },
+          "economyCommandIds": { "maxItems": 0 },
+          "reward": { "type": "null" }
+        }
+      }
+    }
+  ]
 }

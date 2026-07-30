@@ -1,0 +1,26 @@
+[
+  {
+    "id": "CHAR-AKI",
+    "schemaVersion": 1,
+    "displayKey": "character.aki",
+    "active": true,
+    "status": "approved",
+    "fixed": true,
+    "role": "owner",
+    "runtimeId": null,
+    "customerTypeId": null,
+    "memoryFlagIds": ["s0-inherited-key", "d1-first-business"]
+  },
+  {
+    "id": "CHAR-TSUKIOKA",
+    "schemaVersion": 1,
+    "displayKey": "character.tsukioka",
+    "active": true,
+    "status": "approved",
+    "fixed": true,
+    "role": "customer",
+    "runtimeId": "REGULAR_TSUKIOKA",
+    "customerTypeId": "regular",
+    "memoryFlagIds": ["d1-first-customer", "d2-return-visit", "d3-shop-introduction"]
+  }
+]

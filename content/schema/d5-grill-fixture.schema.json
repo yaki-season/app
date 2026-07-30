@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "d5-grill-fixture.schema.json",
+  "title": "006-A 접촉면 상태·tick 격리 fixture",
+  "type": "object",
+  "required": ["id", "schemaVersion", "expectedValid", "productStates", "tickTransitions"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^D[56]-GRILL-(VALID|ERR)-[A-Z0-9-]+$" },
+    "schemaVersion": { "const": 1 },
+    "expectedValid": { "type": "boolean" },
+    "contractPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "grill": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "slotCount": { "type": "integer" },
+            "slotUpgradeEnabled": { "type": "boolean" }
+          }
+        },
+        "d5Guide": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "properHighlight": { "type": "boolean" },
+            "qualityWindowAdjustmentSec": { "type": "number" }
+          }
+        }
+      }
+    },
+    "productStates": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/productState" }
+    },
+    "tickTransitions": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/tickTransition" }
+    }
+  },
+  "definitions": {
+    "productState": {
+      "type": "object",
+      "required": ["id", "grillPlacementState", "orientationFaceDown", "contactFace", "elapsedSec"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "grillPlacementState": { "enum": ["staged", "active", "offGrill"] },
+        "orientationFaceDown": { "enum": ["front", "back"] },
+        "contactFace": { "enum": ["front", "back", null] },
+        "elapsedSec": {
+          "type": "object",
+          "required": ["front", "back"],
+          "additionalProperties": false,
+          "properties": {
+            "front": { "type": "number", "minimum": 0 },
+            "back": { "type": "number", "minimum": 0 }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "grillPlacementState": { "const": "active" } } },
+          "then": {
+            "anyOf": [
+              { "properties": { "orientationFaceDown": { "const": "front" }, "contactFace": { "const": "front" } } },
+              { "properties": { "orientationFaceDown": { "const": "back" }, "contactFace": { "const": "back" } } }
+            ]
+          },
+          "else": { "properties": { "contactFace": { "const": null } } }
+        }
+      ]
+    },
+    "tickTransition": {
+      "type": "object",
+      "required": ["id", "scenarioId", "tick", "previous", "next"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "scenarioId": { "enum": ["d5", "d6"] },
+        "tick": {
+          "type": "object",
+          "required": ["kind", "elapsedSec"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "enum": ["elapsed", "fan"] },
+            "elapsedSec": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        "previous": { "$ref": "#/definitions/productState" },
+        "next": { "$ref": "#/definitions/productState" }
+      }
+    }
+  }
+}

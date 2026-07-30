@@ -1,0 +1,7 @@
+{
+  "id": "D1-PUBLIC-RUNTIME-VALID-GOOD-LOW-SETTLEMENT",
+  "expectedValid": true,
+  "settlementQualities": ["good", "low"],
+  "initialBatchStartedAtMs": [1000, 1000, 1000],
+  "tickTransitions": []
+}

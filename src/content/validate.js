@@ -12,7 +12,10 @@ export function validateContent(bundle, schemas) {
   const validators = {
     processes: ajv.compile(schemas.process),
     recipes: ajv.compile(schemas.recipe),
+    menus: schemas.menu ? ajv.compile(schemas.menu) : null,
     customers: ajv.compile(schemas.customerType),
+    campaignCharacters: schemas.campaignCharacter ? ajv.compile(schemas.campaignCharacter) : null,
+    orders: schemas.order ? ajv.compile(schemas.order) : null,
     days: ajv.compile(schemas.day),
     upgrades: schemas.upgrade ? ajv.compile(schemas.upgrade) : null,
     staff: schemas.staff ? ajv.compile(schemas.staff) : null,

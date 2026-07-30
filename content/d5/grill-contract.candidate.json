@@ -1,0 +1,56 @@
+{
+  "id": "d5-grill-contract",
+  "schemaVersion": 1,
+  "status": "candidate",
+  "grill": {
+    "slotCount": 6,
+    "slotUpgradeEnabled": false
+  },
+  "qualityTables": [
+    {
+      "id": "bilateral-skewer-quality-v1",
+      "faceResults": {
+        "perfectPerfect": "Perfect",
+        "perfectOver": "Good",
+        "ok": "OK",
+        "fail": "Fail",
+        "discard": "discard"
+      }
+    }
+  ],
+  "menuQualityBindings": [
+    { "menuId": "negima", "qualityTableId": "bilateral-skewer-quality-v1" },
+    { "menuId": "kawa", "qualityTableId": "bilateral-skewer-quality-v1" }
+  ],
+  "recipes": [
+    {
+      "id": "negima",
+      "status": "candidate",
+      "sourceRecipeId": "negima",
+      "ingredients": ["chicken", "leek", "chicken", "leek", "chicken"],
+      "seasoningOptions": ["salt", "tare"],
+      "faceThresholdsSec": { "perfect": 8, "over": 16, "burnt": 21 },
+      "qualityTableId": "bilateral-skewer-quality-v1"
+    },
+    {
+      "id": "kawa",
+      "status": "candidate",
+      "ingredients": ["foldedChickenSkin", "foldedChickenSkin", "foldedChickenSkin", "foldedChickenSkin", "foldedChickenSkin"],
+      "seasoningOptions": ["salt", "tare"],
+      "faceThresholdsSec": { "perfect": 10, "over": 14, "burnt": 18 },
+      "qualityTableId": "bilateral-skewer-quality-v1"
+    }
+  ],
+  "d5Guide": {
+    "scenarioId": "d5",
+    "properHighlight": true,
+    "qualityWindowAdjustmentSec": 0
+  },
+  "fanBoost": {
+    "boostElapsedSec": 4,
+    "cooldownSec": 9,
+    "unlockScenarioId": "d5",
+    "availableFromScenarioId": "d6",
+    "scope": "currentContactFace"
+  }
+}

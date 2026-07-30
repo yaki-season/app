@@ -1,0 +1,104 @@
+{
+  "id": "d3",
+  "schemaVersion": 2,
+  "displayKey": "day.d3",
+  "active": true,
+  "status": "candidate",
+  "customerCount": 8,
+  "spawnIntervalSec": 20,
+  "waitRecoverySec": 10,
+  "urgentThresholdSec": 15,
+  "customerPool": ["regular", "office", "solo", "commuter"],
+  "economy": {
+    "basePrice": 3,
+    "qualityMultGood": 1,
+    "qualityMultLow": 0.4,
+    "tipBase": 2
+  },
+  "timingSec": {
+    "assembly": 2,
+    "eat": 15,
+    "orderThinkMin": 4,
+    "orderThinkMax": 6
+  },
+  "autoPolicySuccessRate": 0.8,
+  "businessWindow": {
+    "startMinute": 1050,
+    "endMinute": 1590,
+    "spansMidnight": true,
+    "targetSessionSec": 420
+  },
+  "segments": [
+    {
+      "id": "d3-tare-intro",
+      "startMinute": 1050,
+      "endMinute": 1140,
+      "customerCount": { "min": 1, "max": 1 },
+      "orderCount": { "min": 1, "max": 1 },
+      "itemCount": { "min": 2, "max": 2 },
+      "maxActiveOrders": 1,
+      "maxRiskProcesses": 1
+    },
+    {
+      "id": "d3-office-cross",
+      "startMinute": 1140,
+      "endMinute": 1260,
+      "customerCount": { "min": 2, "max": 2 },
+      "orderCount": { "min": 1, "max": 1 },
+      "itemCount": { "min": 4, "max": 4 },
+      "maxActiveOrders": 2,
+      "maxRiskProcesses": 2
+    },
+    {
+      "id": "d3-rush",
+      "startMinute": 1260,
+      "endMinute": 1380,
+      "customerCount": { "min": 3, "max": 3 },
+      "orderCount": { "min": 3, "max": 3 },
+      "itemCount": { "min": 6, "max": 6 },
+      "maxActiveOrders": 2,
+      "maxRiskProcesses": 2
+    },
+    {
+      "id": "d3-late",
+      "startMinute": 1380,
+      "endMinute": 1590,
+      "customerCount": { "min": 2, "max": 2 },
+      "orderCount": { "min": 2, "max": 2 },
+      "itemCount": { "min": 4, "max": 4 },
+      "maxActiveOrders": 2,
+      "maxRiskProcesses": 2
+    }
+  ],
+  "totals": {
+    "customers": { "min": 8, "max": 8 },
+    "orders": { "min": 7, "max": 7 },
+    "items": { "min": 16, "max": 16 }
+  },
+  "maxActiveOrders": 2,
+  "maxRiskProcesses": 2,
+  "plannedOrderIds": [
+    "D3-ORDER-001",
+    "D3-ORDER-002",
+    "D3-ORDER-003",
+    "D3-ORDER-004",
+    "D3-ORDER-005",
+    "D3-ORDER-006",
+    "D3-ORDER-007"
+  ],
+  "availableMenuIds": ["negima", "beer", "momo"],
+  "newActionId": "d3-tare-brush",
+  "reviewActionIds": ["grill-drink-cross-station", "screen-away-timer-preservation"],
+  "tutorialPolicy": {
+    "guidanceLevel": "safe-introduction",
+    "helpCanBeReenabled": true,
+    "failurePolicy": "safe-first-use"
+  },
+  "settlement": {
+    "goalId": "goal-d3-complete-tare-cross-station",
+    "bonusGoalIds": ["goal-d3-no-timeout"],
+    "growthResultIds": ["d4-preview"],
+    "nextNodeId": "d4-preview",
+    "rewardSource": "settlement-ledger"
+  }
+}

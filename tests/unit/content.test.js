@@ -13,8 +13,15 @@ function loadBundle() {
   return {
     processes: [read('content/processes/grill.json')],
     recipes: [read('content/recipes/negima.json')],
+    menus: read('content/menus/early-campaign.json'),
     customers: read('content/customers/types.json'),
-    days: [read('content/campaign/day-d1.json')],
+    campaignCharacters: read('content/campaign/characters.json'),
+    orders: read('content/orders/early-campaign.json'),
+    days: [
+      read('content/campaign/day-d1.json'),
+      read('content/campaign/day-d2.json'),
+      read('content/campaign/day-d3.json'),
+    ],
     upgrades: read('content/progression/upgrades.json'),
     staff: read('content/staff/staff.json'),
     scenarios: read('content/campaign/scenario.json'),
@@ -24,7 +31,10 @@ function loadBundle() {
 const SCHEMAS = {
   process: read('content/schema/process.schema.json'),
   recipe: read('content/schema/recipe.schema.json'),
+  menu: read('content/schema/menu.schema.json'),
   customerType: read('content/schema/customer-type.schema.json'),
+  campaignCharacter: read('content/schema/campaign-character.schema.json'),
+  order: read('content/schema/order.schema.json'),
   day: read('content/schema/day.schema.json'),
   upgrade: read('content/schema/upgrade.schema.json'),
   staff: read('content/schema/staff.schema.json'),

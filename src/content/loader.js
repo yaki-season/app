@@ -8,8 +8,11 @@ import { checkContentRules, approvedOnly } from './rules.js';
 const CONTENT_FILES = {
   processes: ['processes/grill.json'],
   recipes: ['recipes/negima.json'],
+  menus: ['menus/early-campaign.json'],
   customers: ['customers/types.json'],
-  days: ['campaign/day-d1.json'],
+  campaignCharacters: ['campaign/characters.json'],
+  orders: ['orders/early-campaign.json'],
+  days: ['campaign/day-d1.json', 'campaign/day-d2.json', 'campaign/day-d3.json'],
   upgrades: ['progression/upgrades.json'],
   staff: ['staff/staff.json'],
   scenarios: ['campaign/scenario.json'],

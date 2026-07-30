@@ -1,0 +1,5 @@
+{
+  "id": "D1-RELEASE-ERR-MENU-PRICE",
+  "expectedValid": false,
+  "inputPatch": { "kind": "menu-price", "menuId": "beer", "price": 100 }
+}

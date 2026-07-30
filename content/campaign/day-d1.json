@@ -1,25 +1,101 @@
 {
   "id": "d1",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "displayKey": "day.d1",
   "active": true,
   "status": "candidate",
-  "customerCount": 20,
-  "spawnIntervalSec": 12,
+  "customerCount": 4,
+  "spawnIntervalSec": 30,
   "waitRecoverySec": 10,
   "urgentThresholdSec": 15,
-  "customerPool": ["regular", "solo", "office"],
+  "customerPool": ["regular", "office", "solo"],
   "economy": {
-    "basePrice": 100,
-    "qualityMultGood": 1.5,
-    "qualityMultLow": 1.0,
-    "tipBase": 20
+    "basePrice": 3,
+    "qualityMultGood": 1,
+    "qualityMultLow": 0.4,
+    "tipBase": 2
   },
   "timingSec": {
-    "assembly": 2.0,
+    "assembly": 2,
     "eat": 15,
     "orderThinkMin": 4,
     "orderThinkMax": 6
   },
-  "autoPolicySuccessRate": 0.8
+  "autoPolicySuccessRate": 0.9,
+  "businessWindow": {
+    "startMinute": 1050,
+    "endMinute": 1590,
+    "spansMidnight": true,
+    "targetSessionSec": 420
+  },
+  "segments": [
+    {
+      "id": "d1-guided-open",
+      "startMinute": 1050,
+      "endMinute": 1140,
+      "customerCount": { "min": 1, "max": 1 },
+      "orderCount": { "min": 1, "max": 1 },
+      "itemCount": { "min": 4, "max": 4 },
+      "maxActiveOrders": 1,
+      "maxRiskProcesses": 1
+    },
+    {
+      "id": "d1-office-pair",
+      "startMinute": 1140,
+      "endMinute": 1260,
+      "customerCount": { "min": 2, "max": 2 },
+      "orderCount": { "min": 2, "max": 2 },
+      "itemCount": { "min": 4, "max": 4 },
+      "maxActiveOrders": 2,
+      "maxRiskProcesses": 1
+    },
+    {
+      "id": "d1-late-solo",
+      "startMinute": 1260,
+      "endMinute": 1380,
+      "customerCount": { "min": 1, "max": 1 },
+      "orderCount": { "min": 1, "max": 1 },
+      "itemCount": { "min": 1, "max": 1 },
+      "maxActiveOrders": 2,
+      "maxRiskProcesses": 1
+    },
+    {
+      "id": "d1-closing",
+      "startMinute": 1380,
+      "endMinute": 1590,
+      "customerCount": { "min": 0, "max": 0 },
+      "orderCount": { "min": 0, "max": 0 },
+      "itemCount": { "min": 0, "max": 0 },
+      "maxActiveOrders": 1,
+      "maxRiskProcesses": 1
+    }
+  ],
+  "totals": {
+    "customers": { "min": 4, "max": 4 },
+    "orders": { "min": 4, "max": 4 },
+    "items": { "min": 9, "max": 10 }
+  },
+  "maxActiveOrders": 2,
+  "maxRiskProcesses": 1,
+  "plannedOrderIds": [
+    "D1-ORDER-001",
+    "D1-ORDER-002-A",
+    "D1-ORDER-002-B",
+    "D1-ORDER-003"
+  ],
+  "availableMenuIds": ["negima", "beer"],
+  "newActionId": "d1-full-first-order-guide",
+  "reviewActionIds": ["partial-serving", "seat-cleanup-hold"],
+  "tutorialPolicy": {
+    "guidanceLevel": "full",
+    "helpCanBeReenabled": true,
+    "failurePolicy": "no-failure"
+  },
+  "settlement": {
+    "goalId": "goal-d1-complete-first-business",
+    "bonusGoalIds": ["goal-d1-no-customer-loss"],
+    "growthResultIds": ["menu-momo", "day-d2"],
+    "nextNodeId": "d2",
+    "rewardSource": "settlement-ledger"
+  }
 }

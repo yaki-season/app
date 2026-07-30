@@ -1,0 +1,5 @@
+{
+  "id": "D1-RELEASE-ERR-WAVE-TIME",
+  "expectedValid": false,
+  "definitionPatch": { "kind": "wave-time", "waveId": "d1-office-pair", "atMs": 120000 }
+}

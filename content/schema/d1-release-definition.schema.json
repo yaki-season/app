@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "d1-release-definition.schema.json",
+  "title": "D1 전체 영업 release definition",
+  "type": "object",
+  "required": ["id", "schemaVersion", "source", "sessionTargetMs", "seatIds", "timingMs", "limits", "economy", "totals", "waves"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "const": "d1-release-definition" },
+    "schemaVersion": { "const": 1 },
+    "source": {
+      "type": "object",
+      "required": ["dayId", "developmentFixtureId", "runtimeContractId"],
+      "additionalProperties": false,
+      "properties": {
+        "dayId": { "const": "d1" },
+        "developmentFixtureId": { "const": "d1" },
+        "runtimeContractId": { "const": "d1-public-runtime-contract" }
+      }
+    },
+    "sessionTargetMs": { "const": 420000 },
+    "seatIds": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^seat-0[1-6]$" }
+    },
+    "timingMs": {
+      "type": "object",
+      "required": ["thinkMin", "thinkMax", "eat", "leave", "cleanup", "waitRecovery"],
+      "additionalProperties": false,
+      "properties": {
+        "thinkMin": { "const": 4000 },
+        "thinkMax": { "const": 6000 },
+        "eat": { "const": 15000 },
+        "leave": { "const": 1000 },
+        "cleanup": { "const": 3000 },
+        "waitRecovery": { "const": 10000 }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "required": ["maxActiveOrders", "maxRiskProcesses"],
+      "additionalProperties": false,
+      "properties": {
+        "maxActiveOrders": { "const": 2 },
+        "maxRiskProcesses": { "const": 1 }
+      }
+    },
+    "economy": {
+      "type": "object",
+      "required": ["baseTip", "menuPrices"],
+      "additionalProperties": false,
+      "properties": {
+        "baseTip": { "const": 2 },
+        "menuPrices": {
+          "type": "object",
+          "required": ["beer", "negima"],
+          "additionalProperties": false,
+          "properties": { "beer": { "const": 6 }, "negima": { "const": 3 } }
+        }
+      }
+    },
+    "totals": {
+      "type": "object",
+      "required": ["customers", "orders", "items"],
+      "additionalProperties": false,
+      "properties": {
+        "customers": { "const": 4 },
+        "orders": { "const": 4 },
+        "items": { "const": 9 }
+      }
+    },
+    "waves": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "$ref": "#/definitions/wave" }
+    }
+  },
+  "definitions": {
+    "wave": {
+      "type": "object",
+      "required": ["id", "atMs", "requiresOrderCompletionIds", "customers"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "atMs": { "type": "integer", "minimum": 0 },
+        "requiresOrderCompletionIds": { "type": "array", "items": { "type": "string" } },
+        "customers": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/customer" } }
+      }
+    },
+    "customer": {
+      "type": "object",
+      "required": ["id", "typeId", "source", "groupId", "patienceMs", "order"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "typeId": { "enum": ["regular", "office", "solo"] },
+        "source": { "type": "object" },
+        "groupId": { "type": ["string", "null"] },
+        "patienceMs": { "type": "integer", "minimum": 1 },
+        "order": { "$ref": "#/definitions/order" }
+      }
+    },
+    "order": {
+      "type": "object",
+      "required": ["id", "guided", "lines"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "pattern": "^D1-ORDER-" },
+        "guided": { "type": "boolean" },
+        "lines": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["menuId", "quantity", "seasoning"],
+            "additionalProperties": false,
+            "properties": {
+              "menuId": { "enum": ["beer", "negima"] },
+              "quantity": { "type": "integer", "minimum": 1 },
+              "seasoning": { "const": "none" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

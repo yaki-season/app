@@ -1,0 +1,15 @@
+{
+  "id": "D1-PUBLIC-RUNTIME-ERR-FIRST-ORDER",
+  "expectedValid": false,
+  "contractPatch": {
+    "firstOrder": {
+      "id": "D1-ORDER-001",
+      "items": [
+        { "menuId": "negima", "quantity": 3, "seasoning": "none" },
+        { "menuId": "beer", "quantity": 2, "seasoning": "none" }
+      ]
+    }
+  },
+  "initialBatchStartedAtMs": [1000, 1000, 1000],
+  "tickTransitions": []
+}
