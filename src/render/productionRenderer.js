@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { makeCamera, billboard, worldAtScreen, anchorToWorld, lerp, ASPECT, TAN_HALF } from './sceneMath.js';
 import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID, SEAT_IDS, SEAT_ACTOR_MOOD, SEAT_ACTOR_TEXTURE, SEAT_ACTOR_UV, computeSeats, DEFAULT_SEAT_CAP } from '../config/screenLayout.js';
+import { runtimeAssetUrl } from '../assets/runtimeAssetResolver.js';
 
 export function createProductionRenderer(canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: false });
@@ -16,11 +17,13 @@ export function createProductionRenderer(canvas) {
   // 승인 아트 텍스처 (있을 때만). 없거나 실패해도 스테이션은 더미로 동작한다.
   const loader = new THREE.TextureLoader();
   const texCache = new Map();
+  // 매니페스트 URL(/assets/…)을 정적 서버 경로(/src에서 /public/assets/…)로 해석해 로드한다.
   function texture(url) {
-    if (texCache.has(url)) return texCache.get(url);
-    const tex = loader.load(url);
+    const resolved = runtimeAssetUrl(url);
+    if (texCache.has(resolved)) return texCache.get(resolved);
+    const tex = loader.load(resolved);
     tex.colorSpace = THREE.SRGBColorSpace;
-    texCache.set(url, tex);
+    texCache.set(resolved, tex);
     return tex;
   }
   // PlaneGeometry(1 세그먼트) UV를 서브렉트로 크롭 (풀프레임 아트에서 인물만 잘라 쓰기).

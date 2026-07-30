@@ -12,6 +12,7 @@ import { createDrinkPour, DRINK } from './render/drinkStation.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, CUSTOMER_ART } from './config/d1Layout.js';
 import { RECIPE } from './config/recipe.js';
+import { runtimeAssetUrl } from './assets/runtimeAssetResolver.js';
 
 const el = (id) => document.getElementById(id);
 const canvas = el('scene');
@@ -32,7 +33,7 @@ for (const s of SCREENS) for (const k of s.objects) if (OBJECTS[k].kind !== 'ful
 const CLICKABLE = new Set(['custServe', 'binChicken', 'binLeek', 'jigSkewer', 'grillWaitTray', 'grillSlot0', 'grillSlot1', 'drinkLeverUpper', 'drinkLeverLower']);
 
 // ── 단일 손님 주문 상태 ───────────────────────────────────────
-const ORDER_ICON = { '생맥주': '/assets/core/ui/order-icon-draft-beer-r1-b1.png', '네기마': '/assets/core/ui/order-icon-negima-r1-b1.png' };
+const ORDER_ICON = { '생맥주': runtimeAssetUrl('/assets/core/ui/order-icon-draft-beer-r1-b1.png'), '네기마': runtimeAssetUrl('/assets/core/ui/order-icon-negima-r1-b1.png') };
 const order = { '생맥주': { need: 1, done: 0 }, '네기마': { need: 3, done: 0 } };
 let custPhase = 'entering'; // entering → ordered → reacting → complete
 let satisfaction = 0;

@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { makeCamera, billboard, lerp } from './sceneMath.js';
 import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID } from '../config/d1Layout.js';
+import { runtimeAssetUrl } from '../assets/runtimeAssetResolver.js';
 
 const FULL = { x: 0, y: 0, width: 1, height: 1 };
 const COVER = 1.3; // 창 비율이 16:9와 달라도 아트 가장자리가 드러나지 않게 여유
@@ -18,11 +19,12 @@ export function createD1SceneRenderer(canvas) {
   let errored = 0;
   const texCache = new Map();
   function texture(url) {
-    if (texCache.has(url)) return texCache.get(url);
+    const resolved = runtimeAssetUrl(url); // 매니페스트 URL → 정적 서버 경로(/public/assets)
+    if (texCache.has(resolved)) return texCache.get(resolved);
     pending += 1;
-    const tex = loader.load(url, () => { pending -= 1; }, undefined, () => { pending -= 1; errored += 1; });
+    const tex = loader.load(resolved, () => { pending -= 1; }, undefined, () => { pending -= 1; errored += 1; });
     tex.colorSpace = THREE.SRGBColorSpace;
-    texCache.set(url, tex);
+    texCache.set(resolved, tex);
     return tex;
   }
 
