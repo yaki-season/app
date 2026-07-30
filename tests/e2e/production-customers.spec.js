@@ -81,6 +81,21 @@ test('인내심을 넘기면 화난 채로 떠난다', async ({ page }) => {
   await expect.poll(() => view(page, 'seat-04').then((v) => v.mood)).toBe('retry');
 });
 
+test('Fail 품질(넘친 맥주 등)을 내면 손님이 화나서 즉시 떠난다', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__prodDebug.forceSpawn('seat-06', 'regular', 0)); // 첫 주문 생맥주
+  await page.evaluate(() => window.__prodDebug.opsElapse(1));
+  await expect.poll(() => view(page, 'seat-06').then((v) => v.phase)).toBe('ordering');
+  await click(page, 'seatServe:seat-06'); // 주문 접수
+  await expect.poll(() => view(page, 'seat-06').then((v) => v.canServe)).toBe(true);
+  await page.evaluate(() => window.__prodDebug.dockAdd({ menu: '생맥주', label: 'Fail', good: false })); // 실패 품질
+  await page.waitForTimeout(230);
+  await click(page, 'seatServe:seat-06'); // 실패 음식 제공
+  await expect.poll(() => view(page, 'seat-06').then((v) => v.phase)).toBe('leaving');
+  expect((await view(page, 'seat-06')).mood).toBe('retry');
+  expect(await page.evaluate(() => window.__prodDebug.dockItems().length)).toBe(0); // 소비됨
+});
+
 test('정리 필요 좌석을 3초 눌러 비운다', async ({ page }) => {
   await boot(page);
   await page.evaluate(() => window.__prodDebug.forceSpawn('seat-05', 'solo', 0));

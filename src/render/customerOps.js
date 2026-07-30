@@ -23,6 +23,7 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
     eatMs: (config.eatSec ?? 15) * 1000,
     leaveMs: (config.leaveSec ?? 1) * 1000,
     cleanupMs: (config.cleanupSec ?? 3) * 1000,
+    misservePenaltyMs: (config.misservePenaltySec ?? 5) * 1000, // 오배달 시 인내심 감소(§)
     maxActive: config.maxActive ?? 4,
     waveSize: config.waveSize ?? 2, // 한 파동에 시도하는 최대 입장 수(러시)
   };
@@ -185,19 +186,35 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
     return false;
   }
 
+  // 품질 3단계(§): good=만족, ok=낮은 품질(과다 등)이지만 먹음, fail=실패(넘친 맥주 등)→즉시 화난 퇴장.
+  function serveTier(item) {
+    if (item.good) return 'good';
+    return item.label === 'Fail' ? 'fail' : 'ok';
+  }
   function serve(id, item, now) {
     const c = seats.get(id);
     if (!c || c.phase !== 'waiting') return { ok: false, reason: 'not-waiting' };
-    if (!item || item.menu !== c.menu) return { ok: false, reason: 'mismatch' };
-    c.mood = item.good ? 'satisfied' : 'neutral';
+    if (!item || item.menu !== c.menu) {
+      // 오배달: 인내심을 깎는다(반복 오배달은 이탈로 이어짐).
+      if (c.patienceUntil != null) c.patienceUntil -= cfg.misservePenaltyMs;
+      return { ok: false, reason: 'mismatch' };
+    }
+    const tier = serveTier(item);
+    if (tier === 'fail') {
+      // 실패 음식 → 손님이 화나서 즉시 퇴장(이탈 기록). 그룹이면 syncGroups가 동반 퇴장 처리.
+      leaveAngry(c, now); // c.served=false 상태라 이탈로 기록
+      c.patienceUntil = null;
+      return { ok: true, quality: 'fail', left: true };
+    }
+    c.mood = tier === 'good' ? 'satisfied' : 'neutral';
     c.served = true;
-    c.lastSatisfaction = item.good ? 100 : 40;
+    c.lastSatisfaction = tier === 'good' ? 100 : 40;
     const waitSec = c.patienceUntil != null ? (c.patienceMs - (c.patienceUntil - now)) / 1000 : 0;
-    records.push({ served: true, good: !!item.good, waitSec: Math.max(0, waitSec), patienceSec: c.patienceMs / 1000, tipMultiplier: c.tipMultiplier });
+    records.push({ served: true, good: tier === 'good', waitSec: Math.max(0, waitSec), patienceSec: c.patienceMs / 1000, tipMultiplier: c.tipMultiplier });
     c.phase = 'eating';
     c.phaseUntil = now + cfg.eatMs;
     c.patienceUntil = null;
-    return { ok: true };
+    return { ok: true, quality: tier };
   }
 
   function cleanup(id) {

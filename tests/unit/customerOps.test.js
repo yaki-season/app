@@ -40,6 +40,45 @@ describe('createCustomerOps', () => {
     expect(ops.serve('seat-02', { menu: '네기마', good: true }, 2).ok).toBe(true);
   });
 
+  it('Fail 품질을 내면 손님이 즉시 화난 채로 떠난다', () => {
+    const ops = make(() => 0.9);
+    ops.setAutoSpawn(false);
+    ops.forceSpawn('seat-01', 'solo', 0, 0);
+    ops.tick(1);
+    ops.acceptOrder('seat-01');
+    const r = ops.serve('seat-01', { menu: '네기마', good: false, label: 'Fail' }, 2);
+    expect(r.ok).toBe(true);
+    expect(r.left).toBe(true);
+    const v = view(ops, 'seat-01', 3);
+    expect(v.phase).toBe('leaving');
+    expect(v.mood).toBe('retry');
+    expect(ops.records().some((x) => x.served === false)).toBe(true); // 이탈로 기록
+  });
+
+  it('낮은 품질(과다)은 중립으로 받아 먹는다', () => {
+    const ops = make(() => 0.9);
+    ops.setAutoSpawn(false);
+    ops.forceSpawn('seat-02', 'solo', 0, 0);
+    ops.tick(1);
+    ops.acceptOrder('seat-02');
+    const r = ops.serve('seat-02', { menu: '네기마', good: false, label: '과다' }, 2);
+    expect(r.ok).toBe(true);
+    expect(r.quality).toBe('ok');
+    expect(view(ops, 'seat-02', 2).phase).toBe('eating');
+    expect(view(ops, 'seat-02', 2).mood).toBe('neutral');
+  });
+
+  it('오배달(다른 메뉴 제공)은 인내심을 깎는다', () => {
+    const ops = make(() => 0.9, { misservePenaltySec: 10 });
+    ops.setAutoSpawn(false);
+    ops.forceSpawn('seat-03', 'solo', 0, 0);
+    ops.tick(1);
+    ops.acceptOrder('seat-03'); // 수령 대기(인내심 카운트)
+    const before = ops.getSeat('seat-03').patienceUntil;
+    ops.serve('seat-03', { menu: '생맥주', good: true }, 2); // 네기마 주문인데 생맥주
+    expect(ops.getSeat('seat-03').patienceUntil).toBe(before - 10000);
+  });
+
   it('재주문: 만족도 100%면 확률 통과 시 다음 항목을 주문한다', () => {
     const ops = make(() => 0.1); // 0.1 < 0.4 → 재주문
     ops.setAutoSpawn(false);

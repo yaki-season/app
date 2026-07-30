@@ -319,8 +319,11 @@ function handle(key, now) {
           const item = dock.selected();
           if (!item) { showHint('선반에서 완성품을 고르세요'); break; }
           const r = ops.serve(seatId, item, now);
-          if (r.ok) { dock.consumeSelected(); showHint('제공 완료'); }
-          else showHint('주문과 다른 메뉴예요'); // 메뉴 불일치
+          if (r.ok) {
+            dock.consumeSelected();
+            if (r.left) showHint('실패한 음식! 손님이 화나서 나갔어요');
+            else showHint(r.quality === 'good' ? '제공 완료 (만족)' : '제공 완료 (낮은 품질)');
+          } else showHint('주문과 다른 메뉴예요'); // 메뉴 불일치
         }
       }
       break; // 그 외(드링크 구조 오브젝트 등)
