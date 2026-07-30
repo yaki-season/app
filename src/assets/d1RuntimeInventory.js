@@ -7,6 +7,7 @@ const row = (
   requiredAssetId,
   semanticOwner,
   bindingState = 'pending',
+  stateVariants = null,
 ) => Object.freeze({
   screenId,
   stateId,
@@ -14,6 +15,7 @@ const row = (
   requiredAssetId,
   semanticOwner,
   bindingState,
+  ...(stateVariants ? { stateVariants: Object.freeze(stateVariants) } : {}),
 });
 
 // D1 화면 구현자와 아트 제작자가 함께 소비하는 단일 상태/에셋 계약이다.
@@ -60,6 +62,8 @@ export const D1_RUNTIME_COMPONENT_INVENTORY = Object.freeze([
   row('SCR-SVC-DRINK', 'D1-drink-base', 'drink.station', 'ST-DRINK-BEER-TIER-1', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
   row('SCR-SVC-DRINK', 'D1-drink-glass', 'drink.glass', 'MDL-BEER-GLASS', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
   row('SCR-SVC-DRINK', 'D1-drink-lever', 'drink.lever', 'MDL-BEER-LEVER', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
+  row('SCR-SVC-DRINK', 'D1-drink-visual-variants', 'drink.liquid', 'TEX-BEER-LIQUID', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'pending', ['hidden', 'liquid-70-with-foam', 'liquid-100-with-foam']),
+  row('SCR-SVC-DRINK', 'D1-drink-visual-variants', 'drink.vfx', 'VFX-BEER-CORE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'pending', ['none', 'foam-settling', 'foam-crown', 'overflow', 'finished-steam']),
 
   row('SCR-POST-CLOSING', 'D1-closing-charcoal', 'closing.charcoal', 'ST-CHARCOAL-CORE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
   row('SCR-POST-CLOSING', 'D1-closing-ember', 'closing.charcoal.vfx', 'VFX-EMBER-CORE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
@@ -68,13 +72,16 @@ export const D1_RUNTIME_COMPONENT_INVENTORY = Object.freeze([
   row('SCR-POST-SETTLEMENT', 'D1-settlement-state', 'settlement.reward', 'UI-STATE-ICONS', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
 ]);
 
-export function reportD1RuntimeComponentInventory(manifest) {
+export function reportD1RuntimeComponentInventory(
+  manifest,
+  inventory = D1_RUNTIME_COMPONENT_INVENTORY,
+) {
   const approvedIds = new Set(
     (Array.isArray(manifest?.assets) ? manifest.assets : [])
       .filter((asset) => asset?.status === 'approved' && asset.id && asset.url)
       .map((asset) => asset.id),
   );
-  const entries = D1_RUNTIME_COMPONENT_INVENTORY.map((entry) => Object.freeze({
+  const entries = inventory.map((entry) => Object.freeze({
     ...entry,
     placeholder: entry.bindingState !== 'bound' || !approvedIds.has(entry.requiredAssetId),
   }));

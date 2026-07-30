@@ -1,6 +1,6 @@
 import { S0_INTERACTIONS } from '../scenario/s0-d3-content.js';
 
-export const S0_D1_ART_BINDING_CONTRACT_VERSION = '1.1.0';
+export const S0_D1_ART_BINDING_CONTRACT_VERSION = '1.2.0';
 export const S0_BRAZIER_LAYER_CONTRACT_VERSION = '1.0.0';
 export const ART_BINDING_LOGICAL_VIEWPORT = Object.freeze({ width: 1920, height: 1080 });
 export const ART_BINDING_VIEWPORTS = Object.freeze({
@@ -334,6 +334,61 @@ export const D1_DRINK_VISUAL_VARIANTS = Object.freeze([
   drinkVisualVariant('finished', 'liquid-100-with-foam', 'finished-steam'),
 ]);
 
+const visualAssetDecision = ({
+  requiredAssetId,
+  classification,
+  screenId,
+  componentId,
+  consumerStates,
+  stateVariants,
+  renderConsumption,
+  derivedFromAssetIds = [],
+}) => Object.freeze({
+  requiredAssetId,
+  classification,
+  screenId,
+  componentId,
+  consumerStates: Object.freeze(consumerStates),
+  stateVariants: Object.freeze(stateVariants),
+  renderConsumption,
+  derivedFromAssetIds: Object.freeze(derivedFromAssetIds),
+});
+
+// D1 공개 gate가 실제 render 소비를 기준으로 세 stable ID를 빠짐없이 판정하는 정본이다.
+export const D1_VISUAL_ASSET_ACCOUNTING = Object.freeze([
+  visualAssetDecision({
+    requiredAssetId: 'TEX-BEER-LIQUID',
+    classification: 'required',
+    screenId: 'SCR-SVC-DRINK',
+    componentId: 'drink.liquid',
+    consumerStates: ['empty', 'fill-70', 'fill-100', 'overflow', 'finished'],
+    stateVariants: ['hidden', 'liquid-70-with-foam', 'liquid-100-with-foam'],
+    renderConsumption: 'D1_DRINK_VISUAL_VARIANTS drink.liquid state-overlay@z44',
+  }),
+  visualAssetDecision({
+    requiredAssetId: 'VFX-BEER-CORE',
+    classification: 'required',
+    screenId: 'SCR-SVC-DRINK',
+    componentId: 'drink.vfx',
+    consumerStates: ['empty', 'fill-70', 'fill-100', 'overflow', 'finished'],
+    stateVariants: ['none', 'foam-settling', 'foam-crown', 'overflow', 'finished-steam'],
+    renderConsumption: 'D1_DRINK_VISUAL_VARIANTS drink.vfx@z50',
+  }),
+  visualAssetDecision({
+    requiredAssetId: 'FD-BEER-SERVED',
+    classification: 'derived',
+    screenId: 'SCR-SVC-CUSTOMERS',
+    componentId: 'customers.servedBeer',
+    consumerStates: ['prepared', 'partially-served', 'completed'],
+    stateVariants: ['prepared-dock-dom', 'partial-beer-waiting', 'received-eating-drink-frame'],
+    renderConsumption: 'preparedDock DOM and resolveD1CustomerAsset customer composition',
+    derivedFromAssetIds: [
+      'D1-TSUKIOKA-PARTIAL-BEER-WAITING',
+      'D1-TSUKIOKA-RECEIVED-EATING',
+    ],
+  }),
+]);
+
 const LEGACY_S0_PHASE_IDS = Object.freeze([
   'exterior',
   'interior-check',
@@ -406,6 +461,32 @@ export function validateS0D1ArtBindingContract() {
       ownersByAsset.get(layer.requiredAssetId).add(layer.semanticOwner);
     }
   }
+  const auditedVisualAssetIds = D1_VISUAL_ASSET_ACCOUNTING.map(
+    (decision) => decision.requiredAssetId,
+  );
+  if (new Set(auditedVisualAssetIds).size !== D1_VISUAL_ASSET_ACCOUNTING.length) {
+    errors.push('D1 visual asset accounting contains duplicate stable IDs');
+  }
+  const drinkVariantAssetIds = new Set(
+    D1_DRINK_VISUAL_VARIANTS.flatMap((variant) => (
+      variant.layers.map((layer) => layer.requiredAssetId)
+    )),
+  );
+  for (const decision of D1_VISUAL_ASSET_ACCOUNTING) {
+    if (!['required', 'derived', 'unnecessary'].includes(decision.classification)) {
+      errors.push(`invalid D1 visual asset classification: ${decision.requiredAssetId}`);
+    }
+    if (decision.classification === 'required' && !drinkVariantAssetIds.has(
+      decision.requiredAssetId,
+    )) {
+      errors.push(`required D1 visual asset has no render variant: ${decision.requiredAssetId}`);
+    }
+    if (decision.classification === 'derived' && drinkVariantAssetIds.has(
+      decision.requiredAssetId,
+    )) {
+      errors.push(`derived D1 visual asset is directly bound: ${decision.requiredAssetId}`);
+    }
+  }
   for (const [requiredAssetId, owners] of ownersByAsset) {
     if (owners.size !== 1) errors.push(`${requiredAssetId} has multiple semanticOwner values`);
   }
@@ -455,4 +536,5 @@ export const S0_D1_ART_BINDING_CONTRACT = Object.freeze({
   s0BrazierLayers: S0_BRAZIER_LAYER_CONTRACT,
   d1Drink: D1_DRINK_ART_BINDING_INVENTORY,
   drinkVisualVariants: D1_DRINK_VISUAL_VARIANTS,
+  visualAssetAccounting: D1_VISUAL_ASSET_ACCOUNTING,
 });

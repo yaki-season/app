@@ -74,7 +74,7 @@ describe('D1 runtime asset resolver', () => {
     expect(D1_RUNTIME_ASSET_ID.DRINK_BACKGROUND).toBe('BG-WORKSPACE-DRINK');
   });
 
-  it('BG-WORKSPACE-DRINK binding 뒤 전체 33·drink 3 placeholder를 집계한다', () => {
+  it('BG-WORKSPACE-DRINK binding 뒤 전체 35·drink 5 placeholder를 집계한다', () => {
     const approvedBoundManifest = {
       assets: Object.values(D1_RUNTIME_ASSET_ID).map((id) => ({
         id,
@@ -86,10 +86,10 @@ describe('D1 runtime asset resolver', () => {
 
     expect(readiness).toMatchObject({
       ready: false,
-      requiredRuntimeCount: 42,
+      requiredRuntimeCount: 44,
       approvedRuntimeCount: 9,
       boundRuntimeCount: 9,
-      placeholderCount: 33,
+      placeholderCount: 35,
       unboundApprovedIds: [],
       contractAudit: {
         valid: true,
@@ -98,8 +98,10 @@ describe('D1 runtime asset resolver', () => {
         semanticOwnerConflicts: [],
       },
     });
-    expect(readiness.placeholderIdsByScene.drink).toHaveLength(3);
+    expect(readiness.placeholderIdsByScene.drink).toHaveLength(5);
     expect(readiness.placeholderIdsByScene.drink).not.toContain('BG-WORKSPACE-DRINK');
+    expect(readiness.placeholderIdsByScene.drink).toContain('TEX-BEER-LIQUID');
+    expect(readiness.placeholderIdsByScene.drink).toContain('VFX-BEER-CORE');
     expect(readiness.placeholderIdsByScene.assembly).toHaveLength(5);
     expect(readiness.placeholderIdsByScene.grill).toHaveLength(10);
     expect(readiness.placeholderIdsByScene.customer).toHaveLength(10);
@@ -122,9 +124,9 @@ describe('D1 runtime asset resolver', () => {
 
     const awaitingBinding = reportD1RuntimeAssetReadiness(manifestWithUnboundAssets);
     expect(awaitingBinding.ready).toBe(false);
-    expect(awaitingBinding.placeholderCount).toBe(33);
+    expect(awaitingBinding.placeholderCount).toBe(35);
     expect(awaitingBinding.missingManifestIds).toEqual([]);
-    expect(awaitingBinding.unboundApprovedIds).toHaveLength(33);
+    expect(awaitingBinding.unboundApprovedIds).toHaveLength(35);
   });
 
   it('inventory와 실제 binding·조리 placeholder 목록이 정확히 대응한다', () => {

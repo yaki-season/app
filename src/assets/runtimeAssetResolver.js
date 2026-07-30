@@ -35,6 +35,8 @@ export const D1_PENDING_RUNTIME_ASSET_IDS = Object.freeze({
     'ST-DRINK-BEER-TIER-1',
     'MDL-BEER-GLASS',
     'MDL-BEER-LEVER',
+    'TEX-BEER-LIQUID',
+    'VFX-BEER-CORE',
   ]),
   assembly: Object.freeze([
     'BG-WORKSPACE-ASSEMBLY',

@@ -8,7 +8,7 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await page.goto('/src/d1.html');
   await expect(page.locator('body')).toHaveAttribute('data-runtime-assets-ready', 'false');
   await expect(page.locator('body')).toHaveAttribute('data-runtime-contract-valid', 'true');
-  await expect(page.locator('body')).toHaveAttribute('data-asset-placeholder-count', '33');
+  await expect(page.locator('body')).toHaveAttribute('data-asset-placeholder-count', '35');
   const readiness = await page.evaluate(() => window.__d1Debug.assetReadiness());
   expect(readiness.placeholderIdsByScene).toMatchObject({
     drink: expect.any(Array),
