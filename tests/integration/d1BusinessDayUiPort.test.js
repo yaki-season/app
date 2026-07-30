@@ -16,7 +16,6 @@ import {
   createD1BusinessDayDefinition,
   validateCampaignState,
 } from '../../src/campaign-runtime.js';
-import { SEAT_IDS } from '../../src/config/screenLayout.js';
 import { buildSeatStates } from '../../src/render/customerAdapter.js';
 import { canServeD1MenuToSeat } from '../../src/application/businessDay/d1BusinessDayUiPort.js';
 
@@ -128,7 +127,7 @@ describe('D1 영업일 UI port 경계 통합', () => {
       error: { code: D1_UI_ERROR_CODE.NOT_STARTED },
     });
     expect((await port.start({ runId: 'd1-ui-port:run-1' })).ok).toBe(true);
-    expect(port.getViewModel().seats.map((seat) => seat.seatId)).toEqual(SEAT_IDS);
+    expect(port.getViewModel().seats.map((seat) => seat.seatId)).toEqual(d1Definition.seatIds);
 
     port.advance(6_000);
     const ordering = port.getViewModel().seats.find((seat) => seat.customerId === 'REGULAR_TSUKIOKA');
