@@ -38,9 +38,12 @@ const customers = createCustomerAdapter({ renderer: R, container: el('bubbleLaye
 let ops = null; // 콘텐츠(유형·수치) 로드 후 생성
 let baseEconomy = null; // 영업일 기본 경제 수치
 let upgrades = []; // 구매 카탈로그(업그레이드)
-const wallet = { gold: 0, reputation: 0, owned: new Set() }; // 여러 날 지속되는 성장 자원
+let staff = []; // 고용 가능한 직원(콘텐츠)
+const wallet = { gold: 0, reputation: 0, owned: new Set(), staff: new Set() }; // 여러 날 지속되는 성장 자원
 let cleanupHold = null; // { seatId, startMs } 정리 3초 홀드
 const ownedItems = () => upgrades.filter((u) => wallet.owned.has(u.id));
+const ownedStaff = () => staff.filter((s) => wallet.staff.has(s.id));
+const drinkStaff = () => ownedStaff().find((s) => s.role === 'drink') || null;
 const currentEconomy = () => (baseEconomy ? effectiveEconomy(baseEconomy, ownedItems()) : null);
 const syncSlots = () => cook.setSlots(ownedEffects(ownedItems()).grillSlots); // 업그레이드 → 그릴 칸 수
 const syncSeats = () => { const cap = ownedEffects(ownedItems()).seatCap; if (ops) ops.setCapacity(cap); R.setSeatCapacity(cap); }; // 업그레이드 → 좌석 수
@@ -374,11 +377,14 @@ function endDay() {
   const repDelta = reputationDelta(records);
   // 수익·명성을 지갑에 누적(여러 날 진행). 명성은 소비하지 않는 조건 자원이다.
   wallet.gold += s.total;
+  const wages = ownedStaff().reduce((sum, st) => sum + (st.wageGold || 0), 0); // 직원 일당(매일 차감)
+  wallet.gold = Math.max(0, wallet.gold - wages);
   wallet.reputation = Math.max(0, wallet.reputation + repDelta);
   const set = (f, v) => { const node = document.querySelector(`#settlement [data-f="${f}"]`); if (node) node.textContent = v; };
   set('visited', s.visited); set('served', s.served); set('lost', s.lost);
   set('good', s.quality.good); set('low', s.quality.low);
   set('revenue', s.revenue); set('tip', s.tip); set('total', s.total);
+  set('wage', wages);
   set('avgSatisfaction', s.avgSatisfaction);
   set('repDelta', repDelta >= 0 ? `+${repDelta}` : `${repDelta}`);
   set('walletGold', wallet.gold); set('walletRep', wallet.reputation);
@@ -405,8 +411,16 @@ const CAT_LABELS = { ingredient: '재료', equipment: '장비', interior: '인�
 const LOCK_TEXT = { 'locked-rep': '명성 부족', 'locked-prereq': '선행 필요', unaffordable: '골드 부족' };
 let purchaseCat = null;
 
-function openPurchase() {
+// 고용 가능한 직원(현재 증분: 드링크 자동 제조 직원만).
+const hireableStaff = () => staff.filter((s) => s.active !== false && s.role === 'drink');
+const STAFF_LABELS = { 'staff-drink': { name: '드링크 직원', meta: '생맥주 자동 제조' } };
+const purchaseCats = () => {
   const cats = [...new Set(upgrades.filter((u) => u.active !== false).map((u) => u.category))];
+  if (hireableStaff().length) cats.push('staff');
+  return cats;
+};
+function openPurchase() {
+  const cats = purchaseCats();
   if (!purchaseCat || !cats.includes(purchaseCat)) purchaseCat = cats[0];
   el('purchaseFeedback').textContent = '';
   el('purchase').hidden = false;
@@ -415,7 +429,7 @@ function openPurchase() {
 function renderPurchase() {
   document.querySelector('#purchase [data-w="gold"]').textContent = wallet.gold;
   document.querySelector('#purchase [data-w="rep"]').textContent = wallet.reputation;
-  const cats = [...new Set(upgrades.filter((u) => u.active !== false).map((u) => u.category))];
+  const cats = purchaseCats();
   const tabs = el('catTabs');
   tabs.innerHTML = '';
   for (const c of cats) {
@@ -429,6 +443,7 @@ function renderPurchase() {
   }
   const list = el('itemList');
   list.innerHTML = '';
+  if (purchaseCat === 'staff') { renderStaffList(list); return; }
   for (const item of catalog(upgrades, wallet).filter((i) => i.category === purchaseCat)) {
     const label = ITEM_LABELS[item.id] ?? { name: item.id, meta: '' };
     const li = document.createElement('li');
@@ -456,6 +471,34 @@ function buyItem(id) {
   syncSeats(); // 좌석 확장 업그레이드 반영
   const label = ITEM_LABELS[id] ?? { name: id };
   el('purchaseFeedback').textContent = `${label.name} 구매 완료 (남은 골드 ${wallet.gold}G)`;
+  renderPurchase();
+}
+// 직원 고용 목록. 일당(wageGold)은 정산에서 매일 차감되므로, 고용은 첫 일당을 감당할 수 있을 때만.
+function renderStaffList(list) {
+  for (const s of hireableStaff()) {
+    const owned = wallet.staff.has(s.id);
+    const affordable = wallet.gold >= s.wageGold;
+    const label = STAFF_LABELS[s.id] ?? { name: s.id, meta: s.role };
+    const li = document.createElement('li');
+    li.className = `item-card${owned ? ' owned' : ''}`;
+    li.dataset.testid = `item-${s.id}`;
+    li.dataset.state = owned ? 'owned' : affordable ? 'hireable' : 'unaffordable';
+    let right;
+    if (owned) right = '<span class="held">고용됨</span>';
+    else if (affordable) right = `<button class="buy" data-hire="${s.id}" data-testid="hire-${s.id}">고용 (일당 ${s.wageGold}G)</button>`;
+    else right = '<span class="locked">골드 부족(첫 일당)</span>';
+    li.innerHTML = `<span class="info"><span class="name">${label.name}</span><span class="meta">${label.meta} · 일당 ${s.wageGold}G</span></span>${right}`;
+    const hireBtn = li.querySelector('[data-hire]');
+    if (hireBtn) hireBtn.addEventListener('click', () => hireStaff(s.id));
+    list.appendChild(li);
+  }
+}
+function hireStaff(id) {
+  const s = staff.find((x) => x.id === id);
+  if (!s || wallet.staff.has(id)) return;
+  if (wallet.gold < s.wageGold) { el('purchaseFeedback').textContent = '골드 부족(첫 일당)'; return; }
+  wallet.staff.add(id);
+  el('purchaseFeedback').textContent = `${STAFF_LABELS[id]?.name ?? id} 고용 완료 (일당 ${s.wageGold}G)`;
   renderPurchase();
 }
 el('openPurchase').addEventListener('click', openPurchase);
@@ -548,6 +591,26 @@ function updateGrillOverlays(now, activeScreen) {
   }
 }
 
+// ── 직원 자동 제조 (드링크) ──────────────────────────────────
+// 드링크 직원을 고용하면 주기적으로 생맥주를 선반에 자동으로 올린다. 품질은 qualityCap(초급 good) 상한,
+// mistakeRate 확률로 낮은 품질(OK). 선반이 넘치지 않게 버퍼 상한(3잔)까지만 만든다.
+const AUTO_DRINK_BASE_SEC = 10;
+let lastAutoDrinkMs = 0;
+function autoProduceTick(now, force = false) {
+  if (settling) return;
+  const ds = drinkStaff();
+  if (!ds) return;
+  const interval = (AUTO_DRINK_BASE_SEC / (ds.speedMult || 1)) * 1000;
+  if (!force && now - lastAutoDrinkMs < interval) return;
+  lastAutoDrinkMs = now;
+  if (dock.items().filter((i) => i.menu === '생맥주').length >= 3) return; // 버퍼 상한
+  const good = Math.random() >= (ds.mistakeRate || 0); // 실수면 낮은 품질(OK)
+  const label = good ? (ds.qualityCap === 'perfect' ? 'Perfect' : 'Good') : 'OK';
+  dock.add({ menu: '생맥주', label, good });
+  showHint('직원이 생맥주를 준비했어요');
+  render();
+}
+
 // ── 루프 ─────────────────────────────────────────────────────
 let lastActive = director.activeScreenId();
 let lastWaiting = -1;
@@ -566,6 +629,7 @@ function loop(now) {
   if (cook.waitingCount() !== lastWaiting) { lastWaiting = cook.waitingCount(); render(); }
 
   if (ops && !settling) ops.tick(now); // 손님 입장·생애주기 진행 (정산 중 정지)
+  autoProduceTick(now); // 드링크 직원 자동 제조
   updateGrillVisual(now);
   updateGrillOverlays(now, active); // 그릴 칸 익힘 게이지
   syncCustomers(now); // 매 프레임 좌석 렌더(게이지 실시간 감소)
@@ -582,10 +646,12 @@ Promise.all([
   fetch('/content/customers/types.json').then((r) => r.json()),
   fetch('/content/campaign/day-d1.json').then((r) => r.json()),
   fetch('/content/progression/upgrades.json').then((r) => r.json()).catch(() => []),
+  fetch('/content/staff/staff.json').then((r) => r.json()).catch(() => []),
 ])
-  .then(([types, day, upgradeData]) => {
+  .then(([types, day, upgradeData, staffData]) => {
     baseEconomy = day.economy;
     upgrades = upgradeData || [];
+    staff = staffData || [];
     syncSlots(); // 보유 업그레이드 기준 그릴 칸 수
     ops = createCustomerOps({
       seatIds: SEAT_IDS,
@@ -642,6 +708,10 @@ window.__prodDebug = {
   forceGroup: (a, b, typeId, thinkSec) => ops && ops.forceGroup(a, b, typeId, performance.now(), thinkSec ?? 5),
   opsReserve: (typeId, size, dueSec, thinkSec) => ops && ops.addReservation({ typeId, size, dueMs: performance.now() + (dueSec ?? 0) * 1000, thinkSec: thinkSec ?? 5 }),
   opsReservations: () => (ops ? ops.reservations() : []),
+  staffList: () => staff.map((s) => ({ id: s.id, role: s.role, wageGold: s.wageGold })),
+  staffOwned: () => [...wallet.staff],
+  hireStaff: (id) => hireStaff(id),
+  autoProduceOnce: () => autoProduceTick(performance.now(), true), // e2e: 간격 무시하고 1회 제조
   reorderOverride: (v) => ops && ops.setReorderOverride(v),
   opsElapse: (sec) => ops && ops.debugElapse(sec),
   acceptOrder: (seatId) => ops && ops.acceptOrder(seatId),
