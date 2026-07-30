@@ -71,9 +71,12 @@ export function createCustomerAdapter({ renderer, container, customerScreenId = 
       b.el.dataset.tone = info.tone;
       if (info.ratio == null) {
         b.gauge.hidden = true;
+        b.el.dataset.urgent = '0';
       } else {
         b.gauge.hidden = false;
         b.fill.style.width = `${Math.round(Math.max(0, Math.min(1, info.ratio)) * 100)}%`;
+        // 인내심 임박(긴급): 게이지·말풍선에 경고 표시.
+        b.el.dataset.urgent = s.urgent ? '1' : '0';
       }
     }
   }

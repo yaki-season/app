@@ -211,6 +211,10 @@ body {
 .order-bubble[data-tone="cleanup"] .order-label { border-color: #6fb8ff; color: #6fb8ff; }
 .order-bubble[data-tone="cleanup"] .wait-fill { background: #6fb8ff; }
 .order-bubble[data-tone="leave"] .order-label { color: var(--warn); }
+/* 긴급: 인내심이 임박하면 게이지를 붉게·깜빡여 경고한다. */
+.order-bubble[data-urgent="1"] .wait-fill { background: #ef6a58; }
+.order-bubble[data-urgent="1"] .order-label { border-color: #ef6a58; color: #ff8a78; animation: urgentPulse 0.7s ease-in-out infinite; }
+@keyframes urgentPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
 .overlay {
   position: fixed; inset: auto 0 0 0; z-index: 20;

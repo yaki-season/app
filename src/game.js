@@ -542,6 +542,8 @@ Promise.all([
         orderThinkMin: day.timingSec.orderThinkMin,
         orderThinkMax: day.timingSec.orderThinkMax,
         eatSec: day.timingSec.eat,
+        waitRecoverySec: day.waitRecoverySec, // 항목 제공 시 인내심 회복
+        urgentThresholdSec: day.urgentThresholdSec, // 긴급 대기 임계
         cleanupSec: 3,
         leaveSec: 1,
         maxActive: 4, // 활성 좌석 상한 (러시)

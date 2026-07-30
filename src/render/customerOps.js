@@ -24,6 +24,8 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
     leaveMs: (config.leaveSec ?? 1) * 1000,
     cleanupMs: (config.cleanupSec ?? 3) * 1000,
     misservePenaltyMs: (config.misservePenaltySec ?? 5) * 1000, // 오배달 시 인내심 감소(§)
+    waitRecoveryMs: (config.waitRecoverySec ?? 10) * 1000, // 항목 제공 시 대기 인내심 회복(DAT-001 §14-1-1)
+    urgentThresholdMs: (config.urgentThresholdSec ?? 15) * 1000, // 남은 인내심이 이하이면 긴급 표시
     maxActive: config.maxActive ?? 4,
     waveSize: config.waveSize ?? 2, // 한 파동에 시도하는 최대 입장 수(러시)
   };
@@ -231,8 +233,9 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
     const waitSec = c.patienceUntil != null ? (c.patienceMs - (c.patienceUntil - now)) / 1000 : 0;
     records.push({ served: true, good: tier === 'good', waitSec: Math.max(0, waitSec), patienceSec: c.patienceMs / 1000, tipMultiplier: c.tipMultiplier });
     c.qtyServed += 1;
-    // 부분 서빙: 아직 남았으면 계속 수령 대기(인내심 유지). 전량 채우면 식사.
+    // 부분 서빙: 아직 남았으면 계속 수령 대기. 항목을 냈으니 대기 인내심을 회복한다(전량 인내심 초과 금지).
     if (c.qtyServed < c.qtyNeeded) {
+      if (c.patienceUntil != null) c.patienceUntil = Math.min(now + c.patienceMs, c.patienceUntil + cfg.waitRecoveryMs);
       return { ok: true, quality: tier, partial: true, remaining: c.qtyNeeded - c.qtyServed };
     }
     c.phase = 'eating';
@@ -253,6 +256,7 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
       if (!c) return { seatId: id, occupied: false, phase: 'empty', mood: 'waiting', orderLabel: '', waitRatio: 0 };
       const counting = (c.phase === 'ordering' || c.phase === 'waiting') && c.patienceUntil != null;
       const waitRatio = counting ? Math.max(0, Math.min(1, (c.patienceUntil - now) / c.patienceMs)) : 1;
+      const urgent = counting && (c.patienceUntil - now) <= cfg.urgentThresholdMs; // 인내심 임박
       const remaining = Math.max(0, c.qtyNeeded - c.qtyServed);
       // 수량이 여러 개면 진행도를 라벨에 표시(부분 서빙): 예 "네기마 1/2".
       const orderLabel = c.qtyNeeded > 1 ? `${c.menu} ${c.qtyServed}/${c.qtyNeeded}` : c.menu;
@@ -267,6 +271,7 @@ export function createCustomerOps({ seatIds, types, config = {} }) {
         qtyServed: c.qtyServed,
         remaining,
         waitRatio,
+        urgent,
         group: !!c.groupId,
         thinking: c.phase === 'thinking',
         canOrder: c.phase === 'ordering',

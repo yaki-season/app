@@ -96,6 +96,19 @@ test('Fail 품질(넘친 맥주 등)을 내면 손님이 화나서 즉시 떠난
   expect(await page.evaluate(() => window.__prodDebug.dockItems().length)).toBe(0); // 소비됨
 });
 
+test('인내심이 임박하면 좌석 게이지에 긴급 표시가 켜진다', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.__prodDebug.forceSpawn('seat-02', 'solo', 0)); // 인내심 60초
+  await page.evaluate(() => window.__prodDebug.opsElapse(1));
+  await expect.poll(() => view(page, 'seat-02').then((v) => v.phase)).toBe('ordering');
+  expect((await view(page, 'seat-02')).urgent).toBe(false);
+  await expect(page.getByTestId('bubble-seat-02')).toHaveAttribute('data-urgent', '0');
+
+  await page.evaluate(() => window.__prodDebug.opsElapse(50)); // 남은 ~10초 ≤ 15초 임계
+  await expect.poll(() => view(page, 'seat-02').then((v) => v.urgent)).toBe(true);
+  await expect(page.getByTestId('bubble-seat-02')).toHaveAttribute('data-urgent', '1');
+});
+
 test('부분 서빙: 수량 주문은 전량을 채워야 식사한다', async ({ page }) => {
   await boot(page);
   await page.evaluate(() => window.__prodDebug.forceSpawn('seat-01', 'office', 0)); // 첫 주문 생맥주 ×2

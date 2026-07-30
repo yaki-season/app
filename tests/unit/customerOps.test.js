@@ -102,6 +102,32 @@ describe('createCustomerOps', () => {
     expect(view(ops, 'seat-01', 3).phase).toBe('eating');
   });
 
+  it('부분 서빙은 대기 인내심을 회복한다', () => {
+    const ops = createCustomerOps({
+      seatIds: SEATS,
+      types: [{ id: 'double', groupSize: 1, patienceSec: 100, tipMultiplier: 1, orderSequence: ['skewer', 'skewer'] }],
+      config: { ...BASE, waitRecoverySec: 10, rng: () => 0.9 },
+    });
+    ops.setAutoSpawn(false);
+    ops.forceSpawn('seat-01', 'double', 0, 0);
+    ops.tick(1);
+    ops.acceptOrder('seat-01');
+    ops.debugElapse(30); // 인내심 30초 소모
+    const before = ops.getSeat('seat-01').patienceUntil;
+    ops.serve('seat-01', { menu: '네기마', good: true }, 2); // 부분(1/2) → 10초 회복
+    expect(ops.getSeat('seat-01').patienceUntil).toBe(before + 10000);
+  });
+
+  it('남은 인내심이 임계 이하이면 긴급으로 표시한다', () => {
+    const ops = make(() => 0.9, { urgentThresholdSec: 15 });
+    ops.setAutoSpawn(false);
+    ops.forceSpawn('seat-01', 'solo', 0, 0); // 인내심 60초
+    ops.tick(1);
+    expect(view(ops, 'seat-01', 1).urgent).toBe(false); // 남은 ~60초
+    ops.debugElapse(50); // 남은 ~10초 ≤ 15초
+    expect(view(ops, 'seat-01', 1).urgent).toBe(true);
+  });
+
   it('재주문: 만족도 100%면 확률 통과 시 다음 항목을 주문한다', () => {
     const ops = make(() => 0.1); // 0.1 < 0.4 → 재주문
     ops.setAutoSpawn(false);
