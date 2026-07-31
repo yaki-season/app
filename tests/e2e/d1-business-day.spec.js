@@ -209,6 +209,10 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
     economy: { balance: 41, reputation: 12 },
   });
   await expect(page.getByTestId('result-overlay')).toBeVisible();
+  await page.getByTestId('continue-button').click();
+  await expect(page).toHaveURL(/\/src\/s0-d3\.html$/);
+  await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D2-PREOPEN');
+  await expect.poll(() => page.evaluate(() => window.__s0d3Debug?.campaignState?.()?.campaign?.nodeId)).toBe('d2');
   expect(errors).toEqual([]);
 });
 
