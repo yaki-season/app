@@ -39,10 +39,11 @@
   </header>
 
   <!-- D1 첫 주문 필수 단계 목록·현재 단계·다음 행동은 도움 설정과 무관하게 상시 유지한다. -->
-  <section id="guide" class="d1-guide" data-testid="d1-guide" aria-labelledby="guideTitle">
+  <section id="guide" class="d1-guide" data-testid="d1-guide" aria-labelledby="guideTitle" data-expanded="false">
     <div class="d1-guide-head">
       <strong id="guideTitle">첫 주문 · 총 3항목</strong>
       <span id="guideCurrent" data-testid="guide-current"></span>
+      <button id="guideToggle" class="d1-guide-toggle" type="button" aria-expanded="false" aria-controls="guideSteps">전체 보기</button>
     </div>
     <p id="guideNextAction" data-testid="guide-next-action" aria-live="polite"></p>
     <ol id="guideSteps" data-testid="guide-steps"></ol>

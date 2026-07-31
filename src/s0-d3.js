@@ -15,6 +15,7 @@ import {
   indexApprovedRuntimeAssets,
   resolveApprovedRuntimeAsset,
 } from './assets/runtimeAssetResolver.js';
+import { clearFirstOrderRuntime } from './d1/firstOrderRuntimeStorage.js';
 
 const errors = validateS0D3Content();
 errors.push(...validateS0ExteriorBackgroundBindingContract());
@@ -344,6 +345,7 @@ function renderComplete() {
   actions.replaceChildren(button('처음부터 다시 보기', async () => {
     const restarted = await campaignBridge.restartDevelopmentCampaign();
     if (!restarted.ok) throw new Error(restarted.error.message);
+    clearFirstOrderRuntime(window.localStorage);
     mode = 's0'; s0Index = 0; storyIndex = 0; lineIndex = 0; dayId = 'S0'; render();
   }));
 }
@@ -390,6 +392,7 @@ async function initialize() {
   await loadRuntimeAssets();
   campaignBridge = new S0D3CampaignBridge({ browserStorage: window.localStorage });
   const forceNew = new URLSearchParams(window.location.search).get('new') === '1';
+  if (forceNew) clearFirstOrderRuntime(window.localStorage);
   const loaded = await campaignBridge.loadOrStart({ forceNew });
   if (!loaded.ok) {
     renderCampaignError(new Error(loaded.error.message));

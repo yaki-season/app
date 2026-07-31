@@ -27,6 +27,7 @@ import {
 } from './config/screenLayout.js';
 import { D1_GRILL_FINISHED_TRAY } from './config/d1GrillLayout.js';
 import { createFirstOrderGuide } from './d1/firstOrderGuide.js';
+import { FIRST_ORDER_RUNTIME_STORAGE_KEY, clearFirstOrderRuntime } from './d1/firstOrderRuntimeStorage.js';
 import { RECIPE } from './config/recipe.js';
 import { runtimeAssetUrl } from './assets/runtimeAssetResolver.js';
 import {
@@ -42,11 +43,20 @@ import {
 } from './application/ports/d1BusinessDayDefinition.js';
 
 const el = (id) => document.getElementById(id);
+const guide = el('guide');
+const guideToggle = el('guideToggle');
+guideToggle.addEventListener('click', () => {
+  const expanded = guide.dataset.expanded !== 'true';
+  guide.dataset.expanded = String(expanded);
+  guideToggle.setAttribute('aria-expanded', String(expanded));
+  guideToggle.textContent = expanded ? '접기' : '전체 보기';
+});
 const canvas = el('scene');
 const R = createProductionRenderer(canvas);
 const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
 
-const FIRST_ORDER_RUNTIME_STORAGE_KEY = 'yaki-season:d1-first-order-runtime:v1';
+const resetFirstOrderRuntime = new URLSearchParams(window.location.search).get('reset') === '1';
+if (resetFirstOrderRuntime) clearFirstOrderRuntime(window.localStorage);
 function readFirstOrderRuntime() {
   try {
     const value = window.localStorage.getItem(FIRST_ORDER_RUNTIME_STORAGE_KEY);
@@ -435,7 +445,8 @@ function renderServeTargets() {
     const seat = view.seats.find((item) => item.seatId === seatId);
     const { button, index } = serveTargetButtons.get(seatId);
     const eligible = seatCanReceiveSelected(seat, selected);
-    const canActivate = Boolean(seat?.canOrder || eligible);
+    const cleanupNeeded = Boolean(seat?.cleanupNeeded);
+    const canActivate = Boolean(seat?.canOrder || eligible || cleanupNeeded);
     const seatLabel = `${index + 1}번 좌석`;
     const customerLabel = seat?.customerId === 'REGULAR_TSUKIOKA'
       ? '츠키오카'
@@ -443,13 +454,18 @@ function renderServeTargets() {
     const remaining = seat?.remainingOrderLabel || '남은 주문 없음';
     button.disabled = !canActivate;
     button.dataset.eligible = String(eligible);
+    button.dataset.cleanup = String(cleanupNeeded);
     button.dataset.remainingMenuIds = (seat?.remainingItems ?? [])
       .map((item) => item.menuId)
       .join(',');
-    button.innerHTML = `<strong>${seatLabel} · ${customerLabel}</strong><span>${remaining}</span>`;
+    button.innerHTML = cleanupNeeded
+      ? `<strong>${seatLabel} · 정리 필요</strong><span>3초 동안 눌러 정리</span>`
+      : `<strong>${seatLabel} · ${customerLabel}</strong><span>${remaining}</span>`;
     button.setAttribute(
       'aria-label',
-      `${seatLabel} ${customerLabel}. ${remaining}.${seat?.canOrder ? ' 주문 접수 가능.' : ''}${eligible ? ` 선택한 ${selected.menu} 제공 가능.` : ''}`,
+      cleanupNeeded
+        ? `${seatLabel}. 정리 필요. 3초 동안 눌러 정리하세요.`
+        : `${seatLabel} ${customerLabel}. ${remaining}.${seat?.canOrder ? ' 주문 접수 가능.' : ''}${eligible ? ` 선택한 ${selected.menu} 제공 가능.` : ''}`,
     );
   }
 }
@@ -690,7 +706,8 @@ function guideText(view) {
   if (businessBootError) return `D1 시작 실패 · ${businessBootError.message ?? businessBootError.code}`;
   if (!view) return 'S0 저장을 확인하고 D1 영업을 준비하는 중입니다.';
   if (view.phase === 'closing-drain') {
-    return `마감했습니다. 남은 주문 ${view.closing.unfinishedOrderCount}건과 좌석 정리 ${view.closing.cleanupSeatCount}건을 끝내세요.`;
+    const risk = view.limits.riskProcessCount;
+    return `02:30 마감. 남은 주문 ${view.closing.unfinishedOrderCount}건·좌석 정리 ${view.closing.cleanupSeatCount}건${risk ? `·그릴 위험 공정 ${risk}건` : ''}을 끝내세요.`;
   }
   if (view.phase === 'charcoal-down') return '모든 주문을 drain했습니다. 남은 숯불을 낮추세요.';
   if (view.phase === 'settlement') return '영업 결과를 다섯 단계로 확인한 뒤 한 번만 저장합니다.';
@@ -706,14 +723,18 @@ function guideText(view) {
     return `선택한 ${selected.menu} · 제공 가능한 손님 ${eligibleCount}명을 직접 고르세요.`;
   }
   if (waiting) return '선반에서 완성품을 고른 뒤 일치하는 남은 주문이 있는 손님을 선택하세요.';
-  return '다음 손님을 기다리며 조립·그릴·드링크를 준비할 수 있습니다.';
+  const remainingSec = Math.max(0, Math.ceil((view.clock.targetMs - view.clock.elapsedMs) / 1000));
+  const remaining = `${Math.floor(remainingSec / 60)}:${String(remainingSec % 60).padStart(2, '0')}`;
+  return `02:30 자동 마감까지 ${remaining} · 다음 손님을 기다리며 조립·그릴·드링크를 준비할 수 있습니다.`;
 }
 
 function renderFirstOrderGuide() {
   const model = firstOrderGuide.view();
   const current = model.steps.find((step) => step.status === 'current');
   el('guideCurrent').textContent = current ? `현재 · ${current.label}` : '완료';
-  el('guideNextAction').textContent = model.feedback ?? model.nextAction;
+  el('guideNextAction').textContent = model.complete
+    ? guideText(businessView())
+    : model.feedback ?? model.nextAction;
   el('guideSteps').replaceChildren(...model.steps.map((step) => {
     const row = document.createElement('li');
     row.dataset.stepId = step.id;

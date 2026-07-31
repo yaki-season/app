@@ -27,8 +27,17 @@
   border: 1px solid var(--line); border-left: 4px solid var(--ember);
   border-radius: 10px; padding: 10px 12px; background: rgba(20,13,9,0.94);
 }
-.d1-guide-head { display: flex; justify-content: space-between; gap: 8px; }
+.d1-guide[data-expanded="false"] { width: min(320px, 26vw); overflow: hidden; }
+.d1-guide[data-expanded="false"] ol { display: none; }
+.d1-guide[data-expanded="true"] { pointer-events: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.d1-guide-head { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px 8px; }
+.d1-guide-head strong { min-width: 0; }
 .d1-guide-head span { color: var(--ember); }
+.d1-guide-toggle {
+  grid-column: 1 / -1; justify-self: end; pointer-events: auto;
+  border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px;
+  color: var(--text); background: rgba(62, 43, 30, .96); font: inherit; cursor: pointer;
+}
 .d1-guide p { margin: 7px 0; font-weight: 700; }
 .d1-guide ol { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; }
 .d1-guide li { border-left: 3px solid var(--line); padding: 3px 6px; color: var(--dim); }
@@ -175,6 +184,20 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide {
   margin-top: 3px;
   font-weight: 700;
   color: var(--good);
+}
+.customer-serve-target[data-cleanup="true"] {
+  border-width: 2px;
+  border-color: #6fb8ff;
+  background: rgba(30, 64, 88, 0.94);
+  color: #d9efff;
+}
+.customer-serve-target[data-cleanup="true"] span { color: #9ed6ff; }
+.customer-serve-target[data-cleanup="true"]::after {
+  content: "정리";
+  display: block;
+  margin-top: 3px;
+  font-weight: 700;
+  color: #9ed6ff;
 }
 .customer-serve-target:disabled {
   cursor: default;
