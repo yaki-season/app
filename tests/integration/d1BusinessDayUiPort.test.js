@@ -235,7 +235,7 @@ describe('D1 영업일 UI port 경계 통합', () => {
     expect(port.getViewModel()).toMatchObject({
       phase: 'charcoal-down',
       suggestedScreenId: 'SCR-POST-CLOSING',
-      clock: { label: '02:30', dayOffset: 1 },
+      clock: { label: '23:30', dayOffset: 0 },
       closing: {
         unfinishedCustomerCount: 0,
         unfinishedOrderCount: 0,

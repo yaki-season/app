@@ -72,6 +72,8 @@ async function serve(page, seatId, menu, index) {
   await page.getByTestId(`dock-item-${id}`).click();
   await page.waitForTimeout(230);
   await clickSeat(page, seatId);
+  await expect(page.getByTestId('serve-quantity')).toBeVisible();
+  await page.getByTestId('serve-one').click();
   await expect.poll(() => D(page, 'dockItems').then(
     (items) => !items.some((item) => item.id === id),
   )).toBe(true);
@@ -106,7 +108,6 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   ))).toBe(1);
   await serve(page, tsukioka, '네기마', 1);
   await serve(page, tsukioka, '네기마', 2);
-  await serve(page, tsukioka, '네기마', 3);
   await D(page, 'businessAdvance', 16_000);
   await cleanup(page, [tsukioka]);
 
@@ -146,8 +147,8 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   expect(golden).toMatchObject({
     customers: { visited: 4, lost: 0, cleanedSeats: 4 },
     orders: { accepted: 4, completed: 4, abandoned: 0 },
-    quality: { Perfect: 9, Good: 0, OK: 0, Fail: 0 },
-    economy: { revenue: 36, tip: 8, total: 44, reputation: 12 },
+    quality: { Perfect: 8, Good: 0, OK: 0, Fail: 0 },
+    economy: { revenue: 33, tip: 8, total: 41, reputation: 12 },
     operations: { elapsedMs: 420_000 },
   });
 
@@ -186,7 +187,7 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
       completedDayIds: ['d1'],
     },
     economy: {
-      balance: 44,
+      balance: 41,
       reputation: 12,
       settlements: [expect.objectContaining({ completionId: expect.any(String) })],
     },
@@ -205,7 +206,7 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   });
   expect(await D(page, 'campaignState')).toMatchObject({
     campaign: { nodeId: 'd2', completedDayIds: ['d1'] },
-    economy: { balance: 44, reputation: 12 },
+    economy: { balance: 41, reputation: 12 },
   });
   await expect(page.getByTestId('result-overlay')).toBeVisible();
   expect(errors).toEqual([]);

@@ -80,8 +80,8 @@
       "additionalProperties": false,
       "properties": {
         "startMinute": { "type": "integer", "minimum": 0, "maximum": 1439 },
-        "endMinute": { "type": "integer", "minimum": 1440, "maximum": 2879 },
-        "spansMidnight": { "const": true },
+        "endMinute": { "type": "integer", "minimum": 1, "maximum": 2879 },
+        "spansMidnight": { "type": "boolean" },
         "targetSessionSec": { "type": "integer", "minimum": 360, "maximum": 480, "unit": "초" }
       }
     },

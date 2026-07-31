@@ -24,8 +24,8 @@
   "autoPolicySuccessRate": 0.9,
   "businessWindow": {
     "startMinute": 1050,
-    "endMinute": 1590,
-    "spansMidnight": true,
+    "endMinute": 1410,
+    "spansMidnight": false,
     "targetSessionSec": 420
   },
   "segments": [
@@ -62,7 +62,7 @@
     {
       "id": "d1-closing",
       "startMinute": 1380,
-      "endMinute": 1590,
+      "endMinute": 1410,
       "customerCount": { "min": 0, "max": 0 },
       "orderCount": { "min": 0, "max": 0 },
       "itemCount": { "min": 0, "max": 0 },

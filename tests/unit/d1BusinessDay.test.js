@@ -103,7 +103,7 @@ describe('D1 전체 영업일 도메인', () => {
     expect(state.phase).toBe(D1_DAY_PHASE.CHARCOAL_DOWN);
     expect(state.clock).toMatchObject({
       elapsedMs: 420_000,
-      gameMinute: 1590,
+      gameMinute: 1410,
       arrivalsClosed: true,
     });
 

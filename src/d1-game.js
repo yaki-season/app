@@ -707,7 +707,7 @@ function guideText(view) {
   if (!view) return 'S0 저장을 확인하고 D1 영업을 준비하는 중입니다.';
   if (view.phase === 'closing-drain') {
     const risk = view.limits.riskProcessCount;
-    return `02:30 마감. 남은 주문 ${view.closing.unfinishedOrderCount}건·좌석 정리 ${view.closing.cleanupSeatCount}건${risk ? `·그릴 위험 공정 ${risk}건` : ''}을 끝내세요.`;
+    return `23:30 마감. 남은 주문 ${view.closing.unfinishedOrderCount}건·좌석 정리 ${view.closing.cleanupSeatCount}건${risk ? `·그릴 위험 공정 ${risk}건` : ''}을 끝내세요.`;
   }
   if (view.phase === 'charcoal-down') return '모든 주문을 drain했습니다. 남은 숯불을 낮추세요.';
   if (view.phase === 'settlement') return '영업 결과를 다섯 단계로 확인한 뒤 한 번만 저장합니다.';
@@ -725,7 +725,7 @@ function guideText(view) {
   if (waiting) return '선반에서 완성품을 고른 뒤 일치하는 남은 주문이 있는 손님을 선택하세요.';
   const remainingSec = Math.max(0, Math.ceil((view.clock.targetMs - view.clock.elapsedMs) / 1000));
   const remaining = `${Math.floor(remainingSec / 60)}:${String(remainingSec % 60).padStart(2, '0')}`;
-  return `02:30 자동 마감까지 ${remaining} · 다음 손님을 기다리며 조립·그릴·드링크를 준비할 수 있습니다.`;
+  return `23:30 자동 마감까지 ${remaining} · 다음 손님을 기다리며 조립·그릴·드링크를 준비할 수 있습니다.`;
 }
 
 function renderFirstOrderGuide() {

@@ -522,7 +522,8 @@ function progressTimers(state, definition, deltaMs) {
 
 function updateGameClock(state) {
   const ratio = Math.min(1, state.clock.elapsedMs / state.clock.targetMs);
-  state.clock.gameMinute = Math.round(17 * 60 + 30 + ratio * 540);
+  // D1 임시 영업창: 17:30→23:30(6시간). 마지막 손님 구간 뒤 빈 마감 구간은 30분만 둔다.
+  state.clock.gameMinute = Math.round(17 * 60 + 30 + ratio * 360);
 }
 
 function hasUnfinishedDayState(state) {
