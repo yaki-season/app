@@ -216,6 +216,13 @@ body {
 
 /* 그릴 칸 익힘 상태 게이지 (그릴 화면 전용 오버레이) */
 .grill-layer { position: fixed; inset: 0; z-index: 8; pointer-events: none; }
+.grill-unlock {
+  position: absolute; left: 50%; top: 34%; transform: translateX(-50%);
+  pointer-events: auto; padding: 9px 16px; border: 1px solid var(--ember);
+  border-radius: 8px; background: rgba(31, 20, 13, 0.94); color: var(--ember);
+  font: inherit; font-weight: 700; cursor: pointer;
+}
+.grill-unlock[hidden] { display: none; }
 .grill-gauge { position: absolute; transform: translate(-50%, -100%); width: 144px; text-align: center; }
 .grill-gauge[hidden] { display: none; }
 .grill-gauge .gg-label {

@@ -41,6 +41,29 @@ export const SEAT_ACTOR_UV = { u0: 0.485, u1: 0.655, v0: 0.48, v1: 0.85 }; // �
 export const PLAYER_EYE = { x: 0, y: 2.6, z: 12.0 };
 export const SCREEN_TRANSITION_MS = 300;
 
+// game.html 전용 프로덕션 그릴 칸(명성 해금, 최대 8). d1-game의 고정 6칸 D1 계약과 분리한 별도 키(pgSlot*).
+// count개의 칸을 그릴 바디 폭에 균등 배치한다(seat과 같은 방식). renderer가 setGrillSlots로 재배치한다.
+export const GRILL_MAX_SLOTS = 8;
+export const DEFAULT_GRILL_SLOTS = 2;
+export function computeGrillSlots(count) {
+  const n = Math.max(1, Math.min(GRILL_MAX_SLOTS, count));
+  // 좌우 트레이 예약 영역(대기 끝 x=0.245)을 침범하지 않는 그릴 본체 레인.
+  const left = 0.285;
+  const right = 0.715;
+  const step = n > 1 ? (right - left) / (n - 1) : 0;
+  const w = Math.min(0.085, step > 0 ? step * 0.62 : 0.085);
+  return Array.from({ length: n }, (_, i) => {
+    const cx = n === 1 ? 0.5 : left + step * i;
+    return { key: `pgSlot${i}`, rect: { x: cx - w / 2, y: 0.46, width: w, height: 0.24 } };
+  });
+}
+export const GRILL_SLOT_KEYS = Array.from({ length: GRILL_MAX_SLOTS }, (_, i) => `pgSlot${i}`);
+function productionGrillObjects() {
+  return Object.fromEntries(
+    computeGrillSlots(GRILL_MAX_SLOTS).map(({ key, rect }) => [key, { rect, layer: 'interactive', color: 0xd98a5f, kind: 'grill', prodGrillSlot: true }]),
+  );
+}
+
 // 더미 오브젝트 레지스트리: key → { rect(정규화 top-left), layer, color, kind }.
 // productionRenderer가 한 번 만들어두고 화면별로 visible 토글한다(단일 렌더러, §33).
 export const OBJECTS = {
@@ -60,7 +83,8 @@ export const OBJECTS = {
   // 그릴 화면 (다중 칸). 대기 트레이의 꼬치를 빈 칸에 올려 각각 독립적으로 굽는다.
   grillBody: { rect: { x: 0.10, y: 0.42, width: 0.80, height: 0.50 }, layer: 'fixture', color: 0x3a3330, kind: 'plane' },
   grillWaitTray: { rect: D1_GRILL_WAITING_TRAY.rect, anchor: D1_GRILL_WAITING_TRAY.anchor, layer: 'interactive', color: 0xc9a86a, kind: 'plane' },
-  ...createD1GrillObjects(),
+  ...createD1GrillObjects(), // d1-game용 D1 고정 6칸 (grillSlot0~5)
+  ...productionGrillObjects(), // game.html용 프로덕션 그릴 8칸 (pgSlot0~7)
   grillFinishedTray: {
     key: D1_GRILL_FINISHED_TRAY.key,
     rect: D1_GRILL_FINISHED_TRAY.visualRect,
@@ -132,7 +156,7 @@ export const SCREENS = [
     id: 'SCR-SVC-GRILL',
     name: '그릴',
     look: { x: 0.0, y: -2.4, z: -3.0 }, // 아래 그릴 (더 가까이)
-    objects: ['bg', 'grillBody', 'grillWaitTray', ...D1_GRILL_SLOT_KEYS, 'grillFinishedTray'],
+    objects: ['bg', 'grillBody', 'grillWaitTray', ...D1_GRILL_SLOT_KEYS, ...GRILL_SLOT_KEYS, 'grillFinishedTray'],
   },
   {
     id: 'SCR-SVC-DRINK',

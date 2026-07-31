@@ -42,14 +42,14 @@ async function assembleOne(page) {
 }
 async function startInitialBatch(page) {
   await page.evaluate(() => {
-    for (let index = 0; index < 3; index += 1) window.__prodDebug.cookFillAssembly();
+    for (let index = 0; index < 2; index += 1) window.__prodDebug.cookFillAssembly();
   });
   await goScreen(page, 'SCR-SVC-GRILL');
-  for (let index = 0; index < 3; index += 1) {
+  for (let index = 0; index < 2; index += 1) {
     await click(page, 'grillWaitTray');
     await page.waitForTimeout(230);
   }
-  await expect.poll(() => slots(page).then((state) => state.slice(0, 3).every((slot) => slot.cooking))).toBe(true);
+  await expect.poll(() => slots(page).then((state) => state.slice(0, 2).every((slot) => slot.cooking))).toBe(true);
 }
 
 test('4개 독립 화면을 좌·우/퀵/키보드로 전환하고 svc.station이 갱신된다', async ({ page }) => {
@@ -123,11 +123,11 @@ test('조립→그릴(앞·뒤)→선반→좌석 서빙 루프가 돈다', asyn
   await expect.poll(() => slots(page).then((s) => s[0].status)).toBe('front');
 
   await page.evaluate(() => window.__prodDebug.cookElapse(8)); // 앞면 적정
-  await click(page, 'grillSlot0'); // 뒤집기
+  await click(page, 'pgSlot0'); // 뒤집기
   await expect.poll(() => slots(page).then((s) => s[0].status)).toBe('back');
   await page.waitForTimeout(230); // 대상별 입력 잠금 이후
   await page.evaluate(() => window.__prodDebug.cookElapse(8)); // 뒷면 적정
-  await click(page, 'grillSlot0'); // 회수 → 선반
+  await click(page, 'pgSlot0'); // 회수 → 선반
   await expect.poll(() => dockCount(page)).toBe(1);
   await expect.poll(() => slots(page).then((s) => s[0].status)).toBe('empty');
 

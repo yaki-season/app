@@ -11,12 +11,12 @@ import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
 import { createCustomerOps } from './render/customerOps.js';
 import { settleDay } from './render/daySettlement.js';
-import { reputationDelta, catalog, buy, effectiveEconomy, ownedEffects } from './render/progression.js';
+import { reputationDelta, catalog, buy, effectiveEconomy, ownedEffects, grillUnlockState } from './render/progression.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
-import { createD1CookStations } from './render/cookStations.js';
-import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS, CUSTOMER_ART } from './config/screenLayout.js';
-import { D1_GRILL_SLOT_KEYS, D1_GRILL_SLOTS, D1_GRILL_FINISHED_TRAY } from './config/d1GrillLayout.js';
+import { createCookStations } from './render/cookStations.js';
+import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS, CUSTOMER_ART, GRILL_SLOT_KEYS, DEFAULT_GRILL_SLOTS } from './config/screenLayout.js';
+import { D1_GRILL_SLOTS, D1_GRILL_FINISHED_TRAY } from './config/d1GrillLayout.js';
 import { RECIPE, COOK_THRESHOLDS_SEC, DONENESS, canAdvance } from './config/recipe.js';
 
 const el = (id) => document.getElementById(id);
@@ -27,11 +27,12 @@ const PRODUCTION_CONTENT_URLS = Object.freeze({
   customerTypes: '/content/customers/types.json',
   day: '/content/campaign/day-d1.json',
   upgrades: '/content/progression/upgrades.json',
+  grillSlots: '/content/progression/grill-slots.json',
 });
 
 // D1 프로덕션 그릴은 처음부터 끝까지 고정 6칸이며, 첫 주문 3개를 모두 올린 순간 함께 굽기 시작한다.
-const cook = createD1CookStations();
-const SLOT_KEYS = D1_GRILL_SLOT_KEYS;
+const cook = createCookStations({ slots: DEFAULT_GRILL_SLOTS });
+const SLOT_KEYS = GRILL_SLOT_KEYS;
 const grillMats = {}; // slotKey → 익힘 셰이더 재질
 const GRILL_FLIP_AXIS = new THREE.Vector3(0, 1, 0);
 const grillFlipQuaternion = new THREE.Quaternion();
@@ -50,10 +51,17 @@ let staff = []; // 고용 가능한 직원(콘텐츠)
 let loadedDay = null; // production이 실제로 읽은 day 원본(E2E 데이터 계약 확인용)
 const wallet = { gold: 0, reputation: 0, owned: new Set(), staff: new Set() }; // 여러 날 지속되는 성장 자원
 let cleanupHold = null; // { seatId, startMs } 정리 3초 홀드
+let grillSlotConfig = null;
+let claimedGrillSlots = DEFAULT_GRILL_SLOTS;
+let availableGrillSlots = DEFAULT_GRILL_SLOTS;
 const ownedItems = () => upgrades.filter((u) => wallet.owned.has(u.id));
 const ownedStaff = () => staff.filter((s) => wallet.staff.has(s.id));
 const drinkStaff = () => ownedStaff().find((s) => s.role === 'drink') || null;
 const currentEconomy = () => (baseEconomy ? effectiveEconomy(baseEconomy, ownedItems()) : null);
+const syncGrillSlots = () => {
+  cook.setSlots(claimedGrillSlots);
+  R.setGrillSlots(claimedGrillSlots);
+};
 const syncSlots = () => {}; // 그릴 칸은 명성 해금(다음 영업일·클릭)으로 이전 예정(#2). 현재는 기본 칸 유지.
 const syncSeats = () => { const cap = ownedEffects(ownedItems()).seatCap; if (ops) ops.setCapacity(cap); R.setSeatCapacity(cap); }; // 업그레이드 → 좌석 수
 // 좌석 8석 이상이면 하루에 8인 예약 파티가 예약 시각에 함께 입장한다(대형 그룹).
@@ -410,6 +418,9 @@ function endDay() {
   settling = true; // 손님 시간 정지
 }
 function nextDay() {
+  if (grillSlotConfig) {
+    availableGrillSlots = grillUnlockState(claimedGrillSlots, wallet.reputation, grillSlotConfig).available;
+  }
   if (ops) { ops.resetDay(); ops.setAutoSpawn(true); scheduleReservation(); }
   el('settlement').hidden = true;
   el('purchase').hidden = true;
@@ -577,6 +588,27 @@ for (const key of SLOT_KEYS) {
 // ── 그릴 칸 익힘 상태 게이지 (DOM 오버레이, 그릴 화면 전용) ──────
 // 셰이더 색을 보완해, 굽는 각 칸의 면·익힘 단계·적정 구간까지의 진행도를 읽을 수 있게 한다.
 const DONE_LABEL = { [DONENESS.UNDER]: '덜 익음', [DONENESS.PERFECT]: '적정', [DONENESS.OVER]: '과다', [DONENESS.BURNT]: '탄' };
+const grillUnlockButton = document.createElement('button');
+grillUnlockButton.type = 'button';
+grillUnlockButton.className = 'grill-unlock';
+grillUnlockButton.dataset.testid = 'grill-unlock';
+grillUnlockButton.hidden = true;
+el('grillLayer').appendChild(grillUnlockButton);
+
+function updateGrillUnlockButton(activeScreen = director.activeScreenId()) {
+  const pending = availableGrillSlots > claimedGrillSlots;
+  grillUnlockButton.hidden = activeScreen !== 'SCR-SVC-GRILL' || !pending;
+  grillUnlockButton.textContent = pending ? `그릴 ${availableGrillSlots}칸 해금 가능 · 클릭` : '';
+}
+
+grillUnlockButton.addEventListener('click', () => {
+  if (availableGrillSlots <= claimedGrillSlots) return;
+  claimedGrillSlots = availableGrillSlots;
+  syncGrillSlots();
+  showHint(`그릴이 ${claimedGrillSlots}칸으로 확장됐어요`);
+  render();
+});
+
 const BURNT_SEC = COOK_THRESHOLDS_SEC[DONENESS.BURNT];
 const grillGauges = {}; // slotKey → { node, label, marker }
 for (const key of SLOT_KEYS) {
@@ -600,6 +632,7 @@ for (const key of SLOT_KEYS) {
 
 function updateGrillOverlays(now, activeScreen) {
   const onGrill = activeScreen === 'SCR-SVC-GRILL';
+  updateGrillUnlockButton(activeScreen);
   const views = cook.slotViews(now);
   for (const key of SLOT_KEYS) {
     const g = grillGauges[key];
@@ -674,13 +707,17 @@ Promise.all([
   fetch(PRODUCTION_CONTENT_URLS.day).then((r) => r.json()),
   fetch(PRODUCTION_CONTENT_URLS.upgrades).then((r) => r.json()).catch(() => []),
   fetch('/content/staff/staff.json').then((r) => r.json()).catch(() => []),
+  fetch(PRODUCTION_CONTENT_URLS.grillSlots).then((r) => r.json()),
 ])
-  .then(([types, day, upgradeData, staffData]) => {
+  .then(([types, day, upgradeData, staffData, grillData]) => {
     loadedDay = day;
     baseEconomy = day.economy;
     // 골드 grillSlots 업그레이드는 제외한다(그릴 칸은 명성 해금으로 이전 예정, GPL-005 v2.23.0).
     upgrades = (upgradeData || []).filter((item) => item.effect?.kind !== 'grillSlots');
     staff = staffData || [];
+    grillSlotConfig = grillData;
+    availableGrillSlots = grillUnlockState(claimedGrillSlots, wallet.reputation, grillSlotConfig).available;
+    syncGrillSlots();
     syncSlots(); // 그릴 칸 동기화(현재 무동작 — 명성 해금 이전 예정)
     ops = createCustomerOps({
       seatIds: SEAT_IDS,
@@ -716,6 +753,7 @@ window.__prodDebug = {
   cookFillAssembly: () => cook.debugFillAssembly(), // 조립 5클릭 대체(대기 트레이 +1)
   cookWaiting: () => cook.waitingCount(),
   cookSlots: () => cook.slotViews(performance.now()),
+  grillUnlock: () => ({ claimed: claimedGrillSlots, available: availableGrillSlots, pending: availableGrillSlots > claimedGrillSlots }),
   cookPlace: () => cook.placeToGrill(performance.now()),
   cookClickSlot: (i) => clickGrillSlot(i, performance.now()),
   cookElapse: (sec) => cook.debugElapse(sec),

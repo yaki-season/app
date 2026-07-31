@@ -62,32 +62,25 @@ test('구매: 골드 차감·소유·판매가 효과 반영', async ({ page }) 
   expect(await page.evaluate(() => window.__prodDebug.economyBasePrice())).toBe(expectedPrice);
 });
 
-test('D1 그릴은 처음부터 고정 6칸이며 구형 grillSlots 구매를 노출·소비하지 않는다', async ({ page }) => {
+test('프로덕션 그릴은 명성 달성 다음 영업일에 클릭으로 2칸에서 4칸 해금된다', async ({ page }) => {
   await boot(page);
-  await page.evaluate(() => window.__prodDebug.setWallet(9999, 9));
-  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(6);
+  await page.evaluate(() => window.__prodDebug.setWallet(9999, 10));
+  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(2);
 
   await page.getByTestId('end-day').click();
   await page.getByTestId('open-purchase').click();
   await expect(page.getByTestId('cat-equipment')).toHaveCount(0);
   await expect(page.getByTestId('item-equipment-grill-slots-2')).toHaveCount(0);
-  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(6);
+  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(2);
 
-  await page.getByTestId('purchase-close').click(); // 구매 닫고 정산으로
+  await page.getByTestId('purchase-close').click();
   await page.getByTestId('next-day').click();
-  await page.evaluate(() => {
-    for (let index = 0; index < 3; index += 1) window.__prodDebug.cookFillAssembly();
-    window.__prodDebug.cookPlace();
-    window.__prodDebug.cookPlace();
-  });
-  expect((await page.evaluate(() => window.__prodDebug.cookSlots())).slice(0, 2)).toEqual([
-    expect.objectContaining({ status: 'staged', contactFace: null, frontElapsedSec: 0 }),
-    expect.objectContaining({ status: 'staged', contactFace: null, frontElapsedSec: 0 }),
-  ]);
-  await page.evaluate(() => window.__prodDebug.cookPlace());
-  const started = (await page.evaluate(() => window.__prodDebug.cookSlots())).slice(0, 3);
-  expect(started.every((slot) => slot.status === 'front' && slot.contactFace === 'front')).toBe(true);
-  expect(new Set(started.map((slot) => slot.frontElapsedSec)).size).toBe(1);
+  expect(await page.evaluate(() => window.__prodDebug.grillUnlock())).toEqual({ claimed: 2, available: 4, pending: true });
+  await page.evaluate(() => window.__prodDebug.requestScreen('SCR-SVC-GRILL'));
+  await expect(page.getByTestId('grill-unlock')).toBeVisible();
+  await page.getByTestId('grill-unlock').click();
+  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(4);
+  expect(await page.evaluate(() => window.__prodDebug.grillUnlock())).toEqual({ claimed: 4, available: 4, pending: false });
 });
 
 test('게이팅: 명성·선행 조건이 구매를 막는다', async ({ page }) => {

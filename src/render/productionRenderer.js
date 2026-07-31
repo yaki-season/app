@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import { makeCamera, billboard, worldAtScreen, anchorToWorld, lerp, ASPECT, TAN_HALF } from './sceneMath.js';
-import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID, SEAT_IDS, SEAT_ACTOR_MOOD, SEAT_ACTOR_TEXTURE, SEAT_ACTOR_UV, computeSeats, DEFAULT_SEAT_CAP } from '../config/screenLayout.js';
+import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID, SEAT_IDS, SEAT_ACTOR_MOOD, SEAT_ACTOR_TEXTURE, SEAT_ACTOR_UV, computeSeats, DEFAULT_SEAT_CAP, computeGrillSlots, GRILL_SLOT_KEYS } from '../config/screenLayout.js';
 import { runtimeAssetUrl } from '../assets/runtimeAssetResolver.js';
 
 export function createProductionRenderer(canvas) {
@@ -45,6 +45,7 @@ export function createProductionRenderer(canvas) {
   const screenGroups = {}; // screenId → [mesh]
   const objectMesh = {}; // key → mesh (조작 대상은 화면 유일 → 모호하지 않음)
   const interactionMesh = {}; // key → visual과 분리된 투명 hitRect mesh
+  const inactiveObjects = new Set(GRILL_SLOT_KEYS);
 
   function buildObject(cam, key) {
     const def = OBJECTS[key];
@@ -146,7 +147,9 @@ export function createProductionRenderer(canvas) {
     for (const [id, group] of Object.entries(screenGroups)) {
       const show = id === screenId;
       for (const mesh of group) {
-        mesh.visible = show && !(mesh.userData.seatId && inactiveSeats.has(mesh.userData.seatId));
+        mesh.visible = show
+          && !inactiveObjects.has(mesh.userData.objectKey)
+          && !(mesh.userData.seatId && inactiveSeats.has(mesh.userData.seatId));
       }
     }
   }
@@ -178,6 +181,24 @@ export function createProductionRenderer(canvas) {
         inactiveSeats.add(seatId);
       }
     });
+    setActiveScreenObjects(activeId);
+  }
+
+  // game.html 프로덕션 그릴 칸 수(명성 해금)에 맞춰 pgSlot 칸을 그릴 바디에 균등 재배치한다.
+  function setGrillSlots(n) {
+    const cam = presetCam['SCR-SVC-GRILL'];
+    if (!cam) return;
+    const slots = computeGrillSlots(n);
+    const activeKeys = new Set(slots.map(({ key }) => key));
+    for (const key of Object.keys(OBJECTS)) if (key.startsWith('grillSlot')) inactiveObjects.add(key);
+    for (const key of GRILL_SLOT_KEYS) {
+      if (activeKeys.has(key)) inactiveObjects.delete(key);
+      else inactiveObjects.add(key);
+    }
+    for (const { key, rect } of slots) {
+      const mesh = objectMesh[key];
+      if (mesh) placeBillboard(mesh, cam, rect, LAYER_Z.interactive);
+    }
     setActiveScreenObjects(activeId);
   }
 
@@ -271,7 +292,6 @@ export function createProductionRenderer(canvas) {
   }
 
   setSeatCapacity(DEFAULT_SEAT_CAP); // 초기 좌석 배치(기본 6석). activeId 정의 후 호출.
-
   return {
     scene,
     camera,
@@ -279,13 +299,15 @@ export function createProductionRenderer(canvas) {
     objectMesh,
     interactionMesh,
     setObjectVisible: (key, visible) => {
-      if (objectMesh[key]) objectMesh[key].visible = visible;
-      if (interactionMesh[key]) interactionMesh[key].visible = visible;
+      const show = visible && !inactiveObjects.has(key);
+      if (objectMesh[key]) objectMesh[key].visible = show;
+      if (interactionMesh[key]) interactionMesh[key].visible = show;
     },
     seatActorMesh,
     seatBaseMesh,
     seatBubbleWorld,
     setSeatCapacity,
+    setGrillSlots,
     hasSeatActorArt: () => !!SEAT_ACTOR_TEXTURE,
     // 좌석 손님 아트 텍스처 교체 (phase 구동). UV 크롭은 지오메트리에 남는다.
     setSeatActorTexture: (seatId, url) => {
