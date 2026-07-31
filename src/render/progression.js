@@ -44,6 +44,28 @@ export function effectiveEconomy(baseEconomy, ownedItems) {
   return { ...baseEconomy, basePrice: Math.round(baseEconomy.basePrice * mult) };
 }
 
+// 명성 → 그릴 칸 수 (GPL-005 v2.23.0: 명성 해금, 골드 아님). config: grill-slots.json.
+// 명성 구간(tiers)에서 도달한 최고 칸 수를 최대(maxSlots)로 제한해 돌려준다. 명성은 소비하지 않는다.
+export function grillSlotsForReputation(reputation, config = {}) {
+  const rep = reputation ?? 0;
+  const tiers = config.tiers ?? [];
+  const max = config.maxSlots ?? 8;
+  let slots = 0;
+  for (const t of tiers) {
+    if (rep >= (t.reputation ?? 0)) slots = Math.max(slots, t.slots ?? 0);
+  }
+  if (slots === 0) slots = tiers.length ? Math.min(...tiers.map((t) => t.slots ?? Infinity)) : 2;
+  return Math.max(1, Math.min(slots, max));
+}
+
+// 그릴 칸 해금 상태. 즉시 아님: claimed(현재 반영된 칸) < available(명성으로 가능한 칸)이면 해금 대기.
+// 다음 영업일에 available을 계산하고, 플레이어가 클릭하면 claimed=available로 반영한다.
+export function grillUnlockState(claimedSlots, reputation, config = {}) {
+  const available = grillSlotsForReputation(reputation, config);
+  const claimed = claimedSlots ?? available;
+  return { available, claimed, pending: available > claimed };
+}
+
 // 소유 효과 요약(다른 시스템이 참조): { basePriceMult, grillSlots, seatCap }.
 export function ownedEffects(ownedItems) {
   const summary = { basePriceMult: 1, grillSlots: 1, seatCap: 6 };
