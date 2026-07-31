@@ -31,7 +31,7 @@ function validReleaseDefinition() {
     totals: {
       customers: 1,
       orders: 1,
-      items: 4,
+      items: 3,
     },
     economy: {
       baseTip: 2,
@@ -55,7 +55,7 @@ function validReleaseDefinition() {
           guided: true,
           lines: [
             { menuId: 'beer', quantity: 1, seasoning: 'none' },
-            { menuId: 'negima', quantity: 3, seasoning: 'none' },
+            { menuId: 'negima', quantity: 2, seasoning: 'none' },
           ],
         },
       }],
@@ -114,7 +114,7 @@ describe('D1BusinessDayDefinition consumer port', () => {
         id: 'd1-release-definition',
         schemaVersion: 1,
         source: { dayId: 'd1' },
-        totals: { customers: 1, orders: 1, items: 4 },
+        totals: { customers: 1, orders: 1, items: 3 },
       },
       definition: {
         id: 'd1',

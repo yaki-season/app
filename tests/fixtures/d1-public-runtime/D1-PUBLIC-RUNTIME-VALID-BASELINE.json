@@ -1,7 +1,7 @@
 {
   "id": "D1-PUBLIC-RUNTIME-VALID-BASELINE",
   "expectedValid": true,
-  "initialBatchStartedAtMs": [1000, 1000, 1000],
+  "initialBatchStartedAtMs": [1000, 1000],
   "tickTransitions": [
     {
       "id": "FRONT-ONLY-TICK",

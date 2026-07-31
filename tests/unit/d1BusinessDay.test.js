@@ -58,8 +58,7 @@ function completeTsukioka(state) {
   next = accept(next, 'D1-ORDER-001');
   next = serve(next, 'REGULAR_TSUKIOKA', 'beer', 1);
   next = serve(next, 'REGULAR_TSUKIOKA', 'negima', 1);
-  next = serve(next, 'REGULAR_TSUKIOKA', 'negima', 2);
-  return serve(next, 'REGULAR_TSUKIOKA', 'negima', 3);
+  return serve(next, 'REGULAR_TSUKIOKA', 'negima', 2);
 }
 
 function completeOfficePair(state) {
@@ -83,7 +82,7 @@ function advanceTo(state, elapsedMs) {
 }
 
 describe('D1 전체 영업일 도메인', () => {
-  it('D1 4명·4주문·9항목을 7분 목표 안에서 마감하고 정산 5단계를 만든다', () => {
+  it('D1 4명·4주문·8항목을 7분 목표 안에서 마감하고 정산 5단계를 만든다', () => {
     let state = completeTsukioka(initialState());
     state = advance(state, 16_000);
     state = cleanOccupiedSeats(state, 'tsukioka');
@@ -115,8 +114,8 @@ describe('D1 전체 영업일 도메인', () => {
     expect(state.settlement.summary).toMatchObject({
       customers: { visited: 4, lost: 0, cleanedSeats: 4 },
       orders: { accepted: 4, completed: 4, abandoned: 0 },
-      quality: { Perfect: 9, Good: 0, OK: 0, Fail: 0 },
-      economy: { revenue: 36, tip: 8, total: 44, reputation: 12 },
+      quality: { Perfect: 8, Good: 0, OK: 0, Fail: 0 },
+      economy: { revenue: 33, tip: 8, total: 41, reputation: 12 },
       operations: {
         peakActiveOrders: 2,
         peakRiskProcesses: 0,
@@ -148,13 +147,12 @@ describe('D1 전체 영업일 도메인', () => {
       menuId: 'negima',
       quality: D1_QUALITY.PERFECT,
     });
-    expect(first).toMatchObject({ applied: true, partial: true, remaining: 3 });
+    expect(first).toMatchObject({ applied: true, partial: true, remaining: 2 });
     expect(duplicate).toMatchObject({ applied: false, duplicate: true });
     expect(duplicate.state.metrics.servedItems).toBe(1);
     expect(duplicate.state.ledger).toHaveLength(1);
 
     state = serve(duplicate.state, 'REGULAR_TSUKIOKA', 'negima', 2);
-    state = serve(state, 'REGULAR_TSUKIOKA', 'negima', 3);
     const excess = command(state, 'serve:negima:excess', 'serve-item', {
       customerId: 'REGULAR_TSUKIOKA',
       menuId: 'negima',

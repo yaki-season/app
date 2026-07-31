@@ -63,7 +63,7 @@ describe('Developer 3 S0~D3 stable data contract', () => {
     const content = bundle();
     expect(['d1', 'd2', 'd3'].map((dayId) => simulateEarlyCampaignPlan(content, dayId)))
       .toMatchObject([
-        { dayId: 'd1', nextNodeId: 'd2', customers: 4, orders: 4, items: 9, peakActiveOrders: 2, peakRiskProcesses: 1 },
+        { dayId: 'd1', nextNodeId: 'd2', customers: 4, orders: 4, items: 8, peakActiveOrders: 2, peakRiskProcesses: 1 },
         { dayId: 'd2', nextNodeId: 'd3', customers: 6, orders: 5, items: 10, peakActiveOrders: 2, peakRiskProcesses: 2 },
         { dayId: 'd3', nextNodeId: 'd4-preview', customers: 8, orders: 7, items: 16, peakActiveOrders: 2, peakRiskProcesses: 2 },
       ]);
@@ -77,7 +77,7 @@ describe('Developer 3 S0~D3 stable data contract', () => {
       source: { kind: 'fixed-character', characterId: 'CHAR-TSUKIOKA' },
       items: [
         { menuId: 'beer', quantity: 1 },
-        { menuId: 'negima', quantity: 3 },
+        { menuId: 'negima', quantity: 2 },
       ],
     });
     expect(buildEarlyCampaignDayContract(content, 'd2').tutorial).toMatchObject({

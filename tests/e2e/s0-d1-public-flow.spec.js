@@ -127,7 +127,7 @@ test('요약 경로: 공개 새 게임은 실제 release와 공통 day-start 저
   expect(releaseResponse.status()).toBe(200);
   const release = await releaseResponse.json();
   expect(release).toMatchObject({
-    totals: { customers: 4, orders: 4, items: 9 },
+    totals: { customers: 4, orders: 4, items: 8 },
     economy: { menuPrices: { beer: 6, negima: 3 } },
   });
   expect(release.waves[0].customers[0].id).toBe('REGULAR_TSUKIOKA');

@@ -10,6 +10,6 @@
       ]
     }
   },
-  "initialBatchStartedAtMs": [1000, 1000, 1000],
+  "initialBatchStartedAtMs": [1000, 1000],
   "tickTransitions": []
 }

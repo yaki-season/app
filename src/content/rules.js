@@ -268,9 +268,9 @@ export function checkContentRules(bundle) {
       || beer?.menuId !== 'beer'
       || beer.quantity !== 1
       || negima?.menuId !== 'negima'
-      || negima.quantity !== 3
+      || negima.quantity !== 2
     ) {
-      errors.push('[order:D1-ORDER-001] 츠키오카 고정 주문은 생맥주 1잔→네기마 3개여야 함');
+      errors.push('[order:D1-ORDER-001] 츠키오카 고정 주문은 생맥주 1잔→네기마 2개여야 함');
     }
   }
 

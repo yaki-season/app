@@ -3,7 +3,7 @@
 // 조립·대기·다중 그릴 칸을 분리하고, 그릴 제작물은 방향·접촉면·양면 누적 시간을 독립 보존한다.
 // 렌더러는 slotViews snapshot만 소비하며 품질·진행 판정은 이 모듈이 소유한다.
 
-import { RECIPE, DONENESS, classifyDoneness } from '../config/recipe.js';
+import { RECIPE, DONENESS, COOK_THRESHOLDS_SEC, classifyDoneness } from '../config/recipe.js';
 
 const FLIP_AIRBORNE_MS = 300;
 const INPUT_LOCK_MS = 300;
@@ -45,6 +45,7 @@ export function createCookStations({
   slots = 1,
   recipe = RECIPE,
   initialBatchSize = 1,
+  explicitAssemblyTransfer = false,
 } = {}) {
   const normalizedSlotCount = Math.max(1, slots);
   if (
@@ -54,7 +55,9 @@ export function createCookStations({
   ) {
     throw new TypeError('initialBatchSize는 1 이상 전체 그릴 칸 이하의 정수여야 합니다.');
   }
-  let assembly = { index: 0 };
+  let assembly = { index: 0, complete: false };
+  let assembledCount = 0;
+  let transferredCount = 0;
   let waiting = 0;
   let grill = Array.from({ length: normalizedSlotCount }, () => emptySlot());
   let initialBatch = {
@@ -69,6 +72,7 @@ export function createCookStations({
       orientationFaceDown: FACE.FRONT,
       contactFace: null,
       elapsedSec: { front: 0, back: 0 },
+      faceReadyAtMs: { front: null, back: null },
       lastUpdatedAt: null,
       flip: null,
       inputLockedUntil: 0,
@@ -87,25 +91,46 @@ export function createCookStations({
       slot.flip = null;
     }
     if (slot.contactFace && now > cursor) {
-      slot.elapsedSec[slot.contactFace] += (now - cursor) / 1000;
+      const face = slot.contactFace;
+      const before = slot.elapsedSec[face];
+      slot.elapsedSec[face] += (now - cursor) / 1000;
+      const readySec = COOK_THRESHOLDS_SEC[DONENESS.PERFECT];
+      if (slot.faceReadyAtMs?.[face] == null && before < readySec && slot.elapsedSec[face] >= readySec) {
+        slot.faceReadyAtMs ??= { front: null, back: null };
+        slot.faceReadyAtMs[face] = cursor + (readySec - before) * 1000;
+      }
     }
     slot.lastUpdatedAt = Math.max(cursor, now);
   }
 
   // ── 조립 ───────────────────────────────────────────────────
   function clickIngredient(ingredient) {
+    if (assembly.complete) return { ok: false, reason: 'transfer-required' };
     const expected = recipe[assembly.index];
     if (ingredient !== expected) return { ok: false, reason: 'order' };
     assembly.index += 1;
     if (assembly.index >= recipe.length) {
-      waiting += 1;
-      assembly = { index: 0 };
+      assembledCount += 1;
+      if (explicitAssemblyTransfer) {
+        assembly.complete = true;
+      } else {
+        waiting += 1;
+        transferredCount += 1;
+        assembly = { index: 0, complete: false };
+      }
       return { ok: true, completed: true };
     }
     return { ok: true, completed: false };
   }
   const assemblyIndex = () => assembly.index;
-  const assemblyComplete = () => false;
+  const assemblyComplete = () => assembly.complete;
+  function transferAssembly() {
+    if (!assembly.complete) return { ok: false, reason: 'not-complete' };
+    waiting += 1;
+    transferredCount += 1;
+    assembly = { index: 0, complete: false };
+    return { ok: true, transferred: true, waiting, transferredCount };
+  }
   const waitingCount = () => waiting;
 
   // ── 그릴 ───────────────────────────────────────────────────
@@ -322,6 +347,10 @@ export function createCookStations({
           + ((slot.flip.targetFace === FACE.BACK ? Math.PI : 0)
             - (slot.flip.fromFace === FACE.BACK ? Math.PI : 0)) * flipProgress
         : settledRotationRad;
+      const nextAction = nextActionFor(slot, now);
+      const actionReadyAtMs = nextAction === COOK_SLOT_NEXT_ACTION.RETRIEVE
+        ? Math.max(slot.faceReadyAtMs?.front ?? now, slot.faceReadyAtMs?.back ?? now)
+        : slot.faceReadyAtMs?.[slot.contactFace] ?? Number.POSITIVE_INFINITY;
       return {
         index,
         status: slot.status,
@@ -336,7 +365,8 @@ export function createCookStations({
         visualRotationRad,
         cooking: slot.contactFace !== null,
         inputLocked: now < slot.inputLockedUntil,
-        nextAction: nextActionFor(slot, now),
+        nextAction,
+        actionReadyAtMs,
       };
     });
   }
@@ -346,6 +376,8 @@ export function createCookStations({
     return structuredClone({
       stateVersion: 1,
       assembly,
+      assembledCount,
+      transferredCount,
       waiting,
       grill,
       initialBatch,
@@ -362,6 +394,11 @@ export function createCookStations({
       return { ok: false, reason: 'invalid-snapshot' };
     }
     assembly = structuredClone(saved.assembly);
+    assembly.complete = assembly.complete === true;
+    transferredCount = Number.isInteger(saved.transferredCount) ? saved.transferredCount : saved.waiting;
+    assembledCount = Number.isInteger(saved.assembledCount)
+      ? saved.assembledCount
+      : transferredCount + (assembly.complete ? 1 : 0);
     waiting = saved.waiting;
     grill = structuredClone(saved.grill);
     initialBatch = saved.initialBatch
@@ -372,6 +409,7 @@ export function createCookStations({
           started: true,
         };
     for (const slot of grill) {
+      slot.faceReadyAtMs ??= { front: null, back: null };
       // 저장 이후 실제 경과 시간은 영업 조리에 적용하지 않는다.
       slot.lastUpdatedAt = slot.status === 'empty' || slot.status === 'staged' ? null : now;
       if (slot.flip) {
@@ -387,6 +425,13 @@ export function createCookStations({
     clickIngredient,
     assemblyIndex,
     assemblyComplete,
+    transferAssembly,
+    assemblyProgress: () => ({
+      index: assembly.index,
+      complete: assembly.complete,
+      assembledCount,
+      transferredCount,
+    }),
     waitingCount,
     placeToGrill,
     clickSlot,
@@ -413,10 +458,12 @@ export function createCookStations({
     },
     debugFillAssembly() {
       waiting += 1;
-      assembly = { index: 0 };
+      assembly = { index: 0, complete: false };
     },
     reset() {
-      assembly = { index: 0 };
+      assembly = { index: 0, complete: false };
+      assembledCount = 0;
+      transferredCount = 0;
       waiting = 0;
       grill = grill.map(() => emptySlot());
       initialBatch = {
@@ -431,7 +478,8 @@ export function createCookStations({
 export function createD1CookStations(options = {}) {
   return createCookStations({
     ...options,
-    slots: 6,
-    initialBatchSize: 3,
+    slots: 2,
+    initialBatchSize: 2,
+    explicitAssemblyTransfer: true,
   });
 }

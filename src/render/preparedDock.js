@@ -54,10 +54,33 @@ export function createPreparedDock({ container }) {
     render();
     return it;
   }
+  function consumeMenu(menu, count = 1) {
+    const removed = [];
+    for (const item of [...items]) {
+      if (removed.length >= count || item.menu !== menu) continue;
+      removed.push(item);
+      items = items.filter((candidate) => candidate.id !== item.id);
+    }
+    selectedId = items.some((item) => item.id === selectedId)
+      ? selectedId
+      : items[0]?.id ?? null;
+    render();
+    return removed;
+  }
   function clear() {
     items = [];
     selectedId = null;
     render();
+  }
+  function restore(saved) {
+    if (saved?.stateVersion !== 1 || !Array.isArray(saved.items)) return { ok: false, reason: 'invalid-snapshot' };
+    items = saved.items.map((item) => ({ ...item }));
+    seq = Number.isInteger(saved.seq) ? saved.seq : items.length;
+    selectedId = items.some((item) => item.id === saved.selectedId)
+      ? saved.selectedId
+      : items[0]?.id ?? null;
+    render();
+    return { ok: true };
   }
 
   return {
@@ -65,7 +88,10 @@ export function createPreparedDock({ container }) {
     select,
     selected,
     consumeSelected,
+    consumeMenu,
     clear,
+    snapshot: () => ({ stateVersion: 1, items: items.map((item) => ({ ...item })), selectedId, seq }),
+    restore,
     items: () => items.map((i) => ({ ...i })),
     selectedId: () => selectedId,
     count: () => items.length,

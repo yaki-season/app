@@ -20,22 +20,45 @@
   background: rgba(32,26,21,0.78);
 }
 .d1-guide {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: 96px; z-index: 9;
-  max-width: 62vw; text-align: center; color: #fff0ca; font-size: 14px;
-  border: 1px solid var(--line); border-left: 3px solid var(--ember);
-  border-radius: 8px; padding: 8px 16px; background: rgba(20,13,9,0.82);
+  position: fixed; top: 92px; right: 18px; z-index: 18;
+  width: min(350px, 29vw); max-height: calc(100vh - 182px); overflow: auto;
   pointer-events: none;
+  color: #fff0ca; font-size: 12px;
+  border: 1px solid var(--line); border-left: 4px solid var(--ember);
+  border-radius: 10px; padding: 10px 12px; background: rgba(20,13,9,0.94);
 }
-.d1-guide[hidden] { display: none; }
+.d1-guide-head { display: flex; justify-content: space-between; gap: 8px; }
+.d1-guide-head span { color: var(--ember); }
+.d1-guide p { margin: 7px 0; font-weight: 700; }
+.d1-guide ol { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.d1-guide li { border-left: 3px solid var(--line); padding: 3px 6px; color: var(--dim); }
+.d1-guide li[data-status="complete"] { border-color: var(--good); color: var(--good); }
+.d1-guide li[data-status="complete"]::before { content: "✓ "; }
+.d1-guide li[data-status="current"] { border-color: var(--ember); color: var(--text); background: rgba(255,131,64,.12); }
+.d1-guide li[data-status="current"]::before { content: "▶ "; }
+.d1-guide li[data-status="pending"]::before { content: "○ "; }
+
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide {
+  right: auto; left: 18px;
+}
+
+[data-guide-target="true"] {
+  outline: 3px solid #fff0ca !important;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(255, 131, 64, .45) !important;
+  animation: guide-pulse 1.15s ease-in-out infinite alternate;
+}
+[data-guide-target="true"]::after { font-weight: 800; }
+@keyframes guide-pulse { to { box-shadow: 0 0 0 10px rgba(255, 131, 64, .12); } }
 
 .grill-status-layer {
   position: fixed;
   z-index: 9;
   top: 51.5vh;
-  left: 9.166667vw;
-  width: 66.5625vw;
+  left: 28.5vw;
+  width: 43vw;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(4px, 0.55vw, 10px);
   pointer-events: none;
 }
@@ -51,6 +74,8 @@
   line-height: 1.22;
   text-align: center;
 }
+.grill-slot-status[tabindex="0"] { pointer-events: auto; cursor: pointer; }
+.grill-slot-status:focus-visible { outline: 3px solid #fff0ca; outline-offset: 2px; }
 .grill-slot-status[hidden] { display: none; }
 .grill-face {
   display: flex;
@@ -165,6 +190,17 @@
   border-color: var(--good);
 }
 
+.serve-quantity {
+  position: fixed; z-index: 24; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 48px)); border: 3px double #fff0ca; border-radius: 14px;
+  padding: 18px; background: rgba(20, 13, 9, .97); text-align: center;
+}
+.serve-quantity[hidden] { display: none; }
+.serve-quantity p { margin: 8px 0 14px; color: var(--dim); }
+.serve-quantity div { display: flex; gap: 8px; justify-content: center; }
+.serve-quantity button { min-height: 44px; border: 2px solid var(--line); border-radius: 9px; padding: 8px 14px; background: #30261e; color: var(--text); font: inherit; font-weight: 700; }
+.serve-quantity button:focus-visible { outline: 3px solid #fff0ca; outline-offset: 2px; }
+
 /* 엑스트라 정식 아트가 오기 전에는 stable ID가 붙은 명시적 개발 placeholder로 보인다. */
 .order-bubble[data-placeholder="development"] .order-label {
   border-style: dashed;
@@ -248,7 +284,8 @@
   .order-hud .oi img { width: 16px; height: 16px; }
   .business-clock { font-size: 12px; }
   .business-phase { min-width: 58px; padding-inline: 7px; font-size: 10px; }
-  .d1-guide { bottom: 82px; max-width: 76vw; padding: 6px 12px; font-size: 12px; }
+  .d1-guide { top: 64px; right: 8px; width: min(300px, 32vw); max-height: calc(100vh - 132px); padding: 7px 8px; font-size: 10px; }
+  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide { left: 8px; right: auto; }
   .post-business-panel { max-height: calc(100vh - 96px); overflow-y: auto; padding: 16px; }
   .grill-status-layer {
     top: 50vh;

@@ -37,7 +37,7 @@ test('정적 release artifact만으로 D1 전체 영업이 route 주입 없이 �
     schemaVersion: 1,
     source: { dayId: 'd1' },
     sessionTargetMs: 420000,
-    totals: { customers: 4, orders: 4, items: 9 },
+    totals: { customers: 4, orders: 4, items: 8 },
     economy: { menuPrices: { beer: 6, negima: 3 } },
     timingMs: { cleanup: 3000 },
   });

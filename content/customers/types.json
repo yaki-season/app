@@ -8,7 +8,7 @@
     "groupSize": 1,
     "patienceSec": 100,
     "tipMultiplier": 1.0,
-    "orderSequence": ["drink", "skewer", "skewer", "skewer"]
+    "orderSequence": ["drink", "skewer", "skewer"]
   },
   {
     "id": "solo",

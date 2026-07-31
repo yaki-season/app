@@ -49,7 +49,6 @@ function completeFirstOrder() {
     ['beer', 1],
     ['negima', 1],
     ['negima', 2],
-    ['negima', 3],
   ]) {
     state = dispatch(state, `serve:first:${menuId}:${index}`, 'serve-item', {
       customerId: 'REGULAR_TSUKIOKA',
@@ -162,7 +161,7 @@ describe('작업 011 — 선택한 손님 중심 공용 완성품 제공', () =>
     expect(result).toMatchObject({
       applied: true,
       partial: true,
-      remaining: 3,
+      remaining: 2,
     });
     expect(result.state.orders['D1-ORDER-001'].lines).toEqual([
       expect.objectContaining({ menuId: 'beer', servedQualities: [] }),

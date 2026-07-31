@@ -68,8 +68,8 @@ function contentCustomer(bundle) {
   }
   const drinks = customer.orderSequence.filter((entry) => entry === 'drink').length;
   const skewers = customer.orderSequence.filter((entry) => entry === 'skewer').length;
-  if (drinks !== 1 || skewers !== 3) {
-    throw new Error('D1 regular 손님 콘텐츠는 생맥주 1잔과 네기마 3개여야 합니다.');
+  if (drinks !== 1 || skewers !== 2) {
+    throw new Error('D1 regular 손님 콘텐츠는 생맥주 1잔과 네기마 2개여야 합니다.');
   }
   return { customer, recipe, grill };
 }
@@ -98,10 +98,10 @@ export function createD1Session(bundle) {
     },
     order: {
       id: D1_ORDER_ID,
-      items: [item(MENU.DRAFT_BEER, 1, 'draft'), item(MENU.NEGIMA, 3, 'salt')],
+      items: [item(MENU.DRAFT_BEER, 1, 'draft'), item(MENU.NEGIMA, 2, 'salt')],
     },
     beer: { beerMs: 0, foamMs: 0, pouring: null, startedAtMs: null, overflowed: false },
-    skewers: [1, 2, 3].map((number) => ({
+    skewers: [1, 2].map((number) => ({
       id: `negima-${number}`,
       assemblyIndex: 0,
       state: 'assembly',

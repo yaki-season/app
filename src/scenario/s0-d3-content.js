@@ -85,10 +85,10 @@ export const S0_D3_STORY_SCENES = Object.freeze([
     sourceMasterId: 'CM-PROLOGUE-INHERITANCE-R1',
     lines: [
       { dialogueId: 'DLG-D1-PRE-001', speakerId: 'CHAR-AKI', text: '간판 불은 켰다. 이제 손님이 오기만 하면 된다.' },
-      { dialogueId: 'DLG-D1-PRE-002', speakerId: 'CHAR-TSUKIOKA', text: '불이 켜졌군. 네기마 셋하고 생맥주 하나 부탁하지.' },
+      { dialogueId: 'DLG-D1-PRE-002', speakerId: 'CHAR-TSUKIOKA', text: '불이 켜졌군. 네기마 둘하고 생맥주 하나 부탁하지.' },
       { dialogueId: 'DLG-D1-PRE-003', speakerId: 'CHAR-AKI', text: '네. 하나씩 확인하면서 내겠습니다.' },
     ],
-    summary: ['첫 손님 츠키오카 세이지가 찾아왔다.', '생맥주 부분 제공과 네기마 3개 조리를 배운다.', 'D1 목표: 첫 주문을 끝까지 안전하게 완성한다.'],
+    summary: ['첫 손님 츠키오카 세이지가 찾아왔다.', '생맥주 부분 제공과 네기마 2개 조리를 배운다.', 'D1 목표: 첫 주문을 끝까지 안전하게 완성한다.'],
   }),
   scene({
     sceneId: 'SCN-D1-POST',

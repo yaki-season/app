@@ -138,7 +138,7 @@ describe('D1 브라우저 영업 세션 조립', () => {
       duplicate: false,
       campaign: {
         campaign: { nodeId: 'd2', phase: 'pre-open' },
-        economy: { balance: 44, reputation: 12 },
+        economy: { balance: 41, reputation: 12 },
       },
     });
     expect(duplicateCommit).toMatchObject({ ok: true, duplicate: true });
@@ -153,7 +153,7 @@ describe('D1 브라우저 영업 세션 조립', () => {
       resumed: true,
       campaign: {
         campaign: { nodeId: 'd2', completedDayIds: ['d1'] },
-        economy: { balance: 44, reputation: 12 },
+        economy: { balance: 41, reputation: 12 },
       },
     });
 

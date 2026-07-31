@@ -2,6 +2,6 @@
   "id": "D1-PUBLIC-RUNTIME-ERR-LEGACY-SPAWN-12",
   "expectedValid": false,
   "contractPatch": { "spawnIntervalSec": 12 },
-  "initialBatchStartedAtMs": [1000, 1000, 1000],
+  "initialBatchStartedAtMs": [1000, 1000],
   "tickTransitions": []
 }

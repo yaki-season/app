@@ -19,7 +19,7 @@ describe('작업 009 D1 공개 release artifact', () => {
       schemaVersion: 1,
       source: { dayId: 'd1' },
       sessionTargetMs: 420000,
-      totals: { customers: 4, orders: 4, items: 9 },
+      totals: { customers: 4, orders: 4, items: 8 },
       timingMs: { cleanup: 3000 },
     });
     expect(release.seatIds).toHaveLength(6);
@@ -32,7 +32,7 @@ describe('작업 009 D1 공개 release artifact', () => {
 
   it('artifact가 다르면 최상위 drift 필드를 보고하고 조용히 덮어쓰지 않는다', () => {
     const stale = JSON.parse(buildD1ReleaseArtifact());
-    stale.totals.items = 8;
+    stale.totals.items = 9;
     const result = checkD1ReleaseArtifact({ artifact: `${JSON.stringify(stale)}\n` });
 
     expect(result).toEqual({ valid: false, differences: ['totals'] });

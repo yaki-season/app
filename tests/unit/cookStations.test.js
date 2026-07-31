@@ -272,37 +272,39 @@ describe('createCookStations', () => {
     });
   });
 
-  it('D1은 6칸을 처음부터 열고 첫 3개가 놓인 시점에 앞면 타이머를 함께 시작한다', () => {
+  it('D1은 2칸을 열고 explicit transfer된 첫 2개가 놓인 시점에 앞면 타이머를 함께 시작한다', () => {
     const cook = createD1CookStations();
-    expect(cook.slotCount()).toBe(6);
-    cook.debugFillAssembly();
-    cook.debugFillAssembly();
-    cook.debugFillAssembly();
+    expect(cook.slotCount()).toBe(2);
+
+    assemble(cook);
+    expect(cook.assemblyComplete()).toBe(true);
+    expect(cook.waitingCount()).toBe(0);
+    expect(cook.transferAssembly()).toMatchObject({ ok: true, transferred: true, waiting: 1 });
+
+    assemble(cook);
+    expect(cook.assemblyComplete()).toBe(true);
+    expect(cook.waitingCount()).toBe(1);
+    expect(cook.transferAssembly()).toMatchObject({ ok: true, transferred: true, waiting: 2 });
 
     expect(cook.placeToGrill(1_000)).toMatchObject({
       slot: 0,
       staged: true,
       batchStarted: false,
-      remainingForBatch: 2,
-    });
-    expect(cook.placeToGrill(2_000)).toMatchObject({
-      slot: 1,
-      staged: true,
-      batchStarted: false,
       remainingForBatch: 1,
     });
-    expect(cook.slotViews(10_000).slice(0, 2)).toEqual([
-      expect.objectContaining({ status: 'staged', cooking: false, frontElapsedSec: 0 }),
-      expect.objectContaining({ status: 'staged', cooking: false, frontElapsedSec: 0 }),
-    ]);
+    expect(cook.slotViews(10_000)[0]).toMatchObject({
+      status: 'staged',
+      cooking: false,
+      frontElapsedSec: 0,
+      backElapsedSec: 0,
+    });
 
     expect(cook.placeToGrill(3_000)).toMatchObject({
-      slot: 2,
+      slot: 1,
       batchStarted: true,
-      startedSlots: [0, 1, 2],
+      startedSlots: [0, 1],
     });
-    expect(cook.slotViews(11_000).slice(0, 3)).toEqual([
-      expect.objectContaining({ status: 'front', frontElapsedSec: 8 }),
+    expect(cook.slotViews(11_000)).toEqual([
       expect.objectContaining({ status: 'front', frontElapsedSec: 8 }),
       expect.objectContaining({ status: 'front', frontElapsedSec: 8 }),
     ]);

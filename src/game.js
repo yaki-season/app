@@ -30,7 +30,7 @@ const PRODUCTION_CONTENT_URLS = Object.freeze({
   grillSlots: '/content/progression/grill-slots.json',
 });
 
-// D1 프로덕션 그릴은 처음부터 끝까지 고정 6칸이며, 첫 주문 3개를 모두 올린 순간 함께 굽기 시작한다.
+// 그릴 칸 수와 첫 배치 수는 각 진입점의 런타임 계약으로 정한다.
 const cook = createCookStations({ slots: DEFAULT_GRILL_SLOTS });
 const SLOT_KEYS = GRILL_SLOT_KEYS;
 const grillMats = {}; // slotKey → 익힘 셰이더 재질
@@ -333,8 +333,8 @@ function handle(key, now) {
     case 'grillWaitTray': {
       const r = cook.placeToGrill(now); // 대기 꼬치를 빈 칸에
       if (!r.ok) showHint(r.reason === 'no-waiting' ? '대기 중인 꼬치가 없어요' : '빈 그릴 칸이 없어요');
-      else if (r.staged) showHint(`첫 3개 동시 시작 · 꼬치 ${r.remainingForBatch}개를 더 올리세요`);
-      else if (r.batchStarted) showHint('3개 동시 조리 시작 · 8초 뒤 꼬치를 클릭해 뒤집으세요');
+      else if (r.staged) showHint(`첫 배치 동시 시작 · 꼬치 ${r.remainingForBatch}개를 더 올리세요`);
+      else if (r.batchStarted) showHint('첫 배치 동시 조리 시작 · 8초 뒤 꼬치를 클릭해 뒤집으세요');
       else showHint('앞면 조리 시작 · 8초 뒤 꼬치를 클릭해 뒤집으세요');
       break;
     }

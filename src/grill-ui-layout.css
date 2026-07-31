@@ -66,7 +66,6 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .order-hud .oi {
   white-space: nowrap;
 }
 
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide,
 body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .hint {
   top: 73.333333vh;
   right: auto;
@@ -78,10 +77,6 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .hint {
   display: grid;
   place-items: center;
   margin: 0;
-}
-
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active):has(.hint.show) .d1-guide {
-  opacity: 0;
 }
 
 body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .end-day {
@@ -108,7 +103,6 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .end-day {
     max-width: none;
   }
 
-  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide,
   body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .hint {
     max-width: none;
     padding: 5px 10px;

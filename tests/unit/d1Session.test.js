@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   D1_PHASE,
   MENU,
@@ -26,6 +27,17 @@ import {
   turnSkewer,
 } from '../../src/state/d1/session.js';
 
+const root = new URL('../../', import.meta.url);
+const read = (relativePath) => JSON.parse(readFileSync(new URL(relativePath, root), 'utf8'));
+
+function productionBundle() {
+  return {
+    customers: read('content/customers/types.json'),
+    recipes: [read('content/recipes/negima.json')],
+    processes: [read('content/processes/grill.json')],
+  };
+}
+
 function ordered() {
   return acceptOrder(enterCustomer(createD1Session()));
 }
@@ -50,7 +62,7 @@ function assembled(state) {
   return next;
 }
 
-function foodPrepared(state, timings = [[8000, 8000], [8000, 8000], [8000, 8000]]) {
+function foodPrepared(state, timings = [[8000, 8000], [8000, 8000]]) {
   let next = beginGrill(assembled(state));
   next = placeOnGrill(next, 'negima-1', 0, 0);
   next = placeOnGrill(next, 'negima-2', 1, 0);
@@ -58,21 +70,32 @@ function foodPrepared(state, timings = [[8000, 8000], [8000, 8000], [8000, 8000]
     next = turnSkewer(next, id, timing[0]);
     next = collectSkewer(next, id, timing[0] + timing[1]);
   }
-  next = placeOnGrill(next, 'negima-3', 0, 30000);
-  next = turnSkewer(next, 'negima-3', 30000 + timings[2][0]);
-  next = collectSkewer(next, 'negima-3', 30000 + timings[2][0] + timings[2][1]);
   return advanceFromPreparedFood(next);
 }
 
 describe('D1 주문 콘텐츠·입장', () => {
-  it('첫 손님은 입장→주문 접수 후 생맥주 1·네기마 3 주문으로 대기한다', () => {
+  it('production content bundle로 생맥주 1·네기마 2 세션을 생성한다', () => {
+    const state = createD1Session(productionBundle());
+    expect(state.source).toEqual({
+      customerId: 'regular',
+      recipeId: 'negima',
+      processId: 'grill-negima',
+    });
+    expect(state.order.items).toEqual([
+      expect.objectContaining({ menuId: MENU.DRAFT_BEER, quantity: 1 }),
+      expect.objectContaining({ menuId: MENU.NEGIMA, quantity: 2 }),
+    ]);
+    expect(state.skewers.map(({ id }) => id)).toEqual(['negima-1', 'negima-2']);
+  });
+
+  it('첫 손님은 입장→주문 접수 후 생맥주 1·네기마 2 주문으로 대기한다', () => {
     const entering = createD1Session();
     expect(entering.phase).toBe(D1_PHASE.ENTERING);
     const waiting = ordered();
     expect(waiting.customer.state).toBe('waiting');
     expect(waiting.phase).toBe(D1_PHASE.DRINK);
     expect(orderItemProgress(waiting, MENU.DRAFT_BEER)).toEqual({ delivered: 0, total: 1, remaining: 1 });
-    expect(orderItemProgress(waiting, MENU.NEGIMA)).toEqual({ delivered: 0, total: 3, remaining: 3 });
+    expect(orderItemProgress(waiting, MENU.NEGIMA)).toEqual({ delivered: 0, total: 2, remaining: 2 });
   });
 });
 
@@ -83,12 +106,12 @@ describe('생맥주 단일 레버·부분 제공', () => {
     expect(state.phase).toBe(D1_PHASE.DRINK_SERVE);
   });
 
-  it('부분 제공 뒤 생맥주만 완료되고 네기마 3개는 주문에 남는다', () => {
+  it('부분 제공 뒤 생맥주만 완료되고 네기마 2개는 주문에 남는다', () => {
     const state = withBeerServed();
     expect(state.customer.state).toBe('partially-served');
     expect(state.customer.reaction).toBe('drinking');
     expect(orderItemProgress(state, MENU.DRAFT_BEER).remaining).toBe(0);
-    expect(orderItemProgress(state, MENU.NEGIMA).remaining).toBe(3);
+    expect(orderItemProgress(state, MENU.NEGIMA).remaining).toBe(2);
   });
 
   it('각 단계 이탈 수에 따라 Perfect·Good·OK를 판정한다', () => {
@@ -98,13 +121,13 @@ describe('생맥주 단일 레버·부분 제공', () => {
   });
 });
 
-describe('네기마 3개·2칸 독립 그릴', () => {
-  it('앞의 두 꼬치는 독립 타이머로 회수하고 남은 한 개를 빈 칸에서 조리한다', () => {
+describe('네기마 2개·2칸 독립 그릴', () => {
+  it('두 꼬치를 독립 타이머로 회수한다', () => {
     const state = foodPrepared(withBeerServed());
     expect(state.phase).toBe(D1_PHASE.FOOD_SERVE);
     expect(state.grillSlots).toEqual([null, null]);
-    expect(state.skewers.map((skewer) => skewer.state)).toEqual(['prepared', 'prepared', 'prepared']);
-    expect(state.prepared).toEqual([{ id: 'negima:salt:Perfect', menuId: 'negima', preparation: 'salt', quality: QUALITY.PERFECT, quantity: 3 }]);
+    expect(state.skewers.map((skewer) => skewer.state)).toEqual(['prepared', 'prepared']);
+    expect(state.prepared).toEqual([{ id: 'negima:salt:Perfect', menuId: 'negima', preparation: 'salt', quality: QUALITY.PERFECT, quantity: 2 }]);
   });
 
   it('네기마 면 조합에 따라 Perfect·Good·OK를 만든다', () => {
@@ -114,7 +137,7 @@ describe('네기마 3개·2칸 독립 그릴', () => {
     expect(gradeNegima('perfect', 'under')).toBe(QUALITY.OK);
   });
 
-  it('이른 회수·잘못된 재료·가득 찬 3번째 배치는 주문과 타이머를 훼손하지 않는다', () => {
+  it('이른 회수·잘못된 재료·존재하지 않는 3번째 배치는 주문과 타이머를 훼손하지 않는다', () => {
     let state = beginFoodAssembly(withBeerServed());
     const beforeRecipe = state;
     state = addIngredient(state, 'negima-1', 'leek');
@@ -145,7 +168,7 @@ describe('공용 완성품 수량 배정·최종 반응', () => {
     expect(duplicated).toBe(served);
   });
 
-  it('네기마 3개 전량 제공 뒤 수량 가중 만족도와 손님 반응을 완성한다', () => {
+  it('네기마 2개 전량 제공 뒤 수량 가중 만족도와 손님 반응을 완성한다', () => {
     const food = foodPrepared(withBeerServed());
     const selected = beginServing(food, 'negima:salt:Perfect');
     const reacting = confirmServing(selected, 'all');

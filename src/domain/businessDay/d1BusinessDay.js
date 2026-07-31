@@ -169,9 +169,9 @@ export function createD1BusinessDayDefinition(record) {
     || first.order.lines?.[0]?.menuId !== 'beer'
     || first.order.lines?.[0]?.quantity !== 1
     || first.order.lines?.[1]?.menuId !== 'negima'
-    || first.order.lines?.[1]?.quantity !== 3
+    || first.order.lines?.[1]?.quantity !== 2
   ) {
-    throw new TypeError('D1 첫 가이드는 츠키오카의 생맥주 1잔→네기마 3개 주문이어야 합니다.');
+    throw new TypeError('D1 첫 가이드는 츠키오카의 생맥주 1잔→네기마 2개 주문이어야 합니다.');
   }
   for (const wave of definition.waves) {
     for (const requiredId of wave.requiresOrderCompletionIds ?? []) {

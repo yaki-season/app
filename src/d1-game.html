@@ -19,7 +19,7 @@
   <!-- D1BusinessDayUiPort의 6석 상태를 투영하는 말풍선·대기 게이지 -->
   <div id="bubbleLayer" class="bubble-layer" data-testid="bubble-layer"></div>
 
-  <!-- 그릴 6칸의 접촉면·양면 누적·현재 행동을 색과 무관하게 읽는 semantic DOM -->
+  <!-- 현재 해금된 그릴 칸의 접촉면·양면 누적·현재 행동을 읽는 semantic DOM -->
   <section
     id="grillStatusLayer"
     class="grill-status-layer"
@@ -38,8 +38,15 @@
     <span id="businessPhase" class="business-phase" data-testid="business-phase">준비</span>
   </header>
 
-  <!-- 손님 안내(가이드) -->
-  <div id="guide" class="d1-guide" data-testid="d1-guide"></div>
+  <!-- D1 첫 주문 필수 단계 목록·현재 단계·다음 행동은 도움 설정과 무관하게 상시 유지한다. -->
+  <section id="guide" class="d1-guide" data-testid="d1-guide" aria-labelledby="guideTitle">
+    <div class="d1-guide-head">
+      <strong id="guideTitle">첫 주문 · 총 3항목</strong>
+      <span id="guideCurrent" data-testid="guide-current"></span>
+    </div>
+    <p id="guideNextAction" data-testid="guide-next-action" aria-live="polite"></p>
+    <ol id="guideSteps" data-testid="guide-steps"></ol>
+  </section>
 
   <!-- 좌·우 인접 전환 -->
   <button id="navLeft" class="side-nav left" data-testid="nav-left" aria-label="이전 화면">‹</button>
@@ -80,6 +87,16 @@
       <p id="selectedPreparedItem" aria-live="polite">완성품을 선택하세요</p>
     </div>
     <div id="customerServeTargets" class="customer-serve-targets"></div>
+  </section>
+
+  <section id="serveQuantity" class="serve-quantity" data-testid="serve-quantity" aria-labelledby="serveQuantityTitle" hidden>
+    <strong id="serveQuantityTitle">제공 수량 선택</strong>
+    <p id="serveQuantitySummary"></p>
+    <div>
+      <button type="button" data-act="serve-one" data-testid="serve-one">1개만 제공</button>
+      <button type="button" data-act="serve-all" data-testid="serve-all">다 주기</button>
+      <button type="button" data-act="serve-cancel" data-testid="serve-cancel">취소</button>
+    </div>
   </section>
 
   <!-- 퀵 전환 -->

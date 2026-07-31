@@ -3,7 +3,10 @@
   "expectedValid": false,
   "inputPatch": {
     "kind": "order-line",
-    "orderId": "D1-ORDER-003",
-    "lines": [{ "menuId": "negima", "quantity": 2 }]
+    "orderId": "D1-ORDER-001",
+    "lines": [
+      { "menuId": "beer", "quantity": 1 },
+      { "menuId": "negima", "quantity": 3 }
+    ]
   }
 }

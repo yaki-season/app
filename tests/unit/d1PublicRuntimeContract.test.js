@@ -25,15 +25,27 @@ describe('작업 007 D1 공개 runtime 데이터 계약', () => {
     expect(contract.runtime).toMatchObject({
       spawnIntervalSec: 30,
       economy: { basePrice: 3, qualityMultGood: 1, qualityMultLow: 0.4, tipBase: 2 },
-      expected: { customers: 4, orders: 4, items: 9 },
+      expected: { customers: 4, orders: 4, items: 8 },
       firstOrder: {
         id: 'D1-ORDER-001',
         items: [
           { menuId: 'beer', quantity: 1, seasoning: 'none' },
-          { menuId: 'negima', quantity: 3, seasoning: 'none' },
+          { menuId: 'negima', quantity: 2, seasoning: 'none' },
         ],
       },
-      grill: { slotCount: 6, slotUpgradeEnabled: false },
+      grill: {
+        slotCount: 2,
+        maxSlots: 8,
+        slotUpgradeEnabled: true,
+        slotUnlockPolicy: 'reputation',
+        initialPlacementCount: 2,
+        initialPlacementSlots: [1, 2],
+        initialBatch: {
+          placementCount: 2,
+          placementSlots: [1, 2],
+          timerStartPolicy: 'afterInitialBatchPlaced',
+        },
+      },
     });
   });
 
@@ -42,6 +54,13 @@ describe('작업 007 D1 공개 runtime 데이터 계약', () => {
       const result = validateD1PublicRuntimeFixture(contract, fixture);
       expect(result.valid, `${fixture.id}: ${result.errors.join('\n')}`).toBe(fixture.expectedValid);
     }
+  });
+
+  it('초기 batch 크기가 2가 아닌 fixture를 명시적으로 거부한다', () => {
+    const fixture = fixtures.find(({ id }) => id === 'D1-PUBLIC-RUNTIME-ERR-BATCH-SIZE-3');
+    const result = validateD1PublicRuntimeFixture(contract, fixture);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('[initialBatch] 첫 2개 staged 제작물은 같은 시각에 시작해야 함');
   });
 
   it('Good 1건과 Low 1건의 정산 기대값을 계약 economy에서 계산한다', () => {

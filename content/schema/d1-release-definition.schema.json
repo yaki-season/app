@@ -69,7 +69,7 @@
       "properties": {
         "customers": { "const": 4 },
         "orders": { "const": 4 },
-        "items": { "const": 9 }
+        "items": { "const": 8 }
       }
     },
     "waves": {

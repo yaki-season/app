@@ -134,13 +134,13 @@ describe('D1 영업일 UI port 경계 통합', () => {
     expect(ordering).toMatchObject({
       phase: 'ordering',
       canOrder: true,
-      orderLabel: '생맥주 · 네기마 0/3',
+      orderLabel: '생맥주 · 네기마 0/2',
     });
     expect(buildSeatStates(port.getViewModel().seats).find(
       (seat) => seat.seatId === ordering.seatId,
     )).toMatchObject({
       occupied: true,
-      orderLabel: '생맥주 · 네기마 0/3',
+      orderLabel: '생맥주 · 네기마 0/2',
     });
 
     expect(dispatch(port, 'accept:seat', D1_UI_INTENT.ACCEPT_ORDER, {
@@ -148,10 +148,10 @@ describe('D1 영업일 UI port 경계 통합', () => {
     })).toMatchObject({ ok: true, applied: true });
     const acceptedSeat = port.getViewModel().seats.find((seat) => seat.seatId === ordering.seatId);
     expect(acceptedSeat).toMatchObject({
-      remainingOrderLabel: '생맥주 1개 · 네기마 3개',
+      remainingOrderLabel: '생맥주 1개 · 네기마 2개',
       remainingItems: [
         { menuId: 'beer', menuLabel: '생맥주', remaining: 1 },
-        { menuId: 'negima', menuLabel: '네기마', remaining: 3 },
+        { menuId: 'negima', menuLabel: '네기마', remaining: 2 },
       ],
     });
     expect(canServeD1MenuToSeat(acceptedSeat, '네기마')).toBe(true);
@@ -162,7 +162,7 @@ describe('D1 영업일 UI port 경계 통합', () => {
       menu: '네기마',
       quality: 'Perfect',
     });
-    expect(negimaFirst).toMatchObject({ ok: true, partial: true, remaining: 3 });
+    expect(negimaFirst).toMatchObject({ ok: true, partial: true, remaining: 2 });
 
     const served = dispatch(port, 'serve:beer', D1_UI_INTENT.SERVE_ITEM, {
       seatId: ordering.seatId,
@@ -174,7 +174,7 @@ describe('D1 영업일 UI port 경계 통합', () => {
       menu: '생맥주',
       quality: 'perfect',
     });
-    expect(served).toMatchObject({ ok: true, partial: true, remaining: 2 });
+    expect(served).toMatchObject({ ok: true, partial: true, remaining: 1 });
     expect(duplicate).toMatchObject({ ok: true, applied: false, duplicate: true });
     expect(port.getViewModel().orders[0].lines[0]).toMatchObject({
       menuId: 'beer',
@@ -184,13 +184,13 @@ describe('D1 영업일 UI port 경계 통합', () => {
     expect(port.getViewModel().orders[0].lines[1]).toMatchObject({
       menuId: 'negima',
       served: 1,
-      remaining: 2,
+      remaining: 1,
     });
     expect(port.getViewModel().seats.find(
       (seat) => seat.seatId === ordering.seatId,
     )).toMatchObject({
-      remainingOrderLabel: '네기마 2개',
-      remainingItems: [{ menuId: 'negima', menuLabel: '네기마', remaining: 2 }],
+      remainingOrderLabel: '네기마 1개',
+      remainingItems: [{ menuId: 'negima', menuLabel: '네기마', remaining: 1 }],
     });
     expect(port.dispatch({
       type: D1_UI_INTENT.PAUSE,
@@ -254,7 +254,7 @@ describe('D1 영업일 UI port 경계 통합', () => {
         ready: false,
         summary: {
           customers: { visited: 4, lost: 0, cleanedSeats: 4 },
-          economy: { total: 44, reputation: 12 },
+          economy: { total: 41, reputation: 12 },
         },
       },
     });
@@ -276,7 +276,7 @@ describe('D1 영업일 UI port 경계 통합', () => {
       },
       campaign: {
         campaign: { nodeId: 'd2', phase: CAMPAIGN_PHASE.PRE_OPEN },
-        economy: { balance: 44, reputation: 12 },
+        economy: { balance: 41, reputation: 12 },
       },
     });
 
@@ -287,7 +287,7 @@ describe('D1 영업일 UI port 경계 통합', () => {
     expect((await reloaded.loadCampaign()).ok).toBe(true);
     expect(reloaded.getState()).toMatchObject({
       campaign: { nodeId: 'd2', completedDayIds: ['d1'] },
-      economy: { balance: 44, reputation: 12 },
+      economy: { balance: 41, reputation: 12 },
     });
   });
 });

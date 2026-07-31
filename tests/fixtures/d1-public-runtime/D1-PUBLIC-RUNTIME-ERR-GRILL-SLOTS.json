@@ -2,6 +2,6 @@
   "id": "D1-PUBLIC-RUNTIME-ERR-GRILL-SLOTS",
   "expectedValid": false,
   "contractPatch": { "grill": { "slotCount": 4 } },
-  "initialBatchStartedAtMs": [1000, 1000, 1000],
+  "initialBatchStartedAtMs": [1000, 1000],
   "tickTransitions": []
 }

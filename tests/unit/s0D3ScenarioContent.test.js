@@ -34,6 +34,12 @@ describe('S0~D3 시나리오 콘텐츠', () => {
     expect(Object.values(EXTRA_CHARACTER).every((character) => character.anonymous)).toBe(true);
   });
 
+  it('D1 첫 주문 대사는 네기마 2개 계약을 말한다', () => {
+    const preopen = S0_D3_STORY_SCENES.find(({ sceneId }) => sceneId === 'SCN-D1-PREOPEN');
+    const orderLine = preopen.lines.find(({ dialogueId }) => dialogueId === 'DLG-D1-PRE-002');
+    expect(orderLine.text).toBe('불이 켜졌군. 네기마 둘하고 생맥주 하나 부탁하지.');
+  });
+
   it('정식 인물 설정을 안정 ID에 연결한다', () => {
     expect(FIXED_CHARACTER.AKI).toMatchObject({
       id: 'CHAR-AKI',

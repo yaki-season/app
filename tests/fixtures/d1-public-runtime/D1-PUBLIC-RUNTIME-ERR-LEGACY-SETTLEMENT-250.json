@@ -3,6 +3,6 @@
   "expectedValid": false,
   "settlementQualities": ["good", "low"],
   "expectedSettlementTotal": 250,
-  "initialBatchStartedAtMs": [1000, 1000, 1000],
+  "initialBatchStartedAtMs": [1000, 1000],
   "tickTransitions": []
 }

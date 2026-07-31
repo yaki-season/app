@@ -35,7 +35,7 @@
             "guided": true,
             "lines": [
               { "menuId": "beer", "quantity": 1 },
-              { "menuId": "negima", "quantity": 3 }
+              { "menuId": "negima", "quantity": 2 }
             ]
           }
         }

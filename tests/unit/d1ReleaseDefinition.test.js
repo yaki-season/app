@@ -59,7 +59,7 @@ describe('작업 008 D1 release definition', () => {
       timingMs: { thinkMin: 4000, thinkMax: 6000, eat: 15000, leave: 1000, cleanup: 3000, waitRecovery: 10000 },
       limits: { maxActiveOrders: 2, maxRiskProcesses: 1 },
       economy: { baseTip: 2, menuPrices: { beer: 6, negima: 3 } },
-      totals: { customers: 4, orders: 4, items: 9 },
+      totals: { customers: 4, orders: 4, items: 8 },
     });
     expect(definition.waves.map(({ atMs }) => atMs)).toEqual([0, 100000, 220000]);
     expect(definition.waves.flatMap((wave) => wave.customers).map(({ id }) => id))

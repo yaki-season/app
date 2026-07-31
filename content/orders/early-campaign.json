@@ -12,7 +12,7 @@
     "customerCount": 1,
     "items": [
       { "menuId": "beer", "quantity": 1, "seasoning": "none" },
-      { "menuId": "negima", "quantity": 3, "seasoning": "none" }
+      { "menuId": "negima", "quantity": 2, "seasoning": "none" }
     ],
     "guidanceId": "d1-full-first-order-guide",
     "memoryFlagIds": ["d1-first-order-complete"],

@@ -35,7 +35,7 @@
       "endMinute": 1140,
       "customerCount": { "min": 1, "max": 1 },
       "orderCount": { "min": 1, "max": 1 },
-      "itemCount": { "min": 4, "max": 4 },
+      "itemCount": { "min": 3, "max": 3 },
       "maxActiveOrders": 1,
       "maxRiskProcesses": 1
     },
@@ -73,7 +73,7 @@
   "totals": {
     "customers": { "min": 4, "max": 4 },
     "orders": { "min": 4, "max": 4 },
-    "items": { "min": 9, "max": 10 }
+    "items": { "min": 8, "max": 8 }
   },
   "maxActiveOrders": 2,
   "maxRiskProcesses": 1,

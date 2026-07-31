@@ -56,7 +56,7 @@ describe('Developer 3 D1 release definition → Developer 1 consumer', () => {
           developmentFixtureId: 'd1',
           runtimeContractId: 'd1-public-runtime-contract',
         },
-        totals: { customers: 4, orders: 4, items: 9 },
+        totals: { customers: 4, orders: 4, items: 8 },
       },
       sessionTargetMs: 420_000,
       seats: 6,
@@ -73,13 +73,13 @@ describe('Developer 3 D1 release definition → Developer 1 consumer', () => {
         ['D1-ORDER-001'],
         ['D1-ORDER-002-A', 'D1-ORDER-002-B'],
       ],
-      totals: { customers: 4, orders: 4, items: 9 },
+      totals: { customers: 4, orders: 4, items: 8 },
       timing: { leave: 1_000, cleanup: 3_000 },
       prices: { beer: 6, negima: 3 },
     });
     expect(orders[0].lines).toEqual([
       { menuId: 'beer', quantity: 1, seasoning: 'none' },
-      { menuId: 'negima', quantity: 3, seasoning: 'none' },
+      { menuId: 'negima', quantity: 2, seasoning: 'none' },
     ]);
   });
 });

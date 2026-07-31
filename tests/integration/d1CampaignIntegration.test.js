@@ -86,7 +86,6 @@ function completeFullDay(runtime) {
   serve(runtime, 'REGULAR_TSUKIOKA', 'beer', 1);
   serve(runtime, 'REGULAR_TSUKIOKA', 'negima', 1);
   serve(runtime, 'REGULAR_TSUKIOKA', 'negima', 2);
-  serve(runtime, 'REGULAR_TSUKIOKA', 'negima', 3);
   runtime.advance(16_000);
   cleanupAll(runtime, 'cleanup:tsukioka');
 
@@ -154,17 +153,17 @@ describe('D1 영업일과 캠페인 저장 통합', () => {
       value: { phase: D1_DAY_PHASE.COMPLETE },
       campaign: {
         campaign: { nodeId: 'd2', phase: CAMPAIGN_PHASE.PRE_OPEN },
-        economy: { balance: 44, reputation: 12 },
+        economy: { balance: 41, reputation: 12 },
       },
     });
     expect(campaign.getState().economy.settlements[0].summary).toMatchObject({
       orders: { completed: 4 },
-      economy: { total: 44 },
+      economy: { total: 41 },
     });
 
     const duplicate = await d1.finalize();
     expect(duplicate).toMatchObject({ ok: true, duplicate: true });
-    expect(campaign.getState().economy.balance).toBe(44);
+    expect(campaign.getState().economy.balance).toBe(41);
     expect(campaign.getState().economy.settlements).toHaveLength(1);
 
     const duplicateRuntime = new D1BusinessDayRuntime({
@@ -179,7 +178,7 @@ describe('D1 영업일과 캠페인 저장 통합', () => {
       value: { phase: D1_DAY_PHASE.COMPLETE },
     });
     expect(campaign.getState().economy).toMatchObject({
-      balance: 44,
+      balance: 41,
       reputation: 12,
       settlements: [expect.objectContaining({
         completionId: staleSettlementState.settlement.completionId,
@@ -227,7 +226,7 @@ describe('D1 영업일과 캠페인 저장 통합', () => {
     expect(retried.ok).toBe(true);
     expect(campaign.getState()).toMatchObject({
       campaign: { nodeId: 'd2', phase: CAMPAIGN_PHASE.PRE_OPEN },
-      economy: { balance: 44, reputation: 12 },
+      economy: { balance: 41, reputation: 12 },
     });
   });
 });

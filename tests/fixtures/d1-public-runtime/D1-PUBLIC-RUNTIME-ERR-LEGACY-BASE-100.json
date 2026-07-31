@@ -2,6 +2,6 @@
   "id": "D1-PUBLIC-RUNTIME-ERR-LEGACY-BASE-100",
   "expectedValid": false,
   "contractPatch": { "economy": { "basePrice": 100 } },
-  "initialBatchStartedAtMs": [1000, 1000, 1000],
+  "initialBatchStartedAtMs": [1000, 1000],
   "tickTransitions": []
 }
