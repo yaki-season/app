@@ -24,11 +24,11 @@ async function goScreen(page, screenId) {
   await expect.poll(() => D(page, 'isTransitioning')).toBe(false);
 }
 
-async function prepareSixSkewers(page) {
-  for (let index = 0; index < 6; index += 1) {
+async function prepareInitialBatch(page) {
+  for (let index = 0; index < 2; index += 1) {
     await D(page, 'cookFillAssembly');
   }
-  for (let index = 0; index < 6; index += 1) {
+  for (let index = 0; index < 2; index += 1) {
     await D(page, 'cookPlace');
   }
 }
@@ -39,21 +39,21 @@ function intersectionArea(a, b) {
   return width * height;
 }
 
-test('그릴 6칸은 접촉면·양면 누적·현재 행동을 FHD/720 compact DOM으로 겹침 없이 표시한다', async ({
+test('그릴 시작 2칸은 접촉면·양면 누적·현재 행동을 FHD/720 compact DOM으로 겹침 없이 표시한다', async ({
   page,
 }) => {
   const errors = await boot(page);
   await goScreen(page, 'SCR-SVC-GRILL');
-  await prepareSixSkewers(page);
+  await prepareInitialBatch(page);
 
   await expect(page.getByTestId('grill-status-layer')).toBeVisible();
-  await expect(page.locator('.grill-slot-status:not([hidden])')).toHaveCount(6);
-  await expect(page.locator('.grill-face-icon.front')).toHaveCount(6);
+  await expect(page.locator('.grill-slot-status:not([hidden])')).toHaveCount(2);
+  await expect(page.locator('.grill-face-icon.front')).toHaveCount(2);
   await expect(page.getByText(/더 굽고.*뒤집/)).toHaveCount(0);
 
   const snapshot = await D(page, 'grillStatusSnapshot');
   const visible = snapshot.filter((slot) => !slot.hidden);
-  expect(visible).toHaveLength(6);
+  expect(visible).toHaveLength(2);
   for (const slot of visible) {
     expect(slot.contactFace).toBe('front');
     expect(slot.text).toContain('현재 접촉면 · 앞면');
@@ -80,7 +80,7 @@ test('조기 뒤집기 누적을 보존하고 0.3초 공중 회전에는 양면 
 }) => {
   const errors = await boot(page);
   await goScreen(page, 'SCR-SVC-GRILL');
-  await prepareSixSkewers(page);
+  await prepareInitialBatch(page);
   await D(page, 'cookElapse', 3);
   const before = (await D(page, 'cookSlots'))[0];
 
@@ -149,6 +149,9 @@ test('키보드로 공용 완성품을 선택하고 일치하는 여러 손님 �
   await expect(tsukiokaTarget).toHaveAttribute('data-eligible', 'true');
   await tsukiokaTarget.focus();
   await page.keyboard.press('Enter');
+  await expect(page.getByTestId('serve-quantity')).toBeVisible();
+  await expect(page.getByTestId('serve-one')).toBeFocused();
+  await page.keyboard.press('Enter');
   await expect.poll(() => D(page, 'businessView').then(
     (view) => view.orders.find((order) => order.orderId === 'D1-ORDER-001')
       .lines.find((line) => line.menuId === 'negima').served,
@@ -160,7 +163,7 @@ test('키보드로 공용 완성품을 선택하고 일치하는 여러 손님 �
     (items) => items.some((item) => item.id === firstNegima),
   )).toBe(false);
 
-  for (const [menuId, index] of [['beer', 1], ['negima', 2], ['negima', 3]]) {
+  for (const [menuId, index] of [['beer', 1], ['negima', 2]]) {
     expect(await D(page, 'businessDispatch', {
       type: 'serve-item',
       intentId: `task010:complete-tsukioka:${menuId}:${index}`,
@@ -207,6 +210,9 @@ test('키보드로 공용 완성품을 선택하고 일치하는 여러 손님 �
   const other = officeSeats[0];
   const chosenTarget = page.getByTestId(`serve-target-${chosen.seatId}`);
   await chosenTarget.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('serve-quantity')).toBeVisible();
+  await expect(page.getByTestId('serve-one')).toBeFocused();
   await page.keyboard.press('Enter');
   const view = await D(page, 'businessView');
   expect(view.orders.find((order) => order.customerId === chosen.customerId).lines

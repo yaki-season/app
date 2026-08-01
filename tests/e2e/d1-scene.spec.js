@@ -56,21 +56,18 @@ test('D1 2.5D: 배경·손님·카운터 레이어를 합성하고 손님 텍스
 
   // 조립 → 2칸 그릴 → 네기마 제공 → 반응
   await page.getByRole('button', { name: '네기마 조립 시작' }).click();
-  for (let i = 0; i < 3; i += 1) {
+  for (let i = 0; i < 2; i += 1) {
     for (const ingredient of ['닭', '파', '닭', '파', '닭']) {
       await page.getByRole('button', { name: new RegExp(`negima-${i + 1} · ${ingredient} 넣기`) }).click();
     }
   }
-  await page.getByRole('button', { name: '조립한 3개를 그릴로' }).click();
+  await page.getByRole('button', { name: '조립한 2개를 그릴로' }).click();
   await page.getByRole('button', { name: 'negima-1 → 1번 칸' }).click();
   await page.getByRole('button', { name: 'negima-2 → 2번 칸' }).click();
   await page.getByRole('button', { name: 'negima-1 앞면 뒤집기' }).click();
   await page.getByRole('button', { name: 'negima-2 앞면 뒤집기' }).click();
   await page.getByRole('button', { name: 'negima-1 뒷면 회수' }).click();
   await page.getByRole('button', { name: 'negima-2 뒷면 회수' }).click();
-  await page.getByRole('button', { name: 'negima-3 → 1번 칸' }).click();
-  await page.getByRole('button', { name: 'negima-3 앞면 뒤집기' }).click();
-  await page.getByRole('button', { name: 'negima-3 뒷면 회수' }).click();
   await page.getByRole('button', { name: '네기마 제공으로 이동' }).click();
   await click(page, 'prepared-negima');
   await page.getByRole('button', { name: '다 주기' }).click();

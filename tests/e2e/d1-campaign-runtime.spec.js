@@ -70,7 +70,6 @@ test('브라우저 localStorage에서 D1 전체 영업·정산·D2 저장 복구
     serve('REGULAR_TSUKIOKA', 'beer', 1);
     serve('REGULAR_TSUKIOKA', 'negima', 1);
     serve('REGULAR_TSUKIOKA', 'negima', 2);
-    serve('REGULAR_TSUKIOKA', 'negima', 3);
     ui.advance(16_000);
     cleanupAll('cleanup:tsukioka');
 
@@ -120,7 +119,7 @@ test('브라우저 localStorage에서 D1 전체 영업·정산·D2 저장 복구
     summary: {
       customers: { visited: 4, lost: 0, cleanedSeats: 4 },
       orders: { accepted: 4, completed: 4, abandoned: 0 },
-      economy: { revenue: 36, tip: 8, total: 44, reputation: 12 },
+      economy: { revenue: 33, tip: 8, total: 41, reputation: 12 },
     },
   });
   expect(result.campaign).toMatchObject({
@@ -130,7 +129,7 @@ test('브라우저 localStorage에서 D1 전체 영업·정산·D2 저장 복구
       completedDayIds: ['d1'],
     },
     economy: {
-      balance: 44,
+      balance: 41,
       reputation: 12,
     },
   });
