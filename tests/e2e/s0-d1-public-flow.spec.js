@@ -79,7 +79,6 @@ async function finishD1(page) {
   await serve(page, 'REGULAR_TSUKIOKA', 'beer', 1);
   await serve(page, 'REGULAR_TSUKIOKA', 'negima', 1);
   await serve(page, 'REGULAR_TSUKIOKA', 'negima', 2);
-  await serve(page, 'REGULAR_TSUKIOKA', 'negima', 3);
   await D(page, 'businessAdvance', 16000);
   await cleanupAll(page, 'cleanup:d1-1');
 
@@ -286,7 +285,7 @@ test('D1 완료 저장은 D2 pre-open으로 이어지고 public shell 이어하�
   expect(beforeFinalize.orders.reduce(
     (sum, order) => sum + order.lines.reduce((lineSum, line) => lineSum + line.quantity, 0),
     0,
-  )).toBe(9);
+  )).toBe(8);
   expect(await D(page, 'businessFinalize')).toMatchObject({ ok: true, duplicate: false });
   expect(await D(page, 'businessFinalize')).toMatchObject({ ok: true, duplicate: true });
   expect(await D(page, 'campaignState')).toMatchObject({

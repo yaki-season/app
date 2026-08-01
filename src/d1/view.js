@@ -107,7 +107,7 @@ export function mountD1({ assets, onArt, onScene } = {}) {
         if (skewer.state !== 'assembly') action.textContent = `${skewer.id} · 조립 완료`;
         grid.append(action);
       }
-      card.append(button('조립한 3개를 그릴로', beginGrill, 'action-primary')); controls.append(card);
+      card.append(button('조립한 2개를 그릴로', beginGrill, 'action-primary')); controls.append(card);
     }
     if (state.phase === D1_PHASE.GRILL) {
       const card = section('2칸 그릴'); const grid = document.createElement('div'); grid.className = 'grill-grid'; card.append(grid);

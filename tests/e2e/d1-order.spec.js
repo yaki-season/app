@@ -45,7 +45,7 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await expect(page.locator('#customer-art')).toBeHidden();
   await expect(page.locator('.art-table')).toBeHidden();
   await expect(page.getByTestId('order-draft-beer')).toContainText('x1/1');
-  await expect(page.getByTestId('order-negima')).toContainText('x3/3');
+  await expect(page.getByTestId('order-negima')).toContainText('x2/2');
 
   await page.getByRole('button', { name: '레버 아래: 맥주 3초' }).click();
   await page.getByRole('button', { name: '레버 위: 거품 1초' }).click();
@@ -53,19 +53,19 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await click(page, 'prepared-draft-beer');
   await page.getByRole('button', { name: '다 주기' }).click();
   await expect(page.getByTestId('order-draft-beer')).toContainText('x0/1');
-  await expect(page.getByTestId('order-negima')).toContainText('x3/3');
+  await expect(page.getByTestId('order-negima')).toContainText('x2/2');
   await expect(page.getByTestId('customer-state')).toContainText('생맥주를 받았습니다');
   await expect(page.locator('#customer-art')).toHaveAttribute('src', '/public/assets/core/customer/d1-tsukioka-partial-beer-waiting-r1-b1.png');
   await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-manifest-id', 'D1-TSUKIOKA-PARTIAL-BEER-WAITING');
 
   await page.getByRole('button', { name: '네기마 조립 시작' }).click();
   await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-missing-asset-ids', /BG-WORKSPACE-ASSEMBLY/);
-  for (let i = 0; i < 3; i += 1) {
+  for (let i = 0; i < 2; i += 1) {
     for (const ingredient of ['닭', '파', '닭', '파', '닭']) {
       await page.getByRole('button', { name: new RegExp(`negima-${i + 1} · ${ingredient} 넣기`) }).click();
     }
   }
-  await page.getByRole('button', { name: '조립한 3개를 그릴로' }).click();
+  await page.getByRole('button', { name: '조립한 2개를 그릴로' }).click();
   await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-missing-asset-ids', /MDL-NEGIMA-GRILL-COOKING-SECOND-FACE/);
 
   await page.getByRole('button', { name: 'negima-1 → 1번 칸' }).click();
@@ -74,14 +74,11 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await page.getByRole('button', { name: 'negima-2 앞면 뒤집기' }).click();
   await page.getByRole('button', { name: 'negima-1 뒷면 회수' }).click();
   await page.getByRole('button', { name: 'negima-2 뒷면 회수' }).click();
-  await page.getByRole('button', { name: 'negima-3 → 1번 칸' }).click();
-  await page.getByRole('button', { name: 'negima-3 앞면 뒤집기' }).click();
-  await page.getByRole('button', { name: 'negima-3 뒷면 회수' }).click();
   await page.getByRole('button', { name: '네기마 제공으로 이동' }).click();
 
   await click(page, 'prepared-negima');
   await page.getByRole('button', { name: '다 주기' }).click();
-  await expect(page.getByTestId('order-negima')).toContainText('x0/3');
+  await expect(page.getByTestId('order-negima')).toContainText('x0/2');
   await page.getByRole('button', { name: '손님 반응 확인' }).click();
   await expect(page.getByTestId('customer-state')).toContainText('완료');
   await expect(page.getByTestId('d1-guide')).toContainText('완료');
