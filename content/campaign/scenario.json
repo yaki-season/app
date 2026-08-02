@@ -11,23 +11,23 @@
     "prevDay": null,
     "nextDay": "d1",
     "unlocks": ["menu-negima"],
-    "fallbackNote": "세 상호작용은 실패·점수·경제 결과 없이 순서대로 완료한다.",
+    "fallbackNote": "열쇠·대문 두 상호작용은 실패·점수·경제 결과 없이 순서대로 완료하며 점화는 후속 이야기 대사로 전한다.",
     "entryConditionId": "campaign-start",
-    "completionConditionId": "s0-three-interactions-complete",
+    "completionConditionId": "s0-two-interactions-complete",
     "scenes": [
       {
         "id": "SCN-S0-DECISION",
         "timing": "post-interaction",
         "skipSummary": [
           "할아버지의 열쇠로 가게를 다시 열었다.",
-          "열쇠·대문·숯불 조작을 익혔다.",
+          "화로의 숯불이 다시 붙었다.",
           "D1 목표: 네기마와 생맥주로 첫 손님을 맞는다."
         ]
       }
     ],
     "skipSummary": [
       "열쇠로 닫힌 가게를 열었다.",
-      "숯불을 실패 없이 살렸다.",
+      "화로의 숯불이 다시 붙었다.",
       "하루만 영업하기로 했다."
     ],
     "interactions": [
@@ -42,19 +42,12 @@
         "sequence": 2,
         "failurePolicy": "no-failure",
         "commandId": "open-shop-gate"
-      },
-      {
-        "id": "S0-CHARCOAL-IGNITE",
-        "sequence": 3,
-        "failurePolicy": "no-failure",
-        "commandId": "ignite-charcoal"
       }
     ],
     "readOnly": false,
     "gameplayCommandIds": [
       "select-inherited-key",
-      "open-shop-gate",
-      "ignite-charcoal"
+      "open-shop-gate"
     ],
     "economyCommandIds": [],
     "reward": {

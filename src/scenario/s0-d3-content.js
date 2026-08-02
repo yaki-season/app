@@ -38,14 +38,6 @@ export const S0_INTERACTIONS = Object.freeze([
     actionLabel: '가게 대문 열기',
     resultText: '잠금이 풀리고 오래 닫혀 있던 대문이 열렸습니다.',
   }),
-  Object.freeze({
-    interactionId: 'S0-CHARCOAL-IGNITE',
-    stateId: 'S0-STATE-CHARCOAL',
-    screenId: 'SCR-STORY-PROLOGUE',
-    phaseId: 'ignite',
-    actionLabel: '숯불 점화',
-    resultText: '불씨가 안정됐습니다. 실패나 점수 없이 D1 준비로 이어집니다.',
-  }),
 ]);
 
 const scene = ({
@@ -72,11 +64,11 @@ export const S0_D3_STORY_SCENES = Object.freeze([
     timing: 'post-interaction',
     sourceMasterId: 'CM-PROLOGUE-INHERITANCE-R1',
     lines: [
-      { dialogueId: 'DLG-S0-001', speakerId: 'CHAR-AKI', text: '정리만 하고 돌아가려 했는데, 숯 냄새가 먼저 기억을 깨우네.' },
+      { dialogueId: 'DLG-S0-001', speakerId: 'CHAR-AKI', text: '화로에 다시 불이 들었다. 숯 냄새가 먼저 기억을 깨우네.' },
       { dialogueId: 'DLG-S0-002', speakerId: 'CHAR-AKI', text: '메뉴는 네기마 하나. 손님이 오면 그때 생각하자.' },
       { dialogueId: 'DLG-S0-003', speakerId: 'CHAR-AKI', text: '하루만. 오늘 저녁만 문을 열어 보자.' },
     ],
-    summary: ['할아버지의 열쇠로 가게를 다시 열었다.', '열쇠·대문·숯불 조작을 익혔다.', 'D1 목표: 네기마와 생맥주로 첫 손님을 맞는다.'],
+    summary: ['할아버지의 열쇠로 가게를 다시 열었다.', '화로의 숯불이 다시 붙었다.', 'D1 목표: 네기마와 생맥주로 첫 손님을 맞는다.'],
   }),
   scene({
     sceneId: 'SCN-D1-PREOPEN',

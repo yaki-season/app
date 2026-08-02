@@ -101,12 +101,11 @@ describe(`S0 exterior state backgrounds v${S0_EXTERIOR_BACKGROUND_BINDING_CONTRA
     expect(validateS0ExteriorBackgroundBindingContract()).toEqual([]);
   });
 
-  it('KEY/GATE와 같은 S0_EXTERIOR_FIXED camera를 쓰고 3상태 inventory를 바꾸지 않는다', () => {
-    expect(S0_ART_BINDING_INVENTORY).toHaveLength(3);
+  it('KEY/GATE가 S0_EXTERIOR_FIXED camera를 공유하고 active inventory와 1:1이다', () => {
+    expect(S0_ART_BINDING_INVENTORY).toHaveLength(2);
     expect(S0_ART_BINDING_INVENTORY.map((entry) => entry.phaseId)).toEqual([
       'exterior-key',
       'gate-open',
-      'ignite',
     ]);
     expect(S0_EXTERIOR_BACKGROUND_BINDINGS.every((background, index) => (
       S0_ART_BINDING_INVENTORY[index].camera.cameraId === background.camera.cameraId

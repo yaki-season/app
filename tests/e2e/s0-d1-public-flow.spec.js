@@ -26,7 +26,7 @@ async function readStory(page) {
 }
 
 async function completeS0Interactions(page) {
-  for (const label of ['남겨진 열쇠 선택', '가게 대문 열기', '숯불 점화']) {
+  for (const label of ['남겨진 열쇠 선택', '가게 대문 열기']) {
     await page.getByRole('button', { name: label }).click();
   }
 }
@@ -175,13 +175,15 @@ test('전체 대사 경로도 S0와 D1 pre-open을 읽은 뒤 실제 D1으로 �
   await waitForD1Boot(page);
 });
 
-test('키보드 S0 세 입력 뒤 요약으로 실제 D1을 부팅한다', async ({ page }) => {
+test('키보드 S0 두 입력 뒤 점화 대사와 요약으로 실제 D1을 부팅한다', async ({ page }) => {
   await beginPublicNewGame(page);
-  for (const label of ['남겨진 열쇠 선택', '가게 대문 열기', '숯불 점화']) {
+  for (const label of ['남겨진 열쇠 선택', '가게 대문 열기']) {
     const action = page.getByRole('button', { name: label });
     await action.focus();
     await page.keyboard.press('Enter');
   }
+  await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-S0-001');
+  await expect(page.locator('.dialogue')).toHaveText('화로에 다시 불이 들었다. 숯 냄새가 먼저 기억을 깨우네.');
   await skipStory(page);
   await skipStory(page);
   await waitForD1Boot(page);

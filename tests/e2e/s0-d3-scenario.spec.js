@@ -7,7 +7,7 @@ async function skipStory(page) {
   await page.getByRole('button', { name: '요약 확인' }).click();
 }
 
-test('S0: 열쇠→대문→숯불의 무실패 3클릭 뒤 D1로 이어진다', async ({ page }) => {
+test('S0: 열쇠→대문 2클릭 뒤 점화 대사를 거쳐 D1로 이어진다', async ({ page }) => {
   await page.goto('/src/s0-d3.html');
   await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-STORY-PROLOGUE');
   await expect(page.locator('body')).toHaveAttribute('data-state-id', 'S0-STATE-KEY');
@@ -55,6 +55,7 @@ test('S0: 열쇠→대문→숯불의 무실패 3클릭 뒤 D1로 이어진다',
   expect(keyPlacement.width).toBeCloseTo(224 * keyPlacement.scale, 1);
   expect(keyPlacement.height).toBeCloseTo(150 * keyPlacement.scale, 1);
   await expect(page.getByText('개발 중')).toBeHidden();
+  await expect(page.getByRole('heading', { name: '무실패 2클릭 · 1/2' })).toBeVisible();
 
   await page.getByRole('button', { name: '남겨진 열쇠 선택' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-state-id', 'S0-STATE-GATE');
@@ -66,17 +67,21 @@ test('S0: 열쇠→대문→숯불의 무실패 3클릭 뒤 D1로 이어진다',
     'data-interaction-component-id',
     'prologue.gate',
   );
+  await expect(page.getByRole('heading', { name: '무실패 2클릭 · 2/2' })).toBeVisible();
   await page.getByRole('button', { name: '가게 대문 열기' }).click();
-  await expect(page.locator('body')).toHaveAttribute('data-state-id', 'S0-STATE-CHARCOAL');
-  await expect(page.locator('body')).toHaveAttribute(
-    'data-component-id',
-    'prologue.brazier-and-charcoal',
-  );
-  await page.getByRole('button', { name: '숯불 점화' }).click();
 
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-S0-DECISION');
   await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-S0-001');
-  await skipStory(page);
+  await expect(page.locator('.dialogue')).toHaveText('화로에 다시 불이 들었다. 숯 냄새가 먼저 기억을 깨우네.');
+  await expect(page.getByRole('button', { name: '숯불 점화' })).toHaveCount(0);
+  await page.getByRole('button', { name: '이야기 건너뛰기' }).click();
+  await expect(page.getByRole('heading', { name: '3줄 요약' })).toBeVisible();
+  await expect(page.locator('.summary li')).toHaveText([
+    '할아버지의 열쇠로 가게를 다시 열었다.',
+    '화로의 숯불이 다시 붙었다.',
+    'D1 목표: 네기마와 생맥주로 첫 손님을 맞는다.',
+  ]);
+  await page.getByRole('button', { name: '요약 확인' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D1-PREOPEN');
 });
 
