@@ -2,7 +2,7 @@ import { CAMPAIGN_PHASE } from '../../domain/campaign/campaign.js';
 import {
   D1_DAY_PHASE,
   advanceD1BusinessDay,
-  buildD1CampaignReward,
+  buildBusinessDayCampaignReward,
   createD1BusinessDayState,
   dispatchD1Command,
   markD1BusinessDayComplete,
@@ -37,7 +37,7 @@ export class D1BusinessDayRuntime {
     const campaign = this.campaignRuntime.getState();
     if (!campaign) throw new TypeError('캠페인을 먼저 생성하거나 불러와야 합니다.');
     if (
-      campaign.campaign.nodeId !== 'd1'
+      campaign.campaign.nodeId !== this.definition.id
       || campaign.campaign.phase !== CAMPAIGN_PHASE.PRE_OPEN
     ) {
       throw new TypeError('D1 영업 전 캠페인 상태에서만 D1 영업을 시작할 수 있습니다.');
@@ -49,7 +49,7 @@ export class D1BusinessDayRuntime {
     }
     this.state = createD1BusinessDayState({
       definition: this.definition,
-      runId: runId ?? `${campaign.meta.campaignId}:d1`,
+      runId: runId ?? `${campaign.meta.campaignId}:${this.definition.id}`,
       seed: seed ?? campaign.meta.seed,
     });
     this.lastError = null;
@@ -86,9 +86,9 @@ export class D1BusinessDayRuntime {
     }
     const summary = this.state.settlement.summary;
     const result = await this.campaignRuntime.completeDay({
-      dayId: 'd1',
+      dayId: this.definition.id,
       completionId: this.state.settlement.completionId,
-      reward: buildD1CampaignReward(summary),
+      reward: buildBusinessDayCampaignReward(summary, this.definition),
       summary,
     });
     if (!result.ok) {

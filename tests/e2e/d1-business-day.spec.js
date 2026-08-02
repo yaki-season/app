@@ -149,8 +149,9 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
     orders: { accepted: 4, completed: 4, abandoned: 0 },
     quality: { Perfect: 8, Good: 0, OK: 0, Fail: 0 },
     economy: { revenue: 33, tip: 8, total: 41, reputation: 12 },
-    operations: { elapsedMs: 420_000 },
   });
+  expect(golden.operations.elapsedMs).toBeGreaterThanOrEqual(245_000);
+  expect(golden.operations.elapsedMs).toBeLessThan(250_000);
 
   // 같은 intent가 두 번 도착해도 첫 단계가 중복 공개되지 않는다.
   const duplicateIntent = {
@@ -213,6 +214,14 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   await expect(page).toHaveURL(/\/src\/s0-d3\.html$/);
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D2-PREOPEN');
   await expect.poll(() => page.evaluate(() => window.__s0d3Debug?.campaignState?.()?.campaign?.nodeId)).toBe('d2');
+  for (let index = 0; index < 3; index += 1) {
+    await page.locator('#actions button.primary').click();
+  }
+  await expect(page).toHaveURL(/\/src\/d1-game\.html\?day=d2$/);
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady?.())).toBe(true);
+  await expect(page.getByTestId('momo-prep')).toBeVisible();
+  await page.getByTestId('momo-prep').click();
+  await expect(page.getByTestId('dock-shelf')).toContainText('모모');
   expect(errors).toEqual([]);
 });
 

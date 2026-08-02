@@ -1,0 +1,46 @@
+{
+  "id": "d2",
+  "nextNodeId": "d3",
+  "sessionTargetMs": 420000,
+  "seatIds": ["seat-01", "seat-02", "seat-03", "seat-04", "seat-05", "seat-06"],
+  "timingMs": { "thinkMin": 4000, "thinkMax": 6000, "eat": 15000, "leave": 1000, "cleanup": 3000, "waitRecovery": 10000 },
+  "limits": { "maxActiveOrders": 2, "maxRiskProcesses": 2 },
+  "economy": { "baseTip": 2, "menuPrices": { "beer": 6, "negima": 3, "momo": 4 } },
+  "campaignReward": { "unlockIds": ["day-d3"], "storyFlagIds": ["d2-complete"] },
+  "waves": [
+    {
+      "id": "d2-open", "atMs": 0, "requiresOrderCompletionIds": [],
+      "customers": [{
+        "id": "D2-REGULAR-A", "typeId": "regular", "groupId": null, "patienceMs": 90000,
+        "order": { "id": "D2-ORDER-001", "guided": false, "lines": [{ "menuId": "beer", "quantity": 1 }, { "menuId": "momo", "quantity": 1 }] }
+      }]
+    },
+    {
+      "id": "d2-office-pair", "atMs": 100000, "requiresOrderCompletionIds": ["D2-ORDER-001"],
+      "customers": [
+        {
+          "id": "D2-OFFICE-A", "typeId": "office", "groupId": "D2-GROUP-OFFICE", "patienceMs": 70000,
+          "order": { "id": "D2-ORDER-002", "guided": false, "lines": [{ "menuId": "beer", "quantity": 2 }, { "menuId": "negima", "quantity": 2 }] }
+        },
+        {
+          "id": "D2-OFFICE-B", "typeId": "office", "groupId": "D2-GROUP-OFFICE", "patienceMs": 70000,
+          "order": { "id": "D2-ORDER-002", "guided": false, "lines": [{ "menuId": "beer", "quantity": 2 }, { "menuId": "negima", "quantity": 2 }] }
+        }
+      ]
+    },
+    {
+      "id": "d2-review-flow", "atMs": 220000, "requiresOrderCompletionIds": ["D2-ORDER-002"],
+      "customers": [
+        { "id": "D2-SOLO-A", "typeId": "solo", "groupId": null, "patienceMs": 60000, "order": { "id": "D2-ORDER-003", "guided": false, "lines": [{ "menuId": "momo", "quantity": 1 }] } },
+        { "id": "D2-COMMUTER-A", "typeId": "commuter", "groupId": null, "patienceMs": 60000, "order": { "id": "D2-ORDER-004", "guided": false, "lines": [{ "menuId": "momo", "quantity": 1 }] } }
+      ]
+    },
+    {
+      "id": "d2-late", "atMs": 320000, "requiresOrderCompletionIds": ["D2-ORDER-003", "D2-ORDER-004"],
+      "customers": [{
+        "id": "D2-SOLO-B", "typeId": "solo", "groupId": null, "patienceMs": 60000,
+        "order": { "id": "D2-ORDER-005", "guided": false, "lines": [{ "menuId": "beer", "quantity": 1 }, { "menuId": "momo", "quantity": 1 }] }
+      }]
+    }
+  ]
+}

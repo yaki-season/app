@@ -128,8 +128,10 @@ function renderS0ExteriorBackground(backgroundBinding, interactionBinding) {
     String(backgroundBinding.compositionPolicy.closedGateResidualPixelCount);
 }
 
-function navigateToD1Game() {
-  window.location.assign(new URL('./d1-game.html', import.meta.url));
+function navigateToBusinessDay(dayId) {
+  const url = new URL('./d1-game.html', import.meta.url);
+  if (dayId !== 'D1') url.searchParams.set('day', dayId.toLowerCase());
+  window.location.assign(url);
 }
 
 function button(label, handler, primary = false) {
@@ -272,8 +274,8 @@ async function advanceAfterStory(story) {
   if (story.timing === 'pre-open') {
     const started = await campaignBridge.startDay();
     if (!started.ok) throw new Error(started.error.message);
-    if (story.dayId === 'D1') {
-      navigateToD1Game();
+    if (story.dayId === 'D1' || story.dayId === 'D2') {
+      navigateToBusinessDay(story.dayId);
       return;
     }
     mode = 'business';

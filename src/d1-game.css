@@ -223,6 +223,12 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide {
 .serve-quantity div { display: flex; gap: 8px; justify-content: center; }
 .serve-quantity button { min-height: 44px; border: 2px solid var(--line); border-radius: 9px; padding: 8px 14px; background: #30261e; color: var(--text); font: inherit; font-weight: 700; }
 .serve-quantity button:focus-visible { outline: 3px solid #fff0ca; outline-offset: 2px; }
+.momo-prep {
+  position: fixed; z-index: 19; left: 50%; bottom: 92px; transform: translateX(-50%);
+  min-height: 44px; border: 2px solid var(--line); border-radius: 999px; padding: 9px 18px;
+  color: var(--text); background: rgba(62, 43, 30, .96); font: inherit; font-weight: 700; cursor: pointer;
+}
+.momo-prep[hidden] { display: none; }
 
 /* 엑스트라 정식 아트가 오기 전에는 stable ID가 붙은 명시적 개발 placeholder로 보인다. */
 .order-bubble[data-placeholder="development"] .order-label {

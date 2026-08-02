@@ -44,12 +44,15 @@ export const D1_UI_ERROR_CODE = Object.freeze({
 const MENU_LABEL = Object.freeze({
   beer: '생맥주',
   negima: '네기마',
+  momo: '모모',
 });
 const MENU_ID = Object.freeze({
   beer: 'beer',
   negima: 'negima',
+  momo: 'momo',
   생맥주: 'beer',
   네기마: 'negima',
+  모모: 'momo',
 });
 const ERROR_BY_REASON = Object.freeze({
   'order-not-found': D1_UI_ERROR_CODE.ORDER_NOT_FOUND,
@@ -299,7 +302,7 @@ export function buildD1BusinessDayViewModel(state, definition) {
   const cleanupSeatCount = seats.filter((seat) => seat.cleanupNeeded).length;
   return immutable({
     ready: true,
-    dayId: 'D1',
+    dayId: state.dayId.toUpperCase(),
     runId: state.runId,
     phase: state.phase,
     suggestedScreenId: suggestedScreenId(state.phase),

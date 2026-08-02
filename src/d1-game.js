@@ -41,6 +41,14 @@ import {
   D1_BUSINESS_DAY_RELEASE_DEFINITION_URL,
   loadD1BusinessDayReleaseDefinition,
 } from './application/ports/d1BusinessDayDefinition.js';
+import {
+  D2_BUSINESS_DAY_DEFINITION_URL,
+  loadD2BusinessDayDefinition,
+} from './application/ports/d2BusinessDayDefinition.js';
+
+const ACTIVE_DAY_ID = new URLSearchParams(window.location.search).get('day') === 'd2' ? 'd2' : 'd1';
+const MENU_ID_BY_LABEL = Object.freeze({ '생맥주': 'beer', '네기마': 'negima', '모모': 'momo' });
+const menuIdForLabel = (label) => MENU_ID_BY_LABEL[label] ?? null;
 
 const el = (id) => document.getElementById(id);
 const guide = el('guide');
@@ -89,6 +97,13 @@ const GRILL_FLIP_AXIS = new THREE.Vector3(0, 1, 0);
 const grillFlipQuaternion = new THREE.Quaternion();
 const lockUntil = {};
 const dock = createPreparedDock({ container: el('dockShelf') });
+const momoPrep = el('momoPrep');
+momoPrep.hidden = ACTIVE_DAY_ID !== 'd2';
+momoPrep.addEventListener('click', () => {
+  dock.add({ menu: '모모', label: 'Perfect', good: true });
+  showHint('모모 꼬치를 준비 목록에 올렸어요');
+  render();
+});
 if (restoredFirstOrderRuntime?.dock) dock.restore(restoredFirstOrderRuntime.dock);
 const pour = createDrinkPour();
 const LEVER_ZONE = { drinkLeverLower: 'beer', drinkLeverUpper: 'foam' };
@@ -202,7 +217,7 @@ function openServeQuantity(seatId) {
     return;
   }
   pendingServeSeatId = seatId;
-  firstOrderGuide.selectedCustomer(selected.menu === '생맥주' ? 'beer' : 'negima');
+  firstOrderGuide.selectedCustomer(menuIdForLabel(selected.menu));
   persistFirstOrderRuntime();
   serveQuantitySummary.textContent = `${selected.menu} → ${seat.customerId === 'REGULAR_TSUKIOKA' ? '츠키오카' : seatId}`;
   serveQuantity.hidden = false;
@@ -223,7 +238,7 @@ function confirmServe(all) {
     render();
     return;
   }
-  const menuId = selected.menu === '생맥주' ? 'beer' : 'negima';
+  const menuId = menuIdForLabel(selected.menu);
   const remaining = seat.remainingItems.find((item) => item.menuId === menuId)?.remaining ?? 0;
   const available = dock.items().filter((item) => item.menu === selected.menu).length;
   const count = all ? Math.min(remaining, available) : Math.min(1, remaining, available);
@@ -481,7 +496,7 @@ el('dockShelf').addEventListener('click', (event) => {
   if (!card) return;
   const selected = dock.selected();
   if (!selected) return;
-  firstOrderGuide.selectedCard(selected.menu === '생맥주' ? 'beer' : 'negima');
+  firstOrderGuide.selectedCard(menuIdForLabel(selected.menu));
   persistFirstOrderRuntime();
   render();
 });
@@ -696,8 +711,9 @@ function renderOrderHud() {
     .filter((order) => !['completed', 'failed', 'abandoned'].includes(order.status))
     .flatMap((order) => order.lines.map((line) => {
       const menu = line.menuLabel;
+      const icon = ORDER_ICON[menu] ? `<img src="${ORDER_ICON[menu]}" alt="">` : '';
       return `<span class="oi ${line.remaining === 0 ? 'done' : ''}" data-testid="order-${order.orderId}-${line.menuId}">`
-        + `<img src="${ORDER_ICON[menu]}" alt="">${menu} ${line.served}/${line.quantity}</span>`;
+        + `${icon}${menu} ${line.served}/${line.quantity}</span>`;
     }))
     .join('');
 }
@@ -1073,9 +1089,9 @@ el('postBusinessAction').addEventListener('click', handlePostBusinessAction);
 
 async function bootBusinessDay() {
   try {
-    const consumed = await loadD1BusinessDayReleaseDefinition({
-      url: D1_BUSINESS_DAY_RELEASE_DEFINITION_URL,
-    });
+    const consumed = ACTIVE_DAY_ID === 'd2'
+      ? await loadD2BusinessDayDefinition({ url: D2_BUSINESS_DAY_DEFINITION_URL })
+      : await loadD1BusinessDayReleaseDefinition({ url: D1_BUSINESS_DAY_RELEASE_DEFINITION_URL });
     if (!consumed.ok) {
       businessBootError = consumed.error;
       businessRenderDue = true;

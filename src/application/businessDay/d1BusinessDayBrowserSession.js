@@ -43,7 +43,9 @@ export async function createD1BusinessDayBrowserSession({
     campaign = bridge.getState();
   }
 
-  if (campaign.campaign.nodeId === 'd2' && campaign.campaign.phase === CAMPAIGN_PHASE.PRE_OPEN) {
+  const dayId = definition.id;
+  const nextDayId = definition.nextNodeId ?? (dayId === 'd1' ? 'd2' : dayId === 'd2' ? 'd3' : null);
+  if (campaign.campaign.nodeId === nextDayId && campaign.campaign.phase === CAMPAIGN_PHASE.PRE_OPEN) {
     return {
       ok: true,
       completed: true,
@@ -54,7 +56,7 @@ export async function createD1BusinessDayBrowserSession({
       campaign,
     };
   }
-  if (campaign.campaign.nodeId !== 'd1' || campaign.campaign.phase !== CAMPAIGN_PHASE.PRE_OPEN) {
+  if (campaign.campaign.nodeId !== dayId || campaign.campaign.phase !== CAMPAIGN_PHASE.PRE_OPEN) {
     return {
       ok: false,
       error: {
@@ -74,7 +76,7 @@ export async function createD1BusinessDayBrowserSession({
   });
   const port = new D1BusinessDayUiPort({ runtime, definition });
   const started = await port.start({
-    runId: `${campaign.meta.campaignId}:d1`,
+    runId: `${campaign.meta.campaignId}:${dayId}`,
     seed: campaign.meta.seed,
   });
   if (!started.ok) {

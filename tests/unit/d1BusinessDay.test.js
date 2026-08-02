@@ -8,6 +8,7 @@ import {
   D1_QUALITY,
   D1_SETTLEMENT_STEPS,
   advanceD1BusinessDay,
+  createBusinessDayDefinition,
   createD1BusinessDayDefinition,
   createD1BusinessDayState,
   dispatchD1Command,
@@ -19,6 +20,41 @@ const fixture = JSON.parse(readFileSync(fileURLToPath(
   new URL('../fixtures/business-days/d1-full-day.json', import.meta.url),
 ), 'utf8'));
 const definition = createD1BusinessDayDefinition(fixture);
+
+it('날짜 공통 정의 검증은 D2 id와 비가이드 첫 주문을 허용한다', () => {
+  const d2 = structuredClone(fixture);
+  d2.id = 'd2';
+  d2.waves[0].customers[0].id = 'D2-CUSTOMER-001';
+  d2.waves[0].customers[0].order.id = 'D2-ORDER-001';
+  d2.waves[0].customers[0].order.guided = false;
+  d2.waves.slice(1).forEach((wave) => {
+    wave.requiresOrderCompletionIds = [];
+  });
+  expect(createBusinessDayDefinition(d2, { expectedId: 'd2' }).id).toBe('d2');
+});
+
+it('같은 그룹의 두 손님은 D2 공유 주문 한 건을 함께 사용한다', () => {
+  const d2 = structuredClone(fixture);
+  d2.id = 'd2';
+  const pair = structuredClone(d2.waves[1]);
+  pair.atMs = 0;
+  pair.requiresOrderCompletionIds = [];
+  pair.customers[1].order = structuredClone(pair.customers[0].order);
+  d2.waves = [pair];
+  const sharedDefinition = createBusinessDayDefinition(d2, { expectedId: 'd2' });
+  let state = createD1BusinessDayState({ definition: sharedDefinition, runId: 'shared:d2', seed: 1 });
+  state = advanceD1BusinessDay(state, sharedDefinition, 6_000);
+  expect(Object.keys(state.orders)).toHaveLength(1);
+  const [order] = Object.values(state.orders);
+  expect(order.customerIds).toEqual(['D1-OFFICE-A', 'D1-OFFICE-B']);
+  state = dispatchD1Command(state, sharedDefinition, {
+    eventId: 'accept:shared', type: 'accept-order', orderId: order.id,
+  }).state;
+  expect(pair.customers.map(({ id }) => state.customers[id].phase)).toEqual([
+    D1_CUSTOMER_PHASE.WAITING,
+    D1_CUSTOMER_PHASE.WAITING,
+  ]);
+});
 
 function initialState(seed = 7) {
   return createD1BusinessDayState({ definition, runId: 'campaign-test:d1', seed });
@@ -102,8 +138,8 @@ describe('D1 전체 영업일 도메인', () => {
     state = advanceTo(state, 420_000);
     expect(state.phase).toBe(D1_DAY_PHASE.CHARCOAL_DOWN);
     expect(state.clock).toMatchObject({
-      elapsedMs: 420_000,
-      gameMinute: 1410,
+      elapsedMs: 245_000,
+      gameMinute: 1260,
       arrivalsClosed: true,
     });
 
@@ -120,7 +156,7 @@ describe('D1 전체 영업일 도메인', () => {
         peakActiveOrders: 2,
         peakRiskProcesses: 0,
         disposedPreparedItems: 2,
-        elapsedMs: 420_000,
+        elapsedMs: 245_000,
       },
     });
 

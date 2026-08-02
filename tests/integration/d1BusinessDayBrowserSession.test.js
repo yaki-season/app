@@ -5,6 +5,7 @@ import {
   D1_SETTLEMENT_STEPS,
   D1_UI_INTENT,
   MemoryStorageAdapter,
+  createBusinessDayDefinition,
   createD1BusinessDayDefinition,
 } from '../../src/campaign-runtime.js';
 import { createD1BusinessDayBrowserSession } from '../../src/application/businessDay/d1BusinessDayBrowserSession.js';
@@ -13,6 +14,10 @@ const record = JSON.parse(readFileSync(fileURLToPath(
   new URL('../fixtures/business-days/d1-full-day.json', import.meta.url),
 ), 'utf8'));
 const definition = createD1BusinessDayDefinition(record);
+const d2Record = JSON.parse(readFileSync(fileURLToPath(
+  new URL('../../content/releases/d2-business-day-domain.v1.json', import.meta.url),
+), 'utf8'));
+const d2Definition = createBusinessDayDefinition(d2Record, { expectedId: 'd2' });
 
 const dispatch = (port, intentId, type, fields = {}) => port.dispatch({
   intentId,
@@ -172,5 +177,22 @@ describe('D1 브라우저 영업 세션 조립', () => {
         economy: { balance: 0, reputation: 0 },
       },
     });
+  });
+});
+
+describe('D2 브라우저 영업 세션 조립', () => {
+  it('D1 완료 저장에서 D2 실제 영업을 시작하고 모모 주문을 제공한다', async () => {
+    const storage = new MemoryStorageAdapter();
+    const d1 = await createD1BusinessDayBrowserSession({ definition, storagePort: storage });
+    finishDay(d1.port);
+    expect((await d1.port.finalize()).campaign.campaign.nodeId).toBe('d2');
+
+    const d2 = await createD1BusinessDayBrowserSession({ definition: d2Definition, storagePort: storage });
+    expect(d2).toMatchObject({ ok: true, completed: false, startedFromS0: false });
+    expect(d2.port.getViewModel()).toMatchObject({ dayId: 'D2', phase: 'open' });
+    d2.port.advance(6_000);
+    dispatch(d2.port, 'd2:accept:1', D1_UI_INTENT.ACCEPT_ORDER, { orderId: 'D2-ORDER-001' });
+    expect(serve(d2.port, 'D2-REGULAR-A', 'beer', 1)).toMatchObject({ ok: true, partial: true });
+    expect(serve(d2.port, 'D2-REGULAR-A', 'momo', 1)).toMatchObject({ ok: true, completedOrder: true });
   });
 });

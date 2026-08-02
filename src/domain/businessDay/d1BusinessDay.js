@@ -75,12 +75,18 @@ function assertString(value, field) {
   }
 }
 
-export function createD1BusinessDayDefinition(record) {
+export function createBusinessDayDefinition(record, {
+  expectedId = null,
+  requireD1GuidedOpening = false,
+} = {}) {
   if (!record || typeof record !== 'object' || Array.isArray(record)) {
     throw new TypeError('D1 영업일 정의 객체가 필요합니다.');
   }
   const definition = clone(record);
-  if (definition.id !== 'd1') throw new TypeError('D1 영업일 정의 id는 d1이어야 합니다.');
+  assertString(definition.id, 'id');
+  if (expectedId !== null && definition.id !== expectedId) {
+    throw new TypeError(`영업일 정의 id는 ${expectedId}이어야 합니다.`);
+  }
   if (!Array.isArray(definition.seatIds) || definition.seatIds.length === 0) {
     throw new TypeError('D1 좌석 ID가 필요합니다.');
   }
@@ -126,7 +132,7 @@ export function createD1BusinessDayDefinition(record) {
   }
   const waveIds = new Set();
   const customerIds = new Set();
-  const orderIds = new Set();
+  const orderIds = new Map();
   for (const wave of definition.waves) {
     assertString(wave.id, 'wave.id');
     if (waveIds.has(wave.id)) throw new TypeError(`중복 wave id입니다: ${wave.id}`);
@@ -144,8 +150,14 @@ export function createD1BusinessDayDefinition(record) {
       customerIds.add(customer.id);
       assertFinite(customer.patienceMs, `${customer.id}.patienceMs`, { min: 1 });
       assertString(customer.order?.id, `${customer.id}.order.id`);
-      if (orderIds.has(customer.order.id)) throw new TypeError(`중복 order id입니다: ${customer.order.id}`);
-      orderIds.add(customer.order.id);
+      const priorOrder = orderIds.get(customer.order.id);
+      if (priorOrder) {
+        const sharedByGroup = customer.groupId && customer.groupId === priorOrder.groupId;
+        const sameLines = JSON.stringify(customer.order.lines) === JSON.stringify(priorOrder.order.lines);
+        if (!sharedByGroup || !sameLines) throw new TypeError(`잘못된 공유 order id입니다: ${customer.order.id}`);
+      } else {
+        orderIds.set(customer.order.id, { groupId: customer.groupId ?? null, order: customer.order });
+      }
       if (!Array.isArray(customer.order.lines) || customer.order.lines.length === 0) {
         throw new TypeError(`${customer.order.id} 주문 항목이 필요합니다.`);
       }
@@ -162,7 +174,7 @@ export function createD1BusinessDayDefinition(record) {
   }
 
   const first = definition.waves[0]?.customers[0];
-  if (
+  if (requireD1GuidedOpening && (
     first?.id !== 'REGULAR_TSUKIOKA'
     || first.order?.id !== 'D1-ORDER-001'
     || first.order?.guided !== true
@@ -170,7 +182,7 @@ export function createD1BusinessDayDefinition(record) {
     || first.order.lines?.[0]?.quantity !== 1
     || first.order.lines?.[1]?.menuId !== 'negima'
     || first.order.lines?.[1]?.quantity !== 2
-  ) {
+  )) {
     throw new TypeError('D1 첫 가이드는 츠키오카의 생맥주 1잔→네기마 2개 주문이어야 합니다.');
   }
   for (const wave of definition.waves) {
@@ -181,6 +193,13 @@ export function createD1BusinessDayDefinition(record) {
     }
   }
   return Object.freeze(definition);
+}
+
+export function createD1BusinessDayDefinition(record) {
+  return createBusinessDayDefinition(record, {
+    expectedId: 'd1',
+    requireD1GuidedOpening: true,
+  });
 }
 
 function nextRandom(state) {
@@ -207,7 +226,7 @@ export function createD1BusinessDayState({ definition, runId, seed = 1 }) {
   if (!Number.isInteger(seed) || seed < 0) throw new TypeError('seed는 0 이상의 정수여야 합니다.');
   const state = {
     stateVersion: 1,
-    dayId: 'd1',
+    dayId: definition.id,
     runId,
     phase: D1_DAY_PHASE.OPEN,
     randomState: seed >>> 0,
@@ -282,9 +301,11 @@ function orderIsComplete(state, orderId) {
 
 function spawnCustomer(state, definition, customerSpec, seat, waveId) {
   const groupId = customerSpec.groupId ?? null;
-  const order = {
+  const existingOrder = state.orders[customerSpec.order.id];
+  const order = existingOrder ?? {
     id: customerSpec.order.id,
     customerId: customerSpec.id,
+    customerIds: [],
     groupId,
     waveId,
     guided: customerSpec.order.guided === true,
@@ -300,7 +321,8 @@ function spawnCustomer(state, definition, customerSpec, seat, waveId) {
     satisfaction: null,
     rewardsApplied: false,
   };
-  state.orders[order.id] = order;
+  order.customerIds.push(customerSpec.id);
+  if (!existingOrder) state.orders[order.id] = order;
   state.customers[customerSpec.id] = {
     id: customerSpec.id,
     typeId: customerSpec.typeId,
@@ -326,7 +348,8 @@ function spawnEligibleWaves(state, definition) {
     if (waveState.status !== 'pending') continue;
     if (state.clock.elapsedMs < waveSpec.atMs) break;
     if (!(waveSpec.requiresOrderCompletionIds ?? []).every((id) => orderIsComplete(state, id))) break;
-    if (operationalOrderCount(state) + waveSpec.customers.length > definition.limits.maxActiveOrders) break;
+    const arrivingOrderCount = new Set(waveSpec.customers.map((customer) => customer.order.id)).size;
+    if (operationalOrderCount(state) + arrivingOrderCount > definition.limits.maxActiveOrders) break;
 
     const grouped = waveSpec.customers.length > 1
       && waveSpec.customers.every((customer) => customer.groupId === waveSpec.customers[0].groupId)
@@ -411,6 +434,17 @@ function completeReceivedOrder(state, definition, customer, order) {
   const scores = orderQualities(order).map((quality) => QUALITY_SCORE[quality]);
   order.satisfaction = Math.floor(scores.reduce((sum, score) => sum + score, 0) / scores.length);
   order.completedAtMs = state.clock.elapsedMs;
+  if ((order.customerIds?.length ?? 1) > 1) {
+    order.status = D1_ORDER_STATUS.COMPLETED;
+    rewardCompletedOrder(state, definition, order);
+    for (const customerId of order.customerIds) {
+      const member = state.customers[customerId];
+      member.phase = D1_CUSTOMER_PHASE.EATING;
+      member.phaseRemainingMs = definition.timingMs.eat;
+      member.waitRemainingMs = null;
+    }
+    return;
+  }
   if (customer.groupId) {
     order.status = D1_ORDER_STATUS.GROUP_PENDING;
     customer.phase = D1_CUSTOMER_PHASE.RECEIVED_WAITING_GROUP;
@@ -534,7 +568,12 @@ function hasUnfinishedDayState(state) {
 }
 
 function updateClosingPhase(state) {
-  if (state.clock.elapsedMs >= state.clock.targetMs && state.phase === D1_DAY_PHASE.OPEN) {
+  const allArrivalsResolved = state.waves.every((wave) => wave.status !== 'pending');
+  const finalCleanupComplete = allArrivalsResolved && !hasUnfinishedDayState(state);
+  if (
+    state.phase === D1_DAY_PHASE.OPEN
+    && (state.clock.elapsedMs >= state.clock.targetMs || finalCleanupComplete)
+  ) {
     state.clock.arrivalsClosed = true;
     state.phase = D1_DAY_PHASE.CLOSING_DRAIN;
     state.waves.forEach((wave) => {
@@ -627,8 +666,11 @@ export function dispatchD1Command(state, definition, command) {
     }
     order.status = D1_ORDER_STATUS.ACCEPTED;
     order.acceptedAtMs = next.clock.elapsedMs;
-    customer.phase = D1_CUSTOMER_PHASE.WAITING;
-    customer.waitRemainingMs = customer.patienceMs;
+    for (const customerId of order.customerIds ?? [customer.id]) {
+      const member = next.customers[customerId];
+      member.phase = D1_CUSTOMER_PHASE.WAITING;
+      member.waitRemainingMs = member.patienceMs;
+    }
     next.metrics.acceptedOrders += 1;
     return { state: next, applied: true, duplicate: false };
   }
@@ -740,7 +782,7 @@ export function summarizeD1Settlement(state) {
   const tip = sumLedger(state, 'tip');
   const reputation = sumLedger(state, 'reputation');
   return {
-    dayId: 'd1',
+    dayId: state.dayId,
     completionId: state.settlement.completionId,
     customers: {
       visited: state.metrics.visitedCustomers,
@@ -779,6 +821,16 @@ export function buildD1CampaignReward(summary) {
     reputation: summary.economy.reputation,
     unlockIds: ['recipe-momo', 'menu-momo', 'day-d2'],
     storyFlagIds: ['d1-complete', 'momo-restored'],
+  };
+}
+
+export function buildBusinessDayCampaignReward(summary, definition) {
+  if (definition.id === 'd1') return buildD1CampaignReward(summary);
+  return {
+    balance: summary.economy.total,
+    reputation: summary.economy.reputation,
+    unlockIds: [...(definition.campaignReward?.unlockIds ?? [`day-${definition.nextNodeId}`])],
+    storyFlagIds: [...(definition.campaignReward?.storyFlagIds ?? [`${definition.id}-complete`])],
   };
 }
 
