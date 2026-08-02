@@ -1,0 +1,130 @@
+import { test, expect } from '@playwright/test';
+import {
+  CampaignRuntime, CampaignSaveRepository, MemoryStorageAdapter, SAVE_STORAGE_KEYS,
+  validateCampaignState,
+} from '../../src/campaign-runtime.js';
+import {
+  S0_D3_CONTENT_VERSION, S0_D3_STORAGE_PREFIX, createS0D3CampaignDefinition,
+} from '../../src/scenario/s0-d3-campaign.js';
+
+async function d3PreOpenSave() {
+  const storage = new MemoryStorageAdapter();
+  const definition = createS0D3CampaignDefinition();
+  const repository = new CampaignSaveRepository({
+    storage,
+    validatePayload: (payload) => validateCampaignState(payload, definition),
+    acceptsContentVersion: (version) => version === S0_D3_CONTENT_VERSION,
+  });
+  const runtime = new CampaignRuntime({ definition, saveRepository: repository });
+  runtime.startNewCampaign({ campaignId: 'd3-e2e', contentVersion: S0_D3_CONTENT_VERSION, seed: 3 });
+  runtime.finishPrologue();
+  for (const dayId of ['d1', 'd2']) {
+    await runtime.startDay();
+    runtime.closeDayForSettlement();
+    await runtime.completeDay({ dayId, completionId: `d3-e2e:${dayId}`, reward: {} });
+  }
+  return storage.get(SAVE_STORAGE_KEYS.ACTIVE);
+}
+
+async function installD3Save(page) {
+  const save = await d3PreOpenSave();
+  await page.goto('/src/d1-game.html');
+  await page.evaluate(({ prefix, key, value }) => {
+    localStorage.clear();
+    localStorage.setItem(`${prefix}${key}`, value);
+  }, { prefix: S0_D3_STORAGE_PREFIX, key: SAVE_STORAGE_KEYS.ACTIVE, value: save });
+}
+
+test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다', async ({ page }) => {
+  await installD3Save(page);
+  await page.goto('/src/d1-game.html?day=d3');
+  await expect.poll(() => page.evaluate(() => !!window.__d1GameDebug)).toBe(true);
+
+  await page.getByTestId('momo-prep').click();
+  await expect(page.getByTestId('d3-torch-panel')).toBeVisible();
+  await page.getByTestId('d3-apply-tare').click();
+  await expect(page.getByTestId('d3-torch-state')).toContainText('토치 대기');
+
+  await page.evaluate(() => {
+    const debug = window.__d1GameDebug;
+    debug.d3TorchBegin();
+    [0.05, 0.25, 0.45, 0.65, 0.85].forEach((position) => debug.d3TorchSweep(position, 200));
+  });
+  const stationPreservation = await page.evaluate(async () => {
+    const debug = window.__d1GameDebug;
+    const torchBefore = debug.d3TorchView().finish.torchCoverage;
+    const drinkBefore = debug.pourExact(2.4, 0.8);
+    debug.requestScreen('SCR-SVC-DRINK');
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    debug.requestScreen('SCR-SVC-GRILL');
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    return {
+      torchBefore,
+      torchAfter: debug.d3TorchView().finish.torchCoverage,
+      drinkBefore,
+      drinkAfter: debug.drinkState(),
+    };
+  });
+  expect(stationPreservation.torchAfter).toBe(stationPreservation.torchBefore);
+  expect(stationPreservation.drinkAfter).toMatchObject({
+    beerSec: stationPreservation.drinkBefore.beerSec,
+    foamSec: stationPreservation.drinkBefore.foamSec,
+  });
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => !!window.__d1GameDebug)).toBe(true);
+  await expect(page.getByTestId('d3-torch-panel')).toBeVisible();
+  expect(await page.evaluate(() => window.__d1GameDebug.d3TorchView().finish.torchCoverage)).toBe(1);
+
+  await page.evaluate(() => window.__d1GameDebug.d3TorchFinish());
+  await expect(page.getByTestId('d3-torch-state')).toContainText('Perfect');
+  await page.getByTestId('d3-retrieve-momo').click();
+  await expect(page.getByTestId('dock-shelf')).toContainText('모모');
+});
+
+test('D3 8명·7주문은 마지막 정리 뒤 정산하고 D4-preview로 전환한다', async ({ page }) => {
+  await installD3Save(page);
+  await page.goto('/src/d1-game.html?day=d3');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
+
+  const result = await page.evaluate(async () => {
+    const D = window.__d1GameDebug;
+    const waves = [
+      [0, [['D3-ORDER-001', 'REGULAR_TSUKIOKA', [['momo', 1], ['beer', 1]]]]],
+      [90000, [['D3-ORDER-002', 'D3-OFFICE-A', [['beer', 2], ['negima', 2]]]]],
+      [210000, [['D3-ORDER-003', 'D3-SOLO-A', [['momo', 1], ['beer', 1]]], ['D3-ORDER-004', 'D3-COMMUTER-A', [['negima', 2]]]]],
+      [270000, [['D3-ORDER-005', 'D3-SOLO-B', [['momo', 1], ['beer', 1]]]]],
+      [330000, [['D3-ORDER-006', 'D3-COMMUTER-B', [['negima', 1], ['beer', 1]]], ['D3-ORDER-007', 'D3-SOLO-C', [['momo', 1], ['negima', 1]]]]],
+    ];
+    let event = 0;
+    for (const [atMs, orders] of waves) {
+      D.businessAdvanceTo(atMs);
+      D.businessAdvance(6000);
+      for (const [orderId, customerId, lines] of orders) {
+        D.businessDispatch({ type: 'accept-order', intentId: `e2e:${event++}`, orderId });
+        for (const [menu, quantity] of lines) for (let i = 0; i < quantity; i += 1) {
+          D.businessDispatch({ type: 'serve-item', intentId: `e2e:${event++}`, customerId, menuId: menu, quality: 'Perfect' });
+        }
+      }
+      D.businessAdvance(16000);
+      for (const seat of D.businessView().seats.filter((item) => item.cleanupNeeded)) D.businessBeginCleanup(seat.seatId);
+      D.businessAdvance(3000);
+    }
+    D.businessAdvanceTo(420000);
+    await D.businessPostAction();
+    for (let i = 0; i < 5; i += 1) await D.businessPostAction();
+    await D.businessPostAction();
+    return { view: D.businessView(), campaign: D.campaignState() };
+  });
+  expect(result.view.phase).toBe('complete');
+  expect(result.campaign.campaign).toMatchObject({ nodeId: 'd4-preview', phase: 'preview' });
+});
+
+test('D3가 개방되지 않은 저장에서는 직접 URL로 기능 UI를 열 수 없다', async ({ page }) => {
+  await page.goto('/src/d1-game.html');
+  await page.evaluate(() => localStorage.clear());
+  await page.goto('/src/d1-game.html?day=d3');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady?.())).toBe(true);
+  await expect(page.getByTestId('momo-prep')).toBeHidden();
+  await expect(page.getByTestId('d3-torch-panel')).toBeHidden();
+  expect(await page.evaluate(() => window.__d1GameDebug.businessSession().ok)).toBe(false);
+});

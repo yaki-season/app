@@ -45,7 +45,10 @@ export async function createD1BusinessDayBrowserSession({
 
   const dayId = definition.id;
   const nextDayId = definition.nextNodeId ?? (dayId === 'd1' ? 'd2' : dayId === 'd2' ? 'd3' : null);
-  if (campaign.campaign.nodeId === nextDayId && campaign.campaign.phase === CAMPAIGN_PHASE.PRE_OPEN) {
+  if (
+    campaign.campaign.nodeId === nextDayId
+    && [CAMPAIGN_PHASE.PRE_OPEN, CAMPAIGN_PHASE.PREVIEW].includes(campaign.campaign.phase)
+  ) {
     return {
       ok: true,
       completed: true,
@@ -61,7 +64,7 @@ export async function createD1BusinessDayBrowserSession({
       ok: false,
       error: {
         code: 'D1_BROWSER_CAMPAIGN_STATE',
-        message: 'D1 영업 전 또는 완료된 D2 상태가 아닙니다.',
+        message: `${dayId.toUpperCase()} 영업 전 또는 완료된 다음 캠페인 상태가 아닙니다.`,
         campaign: campaign.campaign,
       },
       bridge,

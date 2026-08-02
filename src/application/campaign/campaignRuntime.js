@@ -50,6 +50,18 @@ export class CampaignRuntime {
     if (this.state === null) throw new TypeError('캠페인을 먼저 생성하거나 불러와야 합니다.');
   }
 
+  readOnlyPreviewError(command) {
+    if (this.state?.campaign?.phase !== 'preview') return null;
+    return {
+      ok: false,
+      error: {
+        code: 'CAMPAIGN_PREVIEW_READ_ONLY',
+        message: `D4 preview에서는 ${command} 명령을 실행할 수 없습니다.`,
+        recoverable: true,
+      },
+    };
+  }
+
   finishPrologue() {
     this.ensureState();
     this.state = completePrologue(this.state, this.definition);
@@ -58,6 +70,8 @@ export class CampaignRuntime {
 
   async startDay() {
     this.ensureState();
+    const readOnly = this.readOnlyPreviewError('begin-day');
+    if (readOnly) return readOnly;
     // 저장이 성공하기 전에는 business 상태로 전환하지 않는다.
     const saved = await this.saveRepository.saveCheckpoint({
       checkpointType: CHECKPOINT_TYPE.DAY_START,
@@ -75,12 +89,16 @@ export class CampaignRuntime {
 
   closeDayForSettlement() {
     this.ensureState();
+    const readOnly = this.readOnlyPreviewError('enter-settlement');
+    if (readOnly) return readOnly;
     this.state = enterSettlement(this.state);
     return { ok: true, value: this.getState() };
   }
 
   async completeDay({ dayId, completionId, reward, summary = null }) {
     this.ensureState();
+    const readOnly = this.readOnlyPreviewError('complete-day');
+    if (readOnly) return readOnly;
     const candidate = completeBusinessDay(this.state, this.definition, {
       dayId,
       completionId,

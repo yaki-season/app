@@ -1,0 +1,46 @@
+{
+  "id": "d3",
+  "nextNodeId": "d4-preview",
+  "sessionTargetMs": 420000,
+  "seatIds": ["seat-01", "seat-02", "seat-03", "seat-04", "seat-05", "seat-06"],
+  "timingMs": { "thinkMin": 4000, "thinkMax": 6000, "eat": 15000, "leave": 1000, "cleanup": 3000, "waitRecovery": 10000 },
+  "limits": { "maxActiveOrders": 2, "maxRiskProcesses": 2 },
+  "economy": { "baseTip": 2, "menuPrices": { "beer": 6, "negima": 3, "momo": 4 } },
+  "campaignReward": { "unlockIds": ["d4-preview"], "storyFlagIds": ["d3-complete", "tare-introduced"] },
+  "waves": [
+    {
+      "id": "d3-tare-intro", "atMs": 0, "requiresOrderCompletionIds": [],
+      "customers": [{
+        "id": "REGULAR_TSUKIOKA", "typeId": "regular", "groupId": null, "patienceMs": 100000,
+        "order": { "id": "D3-ORDER-001", "guided": true, "lines": [{ "menuId": "momo", "quantity": 1, "seasoning": "tare" }, { "menuId": "beer", "quantity": 1, "seasoning": "none" }] }
+      }]
+    },
+    {
+      "id": "d3-office-cross", "atMs": 90000, "requiresOrderCompletionIds": ["D3-ORDER-001"],
+      "customers": [
+        { "id": "D3-OFFICE-A", "typeId": "office", "groupId": "D3-GROUP-OFFICE", "patienceMs": 70000, "order": { "id": "D3-ORDER-002", "guided": false, "lines": [{ "menuId": "beer", "quantity": 2, "seasoning": "none" }, { "menuId": "negima", "quantity": 1, "seasoning": "salt" }, { "menuId": "negima", "quantity": 1, "seasoning": "tare" }] } },
+        { "id": "D3-OFFICE-B", "typeId": "office", "groupId": "D3-GROUP-OFFICE", "patienceMs": 70000, "order": { "id": "D3-ORDER-002", "guided": false, "lines": [{ "menuId": "beer", "quantity": 2, "seasoning": "none" }, { "menuId": "negima", "quantity": 1, "seasoning": "salt" }, { "menuId": "negima", "quantity": 1, "seasoning": "tare" }] } }
+      ]
+    },
+    {
+      "id": "d3-rush-a", "atMs": 210000, "requiresOrderCompletionIds": ["D3-ORDER-002"],
+      "customers": [
+        { "id": "D3-SOLO-A", "typeId": "solo", "groupId": null, "patienceMs": 60000, "order": { "id": "D3-ORDER-003", "guided": false, "lines": [{ "menuId": "momo", "quantity": 1, "seasoning": "tare" }, { "menuId": "beer", "quantity": 1, "seasoning": "none" }] } },
+        { "id": "D3-COMMUTER-A", "typeId": "commuter", "groupId": null, "patienceMs": 60000, "order": { "id": "D3-ORDER-004", "guided": false, "lines": [{ "menuId": "negima", "quantity": 2, "seasoning": "salt" }] } }
+      ]
+    },
+    {
+      "id": "d3-rush-b", "atMs": 270000, "requiresOrderCompletionIds": ["D3-ORDER-003", "D3-ORDER-004"],
+      "customers": [
+        { "id": "D3-SOLO-B", "typeId": "solo", "groupId": null, "patienceMs": 60000, "order": { "id": "D3-ORDER-005", "guided": false, "lines": [{ "menuId": "momo", "quantity": 1, "seasoning": "salt" }, { "menuId": "beer", "quantity": 1, "seasoning": "none" }] } }
+      ]
+    },
+    {
+      "id": "d3-late", "atMs": 330000, "requiresOrderCompletionIds": ["D3-ORDER-005"],
+      "customers": [
+        { "id": "D3-COMMUTER-B", "typeId": "commuter", "groupId": null, "patienceMs": 60000, "order": { "id": "D3-ORDER-006", "guided": false, "lines": [{ "menuId": "negima", "quantity": 1, "seasoning": "tare" }, { "menuId": "beer", "quantity": 1, "seasoning": "none" }] } },
+        { "id": "D3-SOLO-C", "typeId": "solo", "groupId": null, "patienceMs": 60000, "order": { "id": "D3-ORDER-007", "guided": false, "lines": [{ "menuId": "momo", "quantity": 1, "seasoning": "tare" }, { "menuId": "negima", "quantity": 1, "seasoning": "salt" }] } }
+      ]
+    }
+  ]
+}
