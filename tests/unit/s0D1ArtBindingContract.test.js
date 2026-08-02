@@ -17,8 +17,8 @@ const scaleRect = (rect) => Object.fromEntries(
 );
 
 describe(`S0·D1 art binding contract v${S0_D1_ART_BINDING_CONTRACT_VERSION}`, () => {
-  it('S0 구현의 3상태·3클릭과 정확히 1:1이고 구형 4 phase가 없다', () => {
-    expect(S0_ART_BINDING_INVENTORY).toHaveLength(3);
+  it('S0 구현의 KEY→GATE 2상태·2클릭과 정확히 1:1이고 구형 phase가 없다', () => {
+    expect(S0_ART_BINDING_INVENTORY).toHaveLength(2);
     expect(S0_ART_BINDING_INVENTORY.map(({ stateId, phaseId, interactionId }) => ({
       stateId,
       phaseId,
@@ -31,7 +31,6 @@ describe(`S0·D1 art binding contract v${S0_D1_ART_BINDING_CONTRACT_VERSION}`, (
     expect(S0_ART_BINDING_INVENTORY.map((entry) => entry.phaseId)).toEqual([
       'exterior-key',
       'gate-open',
-      'ignite',
     ]);
     expect(JSON.stringify(S0_ART_BINDING_INVENTORY)).not.toMatch(
       /interior-check|"note"|"exterior"|"charcoal"/,
@@ -63,8 +62,11 @@ describe(`S0·D1 art binding contract v${S0_D1_ART_BINDING_CONTRACT_VERSION}`, (
     expect(ART_BINDING_VIEWPORTS.hd).toMatchObject({ width: 1280, height: 720, scale: 2 / 3 });
   });
 
-  it(`화로 layer contract v${S0_BRAZIER_LAYER_CONTRACT_VERSION}는 primary와 ignition companion을 분리한다`, () => {
+  it(`deprecated 화로 layer contract v${S0_BRAZIER_LAYER_CONTRACT_VERSION}는 live inventory에서 제외된다`, () => {
     expect(S0_BRAZIER_LAYER_CONTRACT).toMatchObject({
+      deprecated: true,
+      deprecatedAt: '2026-08-02',
+      runtimeRegistrationAllowed: false,
       sourceMasterId: 'CM-PROLOGUE-INHERITANCE-R1',
       semanticOwner: 'artist-2.s0-prologue-story',
       bodyPartCount: 0,
@@ -97,6 +99,12 @@ describe(`S0·D1 art binding contract v${S0_D1_ART_BINDING_CONTRACT_VERSION}`, (
     expect(S0_BRAZIER_LAYER_CONTRACT.companion.pixelOwnership.join(' ')).toMatch(
       /모든 보이는 숯 조각/,
     );
+    expect(S0_ART_BINDING_INVENTORY.map((entry) => entry.requiredAssetId)).not.toContain(
+      'ST-S0-BRAZIER',
+    );
+    expect(S0_ART_BINDING_INVENTORY.flatMap((entry) => (
+      entry.companionLayers.map((layer) => layer.requiredAssetId)
+    ))).not.toContain('PR-CHARCOAL-IGNITION');
   });
 
   it('D1 드링크 첫 묶음 네 ID를 고정한다', () => {

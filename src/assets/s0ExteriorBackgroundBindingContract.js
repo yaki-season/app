@@ -6,7 +6,7 @@ import {
 } from './s0D1ArtBindingContract.js';
 import { ART_SEMANTIC_OWNER_ID } from './artSemanticOwnerIds.js';
 
-export const S0_EXTERIOR_BACKGROUND_BINDING_CONTRACT_VERSION = '3.0.0';
+export const S0_EXTERIOR_BACKGROUND_BINDING_CONTRACT_VERSION = '3.1.0';
 
 const freezeRect = (rect) => Object.freeze({ ...rect });
 const scaleRect = (rect, scale) => freezeRect({
@@ -131,12 +131,12 @@ export function validateS0ExteriorBackgroundBindingContract() {
   const consumers = bindings.map(
     ({ stateId, phaseId, interactionId }) => `${stateId}/${phaseId}/${interactionId}`,
   );
-  const expectedConsumers = S0_ART_BINDING_INVENTORY.slice(0, 2).map(
+  const expectedConsumers = S0_ART_BINDING_INVENTORY.map(
     ({ stateId, phaseId, interactionId }) => `${stateId}/${phaseId}/${interactionId}`,
   );
 
-  if (S0_ART_BINDING_INVENTORY.length !== 3) {
-    errors.push('completed S0 inventory must remain exactly three states');
+  if (S0_ART_BINDING_INVENTORY.length !== 2) {
+    errors.push('active S0 inventory must contain exactly KEY/GATE states');
   }
   if (consumers.length !== 2 || new Set(consumers).size !== 2) {
     errors.push('exterior background inventory must have exactly KEY/GATE bindings');

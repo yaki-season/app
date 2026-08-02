@@ -1,6 +1,6 @@
 import { S0_INTERACTIONS } from '../scenario/s0-d3-content.js';
 
-export const S0_D1_ART_BINDING_CONTRACT_VERSION = '1.2.0';
+export const S0_D1_ART_BINDING_CONTRACT_VERSION = '1.3.0';
 export const S0_BRAZIER_LAYER_CONTRACT_VERSION = '1.0.0';
 export const ART_BINDING_LOGICAL_VIEWPORT = Object.freeze({ width: 1920, height: 1080 });
 export const ART_BINDING_VIEWPORTS = Object.freeze({
@@ -83,6 +83,10 @@ const scaledVisualBounds = (visualBounds) => Object.freeze(Object.fromEntries(
 
 export const S0_BRAZIER_LAYER_CONTRACT = Object.freeze({
   version: S0_BRAZIER_LAYER_CONTRACT_VERSION,
+  deprecated: true,
+  deprecatedAt: '2026-08-02',
+  deprecationReason: 'S0 ignition is conveyed by story dialogue without a direct interaction or runtime visual.',
+  runtimeRegistrationAllowed: false,
   sourceMasterId: 'CM-PROLOGUE-INHERITANCE-R1',
   camera: ART_BINDING_CAMERA.S0_BRAZIER_FIXED_V1,
   semanticOwner: 'artist-2.s0-prologue-story',
@@ -204,33 +208,6 @@ export const S0_ART_BINDING_INVENTORY = Object.freeze([
     domSafeRect: GENERAL_ACTION_SAFE_RECT,
     layer: 'architecture',
     zOrder: 20,
-  }),
-  binding({
-    screenId: 'SCR-STORY-PROLOGUE',
-    stateId: 'S0-STATE-CHARCOAL',
-    phaseId: 'ignite',
-    interactionId: 'S0-CHARCOAL-IGNITE',
-    componentId: 'prologue.brazier-and-charcoal',
-    requiredAssetId: 'ST-S0-BRAZIER',
-    stateVariant: 'cold-to-ignited',
-    semanticOwner: 'artist-2.s0-prologue-story',
-    camera: ART_BINDING_CAMERA.S0_BRAZIER_FIXED_V1,
-    visualBounds: BRAZIER_COMPONENT_VISUAL_BOUNDS,
-    interactionBounds: BRAZIER_INTERACTION_BOUNDS,
-    domSafeRect: GENERAL_ACTION_SAFE_RECT,
-    layer: 'architecture',
-    zOrder: 20,
-    companionLayers: [
-      {
-        componentId: 'prologue.ignitionVfx',
-        requiredAssetId: 'PR-CHARCOAL-IGNITION',
-        stateVariant: 'off-to-stable',
-        layer: 'vfx',
-        zOrder: 50,
-        bounds: S0_BRAZIER_LAYER_CONTRACT.companion.bounds,
-        interactionBounds: null,
-      },
-    ],
   }),
 ]);
 
@@ -417,10 +394,10 @@ export function validateS0D1ArtBindingContract() {
   const contractTriples = S0_ART_BINDING_INVENTORY.map(
     ({ stateId, phaseId, interactionId }) => `${stateId}/${phaseId}/${interactionId}`,
   );
-  if (S0_ART_BINDING_INVENTORY.length !== 3) errors.push('S0 inventory must contain exactly three states');
-  if (new Set(contractTriples).size !== 3) errors.push('S0 state/phase/interaction mapping must be 1:1');
+  if (S0_ART_BINDING_INVENTORY.length !== 2) errors.push('S0 inventory must contain exactly KEY/GATE states');
+  if (new Set(contractTriples).size !== 2) errors.push('S0 state/phase/interaction mapping must be 1:1');
   if (implementationTriples.join('|') !== contractTriples.join('|')) {
-    errors.push('S0 inventory does not match the implemented three-click order');
+    errors.push('S0 inventory does not match the implemented KEY/GATE order');
   }
   const phaseIds = new Set(S0_ART_BINDING_INVENTORY.map((entry) => entry.phaseId));
   for (const legacyPhaseId of LEGACY_S0_PHASE_IDS) {
@@ -490,31 +467,48 @@ export function validateS0D1ArtBindingContract() {
   for (const [requiredAssetId, owners] of ownersByAsset) {
     if (owners.size !== 1) errors.push(`${requiredAssetId} has multiple semanticOwner values`);
   }
-  const brazier = S0_ART_BINDING_INVENTORY.find(
-    (entry) => entry.requiredAssetId === S0_BRAZIER_LAYER_CONTRACT.primary.requiredAssetId,
-  );
-  const companion = brazier?.companionLayers.find(
-    (entry) => entry.requiredAssetId === S0_BRAZIER_LAYER_CONTRACT.companion.requiredAssetId,
-  );
   if (S0_BRAZIER_LAYER_CONTRACT.sourceMasterId !== 'CM-PROLOGUE-INHERITANCE-R1') {
     errors.push('S0 brazier sourceMasterId is not canonical');
   }
-  if (!brazier || !companion) errors.push('S0 brazier primary/companion binding is incomplete');
+  if (
+    !S0_BRAZIER_LAYER_CONTRACT.deprecated
+    || S0_BRAZIER_LAYER_CONTRACT.runtimeRegistrationAllowed !== false
+  ) errors.push('S0 brazier historical contract must remain deprecated and runtime-disabled');
+  const liveS0RequiredAssetIds = new Set(S0_ART_BINDING_INVENTORY.flatMap((entry) => [
+    entry.requiredAssetId,
+    ...entry.companionLayers.map((layer) => layer.requiredAssetId),
+  ]));
+  for (const deprecatedAssetId of [
+    S0_BRAZIER_LAYER_CONTRACT.primary.requiredAssetId,
+    S0_BRAZIER_LAYER_CONTRACT.companion.requiredAssetId,
+  ]) {
+    if (liveS0RequiredAssetIds.has(deprecatedAssetId)) {
+      errors.push(`deprecated S0 asset remains live: ${deprecatedAssetId}`);
+    }
+  }
   for (const viewportId of Object.keys(ART_BINDING_VIEWPORTS)) {
-    const parent = brazier?.bounds[viewportId].visualBounds;
-    const child = companion?.bounds[viewportId].visualBounds;
+    const parent = S0_BRAZIER_LAYER_CONTRACT.primary.bounds[viewportId].visualBounds;
+    const child = S0_BRAZIER_LAYER_CONTRACT.companion.bounds[viewportId].visualBounds;
     if (!parent || !child) {
       errors.push(`S0 brazier ${viewportId} child visual bounds are missing`);
       continue;
     }
-    errors.push(...rectErrors(companion, viewportId, 'visualBounds', child));
+    errors.push(...rectErrors(
+      S0_BRAZIER_LAYER_CONTRACT.companion,
+      viewportId,
+      'visualBounds',
+      child,
+    ));
     if (
       child.x < parent.x
       || child.y < parent.y
       || child.x + child.width > parent.x + parent.width
       || child.y + child.height > parent.y + parent.height
     ) errors.push(`S0 brazier ${viewportId} companion is outside primary envelope`);
-    if (JSON.stringify(child) === JSON.stringify(brazier.bounds[viewportId].interactionBounds)) {
+    if (
+      JSON.stringify(child)
+      === JSON.stringify(S0_BRAZIER_LAYER_CONTRACT.primary.interactionBounds[viewportId])
+    ) {
       errors.push(`S0 brazier ${viewportId} companion bounds reuse interaction bounds`);
     }
   }

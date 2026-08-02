@@ -171,7 +171,9 @@ function renderS0() {
     (entry) => entry.stateId === step.stateId,
   );
   heading.textContent = 'S0 · 남겨진 열쇠';
-  visualTitle.textContent = step.phaseId === 'exterior-key' ? '비 갠 골목과 닫힌 가게' : step.phaseId === 'gate-open' ? '열린 대문과 빈 카운터' : '차가운 숯과 작은 불씨';
+  visualTitle.textContent = step.phaseId === 'exterior-key'
+    ? '비 갠 골목과 닫힌 가게'
+    : '열린 대문과 빈 카운터';
   visualDescription.textContent = exteriorBackgroundBinding
     ? '승인된 exact 외관 배경 한 장과 DOM 상호작용으로 표시합니다.'
     : '정식 S0 아트는 Artist 023 handoff 전까지 단순 도형으로 표시합니다.';
@@ -205,7 +207,7 @@ function renderS0() {
     ]) delete document.body.dataset[name];
   }
   setIds({ screen: step.screenId, state: step.stateId, scene: 'SCN-S0-INTERACTION', dialogue: 'none' });
-  content.innerHTML = `<h2>무실패 3클릭 · ${s0Index + 1}/3</h2><p>${step.resultText}</p><ol class="step-list">${S0_INTERACTIONS.map((item, index) => `<li class="${index < s0Index ? 'done' : index === s0Index ? 'current' : ''}">${item.actionLabel}</li>`).join('')}</ol>`;
+  content.innerHTML = `<h2>무실패 2클릭 · ${s0Index + 1}/${S0_INTERACTIONS.length}</h2><p>${step.resultText}</p><ol class="step-list">${S0_INTERACTIONS.map((item, index) => `<li class="${index < s0Index ? 'done' : index === s0Index ? 'current' : ''}">${item.actionLabel}</li>`).join('')}</ol>`;
   actions.replaceChildren(button(step.actionLabel, () => {
     if (s0Index < S0_INTERACTIONS.length - 1) s0Index += 1;
     else {

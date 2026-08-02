@@ -124,7 +124,7 @@
       "if": { "properties": { "kind": { "const": "prologue" } } },
       "then": {
         "properties": {
-          "interactions": { "minItems": 3, "maxItems": 3 },
+          "interactions": { "minItems": 2, "maxItems": 2 },
           "readOnly": { "const": false }
         }
       }

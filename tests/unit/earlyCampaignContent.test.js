@@ -45,15 +45,15 @@ describe('Developer 3 S0~D3 stable data contract', () => {
     });
   });
 
-  it('S0는 무실패 3단계이며 고정 인물은 아키와 츠키오카뿐이다', () => {
+  it('S0는 무실패 KEY→GATE 2단계이고 점화는 story summary로 전한다', () => {
     const content = bundle();
     const s0 = content.scenarios[0];
     expect(s0.interactions.map(({ id }) => id)).toEqual([
       'S0-KEY-SELECT',
       'S0-GATE-OPEN',
-      'S0-CHARCOAL-IGNITE',
     ]);
     expect(s0.interactions.every(({ failurePolicy }) => failurePolicy === 'no-failure')).toBe(true);
+    expect(s0.scenes[0].skipSummary).toContain('화로의 숯불이 다시 붙었다.');
     expect(content.campaignCharacters.map(({ id }) => id)).toEqual(['CHAR-AKI', 'CHAR-TSUKIOKA']);
     expect(content.orders.filter(({ source }) => source.kind === 'extra-type')
       .every(({ runtimeCustomerId }) => runtimeCustomerId === null)).toBe(true);
