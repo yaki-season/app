@@ -1,7 +1,7 @@
 {
   "$schema": "https://yaki-season.local/assets/manifest.schema.json",
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-07-30",
+  "generatedAt": "2026-08-03",
   "specRefs": [
     "ART-002 v3.6.1",
     "ART-003 v5.0.0",
@@ -482,6 +482,37 @@
         "width": 1254,
         "height": 1254
       },
+      "format": "png"
+    },
+    {
+      "id": "ST-DRINK-BEER-TIER-1",
+      "sourceRevision": 4,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-DRINK",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": { "x": 0, "y": 0 },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:ST-DRINK-BEER-TIER-1:R4",
+      "provenance": "PROV:ST-DRINK-BEER-TIER-1:R4",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0",
+        "UI-003 v1.2.0",
+        "Artist 3 task 025 R4 runtime handoff"
+      ],
+      "reviewedAt": "2026-08-03",
+      "url": "/assets/core/drink/st-drink-beer-tier-1-r4-b1.png",
+      "sha256": "a0bd01f55f893520d48b8e38bccdb18c90868c228f6a7336eab43f162d0f6ed1",
+      "bytes": 243511,
+      "dimensions": { "width": 1920, "height": 1080 },
       "format": "png"
     }
   ]

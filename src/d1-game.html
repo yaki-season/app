@@ -79,27 +79,29 @@
     모모 꼬치 준비
   </button>
 
-  <section id="d3TorchPanel" class="d3-torch-panel" data-testid="d3-torch-panel" aria-labelledby="d3TorchTitle" hidden>
+  <section id="d3TorchPanel" class="d3-torch-panel" data-testid="d3-torch-panel" data-state-id="D3-MOMO-TARE-READY" aria-labelledby="d3TorchTitle" hidden>
     <div class="d3-torch-head">
       <strong id="d3TorchTitle">타레 모모 · 토치 마감</strong>
-      <span id="d3TorchState" data-testid="d3-torch-state" aria-live="polite">타레 대기</span>
+      <span id="d3TorchState" data-testid="d3-torch-state" data-component-id="grill.torchState" data-required-asset-id="UI-TORCH-STATE-D3" aria-live="polite">타레 대기</span>
     </div>
-    <button id="d3ApplyTare" type="button" data-testid="d3-apply-tare">타레 바르기</button>
+    <button id="d3ApplyTare" type="button" data-testid="d3-apply-tare" data-component-id="grill.tare.apply" data-required-asset-id="PROP-TARE-BRUSH-D3">타레 바르기</button>
     <button
       id="d3TorchTrack"
       class="d3-torch-track"
       type="button"
       data-testid="d3-torch-track"
+      data-component-id="grill.torch"
+      data-required-asset-id="MDL-GRILL-TORCH"
       aria-describedby="d3TorchHelp d3TorchWarning"
     >
-      <span id="d3TorchFill" class="d3-torch-fill"></span>
+      <span id="d3TorchFill" class="d3-torch-fill" data-component-id="grill.torch.flame" data-required-asset-id="VFX-TORCH-FLAME"></span>
       <span class="d3-torch-label">누른 채 좌우로 훑기</span>
     </button>
     <div class="d3-torch-meter" role="progressbar" aria-label="토치 적용 범위" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-      <span id="d3TorchCoverage"></span>
+      <span id="d3TorchCoverage" data-component-id="grill.torchCoverage" data-required-asset-id="UI-TORCH-COVERAGE-D3"></span>
     </div>
     <p id="d3TorchHelp">키보드: Space로 토치를 켠 채 ← →로 이동</p>
-    <p id="d3TorchWarning" class="d3-torch-warning" aria-live="assertive"></p>
+    <p id="d3TorchWarning" class="d3-torch-warning" data-component-id="grill.torchFocusWarning" data-required-asset-id="UI-TORCH-FOCUS-WARN-D3" aria-live="assertive"></p>
     <button id="d3RetrieveMomo" type="button" data-testid="d3-retrieve-momo" disabled>완성품 회수</button>
   </section>
 

@@ -26,12 +26,16 @@ export const LAYER_Z = {
 // 승인 D1 손님 화면 아트(public/assets, manifest.json). 아트가 없는 스테이션은 더미로 남는다.
 const A = '/assets/core/customer';
 export const CUSTOMER_ART = {
-  background: `${A}/background-complete-r3-b1.png`,
-  counter: `${A}/service-table-complete-r1-b1.png`,
+  background: `${A}/background-complete-r4-b1.png`,
+  counter: `${A}/service-counter-u-r4-b1.png`,
   waiting: `${A}/d1-tsukioka-waiting-r2-b1.png`,
   partialBeer: `${A}/d1-tsukioka-partial-beer-waiting-r1-b1.png`,
   eatingNegima: `${A}/d1-tsukioka-received-eating-negima-r1-b1.png`,
   eatingBeer: `${A}/d1-tsukioka-received-eating-beer-r1-b1.png`,
+};
+const DRINK_ART = {
+  background: '/assets/core/drink/bg-workspace-drink-r2-b1.png',
+  station: '/assets/core/drink/st-drink-beer-tier-1-r4-b1.png',
 };
 // 좌석 손님 액터에 입힐 텍스처(대기). 풀프레임 아트에서 테이블 위로 보여야 하는 상체만 잘라 쓴다.
 export const SEAT_ACTOR_TEXTURE = CUSTOMER_ART.waiting;
@@ -71,8 +75,12 @@ export const OBJECTS = {
   bg: { rect: { x: 0, y: 0, width: 1, height: 1 }, layer: 'background', color: 0x241c15, kind: 'fullframe' },
 
   // 손님 화면 승인 아트 레이어 (풀프레임 이미지). 좌석 액터·serve는 SEATS에서 동적 생성.
-  custBg: { kind: 'image', full: true, layer: 'background', order: 0, url: CUSTOMER_ART.background, opaque: true },
-  custCounter: { kind: 'image', full: true, layer: 'foreground', order: 50, url: CUSTOMER_ART.counter, opaque: false },
+  // R4 배경은 1:1 원경으로 유지하고, 3면 카운터만 전경으로 당겨 하단·좌우 끝이 화면 밖으로 이어지게 한다.
+  custBg: { kind: 'image', full: true, imageScale: 1, layer: 'background', order: 0, url: CUSTOMER_ART.background, opaque: true },
+  custCounter: { kind: 'image', full: true, imageScaleX: 1.18, imageScaleY: 1, imageOffsetY: 0.18, layer: 'foreground', order: 50, url: CUSTOMER_ART.counter, opaque: false },
+  drinkBg: { kind: 'image', full: true, layer: 'background', order: 0, url: DRINK_ART.background, opaque: true },
+  // 승인 원본은 FHD 투명 캔버스다. 배경처럼 cover 확대하지 않고 한 걸음 물러난 크기로 합성한다.
+  drinkStation: { kind: 'image', rect: { x: 0.10, y: 0.07, width: 0.80, height: 0.80 }, layer: 'fixture', order: 10, url: DRINK_ART.station, opaque: false },
 
   // 조립 화면
   workbench: { rect: { x: 0.08, y: 0.44, width: 0.84, height: 0.50 }, layer: 'fixture', color: 0x5c4630, kind: 'plane' },
@@ -104,9 +112,10 @@ export const OBJECTS = {
 
   // 드링크 화면 (단일 레버: 위=거품, 아래=맥주. 잔 채움은 DOM 패널)
   drinkTower: { rect: { x: 0.44, y: 0.30, width: 0.12, height: 0.24 }, layer: 'fixture', color: 0x6b6f72, kind: 'plane' },
-  glassRack: { rect: { x: 0.16, y: 0.58, width: 0.26, height: 0.14 }, layer: 'fixture', color: 0x3a2d20, kind: 'plane' },
-  drinkLeverUpper: { rect: { x: 0.60, y: 0.40, width: 0.09, height: 0.08 }, layer: 'interactive', color: 0xe8d8a0, kind: 'plane' },
-  drinkLeverLower: { rect: { x: 0.60, y: 0.49, width: 0.09, height: 0.08 }, layer: 'interactive', color: 0xc79a3a, kind: 'plane' },
+  // 빈잔을 선택해 노즐 아래에 놓는 실제 클릭 슬롯. 승인 머신의 중앙 노즐과 정렬한다.
+  glassRack: { rect: { x: 0.405, y: 0.66, width: 0.19, height: 0.105 }, hitRect: { x: 0.37, y: 0.61, width: 0.26, height: 0.19 }, layer: 'interactive', color: 0xc9a86a, kind: 'plane' },
+  drinkLeverUpper: { rect: { x: 0.48, y: 0.25, width: 0.08, height: 0.13 }, hitRect: { x: 0.46, y: 0.23, width: 0.12, height: 0.17 }, layer: 'interactive', color: 0xe8d8a0, kind: 'plane', invisible: true },
+  drinkLeverLower: { rect: { x: 0.48, y: 0.38, width: 0.08, height: 0.10 }, hitRect: { x: 0.46, y: 0.36, width: 0.12, height: 0.14 }, layer: 'interactive', color: 0xc79a3a, kind: 'plane', invisible: true },
 };
 
 // 좌석 (손님 화면). 좌석 수는 좌석 확장 업그레이드(seatCap 6→8→12)로 늘어난다. 좌석은 카운터 뒤 손님
@@ -116,16 +125,19 @@ export const DEFAULT_SEAT_CAP = 6;
 // cap개의 좌석을 카운터 폭에 균등 배치한다. cap=6은 기존 좌표(0.12~0.86)와 동일해 무회귀.
 export function computeSeats(cap) {
   const n = Math.max(1, Math.min(MAX_SEATS, cap));
-  const left = n <= 6 ? 0.12 : 0.06;
-  const right = n <= 6 ? 0.86 : 0.94;
+  const left = n <= 6 ? 0.25 : 0.12;
+  const right = n <= 6 ? 0.75 : 0.88;
   const step = n > 1 ? (right - left) / (n - 1) : 0;
   const halfW = Math.min(0.055, step > 0 ? step * 0.42 : 0.055); // 액터 반폭(밀집 시 축소)
+  // 초상 원본은 세로로 긴 0.8 안팎 비율이다. 좌석 hit 폭을 액터 폭으로 재사용하면 6석에서도
+  // 지나치게 홀쭉해지므로 표시 폭을 분리한다. 확장 좌석에서만 겹침 방지를 위해 축소한다.
+  const actorWidth = n <= 6 ? 0.16 : Math.min(0.11, step * 0.9);
   return Array.from({ length: n }, (_, i) => {
     const cx = n === 1 ? 0.5 : left + step * i;
     return {
       id: `seat-${String(i + 1).padStart(2, '0')}`,
-      actor: { x: cx - halfW, y: 0.15, width: halfW * 2, height: 0.40 }, // 카운터 뒤 상반신
-      bubble: { x: cx, y: 0.10 }, // 말풍선·게이지 DOM 앵커 (좌석 위, 정규화 center)
+      actor: { x: cx - actorWidth / 2, y: 0.355, width: actorWidth, height: 0.40 }, // 원본 비율 복원 + 상판 하단 정렬
+      bubble: { x: cx, y: 0.305 }, // 내려간 손님 머리 위 말풍선·게이지 DOM 앵커
       serve: { x: cx - halfW * 0.82, y: 0.55, width: halfW * 1.64, height: 0.10 }, // 카운터 위 serve 대상
       hit: { x: cx - halfW, y: 0.13, width: halfW * 2, height: 0.52 }, // 손님과 빈 좌석 정리용 투명 조작 영역
     };
@@ -162,7 +174,7 @@ export const SCREENS = [
     id: 'SCR-SVC-DRINK',
     name: '드링크',
     look: { x: 1.8, y: -1.4, z: -4.4 }, // 옆(오른쪽) 주류
-    objects: ['bg', 'drinkTower', 'glassRack', 'drinkLeverUpper', 'drinkLeverLower'],
+    objects: ['drinkBg', 'glassRack', 'drinkStation', 'drinkLeverUpper', 'drinkLeverLower'],
   },
 ];
 

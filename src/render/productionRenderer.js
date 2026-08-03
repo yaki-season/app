@@ -54,13 +54,23 @@ export function createProductionRenderer(canvas) {
       const z = LAYER_Z[def.layer];
       const mat = new THREE.MeshBasicMaterial({ map: texture(def.url), transparent: !def.opaque, depthTest: false, depthWrite: false });
       const mesh = billboard(cam, def.full ? { x: 0, y: 0, width: 1, height: 1 } : def.rect, z, mat);
-      if (def.full) mesh.scale.multiplyScalar(COVER);
+      if (def.full) {
+        const scale = def.imageScale ?? COVER;
+        mesh.scale.set(def.imageScaleX ?? scale, def.imageScaleY ?? scale, 1);
+      }
+      if (def.imageOffsetY) mesh.position.copy(worldAtScreen(cam, 0.5, 0.5 + def.imageOffsetY, z));
       mesh.renderOrder = def.order ?? 0;
       mesh.userData.objectKey = key;
       return mesh;
     }
     const z = LAYER_Z[def.layer];
-    const mat = new THREE.MeshBasicMaterial({ color: def.color, transparent: def.kind === 'grill', depthWrite: def.kind !== 'grill' });
+    const mat = new THREE.MeshBasicMaterial({
+      color: def.color,
+      transparent: def.kind === 'grill' || def.invisible === true,
+      opacity: def.invisible === true ? 0 : 1,
+      colorWrite: def.invisible !== true,
+      depthWrite: def.kind !== 'grill' && def.invisible !== true,
+    });
     const rect = def.kind === 'fullframe' ? { x: 0, y: 0, width: 1, height: 1 } : def.rect;
     const mesh = billboard(cam, rect, z, mat);
     mesh.renderOrder = -z; // 먼 것 먼저
@@ -111,7 +121,13 @@ export function createProductionRenderer(canvas) {
     if (s.seats) {
       seatCam = cam;
       for (const seatId of SEAT_IDS) {
-        const base = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.03 }, LAYER_Z.fixture, new THREE.MeshBasicMaterial({ color: 0x574433 }));
+        // 승인 카운터 아트가 실제 상판을 제공하므로 예전 개발용 갈색 좌석 막대는 투명 hit 보조물로만 남긴다.
+        const base = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.03 }, LAYER_Z.fixture, new THREE.MeshBasicMaterial({
+          transparent: true,
+          opacity: 0,
+          colorWrite: false,
+          depthWrite: false,
+        }));
         base.renderOrder = -LAYER_Z.fixture + 0.5;
         base.userData.seatId = seatId;
         base.visible = false;

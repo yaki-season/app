@@ -37,6 +37,7 @@ describe('art semanticOwner promotion preflight', () => {
     expect(boundRows.map((entry) => entry.requiredAssetId)).toEqual([
       ...existingApprovedIds,
       'BG-WORKSPACE-DRINK',
+      'ST-DRINK-BEER-TIER-1',
     ]);
     expect(boundRows.map((entry) => entry.requiredAssetId).slice(0, 8))
       .toEqual(existingApprovedIds);
