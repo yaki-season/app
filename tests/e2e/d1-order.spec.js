@@ -8,7 +8,7 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await page.goto('/src/d1.html');
   await expect(page.locator('body')).toHaveAttribute('data-runtime-assets-ready', 'false');
   await expect(page.locator('body')).toHaveAttribute('data-runtime-contract-valid', 'true');
-  await expect(page.locator('body')).toHaveAttribute('data-asset-placeholder-count', '29');
+  await expect(page.locator('body')).toHaveAttribute('data-asset-placeholder-count', '28');
   const readiness = await page.evaluate(() => window.__d1Debug.assetReadiness());
   expect(readiness.placeholderIdsByScene).toMatchObject({
     drink: expect.any(Array),
@@ -18,9 +18,9 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   expect(readiness.contractAudit.valid).toBe(true);
   expect(readiness.placeholderIdsByScene.grill).toContain('MDL-NEGIMA-GRILL-PROPER-SECOND-FACE');
   expect(readiness.placeholderIdsByScene.grill).toContain('CMP-GRILL-FINISHED-PROPER-NEGIMA');
-  await expect(page.locator('.art-background')).toHaveAttribute('src', '/public/assets/core/customer/background-complete-r3-b1.png');
+  await expect(page.locator('.art-background')).toHaveAttribute('src', '/public/assets/core/customer/background-complete-r4-b1.png');
   await expect(page.locator('.art-seating')).toHaveAttribute('src', '/public/assets/core/customer/bg-seating-6-r2-b1.png');
-  await expect(page.locator('.art-table')).toHaveAttribute('src', '/public/assets/core/customer/service-table-complete-r1-b1.png');
+  await expect(page.locator('.art-table')).toHaveAttribute('src', '/public/assets/core/customer/service-counter-u-r4-b1.png');
   await expect(page.locator('.art-background')).toHaveJSProperty('naturalWidth', 1920);
   await expect(page.getByTestId('order-negima').locator('img')).toHaveAttribute('src', '/public/assets/core/ui/order-icon-negima-r1-b1.png');
   await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-manifest-id', 'D1-TSUKIOKA-WAITING');

@@ -59,7 +59,7 @@ export const D1_RUNTIME_COMPONENT_INVENTORY = Object.freeze([
   row('SCR-SVC-GRILL', 'D1-grill-finished-perfect', 'grill.finished.item', 'CMP-GRILL-FINISHED-PROPER-NEGIMA', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING),
 
   row('SCR-SVC-DRINK', 'D1-drink-base', 'drink.scene', 'BG-WORKSPACE-DRINK', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound'),
-  row('SCR-SVC-DRINK', 'D1-drink-base', 'drink.station', 'ST-DRINK-BEER-TIER-1', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
+  row('SCR-SVC-DRINK', 'D1-drink-base', 'drink.station', 'ST-DRINK-BEER-TIER-1', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound'),
   row('SCR-SVC-DRINK', 'D1-drink-glass', 'drink.glass', 'MDL-BEER-GLASS', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
   row('SCR-SVC-DRINK', 'D1-drink-lever', 'drink.lever', 'MDL-BEER-LEVER', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
   row('SCR-SVC-DRINK', 'D1-drink-visual-variants', 'drink.liquid', 'TEX-BEER-LIQUID', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'pending', ['hidden', 'liquid-70-with-foam', 'liquid-100-with-foam']),

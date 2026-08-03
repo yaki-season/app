@@ -7,6 +7,7 @@ import { createProductionRenderer } from './render/productionRenderer.js';
 import { createStationDirector } from './render/stationDirector.js';
 import { createGrillMaterial } from './render/grillMaterial.js';
 import { elapsedSecToUniform } from './render/grillRenderer.js';
+import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import {
   COOK_SLOT_NEXT_ACTION,
   createD1CookStations,
@@ -166,6 +167,14 @@ function renderD3Torch() {
     proper: '적정 마감 · Perfect + 불향',
     over: '과다 마감 · OK',
     failed: '집중 과열 · Fail',
+  }[finish.torchState];
+  d3TorchPanel.dataset.stateId = {
+    none: finish.tareApplied ? 'D3-MOMO-TARE-APPLIED' : 'D3-MOMO-TARE-READY',
+    active: 'D3-MOMO-TORCH-ACTIVE',
+    under: 'D3-MOMO-TORCH-UNDER',
+    proper: 'D3-MOMO-TORCH-PROPER',
+    over: 'D3-MOMO-TORCH-OVER',
+    failed: 'D3-MOMO-TORCH-FAILED',
   }[finish.torchState];
   el('d3TorchState').textContent = stateLabel;
   el('d3ApplyTare').disabled = finish.tareApplied || finish.torchState === 'active';
@@ -660,7 +669,7 @@ function syncRiskCount(now = performance.now()) {
 const OBJECT_LABELS = {
   workbench: '조립대', binChicken: '닭', binLeek: '파', jigSkewer: '완성 꼬치',
   grillBody: '숯불 그릴', grillWaitTray: '대기', grillFinishedTray: '완료 트레이 (개발)',
-  drinkTower: '맥주 타워', glassRack: '잔 랙',
+  drinkTower: '맥주 타워', glassRack: '빈잔 놓기',
   drinkLeverUpper: '레버·거품', drinkLeverLower: '레버·맥주',
 };
 const LABEL_UP = { workbench: 74, grillBody: 74, drinkTower: 46, glassRack: 24 };
@@ -1190,6 +1199,7 @@ function updateGrillVisual(now) {
     if (!g) continue;
     g.setTime(now / 1000);
     const v = views[slotIndexOf(key)];
+    for (const [param, value] of Object.entries(d1SecondFaceR3Params(v))) g.setParam(param, value);
     g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
     const mesh = R.objectMesh[key];
     if (!mesh) continue;

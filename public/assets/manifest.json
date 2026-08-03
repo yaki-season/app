@@ -24,7 +24,7 @@
   "assets": [
     {
       "id": "ARTIST-010-BACKGROUND-COMPLETE",
-      "sourceRevision": 3,
+      "sourceRevision": 4,
       "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-SVC-CUSTOMERS",
@@ -41,17 +41,17 @@
       "anchors": [],
       "clips": [],
       "mirrorSafe": false,
-      "source": "ARTSRC:ARTIST-010-BACKGROUND-COMPLETE:R3",
-      "provenance": "PROV:ARTIST-010-BACKGROUND-COMPLETE:R3",
+      "source": "ARTSRC:ARTIST-010-BACKGROUND-COMPLETE:R4",
+      "provenance": "PROV:ARTIST-010-BACKGROUND-COMPLETE:R4",
       "license": "YAKI SEASON internal approved artwork",
       "specRefs": [
         "ART-003 v5.0.0",
         "ART-002 v3.6.1"
       ],
-      "reviewedAt": "2026-07-28",
-      "url": "/assets/core/customer/background-complete-r3-b1.png",
-      "sha256": "7ab2351585160d994bc549db3735e0843a1350913add9a17cff650d05706db49",
-      "bytes": 3476052,
+      "reviewedAt": "2026-08-03",
+      "url": "/assets/core/customer/background-complete-r4-b1.png",
+      "sha256": "670511ceeb5402cdf923e66388bcd6187a22d7bde1fc8deb446692138a829c51",
+      "bytes": 2752253,
       "dimensions": {
         "width": 1920,
         "height": 1080
@@ -60,7 +60,7 @@
     },
     {
       "id": "BG-SERVICE-TABLE-ARTIST009",
-      "sourceRevision": 1,
+      "sourceRevision": 4,
       "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-SVC-CUSTOMERS",
@@ -77,17 +77,17 @@
       "anchors": [],
       "clips": [],
       "mirrorSafe": false,
-      "source": "ARTSRC:BG-SERVICE-TABLE-ARTIST009:R1",
-      "provenance": "PROV:BG-SERVICE-TABLE-ARTIST009:R1",
+      "source": "ARTSRC:BG-SERVICE-TABLE-ARTIST009:R4",
+      "provenance": "PROV:BG-SERVICE-TABLE-ARTIST009:R4",
       "license": "YAKI SEASON internal approved artwork",
       "specRefs": [
         "ART-003 v5.0.0",
         "ART-002 v3.6.1"
       ],
-      "reviewedAt": "2026-07-28",
-      "url": "/assets/core/customer/service-table-complete-r1-b1.png",
-      "sha256": "64ed1bb62a5d25100d2a64c040872f172476ea34833170f811c9bfe3aad2ed7c",
-      "bytes": 1425229,
+      "reviewedAt": "2026-08-03",
+      "url": "/assets/core/customer/service-counter-u-r4-b1.png",
+      "sha256": "78eba7c6b7b2125cfb8a90d525d97269bc4f9d6d071d11e1a2f278c7eef14530",
+      "bytes": 1316081,
       "dimensions": {
         "width": 1920,
         "height": 1080
@@ -980,9 +980,118 @@
           "format": "json"
         }
       ]
+    },
+    {
+      "id": "ST-DRINK-BEER-TIER-1",
+      "sourceRevision": 4,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-DRINK",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:ST-DRINK-BEER-TIER-1:R4",
+      "provenance": "PROV:ST-DRINK-BEER-TIER-1:R4",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0",
+        "UI-003 v1.2.0",
+        "Artist 3 task 025 R4 runtime handoff"
+      ],
+      "reviewedAt": "2026-08-03",
+      "url": "/assets/core/drink/st-drink-beer-tier-1-r4-b1.png",
+      "sha256": "a0bd01f55f893520d48b8e38bccdb18c90868c228f6a7336eab43f162d0f6ed1",
+      "bytes": 243511,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
     }
   ],
   "retainedAssets": [
+    {
+      "id": "ARTIST-010-BACKGROUND-COMPLETE",
+      "sourceRevision": 3,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:ARTIST-010-BACKGROUND-COMPLETE:R3",
+      "provenance": "PROV:ARTIST-010-BACKGROUND-COMPLETE:R3",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "ART-002 v3.6.1"
+      ],
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/customer/background-complete-r3-b1.png",
+      "sha256": "7ab2351585160d994bc549db3735e0843a1350913add9a17cff650d05706db49",
+      "bytes": 3476052,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "BG-SERVICE-TABLE-ARTIST009",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:BG-SERVICE-TABLE-ARTIST009:R1",
+      "provenance": "PROV:BG-SERVICE-TABLE-ARTIST009:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "ART-002 v3.6.1"
+      ],
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/customer/service-table-complete-r1-b1.png",
+      "sha256": "64ed1bb62a5d25100d2a64c040872f172476ea34833170f811c9bfe3aad2ed7c",
+      "bytes": 1425229,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
     {
       "id": "D1-TSUKIOKA-WAITING",
       "sourceRevision": 2,

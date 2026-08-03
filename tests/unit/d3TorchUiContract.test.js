@@ -11,6 +11,10 @@ describe('D3 토치 UI 계약', () => {
     expect(html).toContain('role="progressbar"');
     expect(html).toContain('키보드: Space로 토치를 켠 채 ← →로 이동');
     expect(html).toContain('id="d3TorchWarning"');
+    expect(html).toContain('data-required-asset-id="MDL-GRILL-TORCH"');
+    expect(html).toContain('data-required-asset-id="VFX-TORCH-FLAME"');
+    expect(html).toContain('data-required-asset-id="PROP-TARE-BRUSH-D3"');
+    expect(js).toContain("proper: 'D3-MOMO-TORCH-PROPER'");
     expect(js).toContain("d3TorchTrack.addEventListener('pointermove'");
     expect(js).toContain("d3TorchTrack.addEventListener('keydown'");
     expect(js).toContain('d3Grill: d3Grill.snapshot()');

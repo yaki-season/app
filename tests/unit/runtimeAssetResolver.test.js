@@ -97,10 +97,11 @@ describe('D1 runtime asset resolver', () => {
     expect(D1_PENDING_RUNTIME_ASSET_IDS.drink).toContain('MDL-BEER-LEVER');
     expect(D1_PENDING_RUNTIME_ASSET_IDS.drink).not.toContain('BG-WORKSPACE-DRINK');
     expect(D1_RUNTIME_ASSET_ID.DRINK_BACKGROUND).toBe('BG-WORKSPACE-DRINK');
+    expect(D1_RUNTIME_ASSET_ID.DRINK_STATION).toBe('ST-DRINK-BEER-TIER-1');
     expect(Object.values(D1_RUNTIME_ASSET_ID)).not.toContain('MDL-NEGIMA-GRILL-RAW');
   });
 
-  it('실제 consumer가 없는 model을 제외해 전체 29·drink 5 placeholder를 집계한다', () => {
+  it('실제 consumer 없는 model을 제외하고 드링크 스테이션 binding 뒤 전체 28·drink 4 placeholder를 집계한다', () => {
     const approvedBoundManifest = {
       assets: Object.values(D1_RUNTIME_ASSET_ID).map((id) => ({
         id,
@@ -113,9 +114,9 @@ describe('D1 runtime asset resolver', () => {
     expect(readiness).toMatchObject({
       ready: false,
       requiredRuntimeCount: 44,
-      approvedRuntimeCount: 15,
-      boundRuntimeCount: 15,
-      placeholderCount: 29,
+      approvedRuntimeCount: 16,
+      boundRuntimeCount: 16,
+      placeholderCount: 28,
       unboundApprovedIds: [],
       contractAudit: {
         valid: true,
@@ -124,7 +125,7 @@ describe('D1 runtime asset resolver', () => {
         semanticOwnerConflicts: [],
       },
     });
-    expect(readiness.placeholderIdsByScene.drink).toHaveLength(5);
+    expect(readiness.placeholderIdsByScene.drink).toHaveLength(4);
     expect(readiness.placeholderIdsByScene.drink).not.toContain('BG-WORKSPACE-DRINK');
     expect(readiness.placeholderIdsByScene.drink).toContain('TEX-BEER-LIQUID');
     expect(readiness.placeholderIdsByScene.drink).toContain('VFX-BEER-CORE');
@@ -150,17 +151,17 @@ describe('D1 runtime asset resolver', () => {
 
     const awaitingBinding = reportD1RuntimeAssetReadiness(manifestWithUnboundAssets);
     expect(awaitingBinding.ready).toBe(false);
-    expect(awaitingBinding.placeholderCount).toBe(29);
+    expect(awaitingBinding.placeholderCount).toBe(28);
     expect(awaitingBinding.missingManifestIds).toEqual([]);
-    expect(awaitingBinding.unboundApprovedIds).toHaveLength(29);
+    expect(awaitingBinding.unboundApprovedIds).toHaveLength(28);
   });
 
   it('inventory와 실제 binding·조리 placeholder 목록이 정확히 대응한다', () => {
     const audit = auditD1RuntimeAssetBindingContract();
 
     expect(audit.valid).toBe(true);
-    expect(audit.inventoryBoundIds).toHaveLength(15);
-    expect(audit.resolverBoundIds).toHaveLength(15);
+    expect(audit.inventoryBoundIds).toHaveLength(16);
+    expect(audit.resolverBoundIds).toHaveLength(16);
     expect(audit.pendingScenes.assembly.missingResolverPendingIds).toEqual([]);
     expect(audit.pendingScenes.grill.unexpectedResolverPendingIds).toEqual([]);
     expect(audit.pendingScenes.drink.missingResolverPendingIds).toEqual([]);

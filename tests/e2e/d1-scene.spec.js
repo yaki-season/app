@@ -13,9 +13,9 @@ test('D1 2.5D: 배경·손님·카운터 레이어를 합성하고 손님 텍스
   // 네 깊이 레이어(배경·6석·손님·카운터)가 승인 URL로 구성된다.
   const layers = await page.evaluate(() => window.__d1SceneDebug.layers());
   expect(layers.map((l) => l.name)).toEqual(['background', 'seating', 'customer', 'table']);
-  expect(layers[0].url).toBe('/public/assets/core/customer/background-complete-r3-b1.png');
+  expect(layers[0].url).toBe('/public/assets/core/customer/background-complete-r4-b1.png');
   expect(layers[1].url).toBe('/public/assets/core/customer/bg-seating-6-r2-b1.png');
-  expect(layers[3].url).toBe('/public/assets/core/customer/service-table-complete-r1-b1.png');
+  expect(layers[3].url).toBe('/public/assets/core/customer/service-counter-u-r4-b1.png');
   // 깊이가 서로 달라 시차(2.5D)가 생긴다.
   expect(layers[0].z).toBeLessThan(layers[1].z);
   expect(layers[1].z).toBeLessThan(layers[2].z);
@@ -54,7 +54,7 @@ test('D1 2.5D: 배경·손님·카운터 레이어를 합성하고 손님 텍스
   expect(await page.evaluate(() => window.__d1SceneDebug.customerTextureUrl()))
     .toBe('/public/assets/core/customer/d1-tsukioka-partial-beer-waiting-r2-b1.png');
   expect(await page.evaluate(() => window.__d1SceneDebug.backgroundTextureUrl()))
-    .toBe('/public/assets/core/customer/background-complete-r3-b1.png');
+    .toBe('/public/assets/core/customer/background-complete-r4-b1.png');
 
   // 조립 → 2칸 그릴 → 네기마 제공 → 반응
   await page.getByRole('button', { name: '네기마 조립 시작' }).click();
