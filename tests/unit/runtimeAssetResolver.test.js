@@ -63,18 +63,21 @@ describe('D1 runtime asset resolver', () => {
   });
 
   it('handoff 없는 조리 상태는 승인 아트 ID로 대체하지 않는다', () => {
-    expect(D1_PENDING_RUNTIME_ASSET_IDS.assembly).toContain('BG-WORKSPACE-ASSEMBLY');
-    expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('MDL-NEGIMA-GRILL-RAW');
+    expect(D1_PENDING_RUNTIME_ASSET_IDS.assembly).toEqual([]);
+    expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).not.toContain('MDL-NEGIMA-GRILL-RAW');
+    expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).not.toContain('ST-GRILL-FINISHED-TRAY');
+    expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('ST-GRILL-WAITING-RACK');
+    expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('MDL-NEGIMA-GRILL-COOKING-FIRST-FACE');
     expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('MDL-NEGIMA-GRILL-PROPER-FIRST-FACE');
     expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('MDL-NEGIMA-GRILL-PROPER-SECOND-FACE');
-    expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('ST-GRILL-FINISHED-TRAY');
     expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('CMP-GRILL-FINISHED-PROPER-NEGIMA');
     expect(D1_PENDING_RUNTIME_ASSET_IDS.drink).toContain('MDL-BEER-LEVER');
     expect(D1_PENDING_RUNTIME_ASSET_IDS.drink).not.toContain('BG-WORKSPACE-DRINK');
     expect(D1_RUNTIME_ASSET_ID.DRINK_BACKGROUND).toBe('BG-WORKSPACE-DRINK');
+    expect(D1_RUNTIME_ASSET_ID.GRILL_RAW_NEGIMA).toBe('MDL-NEGIMA-GRILL-RAW');
   });
 
-  it('BG-WORKSPACE-DRINK binding 뒤 전체 35·drink 5 placeholder를 집계한다', () => {
+  it('D1 아트 배치 뒤 전체 26·drink 5 placeholder를 집계한다', () => {
     const approvedBoundManifest = {
       assets: Object.values(D1_RUNTIME_ASSET_ID).map((id) => ({
         id,
@@ -87,9 +90,9 @@ describe('D1 runtime asset resolver', () => {
     expect(readiness).toMatchObject({
       ready: false,
       requiredRuntimeCount: 44,
-      approvedRuntimeCount: 9,
-      boundRuntimeCount: 9,
-      placeholderCount: 35,
+      approvedRuntimeCount: 18,
+      boundRuntimeCount: 18,
+      placeholderCount: 26,
       unboundApprovedIds: [],
       contractAudit: {
         valid: true,
@@ -102,8 +105,8 @@ describe('D1 runtime asset resolver', () => {
     expect(readiness.placeholderIdsByScene.drink).not.toContain('BG-WORKSPACE-DRINK');
     expect(readiness.placeholderIdsByScene.drink).toContain('TEX-BEER-LIQUID');
     expect(readiness.placeholderIdsByScene.drink).toContain('VFX-BEER-CORE');
-    expect(readiness.placeholderIdsByScene.assembly).toHaveLength(5);
-    expect(readiness.placeholderIdsByScene.grill).toHaveLength(10);
+    expect(readiness.placeholderIdsByScene.assembly).toHaveLength(0);
+    expect(readiness.placeholderIdsByScene.grill).toHaveLength(6);
     expect(readiness.placeholderIdsByScene.customer).toHaveLength(10);
     expect(readiness.placeholderIdsByScene.closing).toHaveLength(2);
     expect(readiness.placeholderIdsByScene.settlement).toHaveLength(3);
@@ -124,17 +127,17 @@ describe('D1 runtime asset resolver', () => {
 
     const awaitingBinding = reportD1RuntimeAssetReadiness(manifestWithUnboundAssets);
     expect(awaitingBinding.ready).toBe(false);
-    expect(awaitingBinding.placeholderCount).toBe(35);
+    expect(awaitingBinding.placeholderCount).toBe(26);
     expect(awaitingBinding.missingManifestIds).toEqual([]);
-    expect(awaitingBinding.unboundApprovedIds).toHaveLength(35);
+    expect(awaitingBinding.unboundApprovedIds).toHaveLength(26);
   });
 
   it('inventory와 실제 binding·조리 placeholder 목록이 정확히 대응한다', () => {
     const audit = auditD1RuntimeAssetBindingContract();
 
     expect(audit.valid).toBe(true);
-    expect(audit.inventoryBoundIds).toHaveLength(9);
-    expect(audit.resolverBoundIds).toHaveLength(9);
+    expect(audit.inventoryBoundIds).toHaveLength(18);
+    expect(audit.resolverBoundIds).toHaveLength(18);
     expect(audit.pendingScenes.assembly.missingResolverPendingIds).toEqual([]);
     expect(audit.pendingScenes.grill.unexpectedResolverPendingIds).toEqual([]);
     expect(audit.pendingScenes.drink.missingResolverPendingIds).toEqual([]);

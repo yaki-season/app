@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "profile": "runtime-model-composition",
+  "id": "MDL-NEGIMA-GRILL-RAW",
+  "sourceRevision": 1,
+  "screenUnit": "SCR-SVC-GRILL",
+  "semanticOwner": "grill.negima.raw",
+  "kind": "Three.js runtime composition; no new GLB or raster is baked",
+  "rootNode": "grillNegimaRoot",
+  "flipPivot": {
+    "node": "flipPivot",
+    "axis": "local +Y (approved skewer length axis)",
+    "firstClick": { "fromRadians": 0, "toRadians": 3.141592653589793, "face": "0->1" },
+    "secondClick": { "fromRadians": 3.141592653589793, "toRadians": 6.283185307179586, "face": "1->0" },
+    "direction": "positive; never reverse-spin for the second click",
+    "runtimeOwner": "the gameplay command and 0.3-second re-input lock; clip completion never changes domain state"
+  },
+  "sequence": ["chicken", "green-onion", "chicken", "green-onion", "chicken"],
+  "ingredientScaleRelativeToBase": 1.4,
+  "triangleCount": 476,
+  "sourceAssetPolicy": "Load the approved source GLBs and their external nearest albedos at runtime. Do not bake duplicate or recoloured textures.",
+  "runtimeModule": "../runtime/compose-mdl-negima-grill-raw.mjs",
+  "runtimeRegistrationAllowed": false
+}

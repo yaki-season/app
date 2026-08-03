@@ -1,7 +1,7 @@
 {
   "$schema": "https://yaki-season.local/assets/manifest.schema.json",
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-07-30",
+  "generatedAt": "2026-08-02",
   "specRefs": [
     "ART-002 v3.6.1",
     "ART-003 v5.0.0",
@@ -483,6 +483,403 @@
         "height": 1254
       },
       "format": "png"
+    },
+    {
+      "id": "BG-WORKSPACE-GRILL",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-GRILL",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:BG-WORKSPACE-GRILL:R1",
+      "provenance": "PROV:BG-WORKSPACE-GRILL:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0",
+        "ART-002 v3.6.1"
+      ],
+      "reviewedAt": "2026-07-29",
+      "url": "/assets/core/cooking/bg-workspace-grill-r1-b1.png",
+      "sha256": "5511d93a94e265d9320ce1badbbe64a29dbed9300470292baad41c420c60d449",
+      "bytes": 2115788,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "BG-WORKSPACE-ASSEMBLY",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:BG-WORKSPACE-ASSEMBLY:R1",
+      "provenance": "PROV:BG-WORKSPACE-ASSEMBLY:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0",
+        "ART-002 v3.6.1"
+      ],
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/cooking/bg-workspace-assembly-r1-b1.png",
+      "sha256": "4b8570a524ffd3edaebc6493c82ada46eb3eab5d933b2e2ff59bf2c66e1b4b34",
+      "bytes": 2753220,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "ST-ASSEMBLY-TIER-1",
+      "sourceRevision": 3,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:ST-ASSEMBLY-TIER-1:R3",
+      "provenance": "PROV:ST-ASSEMBLY-TIER-1:R3",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0",
+        "ART-002 v3.6.1"
+      ],
+      "reviewedAt": "2026-07-29",
+      "url": "/assets/core/cooking/st-assembly-tier-1-r3-b1.png",
+      "sha256": "b15d40f448b54e49eb0dc895a291d02db6800d85aaddf8d706ad5ecea41b30ca",
+      "bytes": 988222,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "ST-GRILL-TIER-1",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-GRILL",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:ST-GRILL-TIER-1:R2",
+      "provenance": "PROV:ST-GRILL-TIER-1:R2",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0",
+        "ART-002 v3.6.1"
+      ],
+      "reviewedAt": "2026-07-29",
+      "url": "/assets/core/cooking/st-grill-tier-1-r2-b1.png",
+      "sha256": "da023e90bfecc62e45264433018e28a29a2648715bb5e2634351d5307a9bdc89",
+      "bytes": 1389129,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "ST-GRILL-FINISHED-TRAY",
+      "sourceRevision": 6,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-GRILL",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:ST-GRILL-FINISHED-TRAY:R6",
+      "provenance": "PROV:ST-GRILL-FINISHED-TRAY:R6",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0",
+        "ART-002 v3.6.1"
+      ],
+      "reviewedAt": "2026-07-30",
+      "url": "/assets/core/cooking/st-grill-finished-tray-r6-b1.png",
+      "sha256": "51abf390cbf31d40b50a7d99f08a5d37a2da70df6cf94d405788538bad7d9184",
+      "bytes": 215874,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "MDL-SKEWER-BASE",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY",
+      "profile": "bundle-model",
+      "pack": "core",
+      "kind": "model",
+      "colorSpace": "not-applicable",
+      "alpha": "not-applicable",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "bounds": {
+        "min": {
+          "x": -0.0515,
+          "y": -0.82,
+          "z": -0.0385
+        },
+        "max": {
+          "x": 0.0515,
+          "y": 0.82,
+          "z": 0.0385
+        }
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:MDL-SKEWER-BASE:R2",
+      "provenance": "PROV:MDL-SKEWER-BASE:R2",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0"
+      ],
+      "reviewedAt": "2026-07-29",
+      "url": "/assets/core/cooking/mdl-skewer-base-r2-b1.glb",
+      "sha256": "fef2b4eae60b8657dafb5b9137b9220088e2d36366ac53298df132bd4f9b9bf5",
+      "bytes": 15996,
+      "format": "glb",
+      "companions": [
+        {
+          "role": "pixel-albedo",
+          "url": "/assets/core/cooking/mdl-skewer-base-pixel-albedo-r2-b1.png",
+          "sha256": "dc9625b7961ddc36fdbe5fb44252407e4cdb036e20c50f51b0de1a639326446f",
+          "bytes": 51293,
+          "format": "png",
+          "dimensions": {
+            "width": 1024,
+            "height": 64
+          }
+        }
+      ]
+    },
+    {
+      "id": "MDL-INGREDIENT-CHICKEN",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY",
+      "profile": "bundle-model",
+      "pack": "core",
+      "kind": "model",
+      "colorSpace": "not-applicable",
+      "alpha": "not-applicable",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "bounds": {
+        "min": {
+          "x": -0.1025,
+          "y": -0.1025,
+          "z": -0.059
+        },
+        "max": {
+          "x": 0.1025,
+          "y": 0.1025,
+          "z": 0.059
+        }
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:MDL-INGREDIENT-CHICKEN:R1",
+      "provenance": "PROV:MDL-INGREDIENT-CHICKEN:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0"
+      ],
+      "reviewedAt": "2026-07-29",
+      "url": "/assets/core/cooking/mdl-ingredient-chicken-r1-b1.glb",
+      "sha256": "740d48acc998a9bea5b16c46d4be66d143efb57a8cb42726c757d0e22e9da7dc",
+      "bytes": 5168,
+      "format": "glb",
+      "companions": [
+        {
+          "role": "pixel-albedo",
+          "url": "/assets/core/cooking/mdl-ingredient-chicken-pixel-albedo-r1-b1.png",
+          "sha256": "4baa5ca99f5f190053930461251f0497219731048a7d3caddf5ae2e03cfefb47",
+          "bytes": 43760,
+          "format": "png",
+          "dimensions": {
+            "width": 192,
+            "height": 192
+          }
+        }
+      ]
+    },
+    {
+      "id": "MDL-INGREDIENT-NEGI",
+      "sourceRevision": 3,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY",
+      "profile": "bundle-model",
+      "pack": "core",
+      "kind": "model",
+      "colorSpace": "not-applicable",
+      "alpha": "not-applicable",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "bounds": {
+        "min": {
+          "x": -0.1275,
+          "y": -0.11,
+          "z": -0.078
+        },
+        "max": {
+          "x": 0.1275,
+          "y": 0.11,
+          "z": 0.078
+        }
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:MDL-INGREDIENT-NEGI:R3",
+      "provenance": "PROV:MDL-INGREDIENT-NEGI:R3",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0"
+      ],
+      "reviewedAt": "2026-07-29",
+      "url": "/assets/core/cooking/mdl-ingredient-negi-r3-b1.glb",
+      "sha256": "065a918355c625f4c2f364d26dc0e20b3326155c799399905c04aa48494bb3e3",
+      "bytes": 5112,
+      "format": "glb",
+      "companions": [
+        {
+          "role": "pixel-albedo",
+          "url": "/assets/core/cooking/mdl-ingredient-negi-pixel-albedo-r3-b1.png",
+          "sha256": "8712631509a5477d81ab88b6e99dd62ae803225560667cd60ec8d18fe131aa95",
+          "bytes": 55025,
+          "format": "png",
+          "dimensions": {
+            "width": 256,
+            "height": 192
+          }
+        }
+      ]
+    },
+    {
+      "id": "MDL-NEGIMA-GRILL-RAW",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-GRILL",
+      "profile": "bundle-model",
+      "pack": "core",
+      "kind": "model",
+      "colorSpace": "not-applicable",
+      "alpha": "not-applicable",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "bounds": {
+        "min": {
+          "x": -0.21935181690493205,
+          "y": -0.8199999928474426,
+          "z": -0.0823199988901615
+        },
+        "max": {
+          "x": 0.21935181690493205,
+          "y": 0.8199999928474426,
+          "z": 0.10919999999999999
+        }
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:MDL-NEGIMA-GRILL-RAW:R1",
+      "provenance": "PROV:MDL-NEGIMA-GRILL-RAW:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0",
+        "GPL-004 v1.39.0",
+        "Developer 1 D1_GRILL_FOOD_FOOTPRINT raw R3 consumption contract"
+      ],
+      "reviewedAt": "2026-07-30",
+      "url": "/assets/core/cooking/mdl-negima-grill-raw-r1-b1.json",
+      "sha256": "ffffd4c5e5d63cb81fb7a6e413d7604abc6d7f39797d477a240f7d16f6534869",
+      "bytes": 1177,
+      "format": "json"
     }
   ]
 }

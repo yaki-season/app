@@ -48,7 +48,7 @@ describe('D1 공개 상태 runtime inventory', () => {
     expect(report.placeholderRequiredAssetIdsByOwner[
       ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING
     ])
-      .toContain('MDL-NEGIMA-GRILL-RAW');
+      .toContain('MDL-NEGIMA-GRILL-PROPER-FIRST-FACE');
     expect(report.placeholderRequiredAssetIdsByOwner[
       ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE
     ])

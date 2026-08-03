@@ -30,12 +30,21 @@ describe('art semanticOwner promotion preflight', () => {
     )).toBe(false);
   });
 
-  it('기존 승인 8개 manifest ID와 binding 상태를 바꾸지 않는다', () => {
+  it('기존 승인 8개를 앞에 유지한 채 D1 조립·그릴 배치본을 bound에 추가한다', () => {
     const boundRows = D1_RUNTIME_COMPONENT_INVENTORY.filter(
       (entry) => entry.bindingState === 'bound',
     );
     expect(boundRows.map((entry) => entry.requiredAssetId)).toEqual([
       ...existingApprovedIds,
+      'BG-WORKSPACE-ASSEMBLY',
+      'ST-ASSEMBLY-TIER-1',
+      'MDL-SKEWER-BASE',
+      'MDL-INGREDIENT-CHICKEN',
+      'MDL-INGREDIENT-NEGI',
+      'BG-WORKSPACE-GRILL',
+      'ST-GRILL-TIER-1',
+      'MDL-NEGIMA-GRILL-RAW',
+      'ST-GRILL-FINISHED-TRAY',
       'BG-WORKSPACE-DRINK',
     ]);
     expect(boundRows.map((entry) => entry.requiredAssetId).slice(0, 8))
