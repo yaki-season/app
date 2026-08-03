@@ -13,6 +13,7 @@ import {
 } from './render/cookStations.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
 import { createPreparedDock } from './render/preparedDock.js';
+import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
 import {
   SCREENS,
@@ -45,8 +46,18 @@ import {
   D2_BUSINESS_DAY_DEFINITION_URL,
   loadD2BusinessDayDefinition,
 } from './application/ports/d2BusinessDayDefinition.js';
+import {
+  D3_BUSINESS_DAY_DEFINITION_URL,
+  loadD3BusinessDayDefinition,
+} from './application/ports/d3BusinessDayDefinition.js';
 
-const ACTIVE_DAY_ID = new URLSearchParams(window.location.search).get('day') === 'd2' ? 'd2' : 'd1';
+const requestedDayId = new URLSearchParams(window.location.search).get('day');
+const ACTIVE_DAY_ID = ['d2', 'd3'].includes(requestedDayId) ? requestedDayId : 'd1';
+const DAY_GUIDE_POLICY = Object.freeze({
+  d1: { title: '첫 주문 · 총 3항목', mode: 'sequential' },
+  d2: { title: 'D2 · 복습 도움', mode: 'review', steps: ['주문을 직접 확인하세요', '조립·그릴·드링크를 병행하세요', '필요하면 전체 보기를 다시 여세요'] },
+  d3: { title: 'D3 · 타레와 토치', mode: 'new-action', steps: ['타레 모모를 양면 조리하세요', '타레를 바른 뒤 토치를 좌우로 훑으세요', '게이지와 과열 경고를 확인하세요'] },
+});
 const MENU_ID_BY_LABEL = Object.freeze({ '생맥주': 'beer', '네기마': 'negima', '모모': 'momo' });
 const menuIdForLabel = (label) => MENU_ID_BY_LABEL[label] ?? null;
 
@@ -77,6 +88,7 @@ function readFirstOrderRuntime() {
 const restoredFirstOrderRuntime = readFirstOrderRuntime();
 const cook = createD1CookStations();
 if (restoredFirstOrderRuntime?.cook) cook.restore(restoredFirstOrderRuntime.cook, performance.now());
+const d3Grill = createD3GrillSession(restoredFirstOrderRuntime?.d3Grill ?? null);
 const SLOT_KEYS = GRILL_SLOT_KEYS.slice(0, cook.slotCount());
 R.setGrillSlots(cook.slotCount());
 let firstOrderGuide = createFirstOrderGuide(restoredFirstOrderRuntime?.guide);
@@ -98,10 +110,125 @@ const grillFlipQuaternion = new THREE.Quaternion();
 const lockUntil = {};
 const dock = createPreparedDock({ container: el('dockShelf') });
 const momoPrep = el('momoPrep');
-momoPrep.hidden = ACTIVE_DAY_ID !== 'd2';
+momoPrep.hidden = true;
 momoPrep.addEventListener('click', () => {
+  if (ACTIVE_DAY_ID === 'd3') {
+    const id = 'D3-MOMO-TARE-ACTIVE';
+    if (!d3Grill.job(id)) {
+      d3Grill.stageCookedItem({ id, menuId: 'momo', seasoning: 'tare', bothFacesCooked: true });
+    }
+    persistFirstOrderRuntime();
+    showHint('양면 조리 완료 · 타레와 토치 마감을 진행하세요');
+    renderD3Torch();
+    return;
+  }
   dock.add({ menu: '모모', label: 'Perfect', good: true });
   showHint('모모 꼬치를 준비 목록에 올렸어요');
+  render();
+});
+const D3_TORCH_JOB_ID = 'D3-MOMO-TARE-ACTIVE';
+const d3TorchPanel = el('d3TorchPanel');
+const d3TorchTrack = el('d3TorchTrack');
+let d3TorchPointerActive = false;
+let d3TorchLastAt = 0;
+let d3KeyboardPosition = 0.5;
+
+function renderD3Torch() {
+  const job = d3Grill.job(D3_TORCH_JOB_ID);
+  const d3FeatureOpen = businessSession?.ok === true
+    && businessSession.completed !== true
+    && businessView()?.dayId === 'D3';
+  d3TorchPanel.hidden = !d3FeatureOpen || !job;
+  if (!job) return;
+  const finish = job.finish;
+  const percent = Math.round(finish.torchCoverage * 100);
+  const stateLabel = {
+    none: finish.tareApplied ? '토치 대기' : '타레 대기',
+    active: '토치 작동 중',
+    under: '마감 부족 · Good',
+    proper: '적정 마감 · Perfect + 불향',
+    over: '과다 마감 · OK',
+    failed: '집중 과열 · Fail',
+  }[finish.torchState];
+  el('d3TorchState').textContent = stateLabel;
+  el('d3ApplyTare').disabled = finish.tareApplied || finish.torchState === 'active';
+  d3TorchTrack.disabled = !finish.tareApplied || finish.torchCompleted;
+  el('d3RetrieveMomo').disabled = !finish.torchCompleted;
+  el('d3TorchFill').style.width = `${percent}%`;
+  el('d3TorchCoverage').style.width = `${percent}%`;
+  const meter = d3TorchPanel.querySelector('[role="progressbar"]');
+  meter.setAttribute('aria-valuenow', String(percent));
+  el('d3TorchWarning').textContent = finish.torchFocusMs >= 800 && !finish.torchCompleted
+    ? '한 지점이 과열되고 있어요. 좌우로 이동하세요.'
+    : finish.torchState === 'failed' ? '집중 과열로 품질이 Fail이 됐어요.' : '';
+}
+
+function ensureD3TorchActive() {
+  const job = d3Grill.job(D3_TORCH_JOB_ID);
+  if (!job || job.finish.torchCompleted) return false;
+  if (job.finish.torchState !== 'active') {
+    const started = d3Grill.beginTorch(D3_TORCH_JOB_ID);
+    if (!started.ok) return false;
+  }
+  return true;
+}
+
+function sweepD3Torch(position, deltaMs) {
+  if (!ensureD3TorchActive()) return;
+  d3Grill.sweepTorch(D3_TORCH_JOB_ID, { position, deltaMs: Math.max(16, Math.min(250, deltaMs)) });
+  persistFirstOrderRuntime();
+  renderD3Torch();
+}
+
+function finishD3TorchInput() {
+  const job = d3Grill.job(D3_TORCH_JOB_ID);
+  if (job?.finish.torchState === 'active') d3Grill.finishTorch(D3_TORCH_JOB_ID);
+  d3TorchPointerActive = false;
+  persistFirstOrderRuntime();
+  renderD3Torch();
+}
+
+el('d3ApplyTare').addEventListener('click', () => {
+  const result = d3Grill.applyTare(D3_TORCH_JOB_ID);
+  if (result.ok) showHint('타레 적용 완료 · 토치를 누른 채 좌우로 훑으세요');
+  persistFirstOrderRuntime();
+  renderD3Torch();
+});
+d3TorchTrack.addEventListener('pointerdown', (event) => {
+  if (!ensureD3TorchActive()) return;
+  d3TorchPointerActive = true;
+  d3TorchLastAt = performance.now();
+  d3TorchTrack.setPointerCapture?.(event.pointerId);
+  sweepD3Torch((event.clientX - d3TorchTrack.getBoundingClientRect().left) / d3TorchTrack.clientWidth, 16);
+});
+d3TorchTrack.addEventListener('pointermove', (event) => {
+  if (!d3TorchPointerActive) return;
+  const now = performance.now();
+  sweepD3Torch((event.clientX - d3TorchTrack.getBoundingClientRect().left) / d3TorchTrack.clientWidth, now - d3TorchLastAt);
+  d3TorchLastAt = now;
+});
+d3TorchTrack.addEventListener('pointerup', finishD3TorchInput);
+d3TorchTrack.addEventListener('pointercancel', finishD3TorchInput);
+d3TorchTrack.addEventListener('keydown', (event) => {
+  if (event.code === 'Space') {
+    event.preventDefault();
+    ensureD3TorchActive();
+    renderD3Torch();
+  } else if (['ArrowLeft', 'ArrowRight'].includes(event.code) && d3Grill.job(D3_TORCH_JOB_ID)?.finish.torchState === 'active') {
+    event.preventDefault();
+    d3KeyboardPosition = Math.max(0.05, Math.min(0.95, d3KeyboardPosition + (event.code === 'ArrowLeft' ? -0.2 : 0.2)));
+    sweepD3Torch(d3KeyboardPosition, 200);
+  }
+});
+d3TorchTrack.addEventListener('keyup', (event) => {
+  if (event.code === 'Space') finishD3TorchInput();
+});
+el('d3RetrieveMomo').addEventListener('click', () => {
+  const result = d3Grill.retrieve(D3_TORCH_JOB_ID);
+  if (!result.ok) return;
+  dock.add({ menu: '모모', label: result.item.quality.grade, good: result.item.quality.good });
+  persistFirstOrderRuntime();
+  showHint(result.item.quality.smokyBonus ? '불향 모모 완성 · 준비 목록에 올렸어요' : '모모 완성품을 준비 목록에 올렸어요');
   render();
 });
 if (restoredFirstOrderRuntime?.dock) dock.restore(restoredFirstOrderRuntime.dock);
@@ -115,6 +242,7 @@ function persistFirstOrderRuntime() {
       stateVersion: 1,
       guide: firstOrderGuide.snapshot(),
       cook: cook.snapshot(performance.now()),
+      d3Grill: d3Grill.snapshot(),
       dock: dock.snapshot(),
       glassPlaced,
       guideFlipCount,
@@ -677,6 +805,7 @@ function render() {
   renderReceipts();
   renderOrderHud();
   renderBusiness();
+  renderD3Torch();
   syncCustomers();
   renderServeTargets();
   for (const btn of document.querySelectorAll('.quick-nav button')) btn.classList.toggle('active', btn.dataset.screen === director.activeScreenId());
@@ -745,6 +874,24 @@ function guideText(view) {
 }
 
 function renderFirstOrderGuide() {
+  for (const target of document.querySelectorAll('[data-guide-target="true"]')) {
+    target.dataset.guideTarget = 'false';
+  }
+  const policy = DAY_GUIDE_POLICY[ACTIVE_DAY_ID];
+  el('guideTitle').textContent = policy.title;
+  if (policy.mode !== 'sequential') {
+    el('guideCurrent').textContent = policy.mode === 'review' ? '복습형 · 선택 도움' : '신규 행동';
+    el('guideNextAction').textContent = policy.mode === 'review'
+      ? guideText(businessView())
+      : (d3Grill.job(D3_TORCH_JOB_ID) ? '타레·토치 패널의 상태를 따라 마감하세요.' : '모모 꼬치 준비를 눌러 타레·토치 마감을 시작하세요.');
+    el('guideSteps').replaceChildren(...policy.steps.map((label) => {
+      const row = document.createElement('li');
+      row.dataset.status = 'review';
+      row.textContent = label;
+      return row;
+    }));
+    return;
+  }
   const model = firstOrderGuide.view();
   const current = model.steps.find((step) => step.status === 'current');
   el('guideCurrent').textContent = current ? `현재 · ${current.label}` : '완료';
@@ -759,9 +906,6 @@ function renderFirstOrderGuide() {
     return row;
   }));
 
-  for (const target of document.querySelectorAll('[data-guide-target="true"]')) {
-    target.dataset.guideTarget = 'false';
-  }
   if (!current) return;
   if (director.activeScreenId() !== current.targetScreenId) {
     const nav = document.querySelector(`.quick-nav button[data-screen="${current.targetScreenId}"]`);
@@ -786,6 +930,10 @@ function renderFirstOrderGuide() {
 
 function renderBusiness() {
   const view = businessView();
+  const activeDayFeatureOpen = businessSession?.ok === true
+    && businessSession.completed !== true
+    && view?.dayId?.toLowerCase() === ACTIVE_DAY_ID;
+  momoPrep.hidden = !activeDayFeatureOpen || !['d2', 'd3'].includes(ACTIVE_DAY_ID);
   el('businessClock').textContent = view?.clock?.label ?? '--:--';
   el('businessPhase').textContent = PHASE_LABEL[view?.phase] ?? (businessBootError ? '오류' : '준비');
   renderFirstOrderGuide();
@@ -1089,9 +1237,11 @@ el('postBusinessAction').addEventListener('click', handlePostBusinessAction);
 
 async function bootBusinessDay() {
   try {
-    const consumed = ACTIVE_DAY_ID === 'd2'
-      ? await loadD2BusinessDayDefinition({ url: D2_BUSINESS_DAY_DEFINITION_URL })
-      : await loadD1BusinessDayReleaseDefinition({ url: D1_BUSINESS_DAY_RELEASE_DEFINITION_URL });
+    const consumed = ACTIVE_DAY_ID === 'd3'
+      ? await loadD3BusinessDayDefinition({ url: D3_BUSINESS_DAY_DEFINITION_URL })
+      : ACTIVE_DAY_ID === 'd2'
+        ? await loadD2BusinessDayDefinition({ url: D2_BUSINESS_DAY_DEFINITION_URL })
+        : await loadD1BusinessDayReleaseDefinition({ url: D1_BUSINESS_DAY_RELEASE_DEFINITION_URL });
     if (!consumed.ok) {
       businessBootError = consumed.error;
       businessRenderDue = true;
@@ -1248,6 +1398,19 @@ window.__d1GameDebug = {
   dockSelectedId: () => dock.selectedId(),
   dockAdd: (item) => dock.add(item),
   dockSelect: (id) => dock.select(id),
+  d3TorchView: () => d3Grill.job(D3_TORCH_JOB_ID),
+  d3TorchStage: () => {
+    const result = d3Grill.job(D3_TORCH_JOB_ID)
+      ? { ok: true }
+      : d3Grill.stageCookedItem({ id: D3_TORCH_JOB_ID, menuId: 'momo', seasoning: 'tare', bothFacesCooked: true });
+    persistFirstOrderRuntime();
+    render();
+    return result;
+  },
+  d3TorchApplyTare: () => { const result = d3Grill.applyTare(D3_TORCH_JOB_ID); persistFirstOrderRuntime(); render(); return result; },
+  d3TorchBegin: () => { const result = d3Grill.beginTorch(D3_TORCH_JOB_ID); persistFirstOrderRuntime(); render(); return result; },
+  d3TorchSweep: (position, deltaMs) => { const result = d3Grill.sweepTorch(D3_TORCH_JOB_ID, { position, deltaMs }); persistFirstOrderRuntime(); render(); return result; },
+  d3TorchFinish: () => { const result = d3Grill.finishTorch(D3_TORCH_JOB_ID); persistFirstOrderRuntime(); render(); return result; },
   cookFillAssembly: () => cook.debugFillAssembly(),
   cookAssemblyIndex: () => cook.assemblyIndex(),
   cookWaiting: () => cook.waitingCount(),
@@ -1293,6 +1456,7 @@ window.__d1GameDebug = {
     render();
   },
   pourExact: (beerSec, foamSec) => { pour.reset(); pour.press('beer', 0); pour.release(beerSec * 1000); pour.press('foam', beerSec * 1000); pour.release((beerSec + foamSec) * 1000); return pour.state(); },
+  drinkState: () => pour.state(),
   drinkFinish: () => finishDrink(),
   screenPosOf: (key) => {
     const m = R.interactionMesh[key] ?? R.objectMesh[key];

@@ -179,7 +179,7 @@
     "source": { "kind": "fixed-character", "characterId": "CHAR-TSUKIOKA" },
     "customerCount": 1,
     "items": [
-      { "menuId": "negima", "quantity": 1, "seasoning": "tare" },
+      { "menuId": "momo", "quantity": 1, "seasoning": "tare" },
       { "menuId": "beer", "quantity": 1, "seasoning": "none" }
     ],
     "guidanceId": "d3-tare-brush",
