@@ -3,10 +3,12 @@ import {
   auditD1RuntimeAssetBindingContract,
   D1_PENDING_RUNTIME_ASSET_IDS,
   D1_RUNTIME_ASSET_ID,
+  D1_RECEIVED_EATING_FRAME_INTERVAL_MS,
   indexApprovedRuntimeAssets,
   reportD1RuntimeAssetReadiness,
   resolveApprovedRuntimeAsset,
   resolveD1CustomerAsset,
+  resolveD1ReceivedEatingFrame,
   runtimeAssetUrl,
 } from '../../src/assets/runtimeAssetResolver.js';
 import { D1_RUNTIME_COMPONENT_INVENTORY } from '../../src/assets/d1RuntimeInventory.js';
@@ -62,9 +64,30 @@ describe('D1 runtime asset resolver', () => {
     expect(resolveD1CustomerAsset(assets, 'reacting').id).toBe(D1_RUNTIME_ASSET_ID.TSUKIOKA_RECEIVED_EATING);
   });
 
+  it('받은 음식·맥주 프레임을 1200ms 간격으로 정확히 교대한다', () => {
+    const assets = {
+      TSUKIOKA_RECEIVED_EATING: {
+        id: D1_RUNTIME_ASSET_ID.TSUKIOKA_RECEIVED_EATING,
+        url: '/assets/eating.png',
+        companions: [{ role: 'drink-frame', url: '/assets/drinking.png' }],
+      },
+    };
+
+    expect(D1_RECEIVED_EATING_FRAME_INTERVAL_MS).toBe(1200);
+    expect(resolveD1ReceivedEatingFrame(assets, 0).url).toBe('/assets/eating.png');
+    expect(resolveD1ReceivedEatingFrame(assets, 1199).url).toBe('/assets/eating.png');
+    expect(resolveD1ReceivedEatingFrame(assets, 1200).url).toBe('/assets/drinking.png');
+    expect(resolveD1ReceivedEatingFrame(assets, 2399).url).toBe('/assets/drinking.png');
+    expect(resolveD1ReceivedEatingFrame(assets, 2400).url).toBe('/assets/eating.png');
+  });
+
   it('handoff 없는 조리 상태는 승인 아트 ID로 대체하지 않는다', () => {
-    expect(D1_PENDING_RUNTIME_ASSET_IDS.assembly).toEqual([]);
-    expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).not.toContain('MDL-NEGIMA-GRILL-RAW');
+    expect(D1_PENDING_RUNTIME_ASSET_IDS.assembly).toEqual([
+      'MDL-SKEWER-BASE',
+      'MDL-INGREDIENT-CHICKEN',
+      'MDL-INGREDIENT-NEGI',
+    ]);
+    expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('MDL-NEGIMA-GRILL-RAW');
     expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).not.toContain('ST-GRILL-FINISHED-TRAY');
     expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('ST-GRILL-WAITING-RACK');
     expect(D1_PENDING_RUNTIME_ASSET_IDS.grill).toContain('MDL-NEGIMA-GRILL-COOKING-FIRST-FACE');
@@ -74,10 +97,10 @@ describe('D1 runtime asset resolver', () => {
     expect(D1_PENDING_RUNTIME_ASSET_IDS.drink).toContain('MDL-BEER-LEVER');
     expect(D1_PENDING_RUNTIME_ASSET_IDS.drink).not.toContain('BG-WORKSPACE-DRINK');
     expect(D1_RUNTIME_ASSET_ID.DRINK_BACKGROUND).toBe('BG-WORKSPACE-DRINK');
-    expect(D1_RUNTIME_ASSET_ID.GRILL_RAW_NEGIMA).toBe('MDL-NEGIMA-GRILL-RAW');
+    expect(Object.values(D1_RUNTIME_ASSET_ID)).not.toContain('MDL-NEGIMA-GRILL-RAW');
   });
 
-  it('D1 아트 배치 뒤 전체 26·drink 5 placeholder를 집계한다', () => {
+  it('실제 consumer가 없는 model을 제외해 전체 29·drink 5 placeholder를 집계한다', () => {
     const approvedBoundManifest = {
       assets: Object.values(D1_RUNTIME_ASSET_ID).map((id) => ({
         id,
@@ -90,9 +113,9 @@ describe('D1 runtime asset resolver', () => {
     expect(readiness).toMatchObject({
       ready: false,
       requiredRuntimeCount: 44,
-      approvedRuntimeCount: 18,
-      boundRuntimeCount: 18,
-      placeholderCount: 26,
+      approvedRuntimeCount: 15,
+      boundRuntimeCount: 15,
+      placeholderCount: 29,
       unboundApprovedIds: [],
       contractAudit: {
         valid: true,
@@ -105,9 +128,9 @@ describe('D1 runtime asset resolver', () => {
     expect(readiness.placeholderIdsByScene.drink).not.toContain('BG-WORKSPACE-DRINK');
     expect(readiness.placeholderIdsByScene.drink).toContain('TEX-BEER-LIQUID');
     expect(readiness.placeholderIdsByScene.drink).toContain('VFX-BEER-CORE');
-    expect(readiness.placeholderIdsByScene.assembly).toHaveLength(0);
-    expect(readiness.placeholderIdsByScene.grill).toHaveLength(6);
-    expect(readiness.placeholderIdsByScene.customer).toHaveLength(10);
+    expect(readiness.placeholderIdsByScene.assembly).toHaveLength(3);
+    expect(readiness.placeholderIdsByScene.grill).toHaveLength(7);
+    expect(readiness.placeholderIdsByScene.customer).toHaveLength(9);
     expect(readiness.placeholderIdsByScene.closing).toHaveLength(2);
     expect(readiness.placeholderIdsByScene.settlement).toHaveLength(3);
     expect(readiness.missingManifestIds).toContain('MDL-NEGIMA-GRILL-PROPER-SECOND-FACE');
@@ -127,17 +150,17 @@ describe('D1 runtime asset resolver', () => {
 
     const awaitingBinding = reportD1RuntimeAssetReadiness(manifestWithUnboundAssets);
     expect(awaitingBinding.ready).toBe(false);
-    expect(awaitingBinding.placeholderCount).toBe(26);
+    expect(awaitingBinding.placeholderCount).toBe(29);
     expect(awaitingBinding.missingManifestIds).toEqual([]);
-    expect(awaitingBinding.unboundApprovedIds).toHaveLength(26);
+    expect(awaitingBinding.unboundApprovedIds).toHaveLength(29);
   });
 
   it('inventory와 실제 binding·조리 placeholder 목록이 정확히 대응한다', () => {
     const audit = auditD1RuntimeAssetBindingContract();
 
     expect(audit.valid).toBe(true);
-    expect(audit.inventoryBoundIds).toHaveLength(18);
-    expect(audit.resolverBoundIds).toHaveLength(18);
+    expect(audit.inventoryBoundIds).toHaveLength(15);
+    expect(audit.resolverBoundIds).toHaveLength(15);
     expect(audit.pendingScenes.assembly.missingResolverPendingIds).toEqual([]);
     expect(audit.pendingScenes.grill.unexpectedResolverPendingIds).toEqual([]);
     expect(audit.pendingScenes.drink.missingResolverPendingIds).toEqual([]);
@@ -179,6 +202,7 @@ describe('D1 runtime asset resolver', () => {
 
   it('src 정적 미리보기에서만 public 접두사를 붙인다', () => {
     expect(runtimeAssetUrl('/assets/a.png', '/src/d1.html')).toBe('/public/assets/a.png');
+    expect(runtimeAssetUrl('/public/assets/a.png', '/src/d1.html')).toBe('/public/assets/a.png');
     expect(runtimeAssetUrl('/assets/a.png', '/game/')).toBe('/assets/a.png');
   });
 });

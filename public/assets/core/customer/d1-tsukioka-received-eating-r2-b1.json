@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "D1-TSUKIOKA-RECEIVED-EATING",
+  "sourceRevision": 2,
+  "loopMeaning": "one post-receipt 15-second state alternating eat-negima and drink-draft-beer frames",
+  "frameIntervalMs": 1200,
+  "status": "approved-by-user",
+  "approval": {
+    "status": "approved-by-user",
+    "date": "2026-08-03",
+    "basis": "사용자 응답: 승인",
+    "scope": "D1-TSUKIOKA-RECEIVED-EATING R2 two-frame furniture-free Gate-1 bundle only",
+    "excludes": ["BG-SEATING-6 R2", "consumer-screen final approval", "Gate-2", "Gate-3", "finalizer", "promotion", "runtime registration", "app binding"]
+  },
+  "frames": [
+    {
+      "index": 0,
+      "action": "eat-negima",
+      "file": "../assets/d1-tsukioka-received-eating-eat-negima-r2.png",
+      "sha256": "5a1e526672aad1eba9e50842ee4bdf0310f8564a9b6aa7c605aecd8fcac0525c",
+      "bytes": 306454,
+      "width": 1920,
+      "height": 1080,
+      "alphaBounds": [947, 215, 1225, 905]
+    },
+    {
+      "index": 1,
+      "action": "drink-draft-beer",
+      "file": "../assets/d1-tsukioka-received-eating-drink-draft-beer-r2.png",
+      "sha256": "973d568259f25c1711e4924d3b063b59ba82962c1dfcaddc418d3735aeef6ee3",
+      "bytes": 304646,
+      "width": 1920,
+      "height": 1080,
+      "alphaBounds": [942, 215, 1230, 905]
+    }
+  ],
+  "runtimeRegistrationAllowed": false
+}

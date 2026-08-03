@@ -1,7 +1,7 @@
 {
   "$schema": "https://yaki-season.local/assets/manifest.schema.json",
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-02",
+  "generatedAt": "2026-08-03",
   "specRefs": [
     "ART-002 v3.6.1",
     "ART-003 v5.0.0",
@@ -93,137 +93,6 @@
         "height": 1080
       },
       "format": "png"
-    },
-    {
-      "id": "D1-TSUKIOKA-WAITING",
-      "sourceRevision": 2,
-      "runtimeBuild": 1,
-      "status": "approved",
-      "screenUnit": "SCR-SVC-CUSTOMERS",
-      "profile": "complete-layer",
-      "pack": "core",
-      "kind": "image",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "lossPolicy": "lossless-required",
-      "pivot": {
-        "x": 0,
-        "y": 0
-      },
-      "anchors": [],
-      "clips": [],
-      "mirrorSafe": false,
-      "source": "ARTSRC:D1-TSUKIOKA-WAITING:R2",
-      "provenance": "PROV:D1-TSUKIOKA-WAITING:R2",
-      "license": "YAKI SEASON internal approved artwork",
-      "specRefs": [
-        "ART-003 v5.0.0",
-        "GPL-003 v4.11.0"
-      ],
-      "reviewedAt": "2026-07-28",
-      "url": "/assets/core/customer/d1-tsukioka-waiting-r2-b1.png",
-      "sha256": "0d825865988fab624c9153f4a1f453b12cea218809832bf3b0c10aec88669bc1",
-      "bytes": 340027,
-      "dimensions": {
-        "width": 1920,
-        "height": 1080
-      },
-      "format": "png"
-    },
-    {
-      "id": "D1-TSUKIOKA-PARTIAL-BEER-WAITING",
-      "sourceRevision": 1,
-      "runtimeBuild": 1,
-      "status": "approved",
-      "screenUnit": "SCR-SVC-CUSTOMERS",
-      "profile": "complete-layer",
-      "pack": "core",
-      "kind": "image",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "lossPolicy": "lossless-required",
-      "pivot": {
-        "x": 0,
-        "y": 0
-      },
-      "anchors": [],
-      "clips": [],
-      "mirrorSafe": false,
-      "source": "ARTSRC:D1-TSUKIOKA-PARTIAL-BEER-WAITING:R1",
-      "provenance": "PROV:D1-TSUKIOKA-PARTIAL-BEER-WAITING:R1",
-      "license": "YAKI SEASON internal approved artwork",
-      "specRefs": [
-        "ART-003 v5.0.0",
-        "GPL-003 v4.11.0"
-      ],
-      "reviewedAt": "2026-07-28",
-      "url": "/assets/core/customer/d1-tsukioka-partial-beer-waiting-r1-b1.png",
-      "sha256": "5fa4f5e257d54838aa22fe1403426808b71cd7bd9526730e666ea811ad5b1501",
-      "bytes": 341658,
-      "dimensions": {
-        "width": 1920,
-        "height": 1080
-      },
-      "format": "png"
-    },
-    {
-      "id": "D1-TSUKIOKA-RECEIVED-EATING",
-      "sourceRevision": 1,
-      "runtimeBuild": 1,
-      "status": "approved",
-      "screenUnit": "SCR-SVC-CUSTOMERS",
-      "profile": "bundle-model",
-      "pack": "core",
-      "kind": "image",
-      "colorSpace": "sRGB",
-      "alpha": "straight",
-      "lossPolicy": "lossless-required",
-      "pivot": {
-        "x": 0,
-        "y": 0
-      },
-      "anchors": [],
-      "clips": [
-        "eat-negima",
-        "drink-draft-beer"
-      ],
-      "mirrorSafe": false,
-      "source": "ARTSRC:D1-TSUKIOKA-RECEIVED-EATING:R1",
-      "provenance": "PROV:D1-TSUKIOKA-RECEIVED-EATING:R1",
-      "license": "YAKI SEASON internal approved artwork",
-      "specRefs": [
-        "ART-003 v5.0.0",
-        "GPL-003 v4.11.0"
-      ],
-      "reviewedAt": "2026-07-28",
-      "url": "/assets/core/customer/d1-tsukioka-received-eating-negima-r1-b1.png",
-      "sha256": "597c90993f8167421b7df90e604d5e46c302ae3230d7827bcaf6cecf45ef7a75",
-      "bytes": 350440,
-      "dimensions": {
-        "width": 1920,
-        "height": 1080
-      },
-      "format": "png",
-      "companions": [
-        {
-          "role": "drink-frame",
-          "url": "/assets/core/customer/d1-tsukioka-received-eating-beer-r1-b1.png",
-          "sha256": "568d4e64d51335b215de8a0d938deaf493598304ee951dac84e2867e76faeaf9",
-          "bytes": 349220,
-          "format": "png",
-          "dimensions": {
-            "width": 1920,
-            "height": 1080
-          }
-        },
-        {
-          "role": "frame-manifest",
-          "url": "/assets/core/customer/d1-tsukioka-received-eating-r1-b1.json",
-          "sha256": "218cf1a01a1d15795b48319f508596092e83e0b58f1660517482aac433418fa5",
-          "bytes": 697,
-          "format": "json"
-        }
-      ]
     },
     {
       "id": "UI-CUSTOMER-ORDER-WAIT-PANEL",
@@ -880,6 +749,370 @@
       "sha256": "ffffd4c5e5d63cb81fb7a6e413d7604abc6d7f39797d477a240f7d16f6534869",
       "bytes": 1177,
       "format": "json"
+    },
+    {
+      "id": "BG-SEATING-6",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [
+        {
+          "id": "seat-01",
+          "x": 176,
+          "y": 498
+        },
+        {
+          "id": "seat-02",
+          "x": 442,
+          "y": 498
+        },
+        {
+          "id": "seat-03",
+          "x": 703,
+          "y": 498
+        },
+        {
+          "id": "seat-04",
+          "x": 966.5,
+          "y": 498
+        },
+        {
+          "id": "seat-05",
+          "x": 1227,
+          "y": 498
+        },
+        {
+          "id": "seat-06",
+          "x": 1495.5,
+          "y": 498
+        }
+      ],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:BG-SEATING-6:R2",
+      "provenance": "PROV:BG-SEATING-6:R2",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003",
+        "GPL-003"
+      ],
+      "reviewedAt": "2026-08-03",
+      "url": "/assets/core/customer/bg-seating-6-r2-b1.png",
+      "sha256": "10b1dd2692f61053ecce5a60645408ad0b15736b157ae6d31223efa21d80f908",
+      "bytes": 150337,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
+    },
+    {
+      "id": "D1-TSUKIOKA-WAITING",
+      "sourceRevision": 3,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [
+        {
+          "id": "person-center-fhd",
+          "x": 1086,
+          "y": 560
+        },
+        {
+          "id": "logical-seat-anchor-fhd",
+          "x": 1086,
+          "y": 594
+        }
+      ],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:D1-TSUKIOKA-WAITING:R3",
+      "provenance": "PROV:D1-TSUKIOKA-WAITING:R3",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003",
+        "GPL-003"
+      ],
+      "reviewedAt": "2026-08-02",
+      "url": "/assets/core/customer/d1-tsukioka-waiting-r3-b1.png",
+      "sha256": "9a77f3308ade6c2d8d5ed6c13f26a72fddbe775b94afddab962b86561a0c2ff3",
+      "bytes": 296850,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "D1-TSUKIOKA-PARTIAL-BEER-WAITING",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [
+        {
+          "id": "person-center-fhd",
+          "x": 1082,
+          "y": 560
+        },
+        {
+          "id": "logical-seat-anchor-fhd",
+          "x": 1086,
+          "y": 594
+        }
+      ],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:D1-TSUKIOKA-PARTIAL-BEER-WAITING:R2",
+      "provenance": "PROV:D1-TSUKIOKA-PARTIAL-BEER-WAITING:R2",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003",
+        "GPL-003"
+      ],
+      "reviewedAt": "2026-08-03",
+      "url": "/assets/core/customer/d1-tsukioka-partial-beer-waiting-r2-b1.png",
+      "sha256": "590aba25dcf8ad897ebe13e85eb9db470f87a195bb9bb793cfc78d82163d9206",
+      "bytes": 295089,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "D1-TSUKIOKA-RECEIVED-EATING",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "bundle-model",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [
+        {
+          "id": "person-center-fhd",
+          "x": 1086,
+          "y": 560
+        },
+        {
+          "id": "logical-seat-anchor-fhd",
+          "x": 1086,
+          "y": 594
+        }
+      ],
+      "clips": [
+        "eat-negima",
+        "drink-draft-beer"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:D1-TSUKIOKA-RECEIVED-EATING:R2",
+      "provenance": "PROV:D1-TSUKIOKA-RECEIVED-EATING:R2",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003",
+        "GPL-003"
+      ],
+      "reviewedAt": "2026-08-03",
+      "url": "/assets/core/customer/d1-tsukioka-received-eating-negima-r2-b1.png",
+      "sha256": "5a1e526672aad1eba9e50842ee4bdf0310f8564a9b6aa7c605aecd8fcac0525c",
+      "bytes": 306454,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png",
+      "companions": [
+        {
+          "role": "drink-frame",
+          "url": "/assets/core/customer/d1-tsukioka-received-eating-beer-r2-b1.png",
+          "sha256": "973d568259f25c1711e4924d3b063b59ba82962c1dfcaddc418d3735aeef6ee3",
+          "bytes": 304646,
+          "format": "png",
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          }
+        },
+        {
+          "role": "frame-manifest",
+          "url": "/assets/core/customer/d1-tsukioka-received-eating-r2-b1.json",
+          "sha256": "4b9291b99962d54fe9f9623b4c16aacc1d7631ba12504aa1922de70fc4d122b7",
+          "bytes": 1341,
+          "format": "json"
+        }
+      ]
+    }
+  ],
+  "retainedAssets": [
+    {
+      "id": "D1-TSUKIOKA-WAITING",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:D1-TSUKIOKA-WAITING:R2",
+      "provenance": "PROV:D1-TSUKIOKA-WAITING:R2",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "GPL-003 v4.11.0"
+      ],
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/customer/d1-tsukioka-waiting-r2-b1.png",
+      "sha256": "0d825865988fab624c9153f4a1f453b12cea218809832bf3b0c10aec88669bc1",
+      "bytes": 340027,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "D1-TSUKIOKA-PARTIAL-BEER-WAITING",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:D1-TSUKIOKA-PARTIAL-BEER-WAITING:R1",
+      "provenance": "PROV:D1-TSUKIOKA-PARTIAL-BEER-WAITING:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "GPL-003 v4.11.0"
+      ],
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/customer/d1-tsukioka-partial-beer-waiting-r1-b1.png",
+      "sha256": "5fa4f5e257d54838aa22fe1403426808b71cd7bd9526730e666ea811ad5b1501",
+      "bytes": 341658,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "D1-TSUKIOKA-RECEIVED-EATING",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "bundle-model",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "eat-negima",
+        "drink-draft-beer"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:D1-TSUKIOKA-RECEIVED-EATING:R1",
+      "provenance": "PROV:D1-TSUKIOKA-RECEIVED-EATING:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "GPL-003 v4.11.0"
+      ],
+      "reviewedAt": "2026-07-28",
+      "url": "/assets/core/customer/d1-tsukioka-received-eating-negima-r1-b1.png",
+      "sha256": "597c90993f8167421b7df90e604d5e46c302ae3230d7827bcaf6cecf45ef7a75",
+      "bytes": 350440,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png",
+      "companions": [
+        {
+          "role": "drink-frame",
+          "url": "/assets/core/customer/d1-tsukioka-received-eating-beer-r1-b1.png",
+          "sha256": "568d4e64d51335b215de8a0d938deaf493598304ee951dac84e2867e76faeaf9",
+          "bytes": 349220,
+          "format": "png",
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          }
+        },
+        {
+          "role": "frame-manifest",
+          "url": "/assets/core/customer/d1-tsukioka-received-eating-r1-b1.json",
+          "sha256": "218cf1a01a1d15795b48319f508596092e83e0b58f1660517482aac433418fa5",
+          "bytes": 697,
+          "format": "json"
+        }
+      ]
     }
   ]
 }

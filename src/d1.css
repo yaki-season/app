@@ -5,9 +5,10 @@ button { min-width:44px; min-height:44px; border:1px solid #aa7146; border-radiu
 button:hover, button:focus-visible { outline:none; border-color:#ffe0a4; box-shadow:0 0 0 3px #cf744c88; }
 .art-stage { position:fixed; inset:0; z-index:0; overflow:hidden; background:#150e09; pointer-events:none; }
 .art-layer { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-.art-customer { z-index:1; transition:opacity .25s ease; }
-.art-table { z-index:2; }
-.art-stage::after { content:""; position:absolute; inset:0; z-index:3; background:linear-gradient(90deg,rgba(7,4,2,.62),transparent 40%,rgba(7,4,2,.32)),linear-gradient(0deg,rgba(8,4,2,.25),transparent 46%); }
+.art-seating { z-index:1; inset:auto; left:.520833%; top:-10.833333%; width:98.958333%; height:99.033333%; object-fit:fill; }
+.art-customer { z-index:2; transition:opacity .25s ease; }
+.art-table { z-index:3; }
+.art-stage::after { content:""; position:absolute; inset:0; z-index:4; background:linear-gradient(90deg,rgba(7,4,2,.62),transparent 40%,rgba(7,4,2,.32)),linear-gradient(0deg,rgba(8,4,2,.25),transparent 46%); }
 .art-stage[hidden] { display:none; }
 .d1-screen { position:relative; z-index:4; width:min(1100px,100%); margin:auto; padding:clamp(16px,3vw,40px); display:grid; gap:18px; }
 .order-panel,.workspace { border:1px solid #9b6a43; border-radius:18px; background:#25170fee; box-shadow:0 16px 40px #0009; }
@@ -41,4 +42,4 @@ h1,h2,p { margin-top:0; } h1 { margin-bottom:2px; font-size:clamp(1.3rem,3vw,2re
 .quality { color:#f5c16c; font-size:.85rem; }
 .service-choice { display:flex; flex-wrap:wrap; gap:8px; padding:10px; border:1px dashed #d39665; border-radius:10px; }
 .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
-@media (max-width:600px) { .d1-screen { padding:12px; } .order-panel,.workspace { border-radius:12px; padding:14px; } button { flex:1 1 130px; } .art-layer { min-width:177.78vh; left:50%; transform:translateX(-50%); } }
+@media (max-width:600px) { .d1-screen { padding:12px; } .order-panel,.workspace { border-radius:12px; padding:14px; } button { flex:1 1 130px; } }

@@ -20,6 +20,7 @@ const D1_COOKING_PLACEHOLDER_SCENES = Object.freeze([
 
 export const D1_RUNTIME_ASSET_ID = Object.freeze({
   CUSTOMER_BACKGROUND: 'ARTIST-010-BACKGROUND-COMPLETE',
+  CUSTOMER_SEATING: 'BG-SEATING-6',
   SERVICE_TABLE: 'BG-SERVICE-TABLE-ARTIST009',
   TSUKIOKA_WAITING: 'D1-TSUKIOKA-WAITING',
   TSUKIOKA_PARTIAL_BEER: 'D1-TSUKIOKA-PARTIAL-BEER-WAITING',
@@ -31,12 +32,8 @@ export const D1_RUNTIME_ASSET_ID = Object.freeze({
   GRILL_BACKGROUND: 'BG-WORKSPACE-GRILL',
   ASSEMBLY_BACKGROUND: 'BG-WORKSPACE-ASSEMBLY',
   ASSEMBLY_STATION: 'ST-ASSEMBLY-TIER-1',
-  ASSEMBLY_SKEWER_BASE: 'MDL-SKEWER-BASE',
-  ASSEMBLY_INGREDIENT_CHICKEN: 'MDL-INGREDIENT-CHICKEN',
-  ASSEMBLY_INGREDIENT_NEGI: 'MDL-INGREDIENT-NEGI',
   GRILL_STATION: 'ST-GRILL-TIER-1',
   GRILL_FINISHED_TRAY: 'ST-GRILL-FINISHED-TRAY',
-  GRILL_RAW_NEGIMA: 'MDL-NEGIMA-GRILL-RAW',
 });
 
 export const D1_PENDING_RUNTIME_ASSET_IDS = Object.freeze({
@@ -47,9 +44,14 @@ export const D1_PENDING_RUNTIME_ASSET_IDS = Object.freeze({
     'TEX-BEER-LIQUID',
     'VFX-BEER-CORE',
   ]),
-  assembly: Object.freeze([]),
+  assembly: Object.freeze([
+    'MDL-SKEWER-BASE',
+    'MDL-INGREDIENT-CHICKEN',
+    'MDL-INGREDIENT-NEGI',
+  ]),
   grill: Object.freeze([
     'ST-GRILL-WAITING-RACK',
+    'MDL-NEGIMA-GRILL-RAW',
     'MDL-NEGIMA-GRILL-COOKING-FIRST-FACE',
     'MDL-NEGIMA-GRILL-COOKING-SECOND-FACE',
     'MDL-NEGIMA-GRILL-PROPER-FIRST-FACE',
@@ -58,8 +60,11 @@ export const D1_PENDING_RUNTIME_ASSET_IDS = Object.freeze({
   ]),
 });
 
+export const D1_RECEIVED_EATING_FRAME_INTERVAL_MS = 1200;
+
 export function runtimeAssetUrl(url, pathname = globalThis.location?.pathname ?? '/') {
-  return pathname.startsWith('/src/') ? `/public${url}` : url;
+  if (!pathname.startsWith('/src/') || url.startsWith('/public/')) return url;
+  return `/public${url}`;
 }
 
 export function indexApprovedRuntimeAssets(manifest) {
@@ -232,13 +237,20 @@ export async function loadD1RuntimeAssets(fetchImpl = globalThis.fetch) {
   return Object.freeze(resolved);
 }
 
-export function resolveD1CustomerAsset(assets, customerState) {
+export function resolveD1ReceivedEatingFrame(assets, nowMs = 0) {
+  const received = assets.TSUKIOKA_RECEIVED_EATING;
+  const drinkFrame = (received.companions ?? []).find((companion) => companion.role === 'drink-frame');
+  if (!drinkFrame) return received;
+  const frameIndex = Math.floor(Math.max(0, nowMs) / D1_RECEIVED_EATING_FRAME_INTERVAL_MS) % 2;
+  return frameIndex === 0
+    ? received
+    : Object.freeze({ ...received, url: drinkFrame.url, frameRole: drinkFrame.role });
+}
+
+export function resolveD1CustomerAsset(assets, customerState, nowMs = 0) {
   if (customerState === 'partially-served') return assets.TSUKIOKA_PARTIAL_BEER;
-  if (customerState === 'completed') {
-    const received = assets.TSUKIOKA_RECEIVED_EATING;
-    const drinkFrame = received.companions.find((companion) => companion.role === 'drink-frame');
-    return drinkFrame ? Object.freeze({ ...received, url: drinkFrame.url }) : received;
+  if (customerState === 'completed' || customerState === 'reacting') {
+    return resolveD1ReceivedEatingFrame(assets, nowMs);
   }
-  if (customerState === 'reacting') return assets.TSUKIOKA_RECEIVED_EATING;
   return assets.TSUKIOKA_WAITING;
 }

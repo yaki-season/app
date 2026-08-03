@@ -30,7 +30,10 @@ import { D1_GRILL_FINISHED_TRAY } from './config/d1GrillLayout.js';
 import { createFirstOrderGuide } from './d1/firstOrderGuide.js';
 import { FIRST_ORDER_RUNTIME_STORAGE_KEY, clearFirstOrderRuntime } from './d1/firstOrderRuntimeStorage.js';
 import { RECIPE } from './config/recipe.js';
-import { runtimeAssetUrl } from './assets/runtimeAssetResolver.js';
+import {
+  loadD1RuntimeAssets,
+  resolveD1ReceivedEatingFrame,
+} from './assets/runtimeAssetResolver.js';
 import {
   D1_UI_INTENT,
   canServeD1MenuToSeat,
@@ -50,6 +53,16 @@ import {
   D3_BUSINESS_DAY_DEFINITION_URL,
   loadD3BusinessDayDefinition,
 } from './application/ports/d3BusinessDayDefinition.js';
+
+// 정적 진입점의 module graph가 평가된 직후부터 동일 객체를 유지한다. manifest fetch와 영업 세션
+// 복구가 끝나기 전에도 reload/E2E consumer는 readiness를 안전하게 읽을 수 있고, 준비되지 않은
+// 기능 호출은 명시적으로 false를 반환한다. 아래 최종 debug API는 이 객체에 원자적으로 덧붙인다.
+const d1GameDebug = {
+  lifecycle: () => 'booting',
+  businessReady: () => false,
+  texturesReady: () => false,
+};
+window.__d1GameDebug = d1GameDebug;
 
 const requestedDayId = new URLSearchParams(window.location.search).get('day');
 const ACTIVE_DAY_ID = ['d2', 'd3'].includes(requestedDayId) ? requestedDayId : 'd1';
@@ -71,7 +84,11 @@ guideToggle.addEventListener('click', () => {
   guideToggle.textContent = expanded ? '접기' : '전체 보기';
 });
 const canvas = el('scene');
-const R = createProductionRenderer(canvas);
+const runtimeAssets = await loadD1RuntimeAssets();
+document.body.dataset.assetPlaceholderCount = String(runtimeAssets.readiness.placeholderCount);
+document.body.dataset.runtimeAssetsReady = String(runtimeAssets.readiness.ready);
+document.body.dataset.runtimeContractValid = String(runtimeAssets.readiness.contractAudit.valid);
+const R = createProductionRenderer(canvas, { runtimeAssets });
 const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
 
 const resetFirstOrderRuntime = new URLSearchParams(window.location.search).get('reset') === '1';
@@ -739,14 +756,33 @@ function shouldShow(key) {
   return true;
 }
 
-const defaultSeatMaps = Object.fromEntries(
-  SEAT_IDS.map((seatId) => [seatId, R.seatActorMesh[seatId]?.material.map ?? null]),
-);
-
 function extraKind(customerId) {
   if (customerId?.startsWith('D1-OFFICE')) return 'office';
   if (customerId?.startsWith('D1-SOLO')) return 'solo';
   return null;
+}
+
+function tsukiokaArtFor(seat, nowMs) {
+  if (!seat) return runtimeAssets.TSUKIOKA_WAITING;
+  if (seat.phase === 'eating' || seat.phase === 'done' || seat.phase === 'leaving') {
+    return resolveD1ReceivedEatingFrame(runtimeAssets, nowMs);
+  }
+  const order = businessView()?.orders.find((item) => item.seatId === seat.seatId);
+  const partiallyServed = order?.lines.some((line) => line.served > 0)
+    && order.lines.some((line) => line.remaining > 0);
+  return partiallyServed
+    ? runtimeAssets.TSUKIOKA_PARTIAL_BEER
+    : runtimeAssets.TSUKIOKA_WAITING;
+}
+
+function updateTsukiokaArt(nowMs = performance.now()) {
+  const seat = businessView()?.seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');
+  const visible = director.activeScreenId() === 'SCR-SVC-CUSTOMERS' && !!seat?.occupied;
+  R.setObjectVisible('custTsukioka', visible);
+  if (!visible) return;
+  R.setArtUrl('custTsukioka', tsukiokaArtFor(seat, nowMs).url);
+  const genericActor = R.seatActorMesh[seat.seatId];
+  if (genericActor) genericActor.visible = false;
 }
 
 function syncCustomers() {
@@ -763,7 +799,7 @@ function syncCustomers() {
     const actor = R.seatActorMesh[seatId];
     const kind = extraKind(seat?.customerId);
     if (actor) {
-      actor.material.map = kind ? null : defaultSeatMaps[seatId];
+      actor.material.map = null;
       actor.material.needsUpdate = true;
     }
     const bubble = document.querySelector(`[data-testid="bubble-${seatId}"]`);
@@ -783,6 +819,7 @@ function syncCustomers() {
     }
   }
   customers.apply(seats, { actorsVisible: onCustomers });
+  updateTsukiokaArt();
 }
 
 function render() {
@@ -1313,6 +1350,7 @@ function loop(now) {
   updateDrinkPanel(active);
   updateLabels();
   customers.tick(active);
+  updateTsukiokaArt(now);
   if (businessRenderDue) render();
   R.renderFrame(now);
   requestAnimationFrame(loop);
@@ -1347,7 +1385,8 @@ function legacyCustomerPhase() {
   if (order.status === 'completed') return 'reacting';
   return 'ordered';
 }
-window.__d1GameDebug = {
+Object.assign(d1GameDebug, {
+  lifecycle: () => 'ready',
   activeScreen: () => director.activeScreenId(),
   isTransitioning: () => director.isTransitioning(),
   controlsLocked: () => director.controlsLocked(),
@@ -1466,4 +1505,4 @@ window.__d1GameDebug = {
     return { x: rect.left + (v.x * 0.5 + 0.5) * rect.width, y: rect.top + (-v.y * 0.5 + 0.5) * rect.height };
   },
   renderer: R,
-};
+});

@@ -18,10 +18,13 @@ import { createCookStations } from './render/cookStations.js';
 import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS, CUSTOMER_ART, GRILL_SLOT_KEYS, DEFAULT_GRILL_SLOTS } from './config/screenLayout.js';
 import { D1_GRILL_SLOTS, D1_GRILL_FINISHED_TRAY } from './config/d1GrillLayout.js';
 import { RECIPE, COOK_THRESHOLDS_SEC, DONENESS, canAdvance } from './config/recipe.js';
+import { loadD1RuntimeAssets } from './assets/runtimeAssetResolver.js';
 
 const el = (id) => document.getElementById(id);
 const canvas = el('scene');
-const R = createProductionRenderer(canvas);
+const runtimeAssets = await loadD1RuntimeAssets();
+const R = createProductionRenderer(canvas, { runtimeAssets });
+R.setObjectVisible('custTsukioka', false);
 const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
 const PRODUCTION_CONTENT_URLS = Object.freeze({
   customerTypes: '/content/customers/types.json',
@@ -130,6 +133,8 @@ function syncCustomers(now) {
     if (R.hasSeatActorArt()) R.setSeatActorTexture(v.seatId, seatArtFor(v));
   }
   customers.apply(views, { actorsVisible: onCustomers });
+  // 이 legacy sandbox에는 REGULAR_TSUKIOKA identity가 없으므로 고정 승인 actor를 추측 재사용하지 않는다.
+  R.setObjectVisible('custTsukioka', false);
 }
 function seatView(seatId, now) {
   return ops ? ops.views(now).find((v) => v.seatId === seatId) : null;

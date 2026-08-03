@@ -26,12 +26,13 @@ export const LAYER_Z = {
 export const PLAYER_EYE = { x: 0, y: 2.6, z: 12.0 };
 export const SCREEN_TRANSITION_MS = 300;
 
-const A = '/assets/core/customer';
 export const CUSTOMER_ART = {
-  waiting: `${A}/d1-tsukioka-waiting-r2-b1.png`,
-  partialBeer: `${A}/d1-tsukioka-partial-beer-waiting-r1-b1.png`,
-  eatingNegima: `${A}/d1-tsukioka-received-eating-negima-r1-b1.png`,
-  eatingBeer: `${A}/d1-tsukioka-received-eating-beer-r1-b1.png`,
+  background: 'ARTIST-010-BACKGROUND-COMPLETE',
+  seating: 'BG-SEATING-6',
+  waiting: 'D1-TSUKIOKA-WAITING',
+  partialBeer: 'D1-TSUKIOKA-PARTIAL-BEER-WAITING',
+  receivedEating: 'D1-TSUKIOKA-RECEIVED-EATING',
+  counter: 'BG-SERVICE-TABLE-ARTIST009',
 };
 
 export const OBJECTS = {
@@ -39,9 +40,9 @@ export const OBJECTS = {
   sbg: { kind: 'fullframe', layer: 'background', color: 0x241c15 },
 
   // ── 손님 화면: 승인 D1 아트 (풀프레임 이미지 레이어) ──
-  custBg: { kind: 'image', full: true, z: 'artBg', url: `${A}/background-complete-r3-b1.png`, opaque: true },
-  custCustomer: { kind: 'image', full: true, z: 'artCustomer', url: CUSTOMER_ART.waiting, opaque: false, swappable: true },
-  custCounter: { kind: 'image', full: true, z: 'artCounter', url: `${A}/service-table-complete-r1-b1.png`, opaque: false },
+  custBg: { kind: 'image', full: true, z: 'artBg', stableAssetId: CUSTOMER_ART.background, opaque: true },
+  custCustomer: { kind: 'image', full: true, z: 'artCustomer', stableAssetId: CUSTOMER_ART.waiting, opaque: false, swappable: true },
+  custCounter: { kind: 'image', full: true, z: 'artCounter', stableAssetId: CUSTOMER_ART.counter, opaque: false },
   // 손님 클릭 영역(주문 접수·서빙). 손님 아트 위 투명 히트존.
   custServe: { rect: { x: 0.45, y: 0.24, width: 0.18, height: 0.34 }, layer: 'interactive', color: 0x8fd47a, kind: 'hotspot' },
 
@@ -57,6 +58,10 @@ export const OBJECTS = {
   ...createD1GrillObjects(),
   grillFinishedTray: {
     key: D1_GRILL_FINISHED_TRAY.key,
+    kind: 'image',
+    full: true,
+    order: 1.25,
+    opaque: false,
     rect: D1_GRILL_FINISHED_TRAY.visualRect,
     visualRect: D1_GRILL_FINISHED_TRAY.visualRect,
     hitRect: D1_GRILL_FINISHED_TRAY.hitRect,
@@ -69,7 +74,6 @@ export const OBJECTS = {
     sourceMasterRevision: D1_GRILL_FINISHED_TRAY.sourceMasterRevision,
     layer: 'fixture',
     color: 0x6f5437,
-    kind: 'plane',
   },
 
   // ── 드링크 화면 (더미) ──

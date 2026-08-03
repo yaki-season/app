@@ -10,7 +10,7 @@ import { runtimeAssetUrl } from '../assets/runtimeAssetResolver.js';
 const FULL = { x: 0, y: 0, width: 1, height: 1 };
 const COVER = 1.3; // 창 비율이 16:9와 달라도 아트 가장자리가 드러나지 않게 여유
 
-export function createD1SceneRenderer(canvas) {
+export function createD1SceneRenderer(canvas, { runtimeAssets = null } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
   renderer.setClearColor(0x0f0b08, 1);
   const scene = new THREE.Scene();
@@ -18,6 +18,16 @@ export function createD1SceneRenderer(canvas) {
   let pending = 0;
   let errored = 0;
   const texCache = new Map();
+  const runtimeAssetById = new Map(
+    Object.values(runtimeAssets ?? {})
+      .filter((asset) => asset?.id && asset?.url)
+      .map((asset) => [asset.id, asset]),
+  );
+  function runtimeUrlForId(stableAssetId) {
+    const asset = runtimeAssetById.get(stableAssetId);
+    if (!asset) throw new Error(`승인 runtime asset resolver 누락: ${stableAssetId}`);
+    return asset.url;
+  }
   function texture(url) {
     const resolved = runtimeAssetUrl(url); // 매니페스트 URL → 정적 서버 경로(/public/assets)
     if (texCache.has(resolved)) return texCache.get(resolved);
@@ -41,7 +51,7 @@ export function createD1SceneRenderer(canvas) {
     const def = OBJECTS[key];
     if (def.kind === 'image') {
       const z = LAYER_Z[def.z];
-      const mat = new THREE.MeshBasicMaterial({ map: texture(def.url), transparent: !def.opaque, depthTest: false, depthWrite: false });
+      const mat = new THREE.MeshBasicMaterial({ map: texture(runtimeUrlForId(def.stableAssetId)), transparent: !def.opaque, depthTest: false, depthWrite: false });
       const mesh = billboard(cam, FULL, z, mat);
       mesh.scale.multiplyScalar(COVER);
       mesh.renderOrder = key === 'custBg' ? 0 : key === 'custCustomer' ? 1 : 2; // painter 순서: 배경<손님<카운터

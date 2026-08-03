@@ -10,18 +10,20 @@ test('D1 2.5D: 배경·손님·카운터 레이어를 합성하고 손님 텍스
   await page.goto('/src/d1-scene.html');
   await expect(page.getByTestId('scene-canvas')).toBeVisible();
 
-  // 세 깊이 레이어(배경·손님·카운터)가 승인 URL로 구성된다.
+  // 네 깊이 레이어(배경·6석·손님·카운터)가 승인 URL로 구성된다.
   const layers = await page.evaluate(() => window.__d1SceneDebug.layers());
-  expect(layers.map((l) => l.name)).toEqual(['background', 'customer', 'table']);
+  expect(layers.map((l) => l.name)).toEqual(['background', 'seating', 'customer', 'table']);
   expect(layers[0].url).toBe('/public/assets/core/customer/background-complete-r3-b1.png');
-  expect(layers[2].url).toBe('/public/assets/core/customer/service-table-complete-r1-b1.png');
+  expect(layers[1].url).toBe('/public/assets/core/customer/bg-seating-6-r2-b1.png');
+  expect(layers[3].url).toBe('/public/assets/core/customer/service-table-complete-r1-b1.png');
   // 깊이가 서로 달라 시차(2.5D)가 생긴다.
   expect(layers[0].z).toBeLessThan(layers[1].z);
   expect(layers[1].z).toBeLessThan(layers[2].z);
+  expect(layers[2].z).toBeLessThan(layers[3].z);
 
   // 대기 상태 손님 텍스처
   expect(await page.evaluate(() => window.__d1SceneDebug.customerTextureUrl()))
-    .toBe('/public/assets/core/customer/d1-tsukioka-waiting-r2-b1.png');
+    .toBe('/public/assets/core/customer/d1-tsukioka-waiting-r3-b1.png');
 
   await page.getByRole('button', { name: '손님 입장 완료' }).click();
   await page.getByRole('button', { name: 'D1 주문 접수' }).click();
@@ -50,7 +52,7 @@ test('D1 2.5D: 배경·손님·카운터 레이어를 합성하고 손님 텍스
   await page.getByRole('button', { name: '다 주기' }).click();
   await expect(page.getByTestId('customer-state')).toContainText('생맥주를 받았습니다');
   expect(await page.evaluate(() => window.__d1SceneDebug.customerTextureUrl()))
-    .toBe('/public/assets/core/customer/d1-tsukioka-partial-beer-waiting-r1-b1.png');
+    .toBe('/public/assets/core/customer/d1-tsukioka-partial-beer-waiting-r2-b1.png');
   expect(await page.evaluate(() => window.__d1SceneDebug.backgroundTextureUrl()))
     .toBe('/public/assets/core/customer/background-complete-r3-b1.png');
 
@@ -75,6 +77,11 @@ test('D1 2.5D: 배경·손님·카운터 레이어를 합성하고 손님 텍스
 
   await expect(page.getByTestId('customer-state')).toContainText('완료');
   expect(await page.evaluate(() => window.__d1SceneDebug.customerTextureUrl()))
-    .toBe('/public/assets/core/customer/d1-tsukioka-received-eating-beer-r1-b1.png');
+    .toBe('/public/assets/core/customer/d1-tsukioka-received-eating-negima-r2-b1.png');
+  await page.waitForFunction(
+    () => window.__d1SceneDebug.customerTextureUrl().endsWith('d1-tsukioka-received-eating-beer-r2-b1.png'),
+    undefined,
+    { timeout: 1800 },
+  );
   expect(errs).toEqual([]);
 });

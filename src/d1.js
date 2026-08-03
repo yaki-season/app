@@ -6,6 +6,7 @@ import { mountD1 } from './d1/view.js';
 const customerArt = document.querySelector('#customer-art');
 const artStage = document.querySelector('#customer-art-stage');
 const backgroundArt = artStage.querySelector('.art-background');
+const seatingArt = artStage.querySelector('.art-seating');
 const tableArt = artStage.querySelector('.art-table');
 const sceneStatus = document.querySelector('#scene-status');
 const sceneTitle = document.querySelector('#scene-title');
@@ -16,6 +17,7 @@ function renderScene({ kind, customerAsset, pendingAssetIds }) {
     artStage.hidden = false;
     backgroundArt.src = assets.CUSTOMER_BACKGROUND.url;
     customerArt.hidden = false;
+    seatingArt.hidden = false;
     tableArt.hidden = false;
     sceneStatus.classList.add('approved');
     sceneStatus.dataset.assetState = 'approved';
@@ -29,6 +31,7 @@ function renderScene({ kind, customerAsset, pendingAssetIds }) {
     artStage.hidden = false;
     backgroundArt.src = assets.DRINK_BACKGROUND.url;
     customerArt.hidden = true;
+    seatingArt.hidden = true;
     tableArt.hidden = true;
     sceneStatus.classList.remove('approved');
     sceneStatus.dataset.assetState = 'partial';

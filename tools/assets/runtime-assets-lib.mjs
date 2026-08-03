@@ -302,15 +302,40 @@ export async function validateRuntimeAssets({ manifest: suppliedManifest } = {})
   }
 
   const identities = new Set();
+  const activeIds = new Set();
   const urls = new Set();
   const referencedUrls = new Set();
 
-  for (const asset of manifest.assets) {
+  const entries = [
+    ...manifest.assets.map((asset) => ({ asset, active: true })),
+    ...(manifest.retainedAssets ?? []).map((asset) => ({ asset, active: false })),
+  ];
+  const activeById = new Map(manifest.assets.map((asset) => [asset.id, asset]));
+
+  for (const { asset, active } of entries) {
     const label = runtimeIdentity(asset);
-    if (identities.has(asset.id)) {
+    if (active && activeIds.has(asset.id)) {
       errors.push(`${label}: manifest에는 ID별 활성 runtime build를 하나만 둘 수 있습니다.`);
     }
-    identities.add(asset.id);
+    if (active) activeIds.add(asset.id);
+    if (identities.has(label)) {
+      errors.push(`${label}: 활성·보존 목록에 같은 runtime identity가 중복됩니다.`);
+    }
+    identities.add(label);
+    if (!active) {
+      const current = activeById.get(asset.id);
+      if (!current) {
+        errors.push(`${label}: 보존 runtime은 같은 stable ID의 활성 runtime이 필요합니다.`);
+      } else if (
+        asset.sourceRevision > current.sourceRevision
+        || (
+          asset.sourceRevision === current.sourceRevision
+          && asset.runtimeBuild >= current.runtimeBuild
+        )
+      ) {
+        errors.push(`${label}: 보존 runtime은 활성 ${runtimeIdentity(current)}보다 이전이어야 합니다.`);
+      }
+    }
 
     const versionToken = expectedVersionToken(asset);
     for (const reference of allAssetReferences(asset)) {

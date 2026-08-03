@@ -23,19 +23,34 @@ export const LAYER_Z = {
   foreground: 0.5,
 };
 
-// 승인 D1 손님 화면 아트(public/assets, manifest.json). 아트가 없는 스테이션은 더미로 남는다.
-const A = '/assets/core/customer';
+// 승인 runtime은 파일명이 아니라 manifest stable ID로만 연결한다.
 export const CUSTOMER_ART = {
-  background: `${A}/background-complete-r3-b1.png`,
-  counter: `${A}/service-table-complete-r1-b1.png`,
-  waiting: `${A}/d1-tsukioka-waiting-r2-b1.png`,
-  partialBeer: `${A}/d1-tsukioka-partial-beer-waiting-r1-b1.png`,
-  eatingNegima: `${A}/d1-tsukioka-received-eating-negima-r1-b1.png`,
-  eatingBeer: `${A}/d1-tsukioka-received-eating-beer-r1-b1.png`,
+  background: 'ARTIST-010-BACKGROUND-COMPLETE',
+  seating: 'BG-SEATING-6',
+  counter: 'BG-SERVICE-TABLE-ARTIST009',
+  waiting: 'D1-TSUKIOKA-WAITING',
+  partialBeer: 'D1-TSUKIOKA-PARTIAL-BEER-WAITING',
+  receivedEating: 'D1-TSUKIOKA-RECEIVED-EATING',
 };
-// 좌석 손님 액터에 입힐 텍스처(대기). 풀프레임 아트에서 테이블 위로 보여야 하는 상체만 잘라 쓴다.
-export const SEAT_ACTOR_TEXTURE = CUSTOMER_ART.waiting;
-export const SEAT_ACTOR_UV = { u0: 0.485, u1: 0.655, v0: 0.48, v1: 0.85 }; // 상체 bbox (하단 원점 v)
+// 승인 D1 조리 화면 아트. GLB/JSON 4종은 실제 renderer consumer 전까지 pending이다.
+export const COOKING_ART = {
+  drinkBackground: 'BG-WORKSPACE-DRINK',
+  grillBackground: 'BG-WORKSPACE-GRILL',
+  assemblyBackground: 'BG-WORKSPACE-ASSEMBLY',
+  grillStation: 'ST-GRILL-TIER-1',
+  grillFinishedTray: 'ST-GRILL-FINISHED-TRAY',
+  assemblyStation: 'ST-ASSEMBLY-TIER-1',
+};
+export const SEAT_ACTOR_TEXTURE = null;
+export const SEAT_ACTOR_UV = null;
+
+// BG-SEATING-6 R2 consumer-final transform (1672×941 source → FHD review placement).
+export const D1_SEATING_RECT = Object.freeze({
+  x: 10 / 1920,
+  y: -117 / 1080,
+  width: (1672 * 1.13679424) / 1920,
+  height: (941 * 1.13679424) / 1080,
+});
 
 // 바 안쪽 주인공의 공유 기준 위치. 모든 화면 프리셋이 여기서 파생한다(§68).
 export const PLAYER_EYE = { x: 0, y: 2.6, z: 12.0 };
@@ -71,22 +86,37 @@ export const OBJECTS = {
   bg: { rect: { x: 0, y: 0, width: 1, height: 1 }, layer: 'background', color: 0x241c15, kind: 'fullframe' },
 
   // 손님 화면 승인 아트 레이어 (풀프레임 이미지). 좌석 액터·serve는 SEATS에서 동적 생성.
-  custBg: { kind: 'image', full: true, layer: 'background', order: 0, url: CUSTOMER_ART.background, opaque: true },
-  custCounter: { kind: 'image', full: true, layer: 'foreground', order: 50, url: CUSTOMER_ART.counter, opaque: false },
+  custBg: { kind: 'image', full: true, layer: 'background', order: 0, stableAssetId: CUSTOMER_ART.background, opaque: true },
+  custSeating: { kind: 'image', rect: D1_SEATING_RECT, layer: 'fixture', order: 10, stableAssetId: CUSTOMER_ART.seating, opaque: false },
+  custTsukioka: { kind: 'image', full: true, layer: 'actor', order: 20, stableAssetId: CUSTOMER_ART.waiting, opaque: false },
+  custCounter: { kind: 'image', full: true, layer: 'foreground', order: 50, stableAssetId: CUSTOMER_ART.counter, opaque: false },
 
-  // 조립 화면
-  workbench: { rect: { x: 0.08, y: 0.44, width: 0.84, height: 0.50 }, layer: 'fixture', color: 0x5c4630, kind: 'plane' },
-  binChicken: { rect: { x: 0.20, y: 0.60, width: 0.14, height: 0.16 }, layer: 'interactive', color: 0xd98a5f, kind: 'plane' },
-  binLeek: { rect: { x: 0.40, y: 0.60, width: 0.14, height: 0.16 }, layer: 'interactive', color: 0x8fc06a, kind: 'plane' },
-  jigSkewer: { rect: { x: 0.62, y: 0.55, width: 0.24, height: 0.08 }, layer: 'interactive', color: 0xc9a86a, kind: 'plane' },
+  // 조리 화면 승인 배경 아트 (풀프레임 이미지, 불투명). 화면별 배경. dummy `bg`를 대체한다.
+  drinkBg: { kind: 'image', full: true, layer: 'background', order: 0, stableAssetId: COOKING_ART.drinkBackground, opaque: true },
+  grillBg: { kind: 'image', full: true, layer: 'background', order: 0, stableAssetId: COOKING_ART.grillBackground, opaque: true },
+  assemblyBg: { kind: 'image', full: true, layer: 'background', order: 0, stableAssetId: COOKING_ART.assemblyBackground, opaque: true },
+
+  // 조립 화면 (스테이션 바디는 승인 아트. 재료통·지그는 상호작용 더미 유지 — 아트 미승인)
+  workbench: { kind: 'image', full: true, layer: 'fixture', order: 1, stableAssetId: COOKING_ART.assemblyStation, opaque: false },
+  binChicken: { rect: { x: 0.03, y: 0.38, width: 0.135, height: 0.34 }, hitRect: { x: 0.025, y: 0.36, width: 0.15, height: 0.38 }, layer: 'interactive', color: 0xd98a5f, kind: 'hotspot' },
+  binLeek: { rect: { x: 0.165, y: 0.38, width: 0.11, height: 0.34 }, hitRect: { x: 0.155, y: 0.36, width: 0.13, height: 0.38 }, layer: 'interactive', color: 0x8fc06a, kind: 'hotspot' },
+  jigSkewer: { rect: { x: 0.39, y: 0.40, width: 0.305, height: 0.31 }, hitRect: { x: 0.38, y: 0.38, width: 0.325, height: 0.35 }, layer: 'interactive', color: 0xc9a86a, kind: 'hotspot' },
 
   // 그릴 화면 (다중 칸). 대기 트레이의 꼬치를 빈 칸에 올려 각각 독립적으로 굽는다.
-  grillBody: { rect: { x: 0.10, y: 0.42, width: 0.80, height: 0.50 }, layer: 'fixture', color: 0x3a3330, kind: 'plane' },
+  grillBody: { kind: 'image', full: true, layer: 'fixture', order: 1, stableAssetId: COOKING_ART.grillStation, opaque: false },
   grillWaitTray: { rect: D1_GRILL_WAITING_TRAY.rect, anchor: D1_GRILL_WAITING_TRAY.anchor, layer: 'interactive', color: 0xc9a86a, kind: 'plane' },
   ...createD1GrillObjects(), // d1-game용 D1 고정 6칸 (grillSlot0~5)
   ...productionGrillObjects(), // game.html용 프로덕션 그릴 8칸 (pgSlot0~7)
+  // 완료 트레이: 시각은 승인 아트(풀프레임 이미지), 클릭 판정은 hitRect 기반 별도 투명 interactionMesh로 유지.
+  // (buildObject가 image를 objectMesh에서 제외해도 buildInteraction이 hitRect로 hit target을 만들어 클릭 보존.)
   grillFinishedTray: {
     key: D1_GRILL_FINISHED_TRAY.key,
+    kind: 'image',
+    full: true,
+    layer: 'fixture',
+    order: 1.25,
+    stableAssetId: COOKING_ART.grillFinishedTray,
+    opaque: false,
     rect: D1_GRILL_FINISHED_TRAY.visualRect,
     visualRect: D1_GRILL_FINISHED_TRAY.visualRect,
     hitRect: D1_GRILL_FINISHED_TRAY.hitRect,
@@ -97,9 +127,7 @@ export const OBJECTS = {
     stableAssetId: D1_GRILL_FINISHED_TRAY.stableAssetId,
     sourceMasterId: D1_GRILL_FINISHED_TRAY.sourceMasterId,
     sourceMasterRevision: D1_GRILL_FINISHED_TRAY.sourceMasterRevision,
-    layer: 'fixture',
     color: 0x6f5437,
-    kind: 'plane',
   },
 
   // 드링크 화면 (단일 레버: 위=거품, 아래=맥주. 잔 채움은 DOM 패널)
@@ -113,6 +141,9 @@ export const OBJECTS = {
 // 액터, 좌석 위 말풍선(DOM), 카운터 위 serve 대상을 갖는다. 좌표는 정규화(top-left rect / center point).
 export const MAX_SEATS = 12;
 export const DEFAULT_SEAT_CAP = 6;
+const D1_APPROVED_SEAT_CENTERS_FHD = Object.freeze([210.1, 512.5, 809.2, 1108.7, 1404.8, 1710.1]);
+// 첫 domain 좌석(seat-01)의 츠키오카를 승인 소비 화면의 물리 4번 좌석에 놓는다.
+const D1_LOGICAL_TO_VISUAL_SEAT = Object.freeze([3, 0, 1, 2, 4, 5]);
 // cap개의 좌석을 카운터 폭에 균등 배치한다. cap=6은 기존 좌표(0.12~0.86)와 동일해 무회귀.
 export function computeSeats(cap) {
   const n = Math.max(1, Math.min(MAX_SEATS, cap));
@@ -121,7 +152,9 @@ export function computeSeats(cap) {
   const step = n > 1 ? (right - left) / (n - 1) : 0;
   const halfW = Math.min(0.055, step > 0 ? step * 0.42 : 0.055); // 액터 반폭(밀집 시 축소)
   return Array.from({ length: n }, (_, i) => {
-    const cx = n === 1 ? 0.5 : left + step * i;
+    const cx = n === 6
+      ? D1_APPROVED_SEAT_CENTERS_FHD[D1_LOGICAL_TO_VISUAL_SEAT[i]] / 1920
+      : n === 1 ? 0.5 : left + step * i;
     return {
       id: `seat-${String(i + 1).padStart(2, '0')}`,
       actor: { x: cx - halfW, y: 0.15, width: halfW * 2, height: 0.40 }, // 카운터 뒤 상반신
@@ -143,26 +176,26 @@ export const SCREENS = [
     id: 'SCR-SVC-CUSTOMERS',
     name: '손님',
     look: { x: 0.0, y: 0.4, z: -6.0 }, // 정면·위 (손님·카운터)
-    objects: ['custBg', 'custCounter'], // 승인 아트 배경·카운터
+    objects: ['custBg', 'custSeating', 'custTsukioka', 'custCounter'],
     seats: SEAT_IDS, // 좌석 액터·serve는 렌더러가 SEATS로 생성
   },
   {
     id: 'SCR-SVC-ASSEMBLY',
     name: '조립',
     look: { x: 0.0, y: -2.6, z: -3.6 }, // 아래 작업대
-    objects: ['bg', 'workbench', 'binChicken', 'binLeek', 'jigSkewer'],
+    objects: ['assemblyBg', 'workbench', 'binChicken', 'binLeek', 'jigSkewer'],
   },
   {
     id: 'SCR-SVC-GRILL',
     name: '그릴',
     look: { x: 0.0, y: -2.4, z: -3.0 }, // 아래 그릴 (더 가까이)
-    objects: ['bg', 'grillBody', 'grillWaitTray', ...D1_GRILL_SLOT_KEYS, ...GRILL_SLOT_KEYS, 'grillFinishedTray'],
+    objects: ['grillBg', 'grillBody', 'grillWaitTray', ...D1_GRILL_SLOT_KEYS, ...GRILL_SLOT_KEYS, 'grillFinishedTray'],
   },
   {
     id: 'SCR-SVC-DRINK',
     name: '드링크',
     look: { x: 1.8, y: -1.4, z: -4.4 }, // 옆(오른쪽) 주류
-    objects: ['bg', 'drinkTower', 'glassRack', 'drinkLeverUpper', 'drinkLeverLower'],
+    objects: ['drinkBg', 'drinkTower', 'glassRack', 'drinkLeverUpper', 'drinkLeverLower'],
   },
 ];
 

@@ -8,6 +8,7 @@ import { ART_SEMANTIC_OWNER_ID } from '../../src/assets/artSemanticOwnerIds.js';
 
 const existingApprovedIds = [
   'ARTIST-010-BACKGROUND-COMPLETE',
+  'BG-SEATING-6',
   'BG-SERVICE-TABLE-ARTIST009',
   'D1-TSUKIOKA-WAITING',
   'D1-TSUKIOKA-PARTIAL-BEER-WAITING',
@@ -38,16 +39,12 @@ describe('art semanticOwner promotion preflight', () => {
       ...existingApprovedIds,
       'BG-WORKSPACE-ASSEMBLY',
       'ST-ASSEMBLY-TIER-1',
-      'MDL-SKEWER-BASE',
-      'MDL-INGREDIENT-CHICKEN',
-      'MDL-INGREDIENT-NEGI',
       'BG-WORKSPACE-GRILL',
       'ST-GRILL-TIER-1',
-      'MDL-NEGIMA-GRILL-RAW',
       'ST-GRILL-FINISHED-TRAY',
       'BG-WORKSPACE-DRINK',
     ]);
-    expect(boundRows.map((entry) => entry.requiredAssetId).slice(0, 8))
+    expect(boundRows.map((entry) => entry.requiredAssetId).slice(0, 9))
       .toEqual(existingApprovedIds);
   });
 

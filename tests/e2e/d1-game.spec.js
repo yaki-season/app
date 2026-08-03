@@ -45,6 +45,27 @@ test('6석 프로덕션 renderer와 승인 손님 배경이 조리 스테이션�
   expect(await D(page, 'texturesReady')).toBe(true);
   expect(await page.evaluate(() => window.__d1GameDebug.renderer.textureErrors())).toBe(0);
   expect((await D(page, 'businessView')).seats).toHaveLength(6);
+  const layers = await page.evaluate(() => Object.fromEntries(
+    ['custBg', 'custSeating', 'custTsukioka', 'custCounter'].map((key) => {
+      const mesh = window.__d1GameDebug.renderer.artMesh[key];
+      const image = mesh.material.map?.source?.data;
+      return [key, {
+        url: image?.currentSrc || image?.src || '',
+        renderOrder: mesh.renderOrder,
+        scale: mesh.scale.toArray(),
+      }];
+    }),
+  ));
+  expect(layers.custBg.url).toContain('/public/assets/core/customer/background-complete-r3-b1.png');
+  expect(layers.custSeating.url).toContain('/public/assets/core/customer/bg-seating-6-r2-b1.png');
+  expect(layers.custTsukioka.url).toContain('/public/assets/core/customer/d1-tsukioka-waiting-r3-b1.png');
+  expect(layers.custCounter.url).toContain('/public/assets/core/customer/service-table-complete-r1-b1.png');
+  expect(Object.values(layers).map((layer) => layer.renderOrder)).toEqual([0, 10, 20, 50]);
+  for (const layer of Object.values(layers)) expect(layer.scale).toEqual([1, 1, 1]);
+  const viewport = page.viewportSize();
+  await page.screenshot({
+    path: `/private/tmp/yaki-d1-approved-live-${viewport.width}x${viewport.height}.png`,
+  });
 });
 
 test('스테이션을 좌·우/퀵/키보드로 전환한다', async ({ page }) => {
@@ -160,7 +181,7 @@ test('츠키오카 접수→시작 2칸 첫 2개 동시 시작→가이드 제�
   expect(contract.finishedTray.anchor.x * viewport.width).toBeCloseTo(1643 * scale, 6);
   expect(contract.finishedTray.anchor.y * viewport.height).toBeCloseTo(301 * scale, 6);
   const trayMeshes = await page.evaluate(() => ({
-    visualUuid: window.__d1GameDebug.renderer.objectMesh.grillFinishedTray.uuid,
+    visualUuid: window.__d1GameDebug.renderer.artMesh.grillFinishedTray.uuid,
     hitUuid: window.__d1GameDebug.renderer.interactionMesh.grillFinishedTray.uuid,
   }));
   expect(trayMeshes).toEqual(expect.objectContaining({
@@ -177,6 +198,7 @@ test('츠키오카 접수→시작 2칸 첫 2개 동시 시작→가이드 제�
   for (let index = 0; index < 2; index += 1) await clickObj(page, `pgSlot${index}`);
   await expect(page.locator('#hint')).toContainText('꼬치를 뒤집는 중');
   await expect.poll(() => D(page, 'cookSlots').then((s) => s.every((slot) => slot.status === 'back'))).toBe(true);
+  await page.waitForTimeout(350);
   const backQuaternion = await page.evaluate(() => (
     window.__d1GameDebug.renderer.objectMesh.pgSlot0.quaternion.toArray()
   ));

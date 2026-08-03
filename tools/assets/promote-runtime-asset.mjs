@@ -42,13 +42,13 @@ function usage(message) {
   if (message) console.error(message);
   console.error(
     '사용법: npm run assets:promote -- --handoff ../art-workspace/.../runtime-handoff.json '
-    + '[--write --receipt .asset-promotion-receipts/...json]',
+    + '[--handoff <추가 handoff> ...] [--write --receipt <receipt> ...]',
   );
   process.exitCode = 2;
 }
 
 function parseArguments(argv) {
-  const result = { write: false };
+  const result = { write: false, handoffs: [], receipts: [] };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === '--write') {
@@ -56,7 +56,7 @@ function parseArguments(argv) {
     } else if (argument === '--handoff' || argument === '--receipt') {
       const value = argv[index + 1];
       if (!value || value.startsWith('--')) throw new Error(`${argument} 값이 필요합니다.`);
-      result[argument.slice(2)] = value;
+      result[`${argument.slice(2)}s`].push(value);
       index += 1;
     } else {
       throw new Error(`알 수 없는 인자입니다: ${argument}`);
@@ -506,86 +506,112 @@ async function main() {
     usage(error.message);
     return;
   }
-  if (!args.handoff) {
+  if (args.handoffs.length === 0) {
     usage('--handoff가 필요합니다.');
     return;
   }
-  if (args.write && !args.receipt) {
-    usage('--write에는 dry-run이 만든 --receipt가 필요합니다.');
+  if (args.write && args.receipts.length !== args.handoffs.length) {
+    usage('--write에는 각 handoff dry-run이 만든 --receipt가 하나씩 필요합니다.');
     return;
   }
-  if (!args.write && args.receipt) {
+  if (!args.write && args.receipts.length > 0) {
     usage('--receipt는 --write와 함께만 사용합니다.');
     return;
   }
 
-  const handoffFile = path.resolve(process.cwd(), args.handoff);
-  const {
-    handoff,
-    handoffSha256,
-    entry,
-    artifacts,
-    bundleSha256,
-  } = await validateHandoff(handoffFile);
+  const validated = [];
+  for (const argument of args.handoffs) {
+    const handoffFile = path.resolve(process.cwd(), argument);
+    validated.push({ handoffFile, ...await validateHandoff(handoffFile) });
+  }
+  const entryIds = new Set();
+  const artifactUrls = new Set();
+  for (const { entry, artifacts } of validated) {
+    if (entryIds.has(entry.id)) throw new Error(`batch stable ID가 중복됩니다: ${entry.id}`);
+    entryIds.add(entry.id);
+    for (const artifact of artifacts) {
+      if (artifactUrls.has(artifact.url)) throw new Error(`batch runtime URL이 중복됩니다: ${artifact.url}`);
+      artifactUrls.add(artifact.url);
+    }
+  }
   const manifest = await readJson(manifestPath);
-  const existing = manifest.assets.find((asset) => asset.id === entry.id);
-  if (
-    existing
-    && (
-      entry.sourceRevision < existing.sourceRevision
-      || (
-        entry.sourceRevision === existing.sourceRevision
-        && entry.runtimeBuild <= existing.runtimeBuild
+  const existingById = new Map(manifest.assets.map((asset) => [asset.id, asset]));
+  for (const { entry } of validated) {
+    const existing = existingById.get(entry.id);
+    if (
+      existing
+      && (
+        entry.sourceRevision < existing.sourceRevision
+        || (
+          entry.sourceRevision === existing.sourceRevision
+          && entry.runtimeBuild <= existing.runtimeBuild
+        )
       )
-    )
-  ) {
-    throw new Error(
-      `${runtimeIdentity(entry)}은 현재 활성 ${runtimeIdentity(existing)}보다 새 build가 아닙니다.`,
-    );
+    ) {
+      throw new Error(
+        `${runtimeIdentity(entry)}은 현재 활성 ${runtimeIdentity(existing)}보다 새 build가 아닙니다.`,
+      );
+    }
   }
 
+  const replacedIds = new Set(validated.map(({ entry }) => entry.id));
+  const newlyRetained = manifest.assets.filter((asset) => replacedIds.has(asset.id));
+  const retainedByIdentity = new Map(
+    [...(manifest.retainedAssets ?? []), ...newlyRetained]
+      .map((asset) => [runtimeIdentity(asset), asset]),
+  );
   const candidateManifest = {
     ...manifest,
     generatedAt: new Date().toISOString().slice(0, 10),
     assets: [
-      ...manifest.assets.filter((asset) => asset.id !== entry.id),
-      entry,
+      ...manifest.assets.filter((asset) => !replacedIds.has(asset.id)),
+      ...validated.map(({ entry }) => entry),
     ],
+    retainedAssets: [...retainedByIdentity.values()],
   };
-  const oldReferences = existing ? allAssetReferences(existing) : [];
+  const artifacts = validated.flatMap((item) => item.artifacts);
   const candidateValidation = await validateRuntimeAssets({ manifest: candidateManifest });
   const candidateErrors = filterCandidateErrors(
     candidateValidation.errors,
     artifacts,
-    oldReferences,
+    [],
   );
   if (candidateErrors.length > 0) {
     throw new Error(`handoff dry-run 검증 실패:\n- ${candidateErrors.join('\n- ')}`);
   }
 
-  const identity = runtimeIdentity(entry);
-  const storedHandoffFile = path.relative(appRoot, handoffFile);
   if (!args.write) {
-    const receipt = await createPromotionReceipt({
-      handoffFile: storedHandoffFile,
-      handoffSha256,
-      identity,
-      bundleSha256,
-    });
-    console.log(`dry-run 통과: ${identity}`);
-    console.log(`승격 영수증: ${path.relative(appRoot, receipt.receiptFile)}`);
+    for (const item of validated) {
+      const identity = runtimeIdentity(item.entry);
+      const receipt = await createPromotionReceipt({
+        handoffFile: path.relative(appRoot, item.handoffFile),
+        handoffSha256: item.handoffSha256,
+        identity,
+        bundleSha256: item.bundleSha256,
+      });
+      console.log(`dry-run 통과: ${identity}`);
+      console.log(`승격 영수증: ${path.relative(appRoot, receipt.receiptFile)}`);
+    }
+    console.log(`원자 batch: ${validated.length} assets / ${artifacts.length} payloads`);
     console.log('실제 반영은 같은 handoff와 --write --receipt <위 경로>를 사용하십시오.');
     return;
   }
 
-  const receiptResult = await validatePromotionReceipt({
-    receiptFile: path.resolve(process.cwd(), args.receipt),
-    handoffFile: storedHandoffFile,
-    handoffSha256,
-    identity,
-    bundleSha256,
-  });
-  const transactionDirectory = path.join(stagingRoot, receiptResult.receipt.nonce);
+  const receiptResults = [];
+  for (let index = 0; index < validated.length; index += 1) {
+    const item = validated[index];
+    receiptResults.push(await validatePromotionReceipt({
+      receiptFile: path.resolve(process.cwd(), args.receipts[index]),
+      handoffFile: path.relative(appRoot, item.handoffFile),
+      handoffSha256: item.handoffSha256,
+      identity: runtimeIdentity(item.entry),
+      bundleSha256: item.bundleSha256,
+    }));
+  }
+  const transactionDirectory = path.join(
+    stagingRoot,
+    `batch-${receiptResults.map((result) => result.receipt.nonce).join('-')}`,
+  );
   await atomicPromoteBundle({
     transactionDirectory,
     manifestPath,
@@ -594,14 +620,17 @@ async function main() {
       source: artifact.sourceFile,
       target: artifact.targetFile,
     })),
-    oldFiles: oldReferences.map((reference) => assetPathFromUrl(reference.url)),
+    oldFiles: [],
     validateFinalState: async () => (await validateRuntimeAssets()).errors,
     simulateFailureAfterManifest:
       process.env.NODE_ENV === 'test'
       && process.env.YAKI_PROMOTION_FAIL_AFTER_MANIFEST === '1',
   });
-  await consumePromotionReceipt(receiptResult.receiptFile);
-  console.log(`승격 완료: ${identity} (${artifacts.length}개 파일)`);
+  await Promise.all(receiptResults.map((result) => consumePromotionReceipt(result.receiptFile)));
+  console.log(
+    `승격 완료: ${validated.map(({ entry }) => runtimeIdentity(entry)).join(', ')} `
+    + `(${artifacts.length}개 파일 원자 batch)`,
+  );
 }
 
 main().catch((error) => {

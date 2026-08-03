@@ -43,21 +43,25 @@ function texture(url) {
 
 // ── 깊이 레이어 (풀프레임 빌보드, painter 순서로 합성) ────────────
 const FULL = { x: 0, y: 0, width: 1, height: 1 };
-const COVER = 1.3; // 창 비율이 16:9와 달라도 가장자리가 드러나지 않게 여유
-function layer(url, z, order, opaque) {
+function layer(url, z, order, opaque, rect = FULL) {
   const mat = new THREE.MeshBasicMaterial({
     map: texture(url), transparent: !opaque, depthTest: false, depthWrite: false,
   });
-  const mesh = billboard(camera, FULL, z, mat);
-  mesh.scale.multiplyScalar(COVER);
+  const mesh = billboard(camera, rect, z, mat);
   mesh.renderOrder = order;
   scene.add(mesh);
   return { mesh, mat };
 }
 
 const bgLayer = layer(assets.CUSTOMER_BACKGROUND.url, -9, 0, true);
-const customerLayer = layer(assets.TSUKIOKA_WAITING.url, -6, 1, false);
-const tableLayer = layer(assets.SERVICE_TABLE.url, -3.5, 2, false);
+const seatingLayer = layer(assets.CUSTOMER_SEATING.url, -7, 1, false, {
+  x: 10 / 1920,
+  y: -117 / 1080,
+  width: (1672 * 1.13679424) / 1920,
+  height: (941 * 1.13679424) / 1080,
+});
+const customerLayer = layer(assets.TSUKIOKA_WAITING.url, -6, 2, false);
+const tableLayer = layer(assets.SERVICE_TABLE.url, -3.5, 3, false);
 
 let currentCustomerUrl = assets.TSUKIOKA_WAITING.url;
 let currentBackgroundUrl = assets.CUSTOMER_BACKGROUND.url;
@@ -104,6 +108,7 @@ function renderScene({ kind, customerAsset, pendingAssetIds }) {
     canvas.hidden = false;
     setBackground(assets.CUSTOMER_BACKGROUND.url);
     customerLayer.mesh.visible = true;
+    seatingLayer.mesh.visible = true;
     tableLayer.mesh.visible = true;
     sceneStatus.classList.add('approved');
     sceneStatus.dataset.assetState = 'approved';
@@ -117,6 +122,7 @@ function renderScene({ kind, customerAsset, pendingAssetIds }) {
     canvas.hidden = false;
     setBackground(assets.DRINK_BACKGROUND.url);
     customerLayer.mesh.visible = false;
+    seatingLayer.mesh.visible = false;
     tableLayer.mesh.visible = false;
     sceneStatus.classList.remove('approved');
     sceneStatus.dataset.assetState = 'partial';
@@ -153,6 +159,7 @@ window.__d1SceneDebug = {
   ready: () => pending === 0,
   layers: () => [
     { name: 'background', url: currentBackgroundUrl, z: -9 },
+    { name: 'seating', url: assets.CUSTOMER_SEATING.url, z: -7 },
     { name: 'customer', url: currentCustomerUrl, z: -6 },
     { name: 'table', url: assets.SERVICE_TABLE.url, z: -3.5 },
   ],

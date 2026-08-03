@@ -15,7 +15,10 @@ import {
   validatePromotionReceipt,
 } from '../../tools/assets/promotion-receipt.mjs';
 import { atomicPromoteBundle } from '../../tools/assets/promotion-transaction.mjs';
-import { validateManifestEntry } from '../../tools/assets/runtime-assets-lib.mjs';
+import {
+  createManifestValidator,
+  validateManifestEntry,
+} from '../../tools/assets/runtime-assets-lib.mjs';
 
 const temporaryDirectories = [];
 
@@ -77,7 +80,59 @@ describe('runtime manifest entry', () => {
   });
 });
 
+describe('retained runtime payload manifest', () => {
+  it('비활성 이전 version도 schema에서 무결성 추적할 수 있다', async () => {
+    const current = validEntry();
+    const retained = {
+      ...validEntry(),
+      sourceRevision: 1,
+      runtimeBuild: 1,
+      url: '/assets/core/ui/order-icon-negima-r1-b1.png',
+    };
+    const manifest = {
+      $schema: 'https://yaki-season.local/assets/manifest.schema.json',
+      schemaVersion: '3.0.0',
+      generatedAt: '2026-08-03',
+      specRefs: ['ART-003 v5.9.0'],
+      packs: {
+        core: { load: 'startup', description: 'core' },
+        campaign: { load: 'stage', description: 'campaign' },
+        optional: { load: 'on-demand', description: 'optional' },
+      },
+      assets: [current],
+      retainedAssets: [retained],
+    };
+    const schema = JSON.parse(await readFile(path.resolve('public/assets/manifest.schema.json'), 'utf8'));
+    const validate = createManifestValidator(schema);
+    expect(validate(manifest)).toBe(true);
+  });
+});
+
 describe('atomic bundle promotion', () => {
+  it('4 stable asset의 6 payload를 한 manifest transaction으로 반영한다', async () => {
+    const root = await temporaryDirectory();
+    const manifest = path.join(root, 'manifest.json');
+    const transaction = path.join(root, 'transaction');
+    const sources = Array.from({ length: 6 }, (_, index) => path.join(root, `source-${index}`));
+    const targets = Array.from({ length: 6 }, (_, index) => path.join(root, 'assets', `new-${index}`));
+    await writeFile(manifest, '{"version":"old"}\n');
+    await Promise.all(sources.map((source, index) => writeFile(source, `new-${index}`)));
+
+    await atomicPromoteBundle({
+      transactionDirectory: transaction,
+      manifestPath: manifest,
+      candidateManifest: { version: 'four-assets-six-payloads' },
+      newFiles: sources.map((source, index) => ({ source, target: targets[index] })),
+      oldFiles: [],
+      validateFinalState: async () => [],
+    });
+
+    expect(JSON.parse(await readFile(manifest, 'utf8'))).toEqual({ version: 'four-assets-six-payloads' });
+    await Promise.all(targets.map(async (target, index) => {
+      expect(await readFile(target, 'utf8')).toBe(`new-${index}`);
+    }));
+  });
+
   it('여러 파일과 manifest를 한 트랜잭션으로 반영한다', async () => {
     const root = await temporaryDirectory();
     const manifest = path.join(root, 'manifest.json');

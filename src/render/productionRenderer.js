@@ -9,7 +9,7 @@ import { makeCamera, billboard, worldAtScreen, anchorToWorld, lerp, ASPECT, TAN_
 import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID, SEAT_IDS, SEAT_ACTOR_MOOD, SEAT_ACTOR_TEXTURE, SEAT_ACTOR_UV, computeSeats, DEFAULT_SEAT_CAP, computeGrillSlots, GRILL_SLOT_KEYS } from '../config/screenLayout.js';
 import { runtimeAssetUrl } from '../assets/runtimeAssetResolver.js';
 
-export function createProductionRenderer(canvas) {
+export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: false });
   renderer.setClearColor(0x0f0b08, 1);
   const scene = new THREE.Scene();
@@ -17,11 +17,19 @@ export function createProductionRenderer(canvas) {
   // 승인 아트 텍스처 (있을 때만). 없거나 실패해도 스테이션은 더미로 동작한다.
   const loader = new THREE.TextureLoader();
   const texCache = new Map();
+  let pendingTextures = 0;
+  let textureErrorCount = 0;
   // 매니페스트 URL(/assets/…)을 정적 서버 경로(/src에서 /public/assets/…)로 해석해 로드한다.
   function texture(url) {
     const resolved = runtimeAssetUrl(url);
     if (texCache.has(resolved)) return texCache.get(resolved);
-    const tex = loader.load(resolved);
+    pendingTextures += 1;
+    const tex = loader.load(
+      resolved,
+      () => { pendingTextures -= 1; },
+      undefined,
+      () => { pendingTextures -= 1; textureErrorCount += 1; },
+    );
     tex.colorSpace = THREE.SRGBColorSpace;
     texCache.set(resolved, tex);
     return tex;
@@ -32,7 +40,16 @@ export function createProductionRenderer(canvas) {
     uv.setXY(0, u0, v1); uv.setXY(1, u1, v1); uv.setXY(2, u0, v0); uv.setXY(3, u1, v0);
     uv.needsUpdate = true;
   }
-  const COVER = 1.3; // 이미지 레이어가 전환 중에도 화면을 덮도록 여유
+  const runtimeAssetById = new Map(
+    Object.values(runtimeAssets ?? {})
+      .filter((asset) => asset?.id && asset?.url)
+      .map((asset) => [asset.id, asset]),
+  );
+  function runtimeUrlForId(stableAssetId) {
+    const asset = runtimeAssetById.get(stableAssetId);
+    if (!asset) throw new Error(`승인 runtime asset resolver 누락: ${stableAssetId}`);
+    return asset.url;
+  }
 
   const eye = new THREE.Vector3(PLAYER_EYE.x, PLAYER_EYE.y, PLAYER_EYE.z);
   const lookOf = (s) => new THREE.Vector3(s.look.x, s.look.y, s.look.z);
@@ -44,6 +61,7 @@ export function createProductionRenderer(canvas) {
   // 오브젝트를 화면별로 만든다. 같은 key가 여러 화면에 있으면(bg) 화면마다 별도 평면을 둔다.
   const screenGroups = {}; // screenId → [mesh]
   const objectMesh = {}; // key → mesh (조작 대상은 화면 유일 → 모호하지 않음)
+  const artMesh = {}; // key → 승인 이미지 mesh (상태 texture 교체·가시성 제어)
   const interactionMesh = {}; // key → visual과 분리된 투명 hitRect mesh
   const inactiveObjects = new Set(GRILL_SLOT_KEYS);
 
@@ -52,15 +70,21 @@ export function createProductionRenderer(canvas) {
     // 승인 아트 이미지 레이어 (배경·카운터 등 풀프레임). painter 순서(def.order)로 합성.
     if (def.kind === 'image') {
       const z = LAYER_Z[def.layer];
-      const mat = new THREE.MeshBasicMaterial({ map: texture(def.url), transparent: !def.opaque, depthTest: false, depthWrite: false });
+      const mat = new THREE.MeshBasicMaterial({ map: texture(runtimeUrlForId(def.stableAssetId)), transparent: !def.opaque, depthTest: false, depthWrite: false });
       const mesh = billboard(cam, def.full ? { x: 0, y: 0, width: 1, height: 1 } : def.rect, z, mat);
-      if (def.full) mesh.scale.multiplyScalar(COVER);
       mesh.renderOrder = def.order ?? 0;
       mesh.userData.objectKey = key;
       return mesh;
     }
     const z = LAYER_Z[def.layer];
-    const mat = new THREE.MeshBasicMaterial({ color: def.color, transparent: def.kind === 'grill', depthWrite: def.kind !== 'grill' });
+    const isHotspot = def.kind === 'hotspot';
+    const mat = new THREE.MeshBasicMaterial({
+      color: def.color,
+      transparent: def.kind === 'grill' || isHotspot,
+      opacity: isHotspot ? 0 : 1,
+      colorWrite: !isHotspot,
+      depthWrite: def.kind !== 'grill' && !isHotspot,
+    });
     const rect = def.kind === 'fullframe' ? { x: 0, y: 0, width: 1, height: 1 } : def.rect;
     const mesh = billboard(cam, rect, z, mat);
     mesh.renderOrder = -z; // 먼 것 먼저
@@ -98,7 +122,8 @@ export function createProductionRenderer(canvas) {
       mesh.visible = s.id === SCREENS[0].id; // 첫 화면만 보이게 시작
       scene.add(mesh);
       group.push(mesh);
-      if (OBJECTS[key].kind !== 'fullframe' && OBJECTS[key].kind !== 'image') objectMesh[key] = mesh; // 배경·아트 레이어 제외
+      if (OBJECTS[key].kind === 'image') artMesh[key] = mesh;
+      else if (OBJECTS[key].kind !== 'fullframe') objectMesh[key] = mesh;
       const hit = buildInteraction(cam, key);
       if (hit) {
         hit.visible = mesh.visible;
@@ -297,11 +322,31 @@ export function createProductionRenderer(canvas) {
     camera,
     renderer,
     objectMesh,
+    artMesh,
     interactionMesh,
     setObjectVisible: (key, visible) => {
       const show = visible && !inactiveObjects.has(key);
       if (objectMesh[key]) objectMesh[key].visible = show;
+      if (artMesh[key]) artMesh[key].visible = show;
       if (interactionMesh[key]) interactionMesh[key].visible = show;
+    },
+    setArtAsset: (key, stableAssetId) => {
+      const mesh = artMesh[key];
+      if (!mesh) return;
+      const next = texture(runtimeUrlForId(stableAssetId));
+      if (mesh.material.map !== next) {
+        mesh.material.map = next;
+        mesh.material.needsUpdate = true;
+      }
+    },
+    setArtUrl: (key, url) => {
+      const mesh = artMesh[key];
+      if (!mesh) return;
+      const next = texture(url);
+      if (mesh.material.map !== next) {
+        mesh.material.map = next;
+        mesh.material.needsUpdate = true;
+      }
     },
     seatActorMesh,
     seatBaseMesh,
@@ -322,6 +367,8 @@ export function createProductionRenderer(canvas) {
     renderFrame,
     resize,
     performanceStats,
+    texturesReady: () => pendingTextures === 0,
+    textureErrors: () => textureErrorCount,
     anchorFor,
     projectToScreen,
     quaternionFor: (screenId) => presetCam[screenId].quaternion.clone(),

@@ -47,6 +47,26 @@ export function mountD1({ assets, onArt, onScene } = {}) {
 
   let state = createD1Session();
   let nowMs = 0;
+  let receivedAnimationStartedAt = null;
+  let receivedAnimationTimer = null;
+
+  function updateCustomerArt() {
+    const animated = state.customer.state === 'reacting' || state.customer.state === 'completed';
+    if (animated && receivedAnimationStartedAt == null) receivedAnimationStartedAt = performance.now();
+    if (!animated) receivedAnimationStartedAt = null;
+    const animationMs = receivedAnimationStartedAt == null
+      ? 0
+      : performance.now() - receivedAnimationStartedAt;
+    const customerAsset = resolveD1CustomerAsset(assets, state.customer.state, animationMs);
+    if (onArt) onArt(customerAsset, state.phase);
+    if (animated && receivedAnimationTimer == null) {
+      receivedAnimationTimer = window.setInterval(updateCustomerArt, 1200);
+    } else if (!animated && receivedAnimationTimer != null) {
+      window.clearInterval(receivedAnimationTimer);
+      receivedAnimationTimer = null;
+    }
+    return customerAsset;
+  }
 
   function button(label, action, className = '') {
     const node = document.createElement('button');
@@ -136,8 +156,7 @@ export function mountD1({ assets, onArt, onScene } = {}) {
     customerState.textContent = labels[state.customer.state] || state.customer.state;
     guide.textContent = guides[state.phase];
     if (stateOutput) stateOutput.value = JSON.stringify(state);
-    const customerAsset = resolveD1CustomerAsset(assets, state.customer.state);
-    if (onArt) onArt(customerAsset, state.phase);
+    const customerAsset = updateCustomerArt();
     const kind = sceneKind(state.phase);
     if (onScene) onScene({
       kind,
