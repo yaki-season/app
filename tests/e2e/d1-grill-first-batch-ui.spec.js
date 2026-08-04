@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test';
 import { D1_GRILL_SLOTS } from '../../src/config/d1GrillLayout.js';
 import { routeD1ReleaseDefinition } from './d1-release-definition.js';
 
+const WAITING_RACK_SUBJECT_FHD = Object.freeze({ x: 85, y: 265, width: 340, height: 530 });
+
 const D = (page, fn, ...args) => page.evaluate(
   ({ name, values }) => window.__d1GameDebug[name](...values),
   { name: fn, values: args },
@@ -142,12 +144,42 @@ test('FHD/720에서 접힘·펼침 guide, 상단 HUD, 상태 카드, rack 제어
   }
 
   const buttonRect = await button.boundingBox();
-  const [hintRect, quickNavRect] = await Promise.all([
+  const viewport = page.viewportSize();
+  const waitingRackSubject = {
+    x: WAITING_RACK_SUBJECT_FHD.x * viewport.width / 1920,
+    y: WAITING_RACK_SUBJECT_FHD.y * viewport.height / 1080,
+    width: WAITING_RACK_SUBJECT_FHD.width * viewport.width / 1920,
+    height: WAITING_RACK_SUBJECT_FHD.height * viewport.height / 1080,
+  };
+  const [guideRect, receiptsRect, orderRect, svcBarRect, stationRect, hintRect, leftNavRect, rightNavRect, quickNavRect] = await Promise.all([
+    page.getByTestId('d1-guide').boundingBox(),
+    page.getByTestId('svc-receipts').boundingBox(),
+    page.getByTestId('order-hud').boundingBox(),
+    page.getByTestId('svc-bar').boundingBox(),
+    page.getByTestId('svc-station').boundingBox(),
     page.getByTestId('hint').boundingBox(),
+    page.getByTestId('nav-left').boundingBox(),
+    page.getByTestId('nav-right').boundingBox(),
     page.getByTestId('quick-nav').boundingBox(),
   ]);
-  expect(overlaps(buttonRect, hintRect)).toBe(false);
-  expect(overlaps(buttonRect, quickNavRect)).toBe(false);
+  expect(overlaps(buttonRect, waitingRackSubject)).toBe(false);
+  expect(buttonRect.x - (waitingRackSubject.x + waitingRackSubject.width)).toBeCloseTo(8, 1);
+  expect(buttonRect.y - (hintRect.y + hintRect.height)).toBeCloseTo(8, 1);
+  for (const protectedRect of [
+    guideRect,
+    receiptsRect,
+    orderRect,
+    svcBarRect,
+    stationRect,
+    hintRect,
+    leftNavRect,
+    rightNavRect,
+    quickNavRect,
+  ]) expect(overlaps(buttonRect, protectedRect)).toBe(false);
+  expect(buttonRect.x).toBeGreaterThanOrEqual(0);
+  expect(buttonRect.y).toBeGreaterThanOrEqual(0);
+  expect(buttonRect.x + buttonRect.width).toBeLessThanOrEqual(viewport.width);
+  expect(buttonRect.y + buttonRect.height).toBeLessThanOrEqual(viewport.height);
 
   await button.click();
   await expect.poll(() => D(page, 'cookWaiting')).toBe(1);
@@ -157,6 +189,8 @@ test('FHD/720에서 접힘·펼침 guide, 상단 HUD, 상태 카드, rack 제어
   const stagedStatus = (await D(page, 'grillStatusSnapshot')).filter(({ hidden }) => !hidden);
   expect(stagedStatus).toHaveLength(1);
   expect(overlaps(stagedStatus[0].rect, await projectedMeshRect(page, 'pgSlot0'))).toBe(false);
+  expect(overlaps(buttonRect, stagedStatus[0].rect)).toBe(false);
+  expect(overlaps(buttonRect, await projectedMeshRect(page, 'pgSlot0'))).toBe(false);
 
   await page.waitForTimeout(220);
   await button.press('Enter');
@@ -172,6 +206,7 @@ test('FHD/720에서 접힘·펼침 guide, 상단 HUD, 상태 카드, rack 제어
     expect(overlaps(status.rect, quickNavRect)).toBe(false);
     for (const key of ['pgSlot0', 'pgSlot1']) {
       expect(overlaps(status.rect, await projectedMeshRect(page, key))).toBe(false);
+      expect(overlaps(buttonRect, await projectedMeshRect(page, key))).toBe(false);
     }
   }
 

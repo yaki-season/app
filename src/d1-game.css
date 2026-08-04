@@ -110,8 +110,9 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide li {
 .grill-waiting-negima {
   position: fixed;
   z-index: 19;
-  top: calc(66vh + 8px);
-  left: 10.5vw;
+  /* ST-GRILL-WAITING-RACK R2 subject 우측 +8px, 공용 hint 하단 +8px. */
+  top: calc(73.333333vh + 52px);
+  left: calc(22.135417vw + 8px);
   display: flex;
   width: 14vw;
   min-width: 150px;
