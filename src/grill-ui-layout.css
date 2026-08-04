@@ -107,6 +107,9 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .end-day {
     max-width: none;
     padding: 5px 10px;
     font-size: 11px;
+    /* 대기 네기마 rack은 3D 투영이라 작은 뷰포트일수록 상대적으로 아래에 온다(720에서 73.56vh).
+       기본 73.33vh면 1.6px 겹치므로 이 구간에서만 hint를 내린다. quick-nav 위 여유는 유지된다. */
+    top: 76vh;
   }
 
   body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) #navRight {

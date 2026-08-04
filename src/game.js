@@ -15,7 +15,7 @@ import { reputationDelta, catalog, buy, effectiveEconomy, ownedEffects, grillUnl
 import { createPreparedDock } from './render/preparedDock.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
 import { createCookStations } from './render/cookStations.js';
-import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS, CUSTOMER_ART, GRILL_SLOT_KEYS, DEFAULT_GRILL_SLOTS } from './config/screenLayout.js';
+import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS, GRILL_SLOT_KEYS, DEFAULT_GRILL_SLOTS } from './config/screenLayout.js';
 import { D1_GRILL_SLOTS, D1_GRILL_FINISHED_TRAY } from './config/d1GrillLayout.js';
 import { RECIPE, COOK_THRESHOLDS_SEC, DONENESS, canAdvance } from './config/recipe.js';
 import { loadD1RuntimeAssets } from './assets/runtimeAssetResolver.js';
@@ -129,8 +129,6 @@ function syncCustomers(now) {
   for (const v of views) {
     const mesh = R.objectMesh[`seatServe:${v.seatId}`];
     if (mesh) mesh.visible = onCustomers && (v.canOrder || v.canServe || v.cleanupNeeded);
-    // 승인 아트가 있으면 좌석 손님 텍스처를 phase로 교체(식사 중/완료는 먹는 아트).
-    if (R.hasSeatActorArt()) R.setSeatActorTexture(v.seatId, seatArtFor(v));
   }
   customers.apply(views, { actorsVisible: onCustomers });
   // 이 legacy sandbox에는 REGULAR_TSUKIOKA identity가 없으므로 고정 승인 actor를 추측 재사용하지 않는다.
@@ -139,13 +137,9 @@ function syncCustomers(now) {
 function seatView(seatId, now) {
   return ops ? ops.views(now).find((v) => v.seatId === seatId) : null;
 }
-// 좌석 손님 phase·메뉴 → 아트 텍스처 (아트가 있을 때만 사용).
-// 생맥주를 받아 마시는 중이면 맥주 아트, 네기마를 먹는 중이면 꼬치 아트로 구분한다.
-function seatArtFor(v) {
-  if (v.phase === 'eating') return v.menu === '생맥주' ? CUSTOMER_ART.eatingBeer : CUSTOMER_ART.eatingNegima;
-  if (v.phase === 'done' || (v.phase === 'leaving' && v.mood !== 'retry')) return CUSTOMER_ART.eatingBeer;
-  return CUSTOMER_ART.waiting;
-}
+// 좌석 손님 phase별 아트 교체는 이름 없는 엑스트라 승인 아트(CH-EXTRA-*)가 나오면 다시 붙인다.
+// 그 전까지 이 sandbox의 좌석 손님은 기분 색 더미이며, 츠키오카 아트를 크롭해 재사용하지 않는다
+// (ART-003: 엑스트라가 츠키오카로 오인되지 않아야 한다).
 
 // ── 드링크 잔 채움 패널 ──────────────────────────────────────
 const drinkPanel = el('drinkPanel');
@@ -287,7 +281,10 @@ function hitTest(e) {
   ptr.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   ptr.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(ptr, R.camera);
-  const targets = Object.keys(R.objectMesh)
+  // 승인 아트 레이어(artMesh)에 붙은 hit target도 대상이다. objectMesh 키만 돌면
+  // grillFinishedTray처럼 image kind로 옮겨간 대상이 클릭 불가가 된다.
+  const keys = new Set([...Object.keys(R.objectMesh), ...Object.keys(R.interactionMesh)]);
+  const targets = [...keys]
     .map((key) => R.interactionMesh[key] ?? R.objectMesh[key])
     .filter((mesh) => mesh.visible && !mesh.userData.decorative);
   const hit = raycaster.intersectObjects(targets, false)[0];
