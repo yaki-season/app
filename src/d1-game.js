@@ -8,6 +8,7 @@ import { createStationDirector } from './render/stationDirector.js';
 import { createGrillMaterial } from './render/grillMaterial.js';
 import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
+import { createD1RawNegimaCompositor } from './render/d1RawNegimaCompositor.js';
 import {
   COOK_SLOT_NEXT_ACTION,
   createD1CookStations,
@@ -28,6 +29,7 @@ import {
   computeGrillSlots,
 } from './config/screenLayout.js';
 import {
+  D1_GRILL_FOOD_FOOTPRINT,
   D1_GRILL_FINISHED_TRAY,
   D1_PUBLIC_GRILL_LAYOUT,
 } from './config/d1GrillLayout.js';
@@ -36,6 +38,7 @@ import { FIRST_ORDER_RUNTIME_STORAGE_KEY, clearFirstOrderRuntime } from './d1/fi
 import { RECIPE } from './config/recipe.js';
 import {
   loadD1RuntimeAssets,
+  reportD1RawNegimaExactLoadReadiness,
   resolveD1ReceivedEatingFrame,
 } from './assets/runtimeAssetResolver.js';
 import {
@@ -119,6 +122,54 @@ let guideRetrieveCount = Number(restoredFirstOrderRuntime?.guideRetrieveCount ??
 const guideFlippedSlots = new Set(restoredFirstOrderRuntime?.guideFlippedSlots ?? []);
 const guideRetrievedSlots = new Set(restoredFirstOrderRuntime?.guideRetrievedSlots ?? []);
 const grillMats = {};
+const rawNegimaInstances = {};
+let rawNegimaReadiness = runtimeAssets.readiness;
+const rawNegimaRuntime = {
+  status: runtimeAssets.GRILL_RAW_BUNDLE ? 'loading' : 'unavailable',
+  diagnostics: null,
+  error: null,
+};
+document.body.dataset.rawNegimaBindingStatus = rawNegimaRuntime.status;
+
+function publishRawNegimaReadiness(readiness) {
+  rawNegimaReadiness = readiness;
+  document.body.dataset.assetPlaceholderCount = String(readiness.placeholderCount);
+  document.body.dataset.runtimeAssetsReady = String(readiness.ready);
+  document.body.dataset.runtimeContractValid = String(readiness.contractAudit.valid);
+}
+
+async function bootRawNegimaRuntime() {
+  if (!runtimeAssets.GRILL_RAW_BUNDLE) return;
+  try {
+    const compositor = await createD1RawNegimaCompositor({
+      bundle: runtimeAssets.GRILL_RAW_BUNDLE,
+    });
+    for (const key of SLOT_KEYS) {
+      const slotMesh = R.objectMesh[key];
+      if (!slotMesh) throw new Error(`RAW 네기마 slot mesh 누락: ${key}`);
+      const instance = compositor.createInstance(
+        slotMesh,
+        D1_GRILL_FOOD_FOOTPRINT.sourceModelTransform,
+      );
+      rawNegimaInstances[key] = instance;
+      R.scene.add(instance.holder);
+    }
+    rawNegimaRuntime.status = 'ready';
+    rawNegimaRuntime.diagnostics = compositor.diagnostics;
+    rawNegimaReadiness = reportD1RawNegimaExactLoadReadiness(runtimeAssets.manifest);
+    publishRawNegimaReadiness(rawNegimaReadiness);
+    document.body.dataset.rawNegimaBindingStatus = 'ready';
+    render();
+  } catch (error) {
+    rawNegimaRuntime.status = 'failed';
+    rawNegimaRuntime.error = error;
+    rawNegimaRuntime.diagnostics = error.diagnostics ?? null;
+    document.body.dataset.rawNegimaBindingStatus = 'failed';
+    publishRawNegimaReadiness(runtimeAssets.readiness);
+    console.error('승인 RAW 네기마 exact-load 실패:', error);
+  }
+}
+void bootRawNegimaRuntime();
 const grillStatusLayer = el('grillStatusLayer');
 const grillWaitingNegima = el('grillWaitingNegima');
 const grillWaitingNegimaHint = el('grillWaitingNegimaHint');
@@ -1232,18 +1283,32 @@ function clickGrillSlot(i, now) {
 function updateGrillVisual(now) {
   const views = cook.slotViews(now);
   for (const key of SLOT_KEYS) {
-    const g = grillMats[key];
-    if (!g) continue;
-    g.setTime(now / 1000);
     const v = views[slotIndexOf(key)];
-    for (const [param, value] of Object.entries(d1SecondFaceR3Params(v))) g.setParam(param, value);
-    g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
     const mesh = R.objectMesh[key];
     if (!mesh) continue;
+    const g = grillMats[key];
+    if (g) {
+      g.setTime(now / 1000);
+      for (const [param, value] of Object.entries(d1SecondFaceR3Params(v))) g.setParam(param, value);
+      g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
+    }
     mesh.userData.grillBaseQuaternion ??= mesh.quaternion.clone();
     mesh.quaternion.copy(mesh.userData.grillBaseQuaternion).multiply(
       grillFlipQuaternion.setFromAxisAngle(GRILL_FLIP_AXIS, v?.visualRotationRad ?? 0),
     );
+    const rawInstance = rawNegimaInstances[key];
+    const showApprovedRaw = (
+      rawNegimaRuntime.status === 'ready'
+      && v?.status === 'staged'
+      && director.activeScreenId() === 'SCR-SVC-GRILL'
+    );
+    if (rawInstance) {
+      rawInstance.holder.visible = showApprovedRaw;
+      rawInstance.flipPivot.rotation.y = 0;
+    }
+    // public pgSlot은 visual과 raycast를 한 mesh가 맡으므로 visible=false로 숨기면 입력도 끊긴다.
+    // mesh/raycast는 유지하고 staged 동안 color write만 막아 procedural pink 픽셀을 교체한다.
+    if (mesh.material) mesh.material.colorWrite = !showApprovedRaw;
   }
 }
 for (const key of SLOT_KEYS) {
@@ -1480,6 +1545,30 @@ Object.assign(d1GameDebug, {
   order: () => legacyFirstOrder(),
   customerArt: () => legacyFirstOrder().생맥주.done > 0 ? 'partial-beer' : 'waiting',
   texturesReady: () => R.texturesReady(),
+  rawNegimaRuntime: () => ({
+    status: rawNegimaRuntime.status,
+    exactLoadReady: rawNegimaRuntime.status === 'ready',
+    diagnostics: rawNegimaRuntime.diagnostics,
+    error: rawNegimaRuntime.error ? String(rawNegimaRuntime.error.message ?? rawNegimaRuntime.error) : null,
+    readiness: {
+      placeholderCount: rawNegimaReadiness.placeholderCount,
+      unboundApprovedIds: rawNegimaReadiness.unboundApprovedIds,
+      contractValid: rawNegimaReadiness.contractAudit.valid,
+    },
+    slots: SLOT_KEYS.map((key) => ({
+      key,
+      approvedRawVisible: rawNegimaInstances[key]?.holder.visible === true,
+      proceduralFallbackVisible: (
+        R.objectMesh[key]?.visible === true
+        && R.objectMesh[key]?.material?.colorWrite !== false
+      ),
+      interactionVisible: (
+        R.interactionMesh[key]?.visible
+        ?? R.objectMesh[key]?.visible
+        ?? false
+      ),
+    })),
+  }),
   dockItems: () => dock.items(),
   dockSelectedId: () => dock.selectedId(),
   dockAdd: (item) => dock.add(item),

@@ -1,6 +1,7 @@
 import {
   D1_RUNTIME_COMPONENT_INVENTORY,
   reportD1RuntimeComponentInventory,
+  withD1RuntimeBoundAssetIds,
 } from './d1RuntimeInventory.js';
 
 const D1_INVENTORY_SCREEN_TO_SCENE = Object.freeze({
@@ -61,6 +62,13 @@ export const D1_PENDING_RUNTIME_ASSET_IDS = Object.freeze({
 });
 
 export const D1_RECEIVED_EATING_FRAME_INTERVAL_MS = 1200;
+
+export const D1_RAW_NEGIMA_RUNTIME_ASSET_ID = Object.freeze({
+  COMPOSITION: 'MDL-NEGIMA-GRILL-RAW',
+  SKEWER_BASE: 'MDL-SKEWER-BASE',
+  CHICKEN: 'MDL-INGREDIENT-CHICKEN',
+  NEGI: 'MDL-INGREDIENT-NEGI',
+});
 
 export function runtimeAssetUrl(url, pathname = globalThis.location?.pathname ?? '/') {
   if (!pathname.startsWith('/src/') || url.startsWith('/public/')) return url;
@@ -156,16 +164,25 @@ export function auditD1RuntimeAssetBindingContract(
 
 export function reportD1RuntimeAssetReadiness(
   manifest,
+  {
+    inventory = D1_RUNTIME_COMPONENT_INVENTORY,
+    runtimeAssetIds = D1_RUNTIME_ASSET_ID,
+    pendingIdsByScene = D1_PENDING_RUNTIME_ASSET_IDS,
+  } = {},
 ) {
   const assetIndex = indexApprovedRuntimeAssets(manifest);
-  const componentReport = reportD1RuntimeComponentInventory(manifest);
-  const contractAudit = auditD1RuntimeAssetBindingContract();
-  const requiredIds = freezeIdList(
-    D1_RUNTIME_COMPONENT_INVENTORY.map((entry) => entry.requiredAssetId),
+  const componentReport = reportD1RuntimeComponentInventory(manifest, inventory);
+  const contractAudit = auditD1RuntimeAssetBindingContract(
+    inventory,
+    runtimeAssetIds,
+    pendingIdsByScene,
   );
-  const boundEntries = D1_RUNTIME_COMPONENT_INVENTORY
+  const requiredIds = freezeIdList(
+    inventory.map((entry) => entry.requiredAssetId),
+  );
+  const boundEntries = inventory
     .filter((entry) => entry.bindingState === 'bound');
-  const pendingEntries = D1_RUNTIME_COMPONENT_INVENTORY
+  const pendingEntries = inventory
     .filter((entry) => entry.bindingState !== 'bound');
   const placeholderIds = freezeIdList(componentReport.placeholderRequiredAssetIds);
   const missingManifestIds = freezeIdList(requiredIds.filter((id) => !assetIndex.has(id)));
@@ -210,12 +227,82 @@ export function resolveApprovedRuntimeAsset(assetIndex, assetId) {
     url: runtimeAssetUrl(asset.url),
     sourceRevision: asset.sourceRevision,
     runtimeBuild: asset.runtimeBuild,
+    sha256: asset.sha256,
+    bytes: asset.bytes,
+    format: asset.format,
     pivot: asset.pivot,
     anchors: asset.anchors ?? [],
     companions: (asset.companions ?? []).map((companion) => ({
       ...companion,
       url: runtimeAssetUrl(companion.url),
     })),
+  });
+}
+
+function pixelAlbedoFor(asset) {
+  return asset?.companions?.find((companion) => companion.role === 'pixel-albedo') ?? null;
+}
+
+// RAW composition 자체와 실제로 조립에 쓰이는 세 승인 model/albedo pair를 한 계약으로
+// 해석한다. 일부만 있으면 잘못된 fallback 조합을 만들지 않고 전체 bundle을 거부한다.
+export function resolveD1RawNegimaRuntimeBundle(assetIndex) {
+  const composition = resolveApprovedRuntimeAsset(
+    assetIndex,
+    D1_RAW_NEGIMA_RUNTIME_ASSET_ID.COMPOSITION,
+  );
+  if (!composition) return null;
+
+  const skewerBase = resolveApprovedRuntimeAsset(
+    assetIndex,
+    D1_RAW_NEGIMA_RUNTIME_ASSET_ID.SKEWER_BASE,
+  );
+  const chicken = resolveApprovedRuntimeAsset(
+    assetIndex,
+    D1_RAW_NEGIMA_RUNTIME_ASSET_ID.CHICKEN,
+  );
+  const negi = resolveApprovedRuntimeAsset(
+    assetIndex,
+    D1_RAW_NEGIMA_RUNTIME_ASSET_ID.NEGI,
+  );
+  const sources = { skewerBase, chicken, negi };
+  for (const [sourceName, asset] of Object.entries(sources)) {
+    if (!asset) throw new Error(`RAW 네기마 승인 source model 누락: ${sourceName}`);
+    if (!pixelAlbedoFor(asset)) {
+      throw new Error(`RAW 네기마 pixel-albedo companion 누락: ${asset.id}`);
+    }
+  }
+
+  return Object.freeze({
+    composition,
+    sources: Object.freeze(Object.fromEntries(
+      Object.entries(sources).map(([key, model]) => [key, Object.freeze({
+        model,
+        albedo: pixelAlbedoFor(model),
+      })]),
+    )),
+  });
+}
+
+// 정적 inventory에서 pending인 RAW를 실제 7-file load 뒤에만 bound로 승격해 공개하는
+// runtime-only readiness다. 호출 전에는 기존 report가 RAW를 unboundApprovedIds에 유지한다.
+export function reportD1RawNegimaExactLoadReadiness(manifest) {
+  const inventory = withD1RuntimeBoundAssetIds([
+    D1_RAW_NEGIMA_RUNTIME_ASSET_ID.COMPOSITION,
+  ]);
+  const runtimeAssetIds = Object.freeze({
+    ...D1_RUNTIME_ASSET_ID,
+    GRILL_RAW: D1_RAW_NEGIMA_RUNTIME_ASSET_ID.COMPOSITION,
+  });
+  const pendingIdsByScene = Object.freeze({
+    ...D1_PENDING_RUNTIME_ASSET_IDS,
+    grill: Object.freeze(D1_PENDING_RUNTIME_ASSET_IDS.grill.filter(
+      (id) => id !== D1_RAW_NEGIMA_RUNTIME_ASSET_ID.COMPOSITION,
+    )),
+  });
+  return reportD1RuntimeAssetReadiness(manifest, {
+    inventory,
+    runtimeAssetIds,
+    pendingIdsByScene,
   });
 }
 
@@ -233,6 +320,8 @@ export async function loadD1RuntimeAssets(fetchImpl = globalThis.fetch) {
     if (!asset) throw new Error(`승인 runtime manifest ID 누락: ${id}`);
     resolved[key] = asset;
   }
+  resolved.GRILL_RAW_BUNDLE = resolveD1RawNegimaRuntimeBundle(index);
+  resolved.manifest = manifest;
   resolved.readiness = reportD1RuntimeAssetReadiness(manifest);
   return Object.freeze(resolved);
 }

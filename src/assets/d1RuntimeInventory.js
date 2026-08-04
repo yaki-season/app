@@ -72,6 +72,21 @@ export const D1_RUNTIME_COMPONENT_INVENTORY = Object.freeze([
   row('SCR-POST-SETTLEMENT', 'D1-settlement-state', 'settlement.reward', 'UI-STATE-ICONS', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
 ]);
 
+// 모델 bundle처럼 비동기 exact-load가 끝난 뒤에만 binding이 성립하는 consumer가 런타임
+// readiness를 다시 계산할 때 사용한다. 정적 inventory 원본은 pending을 보존하므로 manifest
+// 등록만으로 placeholder가 사라지지 않는다.
+export function withD1RuntimeBoundAssetIds(
+  boundAssetIds,
+  inventory = D1_RUNTIME_COMPONENT_INVENTORY,
+) {
+  const bound = new Set(boundAssetIds);
+  return Object.freeze(inventory.map((entry) => (
+    bound.has(entry.requiredAssetId)
+      ? Object.freeze({ ...entry, bindingState: 'bound' })
+      : entry
+  )));
+}
+
 export function reportD1RuntimeComponentInventory(
   manifest,
   inventory = D1_RUNTIME_COMPONENT_INVENTORY,
