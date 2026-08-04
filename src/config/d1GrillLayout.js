@@ -98,6 +98,38 @@ export const D1_GRILL_SLOTS = Object.freeze(SLOT_HIT_LEFT.map((hitX, index) => {
   });
 }));
 
+// setGrillSlots의 legacy placeBillboard는 화면 중심에서 벗어날수록 camera depth 대신 대각선
+// 거리를 써 mesh를 키운다. renderer 공용 경로를 바꾸지 않고 D1 실제 투영을 승인 rect에 맞추기
+// 위해 중심을 고정한 채 그 배율의 역수만큼 요청 rect를 줄인다(FOV 42°, 16:9 고정 계약).
+function rendererCompensatedRect(rect) {
+  const centerX = rect.x + rect.width / 2;
+  const centerY = rect.y + rect.height / 2;
+  const tanHalf = Math.tan((42 / 2) * (Math.PI / 180));
+  const rayX = (centerX * 2 - 1) * (16 / 9) * tanHalf;
+  const rayY = -(centerY * 2 - 1) * tanHalf;
+  const offAxisScale = Math.hypot(1, rayX, rayY);
+  const width = rect.width / offAxisScale;
+  const height = rect.height / offAxisScale;
+  return Object.freeze({
+    x: centerX - width / 2,
+    y: centerY - height / 2,
+    width,
+    height,
+  });
+}
+
+// Public D1은 명성 해금형 game.html과 달리 첫 주문 batch의 두 칸만 사용한다. pgSlot*는
+// 단일 mesh가 visual과 raycast를 함께 맡으므로 실제 투영된 두 면 모두 approvedVisualRect다.
+export const D1_PUBLIC_GRILL_LAYOUT = Object.freeze({
+  contractId: 'D1-FIRST-BATCH-R3',
+  initialPlacementSlots: Object.freeze([1, 2]),
+  slots: Object.freeze(D1_GRILL_SLOTS.slice(0, 2).map(({ visualRect }, index) => Object.freeze({
+    key: `pgSlot${index}`,
+    rect: rendererCompensatedRect(visualRect),
+    approvedVisualRect: visualRect,
+  }))),
+});
+
 // CM-GRILL-STATION-QUEUED-SELECTION R3에서 연속 석쇠 안쪽만 보수적으로 잡은 검증 경계.
 // 아트 추출/등록용 bbox가 아니라 슬롯 overlay가 물리 석쇠를 벗어나지 않는지 검사하는 runtime 경계다.
 export const D1_GRILL_MASTER_GRATE_SAFE_RECT = normalizedRect({

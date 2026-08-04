@@ -5,15 +5,59 @@ import {
   D1_GRILL_FINISHED_TRAY,
   D1_GRILL_LAYER_OWNERSHIP,
   D1_GRILL_MASTER_GRATE_SAFE_RECT,
+  D1_PUBLIC_GRILL_LAYOUT,
   D1_GRILL_SLOT_KEYS,
   D1_GRILL_SLOTS,
   createD1GrillObjects,
   rectAtViewport,
 } from '../../src/config/d1GrillLayout.js';
-import { OBJECTS as PRODUCTION_OBJECTS, SCREEN_BY_ID as PRODUCTION_SCREENS } from '../../src/config/screenLayout.js';
+import {
+  computeGrillSlots,
+  OBJECTS as PRODUCTION_OBJECTS,
+  SCREEN_BY_ID as PRODUCTION_SCREENS,
+} from '../../src/config/screenLayout.js';
 import { OBJECTS as D1_OBJECTS, SCREEN_BY_ID as D1_SCREENS } from '../../src/config/d1Layout.js';
 
 describe('D1 고정 6칸 그릴 레이아웃 계약', () => {
+  it('public D1 첫 batch는 승인 R3의 첫 두 visual footprint를 pgSlot 시각·hit 단일 면으로 쓴다', () => {
+    expect(D1_PUBLIC_GRILL_LAYOUT).toMatchObject({
+      contractId: 'D1-FIRST-BATCH-R3',
+      initialPlacementSlots: [1, 2],
+    });
+    const slots = computeGrillSlots(D1_PUBLIC_GRILL_LAYOUT);
+    expect(slots.map(({ key, approvedVisualRect }) => ({ key, approvedVisualRect }))).toEqual([
+      { key: 'pgSlot0', approvedVisualRect: D1_GRILL_SLOTS[0].visualRect },
+      { key: 'pgSlot1', approvedVisualRect: D1_GRILL_SLOTS[1].visualRect },
+    ]);
+    for (const slot of slots) {
+      expect(slot.rect.width).toBeLessThan(slot.approvedVisualRect.width);
+      expect(slot.rect.height).toBeLessThan(slot.approvedVisualRect.height);
+      expect(slot.rect.x + slot.rect.width / 2).toBeCloseTo(
+        slot.approvedVisualRect.x + slot.approvedVisualRect.width / 2,
+        12,
+      );
+      expect(slot.rect.y + slot.rect.height / 2).toBeCloseTo(
+        slot.approvedVisualRect.y + slot.approvedVisualRect.height / 2,
+        12,
+      );
+    }
+  });
+
+  it('generic game의 숫자형 2→8 슬롯 배치는 D1 요청과 독립적으로 유지된다', () => {
+    const two = computeGrillSlots(2);
+    const eight = computeGrillSlots(8);
+    expect(two).toHaveLength(2);
+    expect(eight).toHaveLength(8);
+    expect(two.map(({ key }) => key)).toEqual(['pgSlot0', 'pgSlot1']);
+    expect(eight.map(({ key }) => key)).toEqual(Array.from({ length: 8 }, (_, index) => `pgSlot${index}`));
+    expect(two[0].rect.x).toBeCloseTo(0.2425, 10);
+    expect(two[1].rect.x).toBeCloseTo(0.6725, 10);
+    expect(two.map(({ rect }) => ({ y: rect.y, width: rect.width, height: rect.height }))).toEqual([
+      { y: 0.46, width: 0.085, height: 0.24 },
+      { y: 0.46, width: 0.085, height: 0.24 },
+    ]);
+  });
+
   it('승인 raw R3 footprint와 lane anchor를 slot0에 정규화해 노출한다', () => {
     expect(D1_GRILL_FOOD_FOOTPRINT).toMatchObject({
       stableAssetId: 'MDL-NEGIMA-GRILL-RAW',

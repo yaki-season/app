@@ -53,6 +53,19 @@
   <button id="navLeft" class="side-nav left" data-testid="nav-left" aria-label="이전 화면">‹</button>
   <button id="navRight" class="side-nav right" data-testid="nav-right" aria-label="다음 화면">›</button>
 
+  <!-- 승인 waiting-rack visual은 canvas에 유지하고, 같은 placement intent를 semantic DOM으로 제공한다. -->
+  <button
+    id="grillWaitingNegima"
+    class="grill-waiting-negima"
+    type="button"
+    data-testid="grill-waiting-negima"
+    aria-describedby="grillWaitingNegimaHint"
+    hidden
+  >
+    <strong>네기마</strong>
+    <span id="grillWaitingNegimaHint">대기 없음</span>
+  </button>
+
   <!-- 드링크: 잔 채움·기준선·결과 -->
   <div id="drinkPanel" class="drink-panel" data-testid="drink-panel" hidden>
     <div class="glass" data-testid="drink-glass">

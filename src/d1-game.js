@@ -27,7 +27,10 @@ import {
   GRILL_SLOT_KEYS,
   computeGrillSlots,
 } from './config/screenLayout.js';
-import { D1_GRILL_FINISHED_TRAY } from './config/d1GrillLayout.js';
+import {
+  D1_GRILL_FINISHED_TRAY,
+  D1_PUBLIC_GRILL_LAYOUT,
+} from './config/d1GrillLayout.js';
 import { createFirstOrderGuide } from './d1/firstOrderGuide.js';
 import { FIRST_ORDER_RUNTIME_STORAGE_KEY, clearFirstOrderRuntime } from './d1/firstOrderRuntimeStorage.js';
 import { RECIPE } from './config/recipe.js';
@@ -108,7 +111,7 @@ const cook = createD1CookStations();
 if (restoredFirstOrderRuntime?.cook) cook.restore(restoredFirstOrderRuntime.cook, performance.now());
 const d3Grill = createD3GrillSession(restoredFirstOrderRuntime?.d3Grill ?? null);
 const SLOT_KEYS = GRILL_SLOT_KEYS.slice(0, cook.slotCount());
-R.setGrillSlots(cook.slotCount());
+R.setGrillSlots(D1_PUBLIC_GRILL_LAYOUT);
 let firstOrderGuide = createFirstOrderGuide(restoredFirstOrderRuntime?.guide);
 let glassPlaced = restoredFirstOrderRuntime?.glassPlaced === true;
 let guideFlipCount = Number(restoredFirstOrderRuntime?.guideFlipCount ?? 0);
@@ -117,6 +120,8 @@ const guideFlippedSlots = new Set(restoredFirstOrderRuntime?.guideFlippedSlots ?
 const guideRetrievedSlots = new Set(restoredFirstOrderRuntime?.guideRetrievedSlots ?? []);
 const grillMats = {};
 const grillStatusLayer = el('grillStatusLayer');
+const grillWaitingNegima = el('grillWaitingNegima');
+const grillWaitingNegimaHint = el('grillWaitingNegimaHint');
 const customerServePanel = el('customerServePanel');
 const customerServeTargets = el('customerServeTargets');
 const selectedPreparedItem = el('selectedPreparedItem');
@@ -126,6 +131,14 @@ let pendingServeSeatId = null;
 const GRILL_FLIP_AXIS = new THREE.Vector3(0, 1, 0);
 const grillFlipQuaternion = new THREE.Quaternion();
 const lockUntil = {};
+function invokeLockedControl(key, now = performance.now()) {
+  if (director.controlsLocked()) return false;
+  if ((lockUntil[key] || 0) > now) return false;
+  lockUntil[key] = now + 200;
+  handle(key, now);
+  return true;
+}
+grillWaitingNegima.addEventListener('click', () => invokeLockedControl('grillWaitTray'));
 const dock = createPreparedDock({ container: el('dockShelf') });
 const momoPrep = el('momoPrep');
 momoPrep.hidden = true;
@@ -838,6 +851,7 @@ function render() {
   }
   // 그릴 칸 익힘 색 폴백(셰이더 로드 전)
   const views = cook.slotViews(now);
+  renderGrillWaitingControl(views);
   for (const key of SLOT_KEYS) {
     const i = slotIndexOf(key);
     const mesh = R.objectMesh[key];
@@ -858,6 +872,29 @@ function render() {
   el('navLeft').disabled = !director.canLeft();
   el('navRight').disabled = !director.canRight();
   businessRenderDue = false;
+}
+
+function renderGrillWaitingControl(slotViews) {
+  const onGrill = director.activeScreenId() === 'SCR-SVC-GRILL';
+  const waitingCount = cook.waitingCount();
+  const hasEmptySlot = slotViews.some((slot) => slot.status === 'empty');
+  grillWaitingNegima.hidden = !onGrill;
+  grillWaitingNegima.disabled = !onGrill || waitingCount === 0 || !hasEmptySlot;
+  grillWaitingNegima.dataset.waitingCount = String(waitingCount);
+  grillWaitingNegima.dataset.hasEmptySlot = String(hasEmptySlot);
+  grillWaitingNegimaHint.textContent = waitingCount === 0
+    ? '대기 없음'
+    : hasEmptySlot
+      ? `대기 ${waitingCount}개 · 첫 빈 칸에 올리기`
+      : `대기 ${waitingCount}개 · 빈 칸 없음`;
+  grillWaitingNegima.setAttribute(
+    'aria-label',
+    waitingCount === 0
+      ? '네기마. 대기 중인 꼬치 없음.'
+      : hasEmptySlot
+        ? `네기마. 대기 ${waitingCount}개. 다음 한 개를 첫 빈 그릴 칸에 올리기.`
+        : `네기마. 대기 ${waitingCount}개. 빈 그릴 칸 없음.`,
+  );
 }
 
 function renderReceipts() {
@@ -958,7 +995,9 @@ function renderFirstOrderGuide() {
     if (nav) nav.dataset.guideTarget = 'true';
     return;
   }
-  if (current.targetControlId === 'serve-target-seat-01') {
+  if (current.targetControlId === 'grillWaitTray') {
+    if (!grillWaitingNegima.hidden) grillWaitingNegima.dataset.guideTarget = 'true';
+  } else if (current.targetControlId === 'serve-target-seat-01') {
     const seat = businessView()?.seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');
     const target = seat ? serveTargetButtons.get(seat.seatId)?.button : null;
     if (target) target.dataset.guideTarget = 'true';
@@ -1073,9 +1112,7 @@ canvas.addEventListener('pointerdown', (e) => {
       return;
     }
   }
-  if ((lockUntil[key] || 0) > now) return;
-  lockUntil[key] = now + 200;
-  handle(key, now);
+  invokeLockedControl(key, now);
 });
 function releasePointers() {
   pour.release(performance.now());
@@ -1496,8 +1533,17 @@ Object.assign(d1GameDebug, {
   firstOrderGuide: () => firstOrderGuide.view(),
   firstOrderGuideSnapshot: () => firstOrderGuide.snapshot(),
   grillContract: () => ({
-    slots: computeGrillSlots(cook.slotCount()),
+    slots: computeGrillSlots(D1_PUBLIC_GRILL_LAYOUT),
+    initialPlacementSlots: D1_PUBLIC_GRILL_LAYOUT.initialPlacementSlots,
     finishedTray: D1_GRILL_FINISHED_TRAY,
+  }),
+  grillWaitingControl: () => ({
+    hidden: grillWaitingNegima.hidden,
+    disabled: grillWaitingNegima.disabled,
+    waitingCount: grillWaitingNegima.dataset.waitingCount,
+    hasEmptySlot: grillWaitingNegima.dataset.hasEmptySlot,
+    ariaLabel: grillWaitingNegima.getAttribute('aria-label'),
+    rect: grillWaitingNegima.getBoundingClientRect().toJSON(),
   }),
   clickCustomer: () => {
     const seat = businessView()?.seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');

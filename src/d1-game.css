@@ -48,7 +48,98 @@
 .d1-guide li[data-status="pending"]::before { content: "○ "; }
 
 body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide {
-  right: auto; left: 18px;
+  top: max(12px, 2.962963vh);
+  right: auto;
+  left: 9.166667vw;
+  box-sizing: border-box;
+  width: min(54vw, 1036px);
+  height: max(44px, 5.925926vh);
+  max-height: max(44px, 5.925926vh);
+  display: grid;
+  grid-template-columns: minmax(250px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 10px;
+  overflow: hidden;
+  padding: 4px 8px;
+  font-size: clamp(10px, .625vw, 12px);
+}
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide[data-expanded="true"] {
+  width: min(62vw, 1190px);
+  grid-template-columns: minmax(250px, auto) minmax(150px, .8fr) minmax(0, 1.4fr);
+}
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  min-width: 0;
+}
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide-head strong,
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide-head span,
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide-toggle {
+  grid-column: auto;
+  justify-self: auto;
+  white-space: nowrap;
+}
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide p {
+  margin: 0;
+}
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide ol {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide[data-expanded="false"] ol {
+  display: none;
+}
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide li {
+  flex: 0 0 auto;
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grill-waiting-negima {
+  position: fixed;
+  z-index: 19;
+  top: calc(66vh + 8px);
+  left: 10.5vw;
+  display: flex;
+  width: 14vw;
+  min-width: 150px;
+  min-height: 44px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 2px solid #fff0ca;
+  border-radius: 9px;
+  padding: 5px 8px;
+  color: #fff0ca;
+  background: rgba(89, 49, 26, .96);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, .42);
+  font: inherit;
+  font-size: clamp(10px, .68vw, 13px);
+  cursor: pointer;
+}
+.grill-waiting-negima[hidden] { display: none; }
+.grill-waiting-negima strong { color: #fff; font-size: 1.08em; }
+.grill-waiting-negima span { min-width: 0; color: #f2d4a3; line-height: 1.15; }
+.grill-waiting-negima:focus-visible { outline: 3px solid var(--ember); outline-offset: 3px; }
+.grill-waiting-negima:disabled {
+  border-color: rgba(181, 134, 84, .78);
+  color: var(--dim);
+  background: rgba(35, 27, 21, .9);
+  box-shadow: none;
+  cursor: default;
 }
 
 [data-guide-target="true"] {
@@ -63,11 +154,11 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide {
 .grill-status-layer {
   position: fixed;
   z-index: 9;
-  top: 51.5vh;
-  left: 28.5vw;
-  width: 43vw;
+  top: 28vh;
+  left: 45.5vw;
+  width: 30.2vw;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(4px, 0.55vw, 10px);
   pointer-events: none;
 }
@@ -333,10 +424,9 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide {
   .business-clock { font-size: 12px; }
   .business-phase { min-width: 58px; padding-inline: 7px; font-size: 10px; }
   .d1-guide { top: 64px; right: 8px; width: min(300px, 32vw); max-height: calc(100vh - 132px); padding: 7px 8px; font-size: 10px; }
-  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide { left: 8px; right: auto; }
+  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide { right: auto; }
   .post-business-panel { max-height: calc(100vh - 96px); overflow-y: auto; padding: 16px; }
   .grill-status-layer {
-    top: 50vh;
     gap: 4px;
   }
   .grill-slot-status {
