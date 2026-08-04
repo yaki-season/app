@@ -101,6 +101,8 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     mesh.renderOrder = -z; // 먼 것 먼저
     mesh.userData.objectKey = key;
     mesh.userData.runtimeControlled = def.prodGrillSlot === true;
+    // 시각 전용 레이어는 레이캐스트 대상이 아니다(레버 등 실제 조작 대상을 가리지 않도록).
+    mesh.userData.decorative = def.decorative === true;
     return mesh;
   }
 
@@ -181,6 +183,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         serve.visible = false;
         serve.userData.objectKey = `seatServe:${seatId}`;
         serve.userData.seatId = seatId;
+        serve.userData.runtimeControlled = true; // 점유·phase는 영업 어댑터가 소유한다
         scene.add(serve); group.push(serve); objectMesh[`seatServe:${seatId}`] = serve;
       }
     }
@@ -191,15 +194,16 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     for (const [id, group] of Object.entries(screenGroups)) {
       const show = id === screenId;
       for (const mesh of group) {
-        // 좌석 actor/base/serve는 영업 상태 어댑터가 점유·phase별로 직접 제어한다.
+        // 좌석 손님·serve와 그릴 칸은 영업 상태 어댑터가 점유·phase별로 직접 제어한다.
         // 화면 활성화가 빈 좌석까지 다시 켜면 매 프레임 숨김/표시가 교차해 깜빡인다.
-        if (mesh.userData.runtimeControlled || mesh.userData.seatId) {
+        // 반대로 좌석 base는 어댑터가 켜주지 않으므로 화면 활성화가 계속 소유한다.
+        if (mesh.userData.runtimeControlled) {
           if (!show || inactiveSeats.has(mesh.userData.seatId)) mesh.visible = false;
           continue;
         }
         mesh.visible = show
           && !inactiveObjects.has(mesh.userData.objectKey)
-          ;
+          && !(mesh.userData.seatId && inactiveSeats.has(mesh.userData.seatId));
       }
     }
   }

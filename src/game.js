@@ -289,7 +289,7 @@ function hitTest(e) {
   raycaster.setFromCamera(ptr, R.camera);
   const targets = Object.keys(R.objectMesh)
     .map((key) => R.interactionMesh[key] ?? R.objectMesh[key])
-    .filter((mesh) => mesh.visible);
+    .filter((mesh) => mesh.visible && !mesh.userData.decorative);
   const hit = raycaster.intersectObjects(targets, false)[0];
   return hit ? hit.object.userData.objectKey : null;
 }

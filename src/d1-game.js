@@ -99,11 +99,10 @@ document.body.dataset.runtimeContractValid = String(runtimeAssets.readiness.cont
 const R = createProductionRenderer(canvas, { runtimeAssets });
 const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
 
+// 새로고침은 진행 중 영업일을 복구한다(PM 001·002 "새로고침 복구" 완료 기준, 공개 S0→D1 인계).
+// 깨끗한 시작이 필요하면 ?reset=1로 명시한다.
 const runtimeParams = new URLSearchParams(window.location.search);
-const resumeRequested = runtimeParams.get('resume') === '1';
-// D1 개발 플레이는 새로고침마다 깨끗하게 시작한다. 저장 복원 검증은 ?resume=1로 명시한다.
-const resetFirstOrderRuntime = runtimeParams.get('reset') === '1'
-  || (ACTIVE_DAY_ID === 'd1' && !resumeRequested);
+const resetFirstOrderRuntime = runtimeParams.get('reset') === '1';
 if (resetFirstOrderRuntime) clearFirstOrderRuntime(window.localStorage);
 function readFirstOrderRuntime() {
   try {

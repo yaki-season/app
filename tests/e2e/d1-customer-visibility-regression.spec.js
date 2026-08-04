@@ -64,13 +64,13 @@ test('120개 연속 프레임에서 유령 손님과 빈 그릴 네기마가 나
   expect(grillGhosts).toEqual([]);
 });
 
-test('D1 새로고침은 영업 시간과 로그를 기본 초기화한다', async ({ page }) => {
-  await page.goto('/src/d1-game.html');
+test('D1 ?reset=1 새로고침은 영업 시간과 로그를 초기화한다', async ({ page }) => {
+  await page.goto('/src/d1-game.html?reset=1');
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady())).toBe(true);
   await page.evaluate(() => window.__d1GameDebug.businessAdvance(6_000));
   expect(await page.evaluate(() => window.__d1GameDebug.businessView().clock.elapsedMs)).toBeGreaterThan(0);
 
-  await page.reload();
+  await page.goto('/src/d1-game.html?reset=1');
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady())).toBe(true);
   expect(await page.evaluate(() => window.__d1GameDebug.businessView().clock.elapsedMs)).toBe(0);
 });
