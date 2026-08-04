@@ -95,6 +95,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     const mesh = billboard(cam, rect, z, mat);
     mesh.renderOrder = -z; // 먼 것 먼저
     mesh.userData.objectKey = key;
+    mesh.userData.runtimeControlled = def.prodGrillSlot === true;
     return mesh;
   }
 
@@ -160,6 +161,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         actor.renderOrder = -LAYER_Z.actor;
         actor.visible = false;
         actor.userData.seatId = seatId;
+        actor.userData.runtimeControlled = true;
         scene.add(actor); group.push(actor); seatActorMesh[seatId] = actor;
 
         // 주문·서빙은 시각 좌석과 분리된 투명 raycast 대상으로 처리한다.
@@ -184,9 +186,15 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     for (const [id, group] of Object.entries(screenGroups)) {
       const show = id === screenId;
       for (const mesh of group) {
+        // 좌석 actor/base/serve는 영업 상태 어댑터가 점유·phase별로 직접 제어한다.
+        // 화면 활성화가 빈 좌석까지 다시 켜면 매 프레임 숨김/표시가 교차해 깜빡인다.
+        if (mesh.userData.runtimeControlled || mesh.userData.seatId) {
+          if (!show || inactiveSeats.has(mesh.userData.seatId)) mesh.visible = false;
+          continue;
+        }
         mesh.visible = show
           && !inactiveObjects.has(mesh.userData.objectKey)
-          && !(mesh.userData.seatId && inactiveSeats.has(mesh.userData.seatId));
+          ;
       }
     }
   }
@@ -237,6 +245,26 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       if (mesh) placeBillboard(mesh, cam, rect, LAYER_Z.interactive);
     }
     setActiveScreenObjects(activeId);
+  }
+
+  function setObjectEnabled(key, enabled) {
+    if (enabled) inactiveObjects.delete(key);
+    else inactiveObjects.add(key);
+    const screenActive = SCREEN_BY_ID[activeId]?.objects.includes(key) === true;
+    const visible = enabled && screenActive;
+    if (objectMesh[key]) objectMesh[key].visible = visible;
+    if (artMesh[key]) artMesh[key].visible = visible;
+    if (interactionMesh[key]) interactionMesh[key].visible = visible;
+  }
+
+  // 승인 아트 레이어(artMesh)와 더미 평면(objectMesh) 어느 쪽이든 같은 key로 텍스처를 교체한다.
+  function setObjectTexture(key, url) {
+    const mesh = artMesh[key] ?? objectMesh[key];
+    if (!mesh?.material) return;
+    const next = texture(url);
+    if (mesh.material.map === next) return;
+    mesh.material.map = next;
+    mesh.material.needsUpdate = true;
   }
 
   // ── 라이브 카메라 + 시선 트윈 ─────────────────────────────
@@ -365,6 +393,8 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     seatBubbleWorld,
     setSeatCapacity,
     setGrillSlots,
+    setObjectEnabled,
+    setObjectTexture,
     hasSeatActorArt: () => !!SEAT_ACTOR_TEXTURE,
     // 좌석 손님 아트 텍스처 교체 (phase 구동). UV 크롭은 지오메트리에 남는다.
     setSeatActorTexture: (seatId, url) => {
