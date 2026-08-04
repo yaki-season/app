@@ -9,11 +9,7 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  consumePromotionReceipt,
-  createPromotionReceipt,
-  validatePromotionReceipt,
-} from '../../tools/assets/promotion-receipt.mjs';
+import { parseArguments } from '../../tools/assets/promote-runtime-asset.mjs';
 import { atomicPromoteBundle } from '../../tools/assets/promotion-transaction.mjs';
 import {
   createManifestValidator,
@@ -216,42 +212,25 @@ describe('atomic bundle promotion', () => {
   });
 });
 
-describe('promotion receipt', () => {
-  it('현재 manifest와 입력에 묶이고 만료·소비된다', async () => {
-    const root = await temporaryDirectory();
-    const manifest = path.join(root, 'manifest.json');
-    const receipts = path.join(root, 'receipts');
-    await writeFile(manifest, '{"version":"one"}\n');
-    const issuedAt = new Date('2026-07-28T00:00:00.000Z');
-    const input = {
-      handoffFile: '../art-workspace/runtime-handoff.json',
-      handoffSha256: 'a'.repeat(64),
-      identity: 'UI-CUSTOMER-ORDER-ICON-NEGIMA@R1-B2',
-      bundleSha256: 'b'.repeat(64),
-      receiptDirectory: receipts,
-      currentManifestPath: manifest,
-    };
-    const created = await createPromotionReceipt({ ...input, now: issuedAt });
+describe('promotion CLI v8 arguments', () => {
+  it('read-only preflight와 같은 handoff 배치의 직접 write를 구분한다', () => {
+    expect(parseArguments(['--handoff', 'one.json', '--handoff', 'two.json'])).toEqual({
+      write: false,
+      handoffs: ['one.json', 'two.json'],
+    });
+    expect(parseArguments(['--handoff', 'one.json', '--write'])).toEqual({
+      write: true,
+      handoffs: ['one.json'],
+    });
+  });
 
-    await expect(
-      validatePromotionReceipt({ ...input, receiptFile: created.receiptFile, now: issuedAt }),
-    ).resolves.toMatchObject({ receipt: { consumed: false } });
-
-    await writeFile(manifest, '{"version":"two"}\n');
-    await expect(
-      validatePromotionReceipt({ ...input, receiptFile: created.receiptFile, now: issuedAt }),
-    ).rejects.toThrow('manifestSha256');
-
-    await writeFile(manifest, '{"version":"one"}\n');
-    await expect(
-      validatePromotionReceipt({
-        ...input,
-        receiptFile: created.receiptFile,
-        now: new Date('2026-07-28T00:31:00.000Z'),
-      }),
-    ).rejects.toThrow('만료');
-
-    await consumePromotionReceipt(created.receiptFile);
-    await expect(access(created.receiptFile)).rejects.toThrow();
+  it('폐기된 --receipt를 무시하지 않고 거부한다', () => {
+    expect(() => parseArguments([
+      '--handoff',
+      'one.json',
+      '--write',
+      '--receipt',
+      'old.json',
+    ])).toThrow('--receipt는 폐기됐습니다');
   });
 });

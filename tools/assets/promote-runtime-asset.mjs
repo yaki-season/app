@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
+import { randomUUID } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   allAssetReferences,
   appRoot,
@@ -17,11 +19,6 @@ import {
   validateManifestEntry,
   validateRuntimeAssets,
 } from './runtime-assets-lib.mjs';
-import {
-  consumePromotionReceipt,
-  createPromotionReceipt,
-  validatePromotionReceipt,
-} from './promotion-receipt.mjs';
 import { atomicPromoteBundle } from './promotion-transaction.mjs';
 import { assertPromotionSemanticOwnerAlignment } from '../../src/assets/artSemanticOwnerContract.js';
 
@@ -42,21 +39,25 @@ function usage(message) {
   if (message) console.error(message);
   console.error(
     '사용법: npm run assets:promote -- --handoff ../art-workspace/.../runtime-handoff.json '
-    + '[--handoff <추가 handoff> ...] [--write --receipt <receipt> ...]',
+    + '[--handoff <추가 handoff> ...] [--write]',
   );
   process.exitCode = 2;
 }
 
-function parseArguments(argv) {
-  const result = { write: false, handoffs: [], receipts: [] };
+export function parseArguments(argv) {
+  const result = { write: false, handoffs: [] };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === '--write') {
       result.write = true;
-    } else if (argument === '--handoff' || argument === '--receipt') {
+    } else if (argument === '--receipt') {
+      throw new Error(
+        '--receipt는 폐기됐습니다. finalizer handoff와 --write를 같은 승격 명령에 지정하십시오.',
+      );
+    } else if (argument === '--handoff') {
       const value = argv[index + 1];
       if (!value || value.startsWith('--')) throw new Error(`${argument} 값이 필요합니다.`);
-      result[`${argument.slice(2)}s`].push(value);
+      result.handoffs.push(value);
       index += 1;
     } else {
       throw new Error(`알 수 없는 인자입니다: ${argument}`);
@@ -510,14 +511,6 @@ async function main() {
     usage('--handoff가 필요합니다.');
     return;
   }
-  if (args.write && args.receipts.length !== args.handoffs.length) {
-    usage('--write에는 각 handoff dry-run이 만든 --receipt가 하나씩 필요합니다.');
-    return;
-  }
-  if (!args.write && args.receipts.length > 0) {
-    usage('--receipt는 --write와 함께만 사용합니다.');
-    return;
-  }
 
   const validated = [];
   for (const argument of args.handoffs) {
@@ -582,35 +575,16 @@ async function main() {
 
   if (!args.write) {
     for (const item of validated) {
-      const identity = runtimeIdentity(item.entry);
-      const receipt = await createPromotionReceipt({
-        handoffFile: path.relative(appRoot, item.handoffFile),
-        handoffSha256: item.handoffSha256,
-        identity,
-        bundleSha256: item.bundleSha256,
-      });
-      console.log(`dry-run 통과: ${identity}`);
-      console.log(`승격 영수증: ${path.relative(appRoot, receipt.receiptFile)}`);
+      console.log(`read-only preflight 통과: ${runtimeIdentity(item.entry)}`);
     }
     console.log(`원자 batch: ${validated.length} assets / ${artifacts.length} payloads`);
-    console.log('실제 반영은 같은 handoff와 --write --receipt <위 경로>를 사용하십시오.');
+    console.log('파일 변경 없음. 실제 반영은 같은 handoff 목록에 --write를 추가하십시오.');
     return;
   }
 
-  const receiptResults = [];
-  for (let index = 0; index < validated.length; index += 1) {
-    const item = validated[index];
-    receiptResults.push(await validatePromotionReceipt({
-      receiptFile: path.resolve(process.cwd(), args.receipts[index]),
-      handoffFile: path.relative(appRoot, item.handoffFile),
-      handoffSha256: item.handoffSha256,
-      identity: runtimeIdentity(item.entry),
-      bundleSha256: item.bundleSha256,
-    }));
-  }
   const transactionDirectory = path.join(
     stagingRoot,
-    `batch-${receiptResults.map((result) => result.receipt.nonce).join('-')}`,
+    `batch-${randomUUID()}`,
   );
   await atomicPromoteBundle({
     transactionDirectory,
@@ -626,14 +600,18 @@ async function main() {
       process.env.NODE_ENV === 'test'
       && process.env.YAKI_PROMOTION_FAIL_AFTER_MANIFEST === '1',
   });
-  await Promise.all(receiptResults.map((result) => consumePromotionReceipt(result.receiptFile)));
   console.log(
     `승격 완료: ${validated.map(({ entry }) => runtimeIdentity(entry)).join(', ')} `
     + `(${artifacts.length}개 파일 원자 batch)`,
   );
 }
 
-main().catch((error) => {
-  console.error(`runtime asset 승격 실패: ${error.message}`);
-  process.exitCode = 1;
-});
+if (
+  process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  main().catch((error) => {
+    console.error(`runtime asset 승격 실패: ${error.message}`);
+    process.exitCode = 1;
+  });
+}
