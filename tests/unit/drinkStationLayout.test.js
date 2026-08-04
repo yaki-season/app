@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { computeSeats, OBJECTS, SCREEN_BY_ID } from '../../src/config/screenLayout.js';
 
 describe('드링크 스테이션 화면 배치', () => {
-  it('빈잔 놓기 슬롯을 화면과 클릭 영역에 노출한다', () => {
+  it('개발용 슬롯은 숨기고 승인 빈잔 덱 위치에 클릭 영역만 노출한다', () => {
     expect(SCREEN_BY_ID['SCR-SVC-DRINK'].objects).toContain('glassRack');
     expect(OBJECTS.glassRack.hitRect).toBeDefined();
-    expect(OBJECTS.glassRack.rect.x + OBJECTS.glassRack.rect.width / 2).toBeCloseTo(0.5);
+    expect(OBJECTS.glassRack.invisible).toBe(true);
+    expect(OBJECTS.glassRack.rect).toEqual(OBJECTS.drinkGlassDeck.rect);
+    expect(OBJECTS.glassRack.hitRect).toEqual(OBJECTS.drinkGlassDeck.rect);
   });
 
   it('맥주 머신은 전체 화면 cover 대신 축소된 원경 rect를 쓴다', () => {

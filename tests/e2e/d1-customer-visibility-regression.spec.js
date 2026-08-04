@@ -1,0 +1,76 @@
+import { expect, test } from '@playwright/test';
+
+// 고정 인물 츠키오카는 승인 아트 레이어(custTsukioka)가 렌더하고 일반 좌석 액터는 숨는다.
+// 액체/VFX 가시성 갱신이 빈 좌석 액터를 되살리지 않는지, 그리고 아트 레이어가 점유를 따르는지 함께 본다.
+test('액체/VFX 가시성 갱신이 빈 좌석 손님을 다시 표시하지 않는다', async ({ page }) => {
+  await page.goto('/src/d1-game.html?reset=1');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady())).toBe(true);
+  await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-CUSTOMERS'));
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.isTransitioning())).toBe(false);
+  await page.waitForTimeout(1_000); // 여러 rAF·영업 render 주기를 통과한다.
+
+  const snapshot = await page.evaluate(() => {
+    const debug = window.__d1GameDebug;
+    const seats = debug.businessView().seats;
+    const occupied = seats.filter((seat) => seat.occupied).map((seat) => seat.seatId).sort();
+    const ghostActors = Object.entries(debug.renderer.seatActorMesh)
+      .filter(([seatId, mesh]) => mesh.visible && !occupied.includes(seatId))
+      .map(([seatId]) => seatId);
+    const tsukiokaSeat = seats.find((seat) => seat.customerId === 'REGULAR_TSUKIOKA');
+    return {
+      ghostActors,
+      tsukiokaOccupied: !!tsukiokaSeat?.occupied,
+      tsukiokaArtVisible: debug.renderer.artMesh.custTsukioka.visible,
+    };
+  });
+  expect(snapshot.ghostActors).toEqual([]);
+  expect(snapshot.tsukiokaArtVisible).toBe(snapshot.tsukiokaOccupied);
+});
+
+test('120개 연속 프레임에서 유령 손님과 빈 그릴 네기마가 나타나지 않는다', async ({ page }) => {
+  await page.goto('/src/d1-game.html?reset=1');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady())).toBe(true);
+
+  const customerGhosts = await page.evaluate(async () => {
+    const debug = window.__d1GameDebug;
+    const violations = [];
+    for (let frame = 0; frame < 120; frame += 1) {
+      await new Promise(requestAnimationFrame);
+      const occupied = new Set(debug.businessView().seats.filter((seat) => seat.occupied).map((seat) => seat.seatId));
+      const ghosts = Object.entries(debug.renderer.seatActorMesh)
+        .filter(([seatId, mesh]) => mesh.visible && !occupied.has(seatId))
+        .map(([seatId]) => seatId);
+      if (ghosts.length) violations.push({ frame, ghosts });
+    }
+    return violations;
+  });
+  expect(customerGhosts).toEqual([]);
+
+  await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-GRILL'));
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.isTransitioning())).toBe(false);
+  const grillGhosts = await page.evaluate(async () => {
+    const debug = window.__d1GameDebug;
+    const violations = [];
+    for (let frame = 0; frame < 120; frame += 1) {
+      await new Promise(requestAnimationFrame);
+      const slots = debug.cookSlots();
+      const ghosts = slots.flatMap((slot, index) => (
+        debug.renderer.objectMesh[`pgSlot${index}`]?.visible && slot.status === 'empty' ? [index] : []
+      ));
+      if (ghosts.length) violations.push({ frame, ghosts });
+    }
+    return violations;
+  });
+  expect(grillGhosts).toEqual([]);
+});
+
+test('D1 새로고침은 영업 시간과 로그를 기본 초기화한다', async ({ page }) => {
+  await page.goto('/src/d1-game.html');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady())).toBe(true);
+  await page.evaluate(() => window.__d1GameDebug.businessAdvance(6_000));
+  expect(await page.evaluate(() => window.__d1GameDebug.businessView().clock.elapsedMs)).toBeGreaterThan(0);
+
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady())).toBe(true);
+  expect(await page.evaluate(() => window.__d1GameDebug.businessView().clock.elapsedMs)).toBe(0);
+});

@@ -105,7 +105,7 @@
         "runtimeBuild": { "type": "integer", "minimum": 1 },
         "status": { "const": "approved" },
         "screenUnit": { "type": "string", "minLength": 1 },
-        "profile": { "enum": ["complete-layer", "standalone-raster", "bundle-model"] },
+        "profile": { "enum": ["complete-layer", "standalone-raster", "bundle-model", "state-raster"] },
         "pack": { "enum": ["core", "campaign", "optional"] },
         "kind": { "enum": ["image", "atlas", "model", "texture", "vfx"] },
         "url": { "type": "string", "pattern": "^/assets/[a-z0-9./-]+$" },

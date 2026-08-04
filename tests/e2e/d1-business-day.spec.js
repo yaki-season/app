@@ -198,7 +198,7 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   expect(await D(page, 'businessFinalize')).toMatchObject({ ok: true, duplicate: true });
   expect((await D(page, 'campaignState')).economy.settlements).toHaveLength(1);
 
-  await page.reload();
+  await page.goto('/src/d1-game.html?resume=1');
   await expect.poll(() => D(page, 'businessReady')).toBe(true);
   expect(await D(page, 'businessSession')).toMatchObject({
     ok: true,

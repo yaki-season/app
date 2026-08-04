@@ -60,10 +60,10 @@ export const D1_RUNTIME_COMPONENT_INVENTORY = Object.freeze([
 
   row('SCR-SVC-DRINK', 'D1-drink-base', 'drink.scene', 'BG-WORKSPACE-DRINK', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound'),
   row('SCR-SVC-DRINK', 'D1-drink-base', 'drink.station', 'ST-DRINK-BEER-TIER-1', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound'),
-  row('SCR-SVC-DRINK', 'D1-drink-glass', 'drink.glass', 'MDL-BEER-GLASS', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
-  row('SCR-SVC-DRINK', 'D1-drink-lever', 'drink.lever', 'MDL-BEER-LEVER', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
-  row('SCR-SVC-DRINK', 'D1-drink-visual-variants', 'drink.liquid', 'TEX-BEER-LIQUID', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'pending', ['hidden', 'liquid-70-with-foam', 'liquid-100-with-foam']),
-  row('SCR-SVC-DRINK', 'D1-drink-visual-variants', 'drink.vfx', 'VFX-BEER-CORE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'pending', ['none', 'foam-settling', 'foam-crown', 'overflow', 'finished-steam']),
+  row('SCR-SVC-DRINK', 'D1-drink-glass', 'drink.glass', 'MDL-BEER-GLASS', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound'),
+  row('SCR-SVC-DRINK', 'D1-drink-lever', 'drink.lever', 'MDL-BEER-LEVER', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound'),
+  row('SCR-SVC-DRINK', 'D1-drink-visual-variants', 'drink.liquid', 'TEX-BEER-LIQUID', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'code-native', ['hidden', 'liquid-70-with-foam', 'liquid-100-with-foam']),
+  row('SCR-SVC-DRINK', 'D1-drink-visual-variants', 'drink.vfx', 'VFX-BEER-CORE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'code-native', ['none', 'foam-settling', 'foam-crown', 'overflow', 'finished-steam']),
 
   row('SCR-POST-CLOSING', 'D1-closing-charcoal', 'closing.charcoal', 'ST-CHARCOAL-CORE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
   row('SCR-POST-CLOSING', 'D1-closing-ember', 'closing.charcoal.vfx', 'VFX-EMBER-CORE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
@@ -83,7 +83,9 @@ export function reportD1RuntimeComponentInventory(
   );
   const entries = inventory.map((entry) => Object.freeze({
     ...entry,
-    placeholder: entry.bindingState !== 'bound' || !approvedIds.has(entry.requiredAssetId),
+    placeholder: entry.bindingState === 'code-native'
+      ? false
+      : entry.bindingState !== 'bound' || !approvedIds.has(entry.requiredAssetId),
   }));
   const placeholderEntries = entries.filter((entry) => entry.placeholder);
   const byOwner = Object.freeze(Object.fromEntries(

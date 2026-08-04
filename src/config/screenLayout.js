@@ -36,13 +36,25 @@ export const CUSTOMER_ART = {
 // 승인 D1 조리 화면 아트. GLB/JSON 4종은 실제 renderer consumer 전까지 pending이다.
 export const COOKING_ART = {
   drinkBackground: 'BG-WORKSPACE-DRINK',
-  drinkStation: 'ST-DRINK-BEER-TIER-1',
+  // 드링크 머신 레이어는 레버 상태를 함께 그리는 MDL-BEER-LEVER가 소비한다.
+  // ST-DRINK-BEER-TIER-1은 레버가 구워지지 않은 base로 남는다.
+  drinkStation: 'MDL-BEER-LEVER',
+  drinkGlass: 'MDL-BEER-GLASS',
   grillBackground: 'BG-WORKSPACE-GRILL',
   assemblyBackground: 'BG-WORKSPACE-ASSEMBLY',
   grillStation: 'ST-GRILL-TIER-1',
   grillFinishedTray: 'ST-GRILL-FINISHED-TRAY',
   assemblyStation: 'ST-ASSEMBLY-TIER-1',
 };
+
+// 하나의 stable ID가 여러 상태 래스터를 갖는 경우의 companion role.
+// 실제 URL은 manifest companion에서 해석하며, 여기서는 role 이름만 계약으로 고정한다.
+export const DRINK_ART_STATE = Object.freeze({
+  leverNeutral: null, // MDL-BEER-LEVER 기본 url
+  leverBeer: 'lever-beer',
+  leverFoam: 'lever-foam',
+  glassDeck: 'glass-deck',
+});
 export const SEAT_ACTOR_TEXTURE = null;
 export const SEAT_ACTOR_UV = null;
 
@@ -99,6 +111,13 @@ export const OBJECTS = {
   drinkBg: { kind: 'image', full: true, layer: 'background', order: 0, stableAssetId: COOKING_ART.drinkBackground, opaque: true },
   // 승인 원본은 FHD 투명 캔버스다. cover 확대 없이 한 걸음 물러난 rect로 합성한다.
   drinkStation: { kind: 'image', rect: { x: 0.10, y: 0.07, width: 0.80, height: 0.80 }, layer: 'fixture', order: 10, stableAssetId: COOKING_ART.drinkStation, opaque: false },
+  // 빈잔 덱은 상시 표시, 노즐 아래 배치 잔은 덱 클릭 뒤에만 표시한다.
+  drinkGlassDeck: { kind: 'image', rect: { x: 0.12, y: 0.43, width: 0.34, height: 0.30 }, layer: 'interactive', order: 20, stableAssetId: COOKING_ART.drinkGlass, companionRole: DRINK_ART_STATE.glassDeck, opaque: false },
+  // 잔 PNG 전체 bounds가 아니라 실제 원통형 몸통 안쪽만 사용한다(손잡이·투명 여백 제외).
+  drinkBeerLiquid: { rect: { x: 0.468, y: 0.525, width: 0.055, height: 0.105 }, layer: 'interactive', color: 0xffffff, kind: 'plane' },
+  drinkPlacedGlass: { kind: 'image', rect: { x: 0.43, y: 0.43, width: 0.14, height: 0.25 }, layer: 'interactive', order: 21, stableAssetId: COOKING_ART.drinkGlass, opaque: false },
+  // 노즐 끝→잔 입구/몸통만 덮는 좁은 VFX 영역. 화면 전체 포말 blob을 방지한다.
+  drinkBeerVfx: { rect: { x: 0.455, y: 0.365, width: 0.09, height: 0.315 }, layer: 'vfx', color: 0xffffff, kind: 'plane' },
   grillBg: { kind: 'image', full: true, layer: 'background', order: 0, stableAssetId: COOKING_ART.grillBackground, opaque: true },
   assemblyBg: { kind: 'image', full: true, layer: 'background', order: 0, stableAssetId: COOKING_ART.assemblyBackground, opaque: true },
 
@@ -139,7 +158,7 @@ export const OBJECTS = {
   // 드링크 화면 (단일 레버: 위=거품, 아래=맥주. 잔 채움은 DOM 패널)
   drinkTower: { rect: { x: 0.44, y: 0.30, width: 0.12, height: 0.24 }, layer: 'fixture', color: 0x6b6f72, kind: 'plane' },
   // 빈잔을 선택해 노즐 아래에 놓는 실제 클릭 슬롯. 승인 머신의 중앙 노즐과 정렬한다.
-  glassRack: { rect: { x: 0.405, y: 0.66, width: 0.19, height: 0.105 }, hitRect: { x: 0.37, y: 0.61, width: 0.26, height: 0.19 }, layer: 'interactive', color: 0xc9a86a, kind: 'plane' },
+  glassRack: { rect: { x: 0.12, y: 0.43, width: 0.34, height: 0.30 }, hitRect: { x: 0.12, y: 0.43, width: 0.34, height: 0.30 }, layer: 'interactive', color: 0xc9a86a, kind: 'plane', invisible: true },
   drinkLeverUpper: { rect: { x: 0.48, y: 0.25, width: 0.08, height: 0.13 }, hitRect: { x: 0.46, y: 0.23, width: 0.12, height: 0.17 }, layer: 'interactive', color: 0xe8d8a0, kind: 'plane', invisible: true },
   drinkLeverLower: { rect: { x: 0.48, y: 0.38, width: 0.08, height: 0.10 }, hitRect: { x: 0.46, y: 0.36, width: 0.12, height: 0.14 }, layer: 'interactive', color: 0xc79a3a, kind: 'plane', invisible: true },
 };
@@ -205,7 +224,7 @@ export const SCREENS = [
     id: 'SCR-SVC-DRINK',
     name: '드링크',
     look: { x: 1.8, y: -1.4, z: -4.4 }, // 옆(오른쪽) 주류
-    objects: ['drinkBg', 'glassRack', 'drinkStation', 'drinkLeverUpper', 'drinkLeverLower'],
+    objects: ['drinkBg', 'glassRack', 'drinkStation', 'drinkGlassDeck', 'drinkBeerLiquid', 'drinkPlacedGlass', 'drinkBeerVfx', 'drinkLeverUpper', 'drinkLeverLower'],
   },
 ];
 

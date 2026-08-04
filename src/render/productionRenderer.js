@@ -45,10 +45,15 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       .filter((asset) => asset?.id && asset?.url)
       .map((asset) => [asset.id, asset]),
   );
-  function runtimeUrlForId(stableAssetId) {
+  // companionRole이 있으면 같은 stable ID의 승인 companion 래스터를 쓴다(레버 상태·잔 덱 등).
+  // 미등록 role은 승인 없는 아트가 조용히 새어들지 않도록 즉시 실패시킨다.
+  function runtimeUrlForId(stableAssetId, companionRole = null) {
     const asset = runtimeAssetById.get(stableAssetId);
     if (!asset) throw new Error(`승인 runtime asset resolver 누락: ${stableAssetId}`);
-    return asset.url;
+    if (!companionRole) return asset.url;
+    const companion = (asset.companions ?? []).find((c) => c.role === companionRole);
+    if (!companion) throw new Error(`승인 companion 누락: ${stableAssetId}#${companionRole}`);
+    return companion.url;
   }
 
   const eye = new THREE.Vector3(PLAYER_EYE.x, PLAYER_EYE.y, PLAYER_EYE.z);
@@ -70,7 +75,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     // 승인 아트 이미지 레이어 (배경·카운터 등 풀프레임). painter 순서(def.order)로 합성.
     if (def.kind === 'image') {
       const z = LAYER_Z[def.layer];
-      const mat = new THREE.MeshBasicMaterial({ map: texture(runtimeUrlForId(def.stableAssetId)), transparent: !def.opaque, depthTest: false, depthWrite: false });
+      const mat = new THREE.MeshBasicMaterial({ map: texture(runtimeUrlForId(def.stableAssetId, def.companionRole)), transparent: !def.opaque, depthTest: false, depthWrite: false });
       const mesh = billboard(cam, def.full ? { x: 0, y: 0, width: 1, height: 1 } : def.rect, z, mat);
       if (def.full) {
         const scale = def.imageScale ?? 1;
@@ -257,11 +262,12 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     if (interactionMesh[key]) interactionMesh[key].visible = visible;
   }
 
-  // 승인 아트 레이어(artMesh)와 더미 평면(objectMesh) 어느 쪽이든 같은 key로 텍스처를 교체한다.
-  function setObjectTexture(key, url) {
+  // 승인 아트 레이어(artMesh)와 더미 평면(objectMesh) 어느 쪽이든 같은 key로 상태 텍스처를 교체한다.
+  // 파일명이 아니라 stable ID + companion role로만 지정한다(미승인 아트 차단).
+  function setObjectTexture(key, stableAssetId, companionRole = null) {
     const mesh = artMesh[key] ?? objectMesh[key];
     if (!mesh?.material) return;
-    const next = texture(url);
+    const next = texture(runtimeUrlForId(stableAssetId, companionRole));
     if (mesh.material.map === next) return;
     mesh.material.map = next;
     mesh.material.needsUpdate = true;

@@ -13,6 +13,8 @@ import {
   createD1CookStations,
 } from './render/cookStations.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
+import { createBeerLiquidMaterial } from './render/beerLiquidMaterial.js';
+import { createBeerCoreVfxMaterial } from './render/beerCoreVfxMaterial.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
@@ -26,6 +28,8 @@ import {
   SEAT_IDS,
   GRILL_SLOT_KEYS,
   computeGrillSlots,
+  COOKING_ART,
+  DRINK_ART_STATE,
 } from './config/screenLayout.js';
 import {
   D1_GRILL_FINISHED_TRAY,
@@ -95,7 +99,11 @@ document.body.dataset.runtimeContractValid = String(runtimeAssets.readiness.cont
 const R = createProductionRenderer(canvas, { runtimeAssets });
 const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
 
-const resetFirstOrderRuntime = new URLSearchParams(window.location.search).get('reset') === '1';
+const runtimeParams = new URLSearchParams(window.location.search);
+const resumeRequested = runtimeParams.get('resume') === '1';
+// D1 개발 플레이는 새로고침마다 깨끗하게 시작한다. 저장 복원 검증은 ?resume=1로 명시한다.
+const resetFirstOrderRuntime = runtimeParams.get('reset') === '1'
+  || (ACTIVE_DAY_ID === 'd1' && !resumeRequested);
 if (resetFirstOrderRuntime) clearFirstOrderRuntime(window.localStorage);
 function readFirstOrderRuntime() {
   try {
@@ -272,6 +280,24 @@ el('d3RetrieveMomo').addEventListener('click', () => {
 });
 if (restoredFirstOrderRuntime?.dock) dock.restore(restoredFirstOrderRuntime.dock);
 const pour = createDrinkPour();
+let beerLiquid = null;
+createBeerLiquidMaterial().then((controller) => {
+  beerLiquid = controller;
+  const mesh = R.objectMesh.drinkBeerLiquid;
+  if (!mesh) return;
+  mesh.material.dispose();
+  mesh.material = controller.material;
+  mesh.renderOrder = 20.5; // 액체는 승인된 유리잔(order 21) 뒤에 둔다.
+}).catch((error) => console.error('맥주 액체 셰이더 로드 실패:', error));
+let beerCoreVfx = null;
+createBeerCoreVfxMaterial().then((controller) => {
+  beerCoreVfx = controller;
+  const mesh = R.objectMesh.drinkBeerVfx;
+  if (!mesh) return;
+  mesh.material.dispose();
+  mesh.material = controller.material;
+  mesh.renderOrder = 22;
+}).catch((error) => console.error('맥주 코어 VFX 셰이더 로드 실패:', error));
 const LEVER_ZONE = { drinkLeverLower: 'beer', drinkLeverUpper: 'foam' };
 const customers = createCustomerAdapter({ renderer: R, container: el('bubbleLayer') });
 
@@ -723,9 +749,23 @@ drinkPanel.querySelector('.target-line').style.bottom = `${(4.0 / DRINK.totalCap
 
 function updateDrinkPanel(activeScreen) {
   const show = activeScreen === 'SCR-SVC-DRINK';
+  R.setObjectEnabled?.('drinkPlacedGlass', glassPlaced);
+  R.setObjectEnabled?.('drinkBeerLiquid', glassPlaced);
+  R.setObjectEnabled?.('drinkBeerVfx', glassPlaced);
   drinkPanel.hidden = !show;
-  if (!show) return;
   const s = pour.state();
+  beerLiquid?.setState({
+    beerFill: s.beerSec / DRINK.totalCap,
+    foamFill: s.foamSec / DRINK.totalCap,
+    overflow: s.phase === 'overflow',
+  });
+  beerCoreVfx?.setState({
+    active: s.active,
+    foamFill: s.foamSec / DRINK.totalCap,
+    overflow: s.phase === 'overflow',
+    finished: s.phase === 'ready' && s.beerOk && s.foamOk,
+  });
+  if (!show) return;
   const beerH = Math.min(1, s.beerSec / DRINK.totalCap) * GLASS_PX;
   const foamH = Math.min(1, s.foamSec / DRINK.totalCap) * GLASS_PX;
   beerEl.style.height = `${beerH}px`;
@@ -1099,6 +1139,9 @@ canvas.addEventListener('pointerdown', (e) => {
       render();
       return;
     }
+    R.setObjectTexture?.('drinkStation', COOKING_ART.drinkStation, LEVER_ZONE[key] === 'beer'
+      ? DRINK_ART_STATE.leverBeer
+      : DRINK_ART_STATE.leverFoam);
     pour.press(LEVER_ZONE[key], now);
     return;
   }
@@ -1116,6 +1159,7 @@ canvas.addEventListener('pointerdown', (e) => {
 });
 function releasePointers() {
   pour.release(performance.now());
+  R.setObjectTexture?.('drinkStation', COOKING_ART.drinkStation, DRINK_ART_STATE.leverNeutral);
   const drink = pour.state();
   if (drink.beerSec > 0 && drink.foamSec > 0) {
     firstOrderGuide.complete('beer.pour');
@@ -1253,10 +1297,6 @@ for (const key of SLOT_KEYS) {
     if (!mesh) return;
     mesh.material.dispose();
     mesh.material = g.material;
-    const wasVisible = mesh.visible;
-    mesh.visible = true;
-    R.renderFrame(performance.now());
-    mesh.visible = wasVisible;
   }).catch((err) => console.error('익힘 재질 로드 실패:', err));
 }
 
@@ -1332,15 +1372,12 @@ async function bootBusinessDay() {
       render();
       return;
     }
-    const resetDevelopment = new URLSearchParams(window.location.search).get('reset') === '1';
+    const resetDevelopment = resetFirstOrderRuntime;
     businessSession = await createD1BusinessDayBrowserSession({
       definition: consumed.definition,
       browserStorage: window.localStorage,
       resetDevelopment,
     });
-    if (resetDevelopment) {
-      window.history.replaceState({}, '', window.location.pathname);
-    }
     if (!businessSession.ok) {
       businessBootError = businessSession.error;
     } else {
@@ -1394,6 +1431,8 @@ function loop(now) {
   updateGrillVisual(now);
   updateGrillStatus(now);
   pour.tick(now);
+  beerLiquid?.setTime(now / 1000);
+  beerCoreVfx?.setTime(now / 1000);
   updateDrinkPanel(active);
   updateLabels();
   customers.tick(active);
@@ -1552,6 +1591,8 @@ Object.assign(d1GameDebug, {
   },
   pourExact: (beerSec, foamSec) => { pour.reset(); pour.press('beer', 0); pour.release(beerSec * 1000); pour.press('foam', beerSec * 1000); pour.release((beerSec + foamSec) * 1000); return pour.state(); },
   drinkState: () => pour.state(),
+  beerLiquidState: () => beerLiquid?.snapshot() ?? null,
+  beerCoreVfxState: () => beerCoreVfx?.snapshot() ?? null,
   drinkFinish: () => finishDrink(),
   screenPosOf: (key) => {
     const m = R.interactionMesh[key] ?? R.objectMesh[key];
