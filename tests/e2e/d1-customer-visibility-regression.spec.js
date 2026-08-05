@@ -64,13 +64,22 @@ test('120개 연속 프레임에서 유령 손님과 빈 그릴 네기마가 나
   expect(grillGhosts).toEqual([]);
 });
 
-test('D1 ?reset=1 새로고침은 영업 시간과 로그를 초기화한다', async ({ page }) => {
+test('D1 ?reset=1 새로고침은 진행 중 영업을 초기 구간으로 되돌린다', async ({ page }) => {
   await page.goto('/src/d1-game.html?reset=1');
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady())).toBe(true);
   await page.evaluate(() => window.__d1GameDebug.businessAdvance(6_000));
-  expect(await page.evaluate(() => window.__d1GameDebug.businessView().clock.elapsedMs)).toBeGreaterThan(0);
+  const elapsedBeforeReset = await page.evaluate(
+    () => window.__d1GameDebug.businessView().clock.elapsedMs,
+  );
+  expect(elapsedBeforeReset).toBeGreaterThanOrEqual(6_000);
 
   await page.goto('/src/d1-game.html?reset=1');
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady())).toBe(true);
-  expect(await page.evaluate(() => window.__d1GameDebug.businessView().clock.elapsedMs)).toBe(0);
+  const elapsedAfterReset = await page.evaluate(
+    () => window.__d1GameDebug.businessView().clock.elapsedMs,
+  );
+  // businessReady 관찰 뒤에도 실제 영업 루프는 계속 흐른다. 정확히 0ms를 요구하면
+  // 브라우저 프레임 타이밍에 따라 실패하므로 첫 1초 이내로 복귀했는지를 검증한다.
+  expect(elapsedAfterReset).toBeLessThan(1_000);
+  expect(elapsedAfterReset).toBeLessThan(elapsedBeforeReset);
 });

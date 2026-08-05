@@ -944,6 +944,9 @@ function render() {
   // 그릴 칸 익힘 색 폴백(셰이더 로드 전)
   const views = cook.slotViews(now);
   renderGrillWaitingControl(views);
+  // 클릭 결과를 다음 rAF까지 미루지 않는다. 0.3초 뒤집기 잠금처럼 짧은 상태도
+  // 입력과 같은 렌더에서 DOM에 반영돼야 저사양·소형 화면에서도 건너뛰지 않는다.
+  updateGrillStatus(now);
   for (const key of SLOT_KEYS) {
     const i = slotIndexOf(key);
     const mesh = R.objectMesh[key];

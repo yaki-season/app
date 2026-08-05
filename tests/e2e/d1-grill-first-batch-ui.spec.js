@@ -96,8 +96,12 @@ test('public D1 첫 batch 두 칸과 semantic 네기마 제어가 승인 footpri
   expect(buttonRect.height).toBeGreaterThanOrEqual(44);
 
   // 한 번의 실제 mouse activation 직후 같은 DOM intent가 중복되어도 200ms lock이 두 번째를 막는다.
+  // 별도 Playwright 왕복으로 element.click()을 호출하면 머신 부하에 따라 200ms 밖으로 밀릴 수
+  // 있으므로, 실제 click 이벤트와 같은 브라우저 task 안에서 중복 intent를 재현한다.
+  await button.evaluate((element) => {
+    element.addEventListener('click', () => element.click(), { once: true });
+  });
   await page.mouse.click(buttonRect.x + buttonRect.width / 2, buttonRect.y + buttonRect.height / 2);
-  await button.evaluate((element) => element.click());
   await expect.poll(() => D(page, 'cookWaiting')).toBe(1);
   expect((await D(page, 'cookSlots')).slice(0, 2)).toEqual([
     expect.objectContaining({ index: 0, status: 'staged' }),
