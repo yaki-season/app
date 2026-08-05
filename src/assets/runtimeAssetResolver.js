@@ -179,9 +179,9 @@ export function reportD1RuntimeAssetReadiness(
   );
   const boundEntries = inventory
     .filter((entry) => entry.bindingState === 'bound');
-  const pendingEntries = D1_RUNTIME_COMPONENT_INVENTORY
+  const pendingEntries = inventory
     .filter((entry) => entry.bindingState === 'pending');
-  const codeNativeEntries = D1_RUNTIME_COMPONENT_INVENTORY
+  const codeNativeEntries = inventory
     .filter((entry) => entry.bindingState === 'code-native');
   const placeholderIds = freezeIdList(componentReport.placeholderRequiredAssetIds);
   const codeNativeIds = new Set(codeNativeEntries.map((entry) => entry.requiredAssetId));

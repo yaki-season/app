@@ -112,6 +112,11 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .end-day {
     top: 76vh;
   }
 
+  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .grill-waiting-negima {
+    /* 이 구간에서 내려간 hint 하단 +8px를 유지한다. */
+    top: calc(76vh + 52px);
+  }
+
   body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) #navRight {
     right: 12px;
     width: 44px;

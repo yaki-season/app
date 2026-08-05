@@ -4,6 +4,7 @@ import {
   D1_RAW_NEGIMA_RUNTIME_ASSET_ID,
   D1_RUNTIME_ASSET_ID,
   indexApprovedRuntimeAssets,
+  reportD1RuntimeAssetReadiness,
   reportD1RawNegimaExactLoadReadiness,
   resolveD1RawNegimaRuntimeBundle,
 } from '../../src/assets/runtimeAssetResolver.js';
@@ -71,10 +72,11 @@ describe('D1 approved RAW negima exact-load binding', () => {
       ...Object.values(D1_RUNTIME_ASSET_ID),
     ]);
     const manifest = { assets: [...allIds].map((id) => approved(id)) };
+    const baseline = reportD1RuntimeAssetReadiness(manifest);
     const readiness = reportD1RawNegimaExactLoadReadiness(manifest);
 
     expect(readiness.contractAudit.valid).toBe(true);
-    expect(readiness.placeholderCount).toBe(27);
+    expect(readiness.placeholderCount).toBe(baseline.placeholderCount - 1);
     expect(readiness.placeholderIds).not.toContain('MDL-NEGIMA-GRILL-RAW');
     expect(readiness.unboundApprovedIds).not.toContain('MDL-NEGIMA-GRILL-RAW');
     expect(readiness.contractAudit.inventoryBoundIds).toContain('MDL-NEGIMA-GRILL-RAW');

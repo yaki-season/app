@@ -194,6 +194,8 @@ function invokeLockedControl(key, now = performance.now()) {
   if ((lockUntil[key] || 0) > now) return false;
   lockUntil[key] = now + 200;
   handle(key, now);
+  // 동기 렌더가 오래 걸려도 같은 activation의 중복 intent가 잠금을 소진하지 않게 한다.
+  lockUntil[key] = performance.now() + 200;
   return true;
 }
 grillWaitingNegima.addEventListener('click', () => invokeLockedControl('grillWaitTray'));
