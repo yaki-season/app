@@ -96,6 +96,10 @@ guideToggle.addEventListener('click', () => {
 });
 const canvas = el('scene');
 const runtimeAssets = await loadD1RuntimeAssets();
+document.getElementById('dockShelf')?.style.setProperty(
+  '--dock-shelf-art',
+  `url("${runtimeAssets.SERVICE_COUNTER.url}")`,
+);
 document.body.dataset.assetPlaceholderCount = String(runtimeAssets.readiness.placeholderCount);
 document.body.dataset.runtimeAssetsReady = String(runtimeAssets.readiness.ready);
 document.body.dataset.runtimeContractValid = String(runtimeAssets.readiness.contractAudit.valid);
@@ -913,14 +917,20 @@ function syncCustomers() {
     const actor = R.seatActorMesh[seatId];
     const kind = extraKind(seat?.customerId);
     if (actor) {
-      actor.material.map = null;
-      actor.material.needsUpdate = true;
+      if (kind === 'office') {
+        R.setSeatActorTexture(seatId, runtimeAssets.COMMUTER_CUSTOMER.url);
+      } else if (kind === 'solo') {
+        R.setSeatActorTexture(seatId, runtimeAssets.SOLO_CUSTOMER.url);
+      } else if (actor.material.map) {
+        actor.material.map = null;
+        actor.material.needsUpdate = true;
+      }
     }
     const bubble = document.querySelector(`[data-testid="bubble-${seatId}"]`);
     if (bubble) {
       bubble.dataset.serveEligible = String(seatCanReceiveSelected(seat));
       if (kind) {
-        bubble.dataset.placeholder = 'development';
+        delete bubble.dataset.placeholder;
         bubble.dataset.componentId = kind === 'office'
           ? 'customers.actor.commuter'
           : 'customers.actor.solo';

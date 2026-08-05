@@ -31,12 +31,15 @@ describe('art semanticOwner promotion preflight', () => {
     )).toBe(false);
   });
 
-  it('기존 승인 8개를 앞에 유지한 채 D1 조립·그릴 배치본을 bound에 추가한다', () => {
+  it('기존 승인 순서를 유지한 채 통근 손님과 D1 조립·그릴 배치본을 bound에 추가한다', () => {
     const boundRows = D1_RUNTIME_COMPONENT_INVENTORY.filter(
       (entry) => entry.bindingState === 'bound',
     );
     expect(boundRows.map((entry) => entry.requiredAssetId)).toEqual([
       ...existingApprovedIds,
+      'ST-SERVICE-COUNTER',
+      'CH-EXTRA-COMMUTER-SERVICE',
+      'CH-EXTRA-SOLO-SERVICE',
       'BG-WORKSPACE-ASSEMBLY',
       'ST-ASSEMBLY-TIER-1',
       'BG-WORKSPACE-GRILL',

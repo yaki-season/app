@@ -23,6 +23,10 @@ import { loadD1RuntimeAssets } from './assets/runtimeAssetResolver.js';
 const el = (id) => document.getElementById(id);
 const canvas = el('scene');
 const runtimeAssets = await loadD1RuntimeAssets();
+document.getElementById('dockShelf')?.style.setProperty(
+  '--dock-shelf-art',
+  `url("${runtimeAssets.SERVICE_COUNTER.url}")`,
+);
 const R = createProductionRenderer(canvas, { runtimeAssets });
 R.setObjectVisible('custTsukioka', false);
 const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });

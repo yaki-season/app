@@ -118,8 +118,18 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   const officeB = await accept(page, 'D1-OFFICE-B');
   for (const seatId of [officeA, officeB]) {
     const bubble = page.getByTestId(`bubble-${seatId}`);
-    await expect(bubble).toHaveAttribute('data-placeholder', 'development');
+    await expect(bubble).not.toHaveAttribute('data-placeholder');
     await expect(bubble).toHaveAttribute('data-required-asset-id', 'CH-EXTRA-COMMUTER-SERVICE');
+    await expect.poll(() => page.evaluate((id) => {
+      const actor = window.__d1GameDebug.renderer.seatActorMesh[id];
+      return {
+        visible: actor?.visible ?? false,
+        src: actor?.material?.map?.image?.currentSrc ?? actor?.material?.map?.image?.src ?? '',
+      };
+    }, seatId)).toMatchObject({
+      visible: true,
+      src: expect.stringContaining('ch-extra-commuter-service-r4-b1.png'),
+    });
     await serve(page, seatId, '생맥주', 1);
     await serve(page, seatId, '네기마', 1);
   }

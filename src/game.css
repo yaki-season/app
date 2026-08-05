@@ -156,8 +156,11 @@ body {
 /* 공용 준비 목록 (완성품 선반) — 퀵 전환 위 */
 .dock-shelf {
   position: fixed; left: 50%; bottom: 78px; transform: translateX(-50%); z-index: 11;
-  display: flex; gap: 8px; padding: 8px 10px; border-radius: 12px;
-  background: rgba(20,15,11,0.82); border: 1px solid var(--line);
+  width: min(53.125vw, 1020px); min-width: 520px; aspect-ratio: 1020 / 210;
+  box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: clamp(26px, 3vw, 52px) clamp(64px, 7vw, 134px) clamp(8px, 1vw, 18px);
+  background: var(--dock-shelf-art) center / 100% 100% no-repeat;
+  border: 0; border-radius: 0;
 }
 .dock-shelf[hidden] { display: none; }
 .dock-card {

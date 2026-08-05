@@ -1,7 +1,7 @@
 {
   "$schema": "https://yaki-season.local/assets/manifest.schema.json",
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-03",
+  "generatedAt": "2026-08-05",
   "specRefs": [
     "ART-002 v3.6.1",
     "ART-003 v5.0.0",
@@ -56,6 +56,68 @@
         "width": 1920,
         "height": 1080
       },
+      "format": "png"
+    },
+    {
+      "id": "ST-SERVICE-COUNTER",
+      "sourceRevision": 4,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": { "x": 0.5, "y": 1 },
+      "anchors": [{ "x": 0.5, "y": 1 }],
+      "clips": ["empty", "occupied"],
+      "mirrorSafe": false,
+      "source": "ARTSRC:ST-SERVICE-COUNTER:R4",
+      "provenance": "PROV:ST-SERVICE-COUNTER:R4",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.8.0",
+        "GPL-004 v1.39.0",
+        "Artist 3 task 025 ST-SERVICE-COUNTER R4"
+      ],
+      "reviewedAt": "2026-08-05",
+      "url": "/assets/core/customer/st-service-counter-r4-b1.png",
+      "sha256": "d7395e6872cb919767d1c2fe1b124c993fede30857b1f4c47fd00eaf4a84d349",
+      "bytes": 771617,
+      "dimensions": { "width": 1672, "height": 941 },
+      "format": "png"
+    },
+    {
+      "id": "CH-EXTRA-SOLO-SERVICE",
+      "sourceRevision": 7,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": { "x": 0.5, "y": 1 },
+      "anchors": [{ "x": 0.5, "y": 1 }],
+      "clips": ["waiting"],
+      "mirrorSafe": false,
+      "source": "ARTSRC:CH-EXTRA-SOLO-SERVICE:R7",
+      "provenance": "PROV:CH-EXTRA-SOLO-SERVICE:R7",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "GPL-005 v2.23.0",
+        "Artist 3 task 025 CH-EXTRA-SOLO-SERVICE R7"
+      ],
+      "reviewedAt": "2026-08-05",
+      "url": "/assets/core/customer/ch-extra-solo-service-r7-b1.png",
+      "sha256": "81ad4e50ef45d963829bd1ab981273c5a7e59e074c047598e6cba13a17e462e8",
+      "bytes": 1392381,
+      "dimensions": { "width": 1121, "height": 1403 },
       "format": "png"
     },
     {
@@ -1142,6 +1204,50 @@
           }
         }
       ]
+    },
+    {
+      "id": "CH-EXTRA-COMMUTER-SERVICE",
+      "sourceRevision": 4,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0.5,
+        "y": 1
+      },
+      "anchors": [
+        {
+          "x": 0.5,
+          "y": 1
+        }
+      ],
+      "clips": [
+        "waiting"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:CH-EXTRA-COMMUTER-SERVICE:R4",
+      "provenance": "PROV:CH-EXTRA-COMMUTER-SERVICE:R4",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.0.0",
+        "GPL-005 v2.23.0",
+        "Artist 3 task 025 CH-EXTRA-COMMUTER-SERVICE R4"
+      ],
+      "reviewedAt": "2026-08-05",
+      "url": "/assets/core/customer/ch-extra-commuter-service-r4-b1.png",
+      "sha256": "680b1d24287d412587f3febb7bdacccf2168188baca9f641bd202c064f91b51b",
+      "bytes": 1254099,
+      "dimensions": {
+        "width": 1121,
+        "height": 1403
+      },
+      "format": "png"
     }
   ],
   "retainedAssets": [

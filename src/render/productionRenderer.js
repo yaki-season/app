@@ -409,9 +409,14 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     // 좌석 손님 아트 텍스처 교체 (phase 구동). UV 크롭은 지오메트리에 남는다.
     setSeatActorTexture: (seatId, url) => {
       const a = seatActorMesh[seatId];
-      if (!a || !SEAT_ACTOR_TEXTURE) return;
+      if (!a) return;
       const tex = texture(url);
-      if (a.material.map !== tex) { a.material.map = tex; a.material.needsUpdate = true; }
+      if (a.material.map !== tex) {
+        a.material.map = tex;
+        a.material.transparent = true;
+        a.material.color.setHex(0xffffff);
+        a.material.needsUpdate = true;
+      }
     },
     presetCam,
     activeScreenId: () => activeId,
