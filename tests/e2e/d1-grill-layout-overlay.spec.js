@@ -226,7 +226,7 @@ test('실제 프로덕션 renderer에서 R6 tray 중심·외곽 hit과 바깥 mi
   await expect(page.locator('#hint')).toHaveText('');
 
   const meshes = await page.evaluate(() => ({
-    visualUuid: window.__prodDebug.renderer.objectMesh.grillFinishedTray.uuid,
+    visualUuid: window.__prodDebug.renderer.artMesh.grillFinishedTray.uuid,
     hitUuid: window.__prodDebug.renderer.interactionMesh.grillFinishedTray.uuid,
     slotHitUuids: Array.from({ length: 6 }, (_, index) => (
       window.__prodDebug.renderer.interactionMesh[`grillSlot${index}`]?.uuid

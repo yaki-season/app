@@ -1017,6 +1017,131 @@
         "height": 1080
       },
       "format": "png"
+    },
+    {
+      "id": "MDL-BEER-GLASS",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-DRINK",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0.5,
+        "y": 1
+      },
+      "anchors": [
+        {
+          "id": "tap-center",
+          "x": 0.5,
+          "y": 0
+        }
+      ],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:MDL-BEER-GLASS:R1",
+      "provenance": "PROV:MDL-BEER-GLASS:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.8.0",
+        "Artist 3 task 025 MDL-BEER-GLASS R1"
+      ],
+      "reviewedAt": "2026-08-03",
+      "url": "/assets/core/drink/mdl-beer-glass-r1-b1.png",
+      "sha256": "aeccd91428f1370cdffce582f332a075e36db9fbc00474f3d5c88ccacaa1c051",
+      "bytes": 768716,
+      "dimensions": {
+        "width": 1254,
+        "height": 1254
+      },
+      "format": "png",
+      "companions": [
+        {
+          "role": "glass-deck",
+          "url": "/assets/core/drink/mdl-beer-glass-deck-r1-b1.png",
+          "sha256": "bf76bf7ae6fa090b29f0bd75ff244738e55a7f28c494f070c17265ffdc1c9825",
+          "bytes": 1208435,
+          "format": "png",
+          "dimensions": {
+            "width": 1672,
+            "height": 941
+          }
+        }
+      ]
+    },
+    {
+      "id": "MDL-BEER-LEVER",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-DRINK",
+      "profile": "state-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0.515,
+        "y": 0.357
+      },
+      "anchors": [
+        {
+          "id": "lever-pivot",
+          "x": 0.515,
+          "y": 0.357
+        }
+      ],
+      "clips": [
+        "neutral",
+        "beer",
+        "foam"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:MDL-BEER-LEVER:R1",
+      "provenance": "PROV:MDL-BEER-LEVER:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.8.0",
+        "Artist 3 task 025 MDL-BEER-LEVER R1"
+      ],
+      "reviewedAt": "2026-08-03",
+      "url": "/assets/core/drink/mdl-beer-lever-neutral-r1-b1.png",
+      "sha256": "17b4091b89735679949ed2bd7bb73d8567111954dd96ec50cbc09c1d03ad1ceb",
+      "bytes": 194337,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png",
+      "companions": [
+        {
+          "role": "lever-beer",
+          "url": "/assets/core/drink/mdl-beer-lever-beer-r1-b1.png",
+          "sha256": "272dedeecb2d54b9b3f53250df54a2d6a8fc34f2457e19bf0d06e251deb0fea4",
+          "bytes": 195610,
+          "format": "png",
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          }
+        },
+        {
+          "role": "lever-foam",
+          "url": "/assets/core/drink/mdl-beer-lever-foam-r1-b1.png",
+          "sha256": "08170f39edaca70cf140852080c273adbb3463fc6d98fc40bc0cf742bc520736",
+          "bytes": 194537,
+          "format": "png",
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          }
+        }
+      ]
     }
   ],
   "retainedAssets": [

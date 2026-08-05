@@ -55,7 +55,7 @@ describe('D1 공개 상태 runtime inventory', () => {
       .toContain('CH-EXTRA-COMMUTER-SERVICE');
   });
 
-  it('binding과 manifest 승인이 모두 갖춰진 항목만 placeholder가 아니다', () => {
+  it('manifest 승인 binding과 code-native 구현은 placeholder가 아니다', () => {
     const report = reportD1RuntimeComponentInventory({
       assets: approvedManifest.assets.filter((asset) => (
         asset.id === 'D1-TSUKIOKA-WAITING'
@@ -66,6 +66,8 @@ describe('D1 공개 상태 runtime inventory', () => {
     expect(resolved.map((entry) => entry.requiredAssetId)).toEqual([
       'D1-TSUKIOKA-WAITING',
       'UI-CUSTOMER-ORDER-WAIT-PANEL',
+      'TEX-BEER-LIQUID',
+      'VFX-BEER-CORE',
     ]);
   });
 });

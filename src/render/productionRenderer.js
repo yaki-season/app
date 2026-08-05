@@ -45,10 +45,15 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       .filter((asset) => asset?.id && asset?.url)
       .map((asset) => [asset.id, asset]),
   );
-  function runtimeUrlForId(stableAssetId) {
+  // companionRole이 있으면 같은 stable ID의 승인 companion 래스터를 쓴다(레버 상태·잔 덱 등).
+  // 미등록 role은 승인 없는 아트가 조용히 새어들지 않도록 즉시 실패시킨다.
+  function runtimeUrlForId(stableAssetId, companionRole = null) {
     const asset = runtimeAssetById.get(stableAssetId);
     if (!asset) throw new Error(`승인 runtime asset resolver 누락: ${stableAssetId}`);
-    return asset.url;
+    if (!companionRole) return asset.url;
+    const companion = (asset.companions ?? []).find((c) => c.role === companionRole);
+    if (!companion) throw new Error(`승인 companion 누락: ${stableAssetId}#${companionRole}`);
+    return companion.url;
   }
 
   const eye = new THREE.Vector3(PLAYER_EYE.x, PLAYER_EYE.y, PLAYER_EYE.z);
@@ -70,7 +75,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     // 승인 아트 이미지 레이어 (배경·카운터 등 풀프레임). painter 순서(def.order)로 합성.
     if (def.kind === 'image') {
       const z = LAYER_Z[def.layer];
-      const mat = new THREE.MeshBasicMaterial({ map: texture(runtimeUrlForId(def.stableAssetId)), transparent: !def.opaque, depthTest: false, depthWrite: false });
+      const mat = new THREE.MeshBasicMaterial({ map: texture(runtimeUrlForId(def.stableAssetId, def.companionRole)), transparent: !def.opaque, depthTest: false, depthWrite: false });
       const mesh = billboard(cam, def.full ? { x: 0, y: 0, width: 1, height: 1 } : def.rect, z, mat);
       if (def.full) {
         const scale = def.imageScale ?? 1;
@@ -95,6 +100,9 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     const mesh = billboard(cam, rect, z, mat);
     mesh.renderOrder = -z; // 먼 것 먼저
     mesh.userData.objectKey = key;
+    mesh.userData.runtimeControlled = def.prodGrillSlot === true;
+    // 시각 전용 레이어는 레이캐스트 대상이 아니다(레버 등 실제 조작 대상을 가리지 않도록).
+    mesh.userData.decorative = def.decorative === true;
     return mesh;
   }
 
@@ -160,6 +168,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         actor.renderOrder = -LAYER_Z.actor;
         actor.visible = false;
         actor.userData.seatId = seatId;
+        actor.userData.runtimeControlled = true;
         scene.add(actor); group.push(actor); seatActorMesh[seatId] = actor;
 
         // 주문·서빙은 시각 좌석과 분리된 투명 raycast 대상으로 처리한다.
@@ -174,6 +183,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         serve.visible = false;
         serve.userData.objectKey = `seatServe:${seatId}`;
         serve.userData.seatId = seatId;
+        serve.userData.runtimeControlled = true; // 점유·phase는 영업 어댑터가 소유한다
         scene.add(serve); group.push(serve); objectMesh[`seatServe:${seatId}`] = serve;
       }
     }
@@ -184,6 +194,13 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     for (const [id, group] of Object.entries(screenGroups)) {
       const show = id === screenId;
       for (const mesh of group) {
+        // 좌석 손님·serve와 그릴 칸은 영업 상태 어댑터가 점유·phase별로 직접 제어한다.
+        // 화면 활성화가 빈 좌석까지 다시 켜면 매 프레임 숨김/표시가 교차해 깜빡인다.
+        // 반대로 좌석 base는 어댑터가 켜주지 않으므로 화면 활성화가 계속 소유한다.
+        if (mesh.userData.runtimeControlled) {
+          if (!show || inactiveSeats.has(mesh.userData.seatId)) mesh.visible = false;
+          continue;
+        }
         mesh.visible = show
           && !inactiveObjects.has(mesh.userData.objectKey)
           && !(mesh.userData.seatId && inactiveSeats.has(mesh.userData.seatId));
@@ -237,6 +254,27 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       if (mesh) placeBillboard(mesh, cam, rect, LAYER_Z.interactive);
     }
     setActiveScreenObjects(activeId);
+  }
+
+  function setObjectEnabled(key, enabled) {
+    if (enabled) inactiveObjects.delete(key);
+    else inactiveObjects.add(key);
+    const screenActive = SCREEN_BY_ID[activeId]?.objects.includes(key) === true;
+    const visible = enabled && screenActive;
+    if (objectMesh[key]) objectMesh[key].visible = visible;
+    if (artMesh[key]) artMesh[key].visible = visible;
+    if (interactionMesh[key]) interactionMesh[key].visible = visible;
+  }
+
+  // 승인 아트 레이어(artMesh)와 더미 평면(objectMesh) 어느 쪽이든 같은 key로 상태 텍스처를 교체한다.
+  // 파일명이 아니라 stable ID + companion role로만 지정한다(미승인 아트 차단).
+  function setObjectTexture(key, stableAssetId, companionRole = null) {
+    const mesh = artMesh[key] ?? objectMesh[key];
+    if (!mesh?.material) return;
+    const next = texture(runtimeUrlForId(stableAssetId, companionRole));
+    if (mesh.material.map === next) return;
+    mesh.material.map = next;
+    mesh.material.needsUpdate = true;
   }
 
   // ── 라이브 카메라 + 시선 트윈 ─────────────────────────────
@@ -365,6 +403,8 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     seatBubbleWorld,
     setSeatCapacity,
     setGrillSlots,
+    setObjectEnabled,
+    setObjectTexture,
     hasSeatActorArt: () => !!SEAT_ACTOR_TEXTURE,
     // 좌석 손님 아트 텍스처 교체 (phase 구동). UV 크롭은 지오메트리에 남는다.
     setSeatActorTexture: (seatId, url) => {

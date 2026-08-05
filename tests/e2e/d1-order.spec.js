@@ -8,7 +8,7 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await page.goto('/src/d1.html');
   await expect(page.locator('body')).toHaveAttribute('data-runtime-assets-ready', 'false');
   await expect(page.locator('body')).toHaveAttribute('data-runtime-contract-valid', 'true');
-  await expect(page.locator('body')).toHaveAttribute('data-asset-placeholder-count', '28');
+  await expect(page.locator('body')).toHaveAttribute('data-asset-placeholder-count', '24');
   const readiness = await page.evaluate(() => window.__d1Debug.assetReadiness());
   expect(readiness.placeholderIdsByScene).toMatchObject({
     drink: expect.any(Array),
@@ -33,7 +33,8 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
     'BG-WORKSPACE-DRINK',
   );
   await expect(page.getByTestId('d1-scene-status')).toContainText('개발 중');
-  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-missing-asset-ids', /MDL-BEER-LEVER/);
+  // MDL-BEER-LEVER는 승인·binding 완료라 더 이상 missing이 아니다.
+  await expect(page.getByTestId('d1-scene-status')).not.toHaveAttribute('data-missing-asset-ids', /MDL-BEER-LEVER/);
   await expect(page.getByTestId('d1-scene-status')).not.toHaveAttribute(
     'data-missing-asset-ids',
     /BG-WORKSPACE-DRINK/,

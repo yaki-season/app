@@ -31,6 +31,8 @@ export const D1_RUNTIME_ASSET_ID = Object.freeze({
   ORDER_DRAFT_BEER: 'UI-CUSTOMER-ORDER-ICON-DRAFT-BEER',
   DRINK_BACKGROUND: 'BG-WORKSPACE-DRINK',
   DRINK_STATION: 'ST-DRINK-BEER-TIER-1',
+  BEER_GLASS: 'MDL-BEER-GLASS',
+  BEER_LEVER: 'MDL-BEER-LEVER',
   GRILL_BACKGROUND: 'BG-WORKSPACE-GRILL',
   ASSEMBLY_BACKGROUND: 'BG-WORKSPACE-ASSEMBLY',
   ASSEMBLY_STATION: 'ST-ASSEMBLY-TIER-1',
@@ -39,12 +41,7 @@ export const D1_RUNTIME_ASSET_ID = Object.freeze({
 });
 
 export const D1_PENDING_RUNTIME_ASSET_IDS = Object.freeze({
-  drink: Object.freeze([
-    'MDL-BEER-GLASS',
-    'MDL-BEER-LEVER',
-    'TEX-BEER-LIQUID',
-    'VFX-BEER-CORE',
-  ]),
+  drink: Object.freeze([]),
   assembly: Object.freeze([
     'MDL-SKEWER-BASE',
     'MDL-INGREDIENT-CHICKEN',
@@ -112,7 +109,7 @@ export function auditD1RuntimeAssetBindingContract(
       const inventoryPendingIds = freezeIdList(
         inventory
           .filter((entry) => (
-            entry.bindingState !== 'bound'
+          entry.bindingState === 'pending'
             && D1_INVENTORY_SCREEN_TO_SCENE[entry.screenId] === scene
           ))
           .map((entry) => entry.requiredAssetId),
@@ -182,10 +179,15 @@ export function reportD1RuntimeAssetReadiness(
   );
   const boundEntries = inventory
     .filter((entry) => entry.bindingState === 'bound');
-  const pendingEntries = inventory
-    .filter((entry) => entry.bindingState !== 'bound');
+  const pendingEntries = D1_RUNTIME_COMPONENT_INVENTORY
+    .filter((entry) => entry.bindingState === 'pending');
+  const codeNativeEntries = D1_RUNTIME_COMPONENT_INVENTORY
+    .filter((entry) => entry.bindingState === 'code-native');
   const placeholderIds = freezeIdList(componentReport.placeholderRequiredAssetIds);
-  const missingManifestIds = freezeIdList(requiredIds.filter((id) => !assetIndex.has(id)));
+  const codeNativeIds = new Set(codeNativeEntries.map((entry) => entry.requiredAssetId));
+  const missingManifestIds = freezeIdList(requiredIds.filter((id) => (
+    !codeNativeIds.has(id) && !assetIndex.has(id)
+  )));
   const unboundApprovedIds = freezeIdList(
     pendingEntries
       .filter((entry) => assetIndex.has(entry.requiredAssetId))
@@ -208,7 +210,7 @@ export function reportD1RuntimeAssetReadiness(
     requiredRuntimeCount: requiredIds.length,
     approvedRuntimeCount: requiredIds.filter((id) => assetIndex.has(id)).length,
     boundRuntimeCount: boundEntries
-      .filter((entry) => assetIndex.has(entry.requiredAssetId)).length,
+      .filter((entry) => assetIndex.has(entry.requiredAssetId)).length + codeNativeEntries.length,
     placeholderCount: componentReport.placeholderCount,
     placeholderIds,
     placeholderIdsByScene,

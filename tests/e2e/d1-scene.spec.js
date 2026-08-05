@@ -31,7 +31,8 @@ test('D1 2.5D: 배경·손님·카운터 레이어를 합성하고 손님 텍스
     'data-manifest-id',
     'BG-WORKSPACE-DRINK',
   );
-  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute(
+  // MDL-BEER-LEVER는 승인·binding 완료라 더 이상 missing이 아니다.
+  await expect(page.getByTestId('d1-scene-status')).not.toHaveAttribute(
     'data-missing-asset-ids',
     /MDL-BEER-LEVER/,
   );

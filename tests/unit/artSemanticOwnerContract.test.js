@@ -44,6 +44,8 @@ describe('art semanticOwner promotion preflight', () => {
       'ST-GRILL-FINISHED-TRAY',
       'BG-WORKSPACE-DRINK',
       'ST-DRINK-BEER-TIER-1',
+      'MDL-BEER-GLASS',
+      'MDL-BEER-LEVER',
     ]);
     expect(boundRows.map((entry) => entry.requiredAssetId).slice(0, 9))
       .toEqual(existingApprovedIds);

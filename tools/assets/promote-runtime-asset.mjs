@@ -34,6 +34,9 @@ const profileApprovalSchemas = {
   'standalone-raster': 'standalone-raster-report.schema.json',
   'bundle-model': 'bundle-model-report.schema.json',
 };
+// 승인 산출물이 래스터·GLB가 아니라 런타임 코드(셰이더 색 계약·합성 모듈)인 profile.
+// manifest에 등록하지 않고 코드가 직접 소비하며 inventory에 code-native로 집계한다.
+const CODE_NATIVE_HANDOFF_PROFILES = new Set(['runtime-derived-material-state']);
 
 function usage(message) {
   if (message) console.error(message);
@@ -223,6 +226,17 @@ async function validateHandoff(handoffFile) {
   const handoffBuffer = await readFile(handoffFile);
   const handoffSha256 = sha256(handoffBuffer);
   const handoff = JSON.parse(handoffBuffer.toString('utf8'));
+  // 래스터·모델 산출물이 없는 자산(셰이더 색 계약 등)은 manifest 승격 대상이 아니다.
+  // manifest는 shader module profile을 지원하지 않으므로 이런 자산은 코드가 직접 소비하고
+  // inventory에 code-native로 집계한다. 스키마 오류 대신 그 결정을 명확히 알린다.
+  if (CODE_NATIVE_HANDOFF_PROFILES.has(handoff.profile)) {
+    throw new Error(
+      `${handoff.id ?? '(id 없음)'}의 profile '${handoff.profile}'은 manifest 승격 대상이 아닙니다.\n`
+      + 'manifest는 shader module profile을 지원하지 않습니다. 래스터·GLB 산출물이 없는 자산은\n'
+      + "app/src/assets/d1RuntimeInventory.js에서 bindingState를 'code-native'로 연결하십시오\n"
+      + '(TEX-BEER-LIQUID·VFX-BEER-CORE와 같은 방식).',
+    );
+  }
   const handoffSchema = await readJson(
     path.join(artWorkspaceRoot, 'pipeline/schemas/runtime-handoff.schema.json'),
   );
