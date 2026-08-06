@@ -68,6 +68,7 @@ describe('D1 공개 상태 runtime inventory', () => {
     expect(resolved.map((entry) => entry.requiredAssetId)).toEqual([
       'D1-TSUKIOKA-WAITING',
       'UI-CUSTOMER-ORDER-WAIT-PANEL',
+      'MDL-NEGIMA-GRILL-COOKING-SECOND-FACE',
       'TEX-BEER-LIQUID',
       'VFX-BEER-CORE',
     ]);

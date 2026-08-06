@@ -116,8 +116,8 @@ describe('D1 runtime asset resolver', () => {
       ready: false,
       requiredRuntimeCount: 43,
       approvedRuntimeCount: 25,
-      boundRuntimeCount: 27,
-      placeholderCount: 16,
+      boundRuntimeCount: 28,
+      placeholderCount: 15,
       unboundApprovedIds: [],
       contractAudit: {
         valid: true,
@@ -132,7 +132,7 @@ describe('D1 runtime asset resolver', () => {
     expect(readiness.missingManifestIds).not.toContain('TEX-BEER-LIQUID');
     expect(readiness.missingManifestIds).not.toContain('VFX-BEER-CORE');
     expect(readiness.placeholderIdsByScene.assembly).toHaveLength(3);
-    expect(readiness.placeholderIdsByScene.grill).toHaveLength(7);
+    expect(readiness.placeholderIdsByScene.grill).toHaveLength(6);
     expect(readiness.placeholderIdsByScene.customer).toHaveLength(1);
     expect(readiness.placeholderIdsByScene.customer).not.toContain('BG-INTERIOR-BASE');
     expect(readiness.placeholderIdsByScene.customer).not.toContain('CH-EXTRA-COMMUTER-SERVICE');
@@ -160,9 +160,9 @@ describe('D1 runtime asset resolver', () => {
 
     const awaitingBinding = reportD1RuntimeAssetReadiness(manifestWithUnboundAssets);
     expect(awaitingBinding.ready).toBe(false);
-    expect(awaitingBinding.placeholderCount).toBe(16);
+    expect(awaitingBinding.placeholderCount).toBe(15);
     expect(awaitingBinding.missingManifestIds).toEqual([]);
-    expect(awaitingBinding.unboundApprovedIds).toHaveLength(16);
+    expect(awaitingBinding.unboundApprovedIds).toHaveLength(15);
   });
 
   it('inventory와 실제 binding·조리 placeholder 목록이 정확히 대응한다', () => {

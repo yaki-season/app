@@ -50,7 +50,9 @@ export const D1_RUNTIME_COMPONENT_INVENTORY = Object.freeze([
   row('SCR-SVC-GRILL', 'D1-grill-waiting', 'grill.waiting', 'ST-GRILL-WAITING-RACK', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING),
   row('SCR-SVC-GRILL', 'D1-grill-raw', 'grill.skewer', 'MDL-NEGIMA-GRILL-RAW', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING),
   row('SCR-SVC-GRILL', 'D1-grill-cooking-front', 'grill.skewer', 'MDL-NEGIMA-GRILL-COOKING-FIRST-FACE', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING),
-  row('SCR-SVC-GRILL', 'D1-grill-cooking-back', 'grill.skewer', 'MDL-NEGIMA-GRILL-COOKING-SECOND-FACE', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING),
+  // 승인 산출물이 래스터·GLB가 아니라 런타임 색 계약(d1SecondFaceR3.js)이라 manifest 등록 대상이
+  // 아니다. d1-game이 굽는 면에 직접 적용한다. TEX-BEER-LIQUID·VFX-BEER-CORE와 같은 code-native다.
+  row('SCR-SVC-GRILL', 'D1-grill-cooking-back', 'grill.skewer', 'MDL-NEGIMA-GRILL-COOKING-SECOND-FACE', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING, 'code-native', ['cooking-back']),
   row('SCR-SVC-GRILL', 'D1-grill-proper-front', 'grill.skewer', 'MDL-NEGIMA-GRILL-PROPER-FIRST-FACE', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING),
   row('SCR-SVC-GRILL', 'D1-grill-proper-back', 'grill.skewer', 'MDL-NEGIMA-GRILL-PROPER-SECOND-FACE', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING),
   row('SCR-SVC-GRILL', 'D1-grill-finished', 'grill.finished.tray', 'ST-GRILL-FINISHED-TRAY', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING, 'bound'),

@@ -68,14 +68,14 @@ describe('D1 visual variant inventory completeness gate', () => {
     expect(report.placeholderRequiredAssetIds).toEqual(['TEX-BEER-LIQUID']);
   });
 
-  it('두 D1 진입점이 실제 consumer가 있는 동일한 44/21/23 readiness 집계를 공개한다', () => {
+  it('두 D1 진입점이 실제 consumer가 있는 동일한 43/28/15 readiness 집계를 공개한다', () => {
     const manifest = {
       assets: Object.values(D1_RUNTIME_ASSET_ID).map(approvedAsset),
     };
     expect(reportD1RuntimeAssetReadiness(manifest)).toMatchObject({
       requiredRuntimeCount: 43,
-      boundRuntimeCount: 27,
-      placeholderCount: 16,
+      boundRuntimeCount: 28,
+      placeholderCount: 15,
     });
 
     for (const entrypoint of ['d1.js', 'd1-scene.js']) {

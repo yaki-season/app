@@ -8,7 +8,7 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await page.goto('/src/d1.html');
   await expect(page.locator('body')).toHaveAttribute('data-runtime-assets-ready', 'false');
   await expect(page.locator('body')).toHaveAttribute('data-runtime-contract-valid', 'true');
-  await expect(page.locator('body')).toHaveAttribute('data-asset-placeholder-count', '16');
+  await expect(page.locator('body')).toHaveAttribute('data-asset-placeholder-count', '15');
   const readiness = await page.evaluate(() => window.__d1Debug.assetReadiness());
   expect(readiness.placeholderIdsByScene).toMatchObject({
     drink: expect.any(Array),
@@ -69,7 +69,9 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
     }
   }
   await page.getByRole('button', { name: '조립한 2개를 그릴로' }).click();
-  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-missing-asset-ids', /MDL-NEGIMA-GRILL-COOKING-SECOND-FACE/);
+  // SECOND-FACE는 승인된 code-native 색 계약이라 더 이상 missing이 아니다.
+  await expect(page.getByTestId('d1-scene-status')).not.toHaveAttribute('data-missing-asset-ids', /MDL-NEGIMA-GRILL-COOKING-SECOND-FACE/);
+  await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-missing-asset-ids', /MDL-NEGIMA-GRILL-COOKING-FIRST-FACE/);
 
   await page.getByRole('button', { name: 'negima-1 → 1번 칸' }).click();
   await page.getByRole('button', { name: 'negima-2 → 2번 칸' }).click();
