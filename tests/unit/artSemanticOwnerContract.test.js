@@ -37,9 +37,13 @@ describe('art semanticOwner promotion preflight', () => {
     );
     expect(boundRows.map((entry) => entry.requiredAssetId)).toEqual([
       ...existingApprovedIds,
+      'BG-INTERIOR-BASE',
       'ST-SERVICE-COUNTER',
       'CH-EXTRA-COMMUTER-SERVICE',
       'CH-EXTRA-SOLO-SERVICE',
+      'PR-SERVING-PLATE',
+      'PR-EMPTY-DISH-SET',
+      'ST-CLEANUP-OVERLAY',
       'BG-WORKSPACE-ASSEMBLY',
       'ST-ASSEMBLY-TIER-1',
       'BG-WORKSPACE-GRILL',

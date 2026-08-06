@@ -73,9 +73,9 @@ describe('D1 visual variant inventory completeness gate', () => {
       assets: Object.values(D1_RUNTIME_ASSET_ID).map(approvedAsset),
     };
     expect(reportD1RuntimeAssetReadiness(manifest)).toMatchObject({
-      requiredRuntimeCount: 44,
-      boundRuntimeCount: 23,
-      placeholderCount: 21,
+      requiredRuntimeCount: 43,
+      boundRuntimeCount: 27,
+      placeholderCount: 16,
     });
 
     for (const entrypoint of ['d1.js', 'd1-scene.js']) {

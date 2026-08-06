@@ -26,7 +26,7 @@ export const LAYER_Z = {
 
 // 승인 runtime은 파일명이 아니라 manifest stable ID로만 연결한다.
 export const CUSTOMER_ART = {
-  background: 'ARTIST-010-BACKGROUND-COMPLETE',
+  background: 'BG-INTERIOR-BASE',
   seating: 'BG-SEATING-6',
   counter: 'BG-SERVICE-TABLE-ARTIST009',
   waiting: 'D1-TSUKIOKA-WAITING',

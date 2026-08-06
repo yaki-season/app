@@ -120,7 +120,15 @@ function updateLabels() {
 
 // 운영 상태 → 어댑터 렌더 상태. serve 대상은 "수령 대기 && 선반에 주문과 같은 메뉴 선택"일 때만.
 function syncCustomers(now) {
-  if (!ops) { customers.apply([]); return; }
+  if (!ops) {
+    customers.apply([]);
+    for (const seatId of SEAT_IDS) {
+      R.setSeatPlateVisible(seatId, false);
+      R.setSeatEmptyDishesVisible(seatId, false);
+      R.setSeatCleanupOverlayVisible(seatId, false);
+    }
+    return;
+  }
   const sel = dock.selected();
   const views = ops.views(now).map((v) => ({
     ...v,
@@ -130,6 +138,12 @@ function syncCustomers(now) {
   }));
   // 좌석 조작 메시(seatServe)는 손님 화면에서 주문 접수·서빙·정리 중 하나라도 가능하면 보인다.
   const onCustomers = director.activeScreenId() === 'SCR-SVC-CUSTOMERS';
+  for (const seatId of SEAT_IDS) {
+    const view = views.find((item) => item.seatId === seatId);
+    R.setSeatPlateVisible(seatId, onCustomers && !!view?.occupied && !view.cleanupNeeded);
+    R.setSeatEmptyDishesVisible(seatId, onCustomers && !!view?.cleanupNeeded);
+    R.setSeatCleanupOverlayVisible(seatId, onCustomers && cleanupHold?.seatId === seatId);
+  }
   for (const v of views) {
     const mesh = R.objectMesh[`seatServe:${v.seatId}`];
     if (mesh) mesh.visible = onCustomers && (v.canOrder || v.canServe || v.cleanupNeeded);
@@ -697,6 +711,7 @@ function loop(now) {
   if (ops && !settling) ops.tick(now); // 손님 입장·생애주기 진행 (정산 중 정지)
   autoProduceTick(now); // 드링크 직원 자동 제조
   updateGrillVisual(now);
+  R.setCleanupOverlayFrame(Math.floor(now / 180));
   updateGrillOverlays(now, active); // 그릴 칸 익힘 게이지
   syncCustomers(now); // 매 프레임 좌석 렌더(게이지 실시간 감소)
   customers.tick(active); // 손님 화면일 때 말풍선·게이지 배치

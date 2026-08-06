@@ -23,7 +23,7 @@ describe('손님 화면 원경 배치', () => {
     expect(OBJECTS.custCounter.imageScaleX).toBeGreaterThan(1);
     expect(OBJECTS.custCounter.imageScaleY).toBe(1);
     expect(OBJECTS.custCounter.imageOffsetY).toBeGreaterThan(0);
-    expect(OBJECTS.custBg.stableAssetId).toBe('ARTIST-010-BACKGROUND-COMPLETE');
+    expect(OBJECTS.custBg.stableAssetId).toBe('BG-INTERIOR-BASE');
     expect(OBJECTS.custCounter.stableAssetId).toBe('BG-SERVICE-TABLE-ARTIST009');
   });
 

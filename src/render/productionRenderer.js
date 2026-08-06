@@ -107,6 +107,8 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
   }
 
   const seatBaseMesh = {}; // seatId → 좌석 표식 mesh
+  const seatEmptyDishMesh = {}; // seatId → 퇴장 뒤 정리 대상 빈 식기 mesh
+  const seatCleanupOverlayMesh = {}; // seatId → 3초 홀드 중 행주 왕복 overlay
   function buildInteraction(cam, key) {
     const def = OBJECTS[key];
     if (!def.hitRect) return null;
@@ -151,16 +153,45 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       seatCam = cam;
       for (const seatId of SEAT_IDS) {
         // 승인 카운터 아트가 실제 상판을 제공하므로 예전 개발용 갈색 좌석 막대는 투명 hit 보조물로만 남긴다.
+        const plateUrl = runtimeAssets?.SERVING_PLATE?.url;
         const base = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.03 }, LAYER_Z.fixture, new THREE.MeshBasicMaterial({
+          ...(plateUrl ? { map: texture(plateUrl), color: 0xffffff } : {}),
           transparent: true,
-          opacity: 0,
-          colorWrite: false,
+          opacity: plateUrl ? 1 : 0,
+          colorWrite: !!plateUrl,
           depthWrite: false,
         }));
         base.renderOrder = -LAYER_Z.fixture + 0.5;
         base.userData.seatId = seatId;
         base.visible = false;
         scene.add(base); group.push(base); seatBaseMesh[seatId] = base;
+
+        const emptyDishUrl = runtimeAssets?.EMPTY_DISH_SET?.url;
+        const emptyDishes = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.04 }, LAYER_Z.fixture - 0.01, new THREE.MeshBasicMaterial({
+          ...(emptyDishUrl ? { map: texture(emptyDishUrl), color: 0xffffff } : {}),
+          transparent: true,
+          opacity: emptyDishUrl ? 1 : 0,
+          colorWrite: !!emptyDishUrl,
+          depthWrite: false,
+        }));
+        emptyDishes.renderOrder = -LAYER_Z.fixture + 0.6;
+        emptyDishes.userData.seatId = seatId;
+        emptyDishes.visible = false;
+        scene.add(emptyDishes); group.push(emptyDishes); seatEmptyDishMesh[seatId] = emptyDishes;
+
+        const cleanupUrl = runtimeAssets?.CLEANUP_OVERLAY?.url;
+        const cleanupOverlay = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.03 }, LAYER_Z.fixture - 0.02, new THREE.MeshBasicMaterial({
+          ...(cleanupUrl ? { map: texture(cleanupUrl), color: 0xffffff } : {}),
+          transparent: true,
+          opacity: cleanupUrl ? 1 : 0,
+          colorWrite: !!cleanupUrl,
+          depthWrite: false,
+        }));
+        if (cleanupUrl) cropUV(cleanupOverlay.geometry, { u0: 0, v0: 0, u1: 0.5, v1: 1 });
+        cleanupOverlay.renderOrder = -LAYER_Z.fixture + 0.7;
+        cleanupOverlay.userData.seatId = seatId;
+        cleanupOverlay.visible = false;
+        scene.add(cleanupOverlay); group.push(cleanupOverlay); seatCleanupOverlayMesh[seatId] = cleanupOverlay;
 
         const actorMat = new THREE.MeshBasicMaterial({ color: SEAT_ACTOR_MOOD.waiting });
         if (SEAT_ACTOR_TEXTURE) { actorMat.map = texture(SEAT_ACTOR_TEXTURE); actorMat.transparent = true; actorMat.color.setHex(0xffffff); }
@@ -227,6 +258,8 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       if (i < seats.length) {
         const seat = seats[i];
         placeBillboard(seatBaseMesh[seatId], seatCam, { x: seat.serve.x, y: 0.50, width: seat.serve.width, height: 0.03 }, LAYER_Z.fixture);
+        placeBillboard(seatEmptyDishMesh[seatId], seatCam, { x: seat.serve.x, y: 0.43, width: seat.serve.width, height: 0.10 }, LAYER_Z.fixture - 0.01);
+        placeBillboard(seatCleanupOverlayMesh[seatId], seatCam, { x: seat.serve.x, y: 0.47, width: seat.serve.width * 0.72, height: 0.035 }, LAYER_Z.fixture - 0.02);
         placeBillboard(seatActorMesh[seatId], seatCam, seat.actor, LAYER_Z.actor);
         if (SEAT_ACTOR_TEXTURE && SEAT_ACTOR_UV) cropUV(seatActorMesh[seatId].geometry, SEAT_ACTOR_UV);
         placeBillboard(objectMesh[`seatServe:${seatId}`], seatCam, seat.hit ?? seat.serve, LAYER_Z.interactive); // 손님 위 정렬된 투명 hit target(원격 D1 계약)
@@ -400,8 +433,28 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     },
     seatActorMesh,
     seatBaseMesh,
+    seatEmptyDishMesh,
+    seatCleanupOverlayMesh,
     seatBubbleWorld,
     setSeatCapacity,
+    setSeatPlateVisible: (seatId, visible) => {
+      const plate = seatBaseMesh[seatId];
+      if (plate) plate.visible = visible && !inactiveSeats.has(seatId);
+    },
+    setSeatEmptyDishesVisible: (seatId, visible) => {
+      const dishes = seatEmptyDishMesh[seatId];
+      if (dishes) dishes.visible = visible && !inactiveSeats.has(seatId);
+    },
+    setSeatCleanupOverlayVisible: (seatId, visible) => {
+      const overlay = seatCleanupOverlayMesh[seatId];
+      if (overlay) overlay.visible = visible && !inactiveSeats.has(seatId);
+    },
+    setCleanupOverlayFrame: (frame) => {
+      const index = Math.abs(Math.trunc(frame)) % 2;
+      for (const overlay of Object.values(seatCleanupOverlayMesh)) {
+        cropUV(overlay.geometry, { u0: index * 0.5, v0: 0, u1: (index + 1) * 0.5, v1: 1 });
+      }
+    },
     setGrillSlots,
     setObjectEnabled,
     setObjectTexture,

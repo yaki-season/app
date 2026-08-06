@@ -909,6 +909,9 @@ function syncCustomers() {
   const onCustomers = director.activeScreenId() === 'SCR-SVC-CUSTOMERS';
   for (const seatId of SEAT_IDS) {
     const seat = seats.find((item) => item.seatId === seatId);
+    R.setSeatPlateVisible(seatId, onCustomers && !!seat?.occupied && !seat.cleanupNeeded);
+    R.setSeatEmptyDishesVisible(seatId, onCustomers && !!seat?.cleanupNeeded);
+    R.setSeatCleanupOverlayVisible(seatId, onCustomers && cleanupSeatId === seatId);
     const target = R.objectMesh[`seatServe:${seatId}`];
     if (target) {
       target.visible = onCustomers && !!seat
@@ -1508,6 +1511,7 @@ function loop(now) {
   }
   lastBusinessFrameAt = now;
   updateGrillVisual(now);
+  R.setCleanupOverlayFrame(Math.floor(now / 180));
   updateGrillStatus(now);
   pour.tick(now);
   beerLiquid?.setTime(now / 1000);
