@@ -32,9 +32,12 @@ test('좌석 확장: 구매로 6→8→12석이 열리고 화면에 배치된다
   await page.getByTestId('purchase-close').click();
   await page.getByTestId('next-day').click();
 
-  // 늘어난 좌석이 손님 화면에 표시된다
+  // 늘어난 좌석이 손님 화면에 배치된다. 좌석 표식은 승인 서빙 접시 아트로 바뀌어
+  // 손님이 앉아야 보이므로, 새 좌석을 점유시켜 배치와 사용 가능 여부를 함께 확인한다.
+  await page.evaluate(() => { window.__prodDebug.opsAutoSpawn(false); window.__prodDebug.opsClear(); });
+  await page.evaluate(() => { window.__prodDebug.forceSpawn('seat-12', 'solo', 0); window.__prodDebug.opsElapse(1); });
   await expect.poll(() => baseVisible(page, 'seat-12')).toBe(true);
   // 새 좌석에 손님을 앉히고 접수까지 동작
-  await page.evaluate(() => { window.__prodDebug.opsAutoSpawn(false); window.__prodDebug.forceSpawn('seat-10', 'solo', 0); window.__prodDebug.opsElapse(1); });
+  await page.evaluate(() => { window.__prodDebug.forceSpawn('seat-10', 'solo', 0); window.__prodDebug.opsElapse(1); });
   await expect.poll(() => page.evaluate(() => window.__prodDebug.seatViews().find((v) => v.seatId === 'seat-10').phase)).toBe('ordering');
 });

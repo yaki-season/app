@@ -56,7 +56,7 @@ test('6석 프로덕션 renderer와 승인 손님 배경이 조리 스테이션�
       }];
     }),
   ));
-  expect(layers.custBg.url).toContain('/public/assets/core/customer/background-complete-r4-b1.png');
+  expect(layers.custBg.url).toContain('/public/assets/core/customer/bg-interior-base-r3-b1.png');
   expect(layers.custSeating.url).toContain('/public/assets/core/customer/bg-seating-6-r2-b1.png');
   expect(layers.custTsukioka.url).toContain('/public/assets/core/customer/d1-tsukioka-waiting-r3-b1.png');
   expect(layers.custCounter.url).toContain('/public/assets/core/customer/service-counter-u-r4-b1.png');
