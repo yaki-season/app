@@ -1,4 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
+import { approvedIdsFromManifest, d1ReadinessExpectation } from '../helpers/d1Readiness.js';
+
+// 승인 아트가 하나 붙을 때마다 숫자를 손으로 고치지 않도록 실제 manifest + inventory에서 파생한다.
+const EXPECTED_PLACEHOLDER_COUNT = d1ReadinessExpectation(approvedIdsFromManifest(
+  JSON.parse(readFileSync(new URL('../../public/assets/manifest.json', import.meta.url), 'utf8')),
+)).placeholderCount;
 
 async function click(page, testId) {
   await page.getByTestId(testId).click();
@@ -8,7 +15,7 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await page.goto('/src/d1.html');
   await expect(page.locator('body')).toHaveAttribute('data-runtime-assets-ready', 'false');
   await expect(page.locator('body')).toHaveAttribute('data-runtime-contract-valid', 'true');
-  await expect(page.locator('body')).toHaveAttribute('data-asset-placeholder-count', '15');
+  await expect(page.locator('body')).toHaveAttribute('data-asset-placeholder-count', String(EXPECTED_PLACEHOLDER_COUNT));
   const readiness = await page.evaluate(() => window.__d1Debug.assetReadiness());
   expect(readiness.placeholderIdsByScene).toMatchObject({
     drink: expect.any(Array),

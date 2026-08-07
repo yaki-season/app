@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { approvedIdsFromManifest, d1ReadinessExpectation } from '../helpers/d1Readiness.js';
 import { describe, expect, it } from 'vitest';
 import {
   D1_DRINK_VISUAL_VARIANTS,
@@ -68,14 +69,15 @@ describe('D1 visual variant inventory completeness gate', () => {
     expect(report.placeholderRequiredAssetIds).toEqual(['TEX-BEER-LIQUID']);
   });
 
-  it('두 D1 진입점이 실제 consumer가 있는 동일한 43/28/15 readiness 집계를 공개한다', () => {
+  it('두 D1 진입점이 inventory 선언과 같은 readiness 집계를 공개한다', () => {
     const manifest = {
       assets: Object.values(D1_RUNTIME_ASSET_ID).map(approvedAsset),
     };
+    const expected = d1ReadinessExpectation(approvedIdsFromManifest(manifest));
     expect(reportD1RuntimeAssetReadiness(manifest)).toMatchObject({
-      requiredRuntimeCount: 43,
-      boundRuntimeCount: 28,
-      placeholderCount: 15,
+      requiredRuntimeCount: expected.requiredRuntimeCount,
+      boundRuntimeCount: expected.boundRuntimeCount,
+      placeholderCount: expected.placeholderCount,
     });
 
     for (const entrypoint of ['d1.js', 'd1-scene.js']) {

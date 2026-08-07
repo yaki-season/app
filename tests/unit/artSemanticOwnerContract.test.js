@@ -35,27 +35,14 @@ describe('art semanticOwner promotion preflight', () => {
     const boundRows = D1_RUNTIME_COMPONENT_INVENTORY.filter(
       (entry) => entry.bindingState === 'bound',
     );
-    expect(boundRows.map((entry) => entry.requiredAssetId)).toEqual([
-      ...existingApprovedIds,
-      'BG-INTERIOR-BASE',
-      'ST-SERVICE-COUNTER',
-      'CH-EXTRA-COMMUTER-SERVICE',
-      'CH-EXTRA-SOLO-SERVICE',
-      'PR-SERVING-PLATE',
-      'PR-EMPTY-DISH-SET',
-      'ST-CLEANUP-OVERLAY',
-      'BG-WORKSPACE-ASSEMBLY',
-      'ST-ASSEMBLY-TIER-1',
-      'BG-WORKSPACE-GRILL',
-      'ST-GRILL-TIER-1',
-      'ST-GRILL-FINISHED-TRAY',
-      'BG-WORKSPACE-DRINK',
-      'ST-DRINK-BEER-TIER-1',
-      'MDL-BEER-GLASS',
-      'MDL-BEER-LEVER',
-    ]);
-    expect(boundRows.map((entry) => entry.requiredAssetId).slice(0, 9))
-      .toEqual(existingApprovedIds);
+    const boundIds = boundRows.map((entry) => entry.requiredAssetId);
+    // 이 테스트가 지키는 것은 "기존 승인 순서 보존"이다. 전체 목록을 박아두면 아트가 하나
+    // 붙을 때마다 여기까지 고쳐야 해서 불변식만 남긴다. 새 binding의 정합성은
+    // auditD1RuntimeAssetBindingContract(inventory↔resolver 대조)와 assets:validate(파일·SHA)가
+    // 이미 강제한다.
+    expect(boundIds.slice(0, existingApprovedIds.length)).toEqual(existingApprovedIds);
+    expect(new Set(boundIds).size).toBe(boundIds.length);
+    expect(boundIds.length).toBeGreaterThanOrEqual(existingApprovedIds.length);
   });
 
   it('Artist metadata·binding·runtime owner가 일치할 때만 promotion을 허용한다', () => {
