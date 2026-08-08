@@ -24,7 +24,7 @@ export default defineConfig({
     },
   },
   webServer: {
-    command: 'python3 -m http.server 8777',
+    command: 'npm run dev',
     port: 8777,
     reuseExistingServer: true,
     timeout: 15000,
