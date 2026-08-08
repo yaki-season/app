@@ -218,11 +218,11 @@ export const S0_AKI_STORY_PORTRAIT_BINDING = Object.freeze({
     runtimeRegistrationBeforeApprovalAllowed: false,
   }),
   currentRuntimeEvidence: Object.freeze({
-    selector: '#portrait-placeholder',
-    cssWidthPx: 128,
+    selector: '#story-portrait',
+    cssWidthPx: 256,
     cssAspectRatio: '3/4',
-    logicalCanvasBound: false,
-    status: 'semantic-placeholder-only',
+    logicalCanvasBound: true,
+    status: 'approved-runtime-bound',
     productionGeometrySource: 'this-versioned-contract',
   }),
 });

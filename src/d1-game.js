@@ -197,6 +197,7 @@ async function bootRawNegimaRuntime() {
       assemblyNegimaInstances.tray.push(instance);
       R.scene.add(instance.holder);
     }
+    for (const key of SLOT_KEYS) bindCookingMaterialToApprovedPlane(key);
     rawNegimaRuntime.status = 'ready';
     rawNegimaRuntime.diagnostics = compositor.diagnostics;
     rawNegimaRuntime.grillRawTexture = compositor.grillRawTexture;
@@ -1495,6 +1496,25 @@ function grillNegimaStage(view) {
   return 'cooking';
 }
 
+// 승인 원본 평면에 굽는 셰이더를 입힌다. 셰이더 재질과 승인 번들은 각각 비동기로 준비되므로
+// 양쪽이 다 준비된 시점에 호출한다(재질 로드 완료 시, 그리고 번들 부팅 완료 시).
+function bindCookingMaterialToApprovedPlane(key) {
+  const g = grillMats[key];
+  const instance = rawNegimaInstances[key];
+  if (!g || !instance?.applyCookingMaterial) return false;
+  if (!instance.applyCookingMaterial(g.material)) return false;
+  if (rawNegimaRuntime.grillRawTexture) g.setTexture(rawNegimaRuntime.grillRawTexture);
+  // 셰이더 재질은 이제 승인 평면이 소유한다. pgSlot mesh와 공유하면 그쪽에 걸리는
+  // colorWrite=false가 평면까지 꺼버린다. mesh는 raycast 전용 투명 재질로 되돌린다.
+  const mesh = R.objectMesh[key];
+  if (mesh && mesh.material === g.material) {
+    mesh.material = new THREE.MeshBasicMaterial({
+      transparent: true, opacity: 0, colorWrite: false, depthWrite: false,
+    });
+  }
+  return true;
+}
+
 function updateGrillVisual(now) {
   const views = cook.slotViews(now);
   for (const key of SLOT_KEYS) {
@@ -1513,24 +1533,29 @@ function updateGrillVisual(now) {
       grillFlipQuaternion.setFromAxisAngle(GRILL_FLIP_AXIS, v?.visualRotationRad ?? 0),
     );
     const rawInstance = rawNegimaInstances[key];
+    // 승인 원본 평면에 굽는 셰이더가 올라가 있으면 단계마다 그림을 갈아끼우지 않는다.
+    // 평면 하나를 계속 두고 uDoneness만 움직여 같은 이미지의 색을 바꾼다.
+    const shaderOnApprovedPlane = rawInstance?.usesCookingMaterial?.() === true;
     const showApprovedRaw = (
       rawNegimaRuntime.status === 'ready'
       && v != null
       && v.status !== 'empty'
-      && grillNegimaStage(v) === 'raw'
+      && (shaderOnApprovedPlane || grillNegimaStage(v) === 'raw')
       && director.activeScreenId() === 'SCR-SVC-GRILL'
     );
     if (rawInstance) {
       rawInstance.holder.visible = showApprovedRaw;
-      if (!v?.flipping) rawInstance.setStage(grillNegimaStage(v));
+      if (shaderOnApprovedPlane) rawInstance.setCooking?.(v?.cooking === true);
+      else if (!v?.flipping) rawInstance.setStage(grillNegimaStage(v));
       // The approved grill artwork is a front-facing 2D sprite. Rotating its zero-thickness
       // plane around Y makes the skewer collapse into a sheet of paper mid-flip. Keep the
       // artwork facing the camera; the cook state still switches contact faces normally.
       rawInstance.flipPivot.rotation.y = 0;
     }
     // public pgSlot은 visual과 raycast를 한 mesh가 맡으므로 visible=false로 숨기면 입력도 끊긴다.
-    // mesh/raycast는 유지하고 staged 동안 color write만 막아 procedural pink 픽셀을 교체한다.
-    if (mesh.material) mesh.material.colorWrite = !showApprovedRaw;
+    // mesh/raycast는 유지하고 color write만 막는다. 승인 평면이 셰이더를 소유한 뒤에는
+    // mesh가 raycast 전용이라 항상 막아둔다.
+    if (mesh.material) mesh.material.colorWrite = shaderOnApprovedPlane ? false : !showApprovedRaw;
   }
 }
 for (const key of SLOT_KEYS) {
@@ -1540,6 +1565,7 @@ for (const key of SLOT_KEYS) {
     if (!mesh) return;
     mesh.material.dispose();
     mesh.material = g.material;
+    bindCookingMaterialToApprovedPlane(key);
   }).catch((err) => console.error('익힘 재질 로드 실패:', err));
 }
 
@@ -1788,6 +1814,8 @@ Object.assign(d1GameDebug, {
         && R.objectMesh[key]?.material?.colorWrite !== false
       ),
       shaderUsesApprovedRaw: grillMats[key]?.uniforms?.uTex?.value === rawNegimaRuntime.grillRawTexture,
+      // 굽는 셰이더가 승인 원본 평면 위에서 돈다 = 단계마다 그림을 갈아끼우지 않는다.
+      shaderOnApprovedPlane: rawNegimaInstances[key]?.usesCookingMaterial?.() === true,
       interactionVisible: (
         R.interactionMesh[key]?.visible
         ?? R.objectMesh[key]?.visible

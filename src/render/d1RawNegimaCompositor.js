@@ -341,6 +341,35 @@ function grillSpriteInstanceForSlot(stageTextures, slotMesh, sourceTransform) {
     },
     stage: () => holder.userData.stage,
     ingredientCount: () => D1_RAW_NEGIMA_SEQUENCE.length,
+    // 승인 원본 평면에 굽는 셰이더를 직접 입힌다. 셰이더를 별도 mesh(pgSlot)에 두면 그쪽은
+    // 슬롯 rect 비율이라 같은 텍스처가 다른 실루엣으로 늘어나고, 단계가 바뀌는 순간 이미지가
+    // 통째로 교체된 것처럼 보인다. 평면을 하나만 쓰면 교체 자체가 존재하지 않는다.
+    // 굽기 전에는 승인 원본 재질을 그대로 쓰고, 굽기 시작하면 같은 평면의 재질만 셰이더로
+    // 바꾼다. 평면(지오메트리·위치)이 하나라 실루엣이 변하지 않고, 생것은 승인 색 그대로다.
+    setCooking(active) {
+      const next = active ? holder.userData.cookingMaterialRef : holder.userData.rawMaterialRef;
+      if (!next || planes.raw.material === next) return false;
+      planes.raw.material = next;
+      return true;
+    },
+    applyCookingMaterial(material) {
+      if (!material || holder.userData.cookingMaterialRef === material) return false;
+      // 승인 평면이 쓰던 렌더 상태를 그대로 물려준다. 특히 toneMapped를 켜두면 three가
+      // 출력 색을 한 번 더 변환해 승인 아트의 생고기·생파 색이 따뜻하게 밀린다.
+      material.toneMapped = false;
+      material.transparent = true;
+      material.depthTest = false;
+      material.depthWrite = false;
+      material.side = THREE.DoubleSide;
+      material.needsUpdate = true;
+      holder.userData.rawMaterialRef ??= planes.raw.material;
+      holder.userData.cookingMaterialRef = material;
+      Object.entries(planes).forEach(([key, plane]) => { plane.visible = key === 'raw'; });
+      holder.userData.stage = 'raw';
+      holder.userData.cookingMaterial = true;
+      return true;
+    },
+    usesCookingMaterial: () => holder.userData.cookingMaterial === true,
   };
 }
 

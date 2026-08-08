@@ -137,8 +137,15 @@ vec3 cookColor(vec3 base, float d) {
     return c;
 }
 
+// 승인 아트는 sRGB로 인코딩돼 있다. 원시 ShaderMaterial은 three의 자동 변환을 타지 않으므로
+// 여기서 선형으로 풀어 계산하고, 출력 직전에 다시 sRGB로 인코딩한다. 그러지 않으면 이중
+// 인코딩이 되어 굽기 전부터 과포화·적색 편향이 생기고 생파의 녹색이 사라진다.
+vec3 srgbToLinear(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }
+vec3 linearToSrgb(vec3 c) { return pow(max(c, vec3(0.0)), vec3(1.0 / 2.2)); }
+
 void main() {
     vec4 tex = texture(uTex, vUv);
+    tex.rgb = srgbToLinear(tex.rgb);
 
     // 배경(투명 픽셀)은 건드리지 않는다
     if (tex.a < 0.01) {
@@ -184,12 +191,15 @@ void main() {
     vec3 halfDir  = normalize(lightDir + viewDir);
     float spec = pow(max(dot(nrm, halfDir), 0.0), uTareSpecPower);
 
+    // 타레는 굽는 동안 발린다. 날것에 광택·틴트를 얹으면 승인 아트의 생고기·생파 색이
+    // 왜곡된다. doneness가 올라가야 나타나게 한다.
+    float tareApplied = smoothstep(0.06, 0.34, uDoneness);
     // 탄 부분은 광택이 죽는다
-    float gloss = uTareAmount * (1.0 - char * 0.75);
+    float gloss = uTareAmount * (1.0 - char * 0.75) * tareApplied;
     col += uTareSheen * spec * gloss * uTareGloss;
 
     // 타레 자체의 색(간장 베이스) — 도포량만큼 어둡고 붉게
-    col = mix(col, col * uTareTint, uTareAmount * uTareTintAmount);
+    col = mix(col, col * uTareTint, uTareAmount * uTareTintAmount * tareApplied);
 
     // ── 숯불 반사광 ───────────────────────────────────────────
     // 굽는 중일 때 아래쪽에서 주황빛이 흔들리며 올라온다.
@@ -201,5 +211,5 @@ void main() {
     float fromBelow = smoothstep(uEmberRise.x, uEmberRise.y, vUv.y);
     col += uEmberColor * cooking * flicker * fromBelow * uEmberIntensity;
 
-    fragColor = vec4(col, tex.a);
+    fragColor = vec4(linearToSrgb(col), tex.a);
 }

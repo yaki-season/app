@@ -73,6 +73,14 @@ test('S0: 열쇠→대문 2클릭 뒤 점화 대사를 거쳐 D1로 이어진다
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-S0-DECISION');
   await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-S0-001');
   await expect(page.locator('.dialogue')).toHaveText('화로에 다시 불이 들었다. 숯 냄새가 먼저 기억을 깨우네.');
+  await expect(page.locator('#story-portrait')).toBeVisible();
+  await expect(page.locator('#story-portrait')).toHaveAttribute(
+    'src',
+    '/public/assets/core/s0/story/ch-aki-story-r4-b1.png',
+  );
+  await expect(page.locator('#story-portrait')).toHaveAttribute('data-state-variant', 'fatigue');
+  await expect(page.locator('#portrait-placeholder')).toBeHidden();
+  await expect(page.locator('body')).toHaveAttribute('data-required-asset-id', 'CH-AKI-STORY');
   await expect(page.getByRole('button', { name: '숯불 점화' })).toHaveCount(0);
   await page.getByRole('button', { name: '이야기 건너뛰기' }).click();
   await expect(page.getByRole('heading', { name: '3줄 요약' })).toBeVisible();
@@ -92,6 +100,25 @@ test('키보드만으로 S0 첫 상호작용을 진행한다', async ({ page }) 
   await page.keyboard.press('Enter');
   await expect(page.locator('body')).toHaveAttribute('data-state-id', 'S0-STATE-GATE');
   await expect(page.getByRole('button', { name: '가게 대문 열기' })).toBeVisible();
+});
+
+test('D1 첫 대사에서 승인된 츠키오카 세이지 초상을 표시한다', async ({ page }) => {
+  await page.goto('/src/s0-d3.html?new=1');
+  await page.getByRole('button', { name: '남겨진 열쇠 선택' }).click();
+  await page.getByRole('button', { name: '가게 대문 열기' }).click();
+  await skipStory(page);
+  await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-D1-PRE-001');
+  await page.getByRole('button', { name: '다음 대사' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-D1-PRE-002');
+  await expect(page.locator('#story-portrait')).toBeVisible();
+  await expect(page.locator('#story-portrait')).toHaveAttribute(
+    'src',
+    '/public/assets/core/s0/story/ch-tsukioka-story-r1-b1.png',
+  );
+  await expect(page.locator('#story-portrait')).toHaveAttribute('data-state-variant', 'calm');
+  await expect(page.locator('#story-portrait')).toHaveAttribute('alt', '츠키오카 세이지 이야기 초상');
+  await expect(page.locator('#portrait-placeholder')).toBeHidden();
+  await expect(page.locator('body')).toHaveAttribute('data-required-asset-id', 'CH-TSUKIOKA-STORY');
 });
 
 test('KEY exact PR-SHOP-KEY가 없으면 승인 closed 배경 위에서도 placeholder를 유지한다', async ({

@@ -15,6 +15,14 @@ import {
   indexApprovedRuntimeAssets,
   resolveApprovedRuntimeAsset,
 } from './assets/runtimeAssetResolver.js';
+import {
+  S0_AKI_STORY_DIALOGUE_VARIANTS,
+  S0_AKI_STORY_PORTRAIT_BINDING,
+} from './assets/s0AkiStoryPortraitBindingContract.js';
+import {
+  S0_TSUKIOKA_STORY_DIALOGUE_VARIANTS,
+  S0_TSUKIOKA_STORY_PORTRAIT_BINDING,
+} from './assets/s0TsukiokaStoryPortraitBindingContract.js';
 import { clearFirstOrderRuntime } from './d1/firstOrderRuntimeStorage.js';
 
 const errors = validateS0D3Content();
@@ -29,6 +37,7 @@ const dialogueId = document.querySelector('#dialogue-id');
 const visualTitle = document.querySelector('#visual-title');
 const visualDescription = document.querySelector('#visual-description');
 const portrait = document.querySelector('#portrait-placeholder');
+const storyPortrait = document.querySelector('#story-portrait');
 const content = document.querySelector('#content-panel');
 const actions = document.querySelector('#actions');
 const visualPlaceholder = document.querySelector('#visual-placeholder');
@@ -45,6 +54,50 @@ let returnMode = null;
 let dayId = 'S0';
 let campaignBridge = null;
 let approvedRuntimeAssets = new Map();
+
+function hideStoryPortrait() {
+  storyPortrait.hidden = true;
+  storyPortrait.removeAttribute('src');
+  storyPortrait.removeAttribute('data-state-variant');
+}
+
+function renderStoryPortrait(speaker, activeDialogueId) {
+  const isAki = speaker.id === FIXED_CHARACTER.AKI.id;
+  const isTsukioka = speaker.id === FIXED_CHARACTER.TSUKIOKA.id;
+  const binding = isAki
+    ? S0_AKI_STORY_PORTRAIT_BINDING
+    : isTsukioka ? S0_TSUKIOKA_STORY_PORTRAIT_BINDING : null;
+  const variants = isAki
+    ? S0_AKI_STORY_DIALOGUE_VARIANTS
+    : isTsukioka ? S0_TSUKIOKA_STORY_DIALOGUE_VARIANTS : {};
+  const asset = binding
+    ? resolveApprovedRuntimeAsset(
+      approvedRuntimeAssets,
+      binding.requiredAssetId,
+    )
+    : null;
+  if (!asset) {
+    hideStoryPortrait();
+    portrait.hidden = false;
+    portrait.textContent = isAki ? '秋' : speaker.id === FIXED_CHARACTER.TSUKIOKA.id ? '誠' : '客';
+    developmentLabel.hidden = false;
+    visualPlaceholder.dataset.assetMode = 'placeholder';
+    return;
+  }
+  portrait.hidden = true;
+  storyPortrait.src = asset.url;
+  storyPortrait.alt = `${speaker.displayName} 이야기 초상`;
+  storyPortrait.dataset.stateVariant = variants[activeDialogueId] ?? (isAki ? 'fatigue' : 'calm');
+  storyPortrait.hidden = false;
+  developmentLabel.hidden = true;
+  visualPlaceholder.dataset.assetMode = 'approved';
+  document.body.dataset.componentId = binding.componentId;
+  document.body.dataset.requiredAssetId = asset.id;
+  document.body.dataset.stateVariant = storyPortrait.dataset.stateVariant;
+  document.body.dataset.semanticOwner = binding.semanticOwner;
+  document.body.dataset.cameraId = binding.camera.cameraId;
+  document.body.dataset.assetMode = 'approved';
+}
 
 function syncS0ArtCamera() {
   const stage = visualPlaceholder.getBoundingClientRect();
@@ -178,6 +231,7 @@ function renderS0() {
     ? '승인된 exact 외관 배경 한 장과 DOM 상호작용으로 표시합니다.'
     : '정식 S0 아트는 Artist 023 handoff 전까지 단순 도형으로 표시합니다.';
   portrait.hidden = true;
+  hideStoryPortrait();
   if (exteriorBackgroundBinding) {
     renderS0ExteriorBackground(exteriorBackgroundBinding, binding);
   } else {
@@ -225,9 +279,10 @@ function renderStory() {
   const speaker = speakerById(line.speakerId);
   dayId = story.dayId;
   heading.textContent = `${story.dayId} · ${story.timing === 'pre-open' ? '영업 전 이야기' : story.timing === 'post-settlement' ? '정산 후 이야기' : '프롤로그 결심'}`;
-  visualTitle.textContent = `${speaker.displayName} · 임시 초상`;
-  visualDescription.textContent = `${story.sourceMasterId} 교체 전 semantic placeholder입니다.`;
-  portrait.hidden = false;
+  visualTitle.textContent = `${speaker.displayName} · 이야기 초상`;
+  visualDescription.textContent = speaker.id === FIXED_CHARACTER.AKI.id
+    ? '승인된 CH-AKI-STORY 초상입니다.'
+    : `${story.sourceMasterId} 교체 전 semantic placeholder입니다.`;
   for (const name of [
     'componentId',
     'requiredAssetId',
@@ -250,9 +305,7 @@ function renderStory() {
   interactionVisual.hidden = true;
   interactionVisual.removeAttribute('src');
   interactionVisual.removeAttribute('style');
-  visualPlaceholder.dataset.assetMode = 'placeholder';
-  developmentLabel.hidden = false;
-  portrait.textContent = speaker.id === FIXED_CHARACTER.AKI.id ? '秋' : speaker.id === FIXED_CHARACTER.TSUKIOKA.id ? '誠' : '客';
+  renderStoryPortrait(speaker, line.dialogueId);
   setIds({ screen: story.screenId, state: `${story.dayId}-${story.timing}`, scene: story.sceneId, dialogue: line.dialogueId });
   content.innerHTML = `<p class="speaker">${speaker.displayName}</p><p class="dialogue">${line.text}</p><p>${lineIndex + 1} / ${story.lines.length}</p>`;
   const nextLabel = lineIndex === story.lines.length - 1 ? '장면 완료' : '다음 대사';
@@ -300,6 +353,7 @@ function renderSummary() {
   visualTitle.textContent = '맥락 · 새 행동 · 목표';
   visualDescription.textContent = '이야기를 건너뛰어도 진행 정보는 세 줄 안에 유지됩니다.';
   portrait.hidden = true;
+  hideStoryPortrait();
   setIds({ screen: story.screenId, state: `${story.dayId}-skip-summary`, scene: story.sceneId, dialogue: 'SUMMARY-3-LINES' });
   content.innerHTML = `<h2>3줄 요약</h2><ol class="summary">${story.skipSummary.map((line) => `<li>${line}</li>`).join('')}</ol>`;
   actions.replaceChildren(button('요약 확인', async () => {
@@ -314,6 +368,7 @@ function renderBusiness() {
   visualTitle.textContent = '영업·조리 화면 임시 UI';
   visualDescription.textContent = '플레이어 손·팔·몸을 표시하지 않습니다. 실제 영업은 개발자 1 공개 port 연결 뒤 교체됩니다.';
   portrait.hidden = true;
+  hideStoryPortrait();
   setIds({ screen: 'SCR-SVC-CUSTOMERS', state: `${dayId}-business-placeholder`, scene: 'none', dialogue: 'none' });
   content.innerHTML = '<h2><span class="development-label">개발 중</span> 영업 결과 대기</h2><p>오디오 없이 주문·위험·결과를 텍스트와 비색상 표식으로 전달할 자리입니다.</p>';
   actions.replaceChildren(button('영업 결과 보기', () => {
@@ -325,10 +380,9 @@ function renderBusiness() {
 
 function renderSettlement() {
   heading.textContent = `${dayId} · 정산`;
-  visualTitle.textContent = '아사노 아키 · 임시 정산 초상';
-  visualDescription.textContent = '정산 결과는 개발자 1 aggregate를 소유하지 않는 표시 전용 placeholder입니다.';
-  portrait.hidden = false;
-  portrait.textContent = '秋';
+  visualTitle.textContent = '아사노 아키 · 정산 초상';
+  visualDescription.textContent = '승인된 CH-AKI-STORY 초상과 정산 결과를 함께 표시합니다.';
+  renderStoryPortrait(FIXED_CHARACTER.AKI, 'DLG-D1-POST-002');
   setIds({ screen: 'SCR-POST-SETTLEMENT', state: `${dayId}-settlement-placeholder`, scene: 'none', dialogue: 'none' });
   content.innerHTML = '<h2><span class="development-label">개발 중</span> 오늘의 변화</h2><p>주문 → 품질·기다림 → 매출·팁 → 명성 → 다음 변화 순서로 표시합니다.</p>';
   actions.replaceChildren(button('정산 후 이야기', () => {
@@ -344,6 +398,7 @@ function renderComplete() {
   visualTitle.textContent = 'S0~D3 임시 시나리오 종료';
   visualDescription.textContent = 'D4 연결은 developer-2/005 범위이므로 이 화면에서 시작하지 않습니다.';
   portrait.hidden = true;
+  hideStoryPortrait();
   setIds({ screen: 'SCR-POST-NEXT-GOAL', state: 'D3-complete', scene: 'none', dialogue: 'none' });
   content.innerHTML = '<h2>S0~D3 확인 완료</h2><p>아사노 아키와 츠키오카 세이지만 고정 인물로 사용했고, 다른 손님은 이름 없는 엑스트라 유형으로 유지했습니다.</p>';
   actions.replaceChildren(button('처음부터 다시 보기', async () => {
@@ -359,6 +414,7 @@ function renderCampaignError(error) {
   visualTitle.textContent = '캠페인 연결 오류';
   visualDescription.textContent = '진행 상태를 덮어쓰지 않았습니다.';
   portrait.hidden = true;
+  hideStoryPortrait();
   setIds({ screen: 'SCR-SYS-RECOVERY', state: 'campaign-error', scene: 'none', dialogue: 'none' });
   const title = document.createElement('h2');
   title.textContent = '진행을 계속할 수 없습니다';

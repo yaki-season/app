@@ -168,12 +168,16 @@ describe(`CH-AKI-STORY portrait binding v${S0_AKI_STORY_PORTRAIT_BINDING_CONTRAC
       missingVariantBehavior: 'semantic-glyph-placeholder',
       runtimeRegistrationBeforeApprovalAllowed: false,
     });
-    expect(runtimeManifest.assets.some(
-      ({ id }) => id === 'CH-AKI-STORY' || id === 'CH-OWNER-STORY',
-    )).toBe(false);
+    expect(runtimeManifest.assets.find(({ id }) => id === 'CH-AKI-STORY')).toMatchObject({
+      status: 'approved',
+      sourceRevision: 4,
+      url: '/assets/core/s0/story/ch-aki-story-r4-b1.png',
+    });
+    expect(runtimeManifest.assets.some(({ id }) => id === 'CH-OWNER-STORY')).toBe(false);
   });
 
-  it('현재 DOM placeholder의 story/summary/business/settlement 가시성 경계를 증거로 유지한다', () => {
+  it('승인 초상과 누락 시 placeholder의 story/summary/business 가시성 경계를 유지한다', () => {
+    expect(runtimeHtml).toContain('id="story-portrait" class="story-portrait"');
     expect(runtimeHtml).toMatch(
       /id="portrait-placeholder" class="portrait-placeholder" hidden aria-hidden="true">秋<\/div>/,
     );
@@ -181,10 +185,10 @@ describe(`CH-AKI-STORY portrait binding v${S0_AKI_STORY_PORTRAIT_BINDING_CONTRAC
       /\.portrait-placeholder \{ width:128px; aspect-ratio:3\/4;/,
     );
     expect(functionSource('renderS0', 'renderStory')).toContain('portrait.hidden = true');
-    expect(functionSource('renderStory', 'advanceAfterStory')).toContain('portrait.hidden = false');
+    expect(functionSource('renderStory', 'advanceAfterStory')).toContain('renderStoryPortrait(speaker, line.dialogueId)');
     expect(functionSource('renderSummary', 'renderBusiness')).toContain('portrait.hidden = true');
     expect(functionSource('renderBusiness', 'renderSettlement')).toContain('portrait.hidden = true');
-    expect(functionSource('renderSettlement', 'renderComplete')).toContain('portrait.hidden = false');
+    expect(functionSource('renderSettlement', 'renderComplete')).toContain("renderStoryPortrait(FIXED_CHARACTER.AKI");
     expect(runtimeJs).not.toContain('CH-OWNER-STORY');
   });
 
