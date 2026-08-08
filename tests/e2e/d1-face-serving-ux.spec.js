@@ -52,11 +52,14 @@ test('prepared dock stays hidden at work stations and appears only at customers'
     await goScreen(page, screenId);
     await expect(dock).toBeHidden();
     await expect(dock).toHaveAttribute('aria-hidden', 'true');
+    await expect(page.getByTestId('svc-receipts')).toBeVisible();
   }
 
   await goScreen(page, 'SCR-SVC-CUSTOMERS');
   await expect(dock).toBeVisible();
   await expect(dock).toHaveAttribute('aria-hidden', 'false');
+  await expect(page.getByTestId('svc-receipts')).toBeHidden();
+  await expect(page.getByTestId('order-hud')).toBeHidden();
   await expect(page.getByTestId(`dock-item-${itemId}`)).toBeVisible();
 
   await goScreen(page, 'SCR-SVC-ASSEMBLY');
@@ -64,6 +67,16 @@ test('prepared dock stays hidden at work stations and appears only at customers'
   expect(await D(page, 'dockItems')).toEqual([
     expect.objectContaining({ id: itemId, menu: '생맥주', label: 'Perfect' }),
   ]);
+  expect(errors).toEqual([]);
+});
+
+test('ultrawide customer view preserves the 16:9 scene instead of stretching it', async ({ page }) => {
+  await page.setViewportSize({ width: 1884, height: 848 });
+  const errors = await boot(page);
+  const canvas = await page.getByTestId('scene-canvas').boundingBox();
+  expect(canvas.width / canvas.height).toBeCloseTo(16 / 9, 4);
+  expect(canvas.height).toBeGreaterThan(848);
+  expect(canvas.y).toBeLessThan(0);
   expect(errors).toEqual([]);
 });
 

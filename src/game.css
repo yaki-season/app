@@ -16,7 +16,15 @@ body {
   font: 15px/1.5 system-ui, "Malgun Gothic", sans-serif; color: var(--text);
   -webkit-user-select: none; user-select: none;
 }
-#scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+#scene {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: max(100vw, 177.7778vh);
+  height: max(100vh, 56.25vw);
+  transform: translate(-50%, -50%);
+  display: block;
+}
 
 /* 영업 상단 shell */
 #svcBar {
@@ -153,52 +161,46 @@ body {
 .drink-overflow[hidden] { display: none; }
 .drink-overflow button { background: rgba(48,38,30,0.9); color: var(--text); border: 1px solid var(--line); }
 
-/* 완성품 선택 UI — 요리 서빙대와 음료 픽업대를 시각적으로 분리한다. */
+/* 완성품 선택 UI — 손님 화면의 카운터 위에 놓이는 간결한 품목 토큰. */
 .dock-shelf {
-  position: fixed; left: 50%; bottom: 78px; transform: translateX(-50%); z-index: 11;
-  width: min(72vw, 1180px); min-width: 620px;
-  box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(240px, .65fr); gap: 12px;
-  padding: 0;
-  background: none;
-  border: 0; border-radius: 0;
+  position: fixed; left: 50%; bottom: 62px; transform: translateX(-50%); z-index: 11;
+  width: min(760px, calc(100vw - 180px));
+  min-width: 0;
+  box-sizing: border-box; display: flex; align-items: flex-end; justify-content: center; gap: 24px;
+  padding: 0; background: none; border: 0;
 }
 .dock-shelf[hidden] { display: none; }
 .dock-zone {
-  position: relative; min-height: 112px; box-sizing: border-box;
-  display: grid; grid-template-rows: auto 1fr; align-items: center;
-  padding: 30px 24px 12px; overflow: hidden;
-  border: 1px solid rgba(224, 157, 79, .55); border-radius: 14px;
-  box-shadow: 0 7px 20px rgba(0, 0, 0, .48);
-}
-.dock-zone--food { background: var(--dock-shelf-art) center 58% / 122% 122% no-repeat, rgba(34, 23, 16, .96); }
-.dock-zone--drink {
-  background:
-    radial-gradient(circle at 30% 63%, transparent 0 25px, rgba(200, 143, 66, .82) 26px 29px, transparent 30px),
-    radial-gradient(circle at 70% 63%, transparent 0 25px, rgba(200, 143, 66, .82) 26px 29px, transparent 30px),
-    linear-gradient(180deg, rgba(62, 41, 27, .98), rgba(27, 19, 15, .98));
+  position: relative; min-width: 180px; min-height: 72px; box-sizing: border-box;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 20px 10px 4px;
+  border: 0; border-bottom: 2px solid rgba(224, 157, 79, .52);
+  background: linear-gradient(180deg, transparent 0 40%, rgba(20, 14, 10, .78));
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .5));
 }
 .dock-zone-label {
-  position: absolute; top: 8px; left: 12px; padding: 3px 8px;
-  border-radius: 999px; background: rgba(20, 14, 11, .82); color: #ffe1a8;
-  font-size: 12px; letter-spacing: .04em;
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  color: rgba(255, 225, 168, .82); font-size: 11px; font-weight: 600; white-space: nowrap;
 }
-.dock-zone-items { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
+.dock-zone-items { display: flex; align-items: flex-end; justify-content: center; gap: 4px; min-width: 0; }
 .dock-zone-empty { display: none; place-self: center; color: rgba(255, 238, 210, .48); font-size: 12px; }
 .dock-zone.is-empty .dock-zone-empty { display: block; }
 .dock-card {
-  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px;
-  min-width: 92px; min-height: 72px; padding: 34px 10px 6px; cursor: pointer;
-  background: rgba(48,38,30,0.9); border: 1px solid var(--line); border-radius: 9px; color: var(--text);
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 1px;
+  width: 68px; min-width: 68px; min-height: 62px; padding: 38px 4px 2px; cursor: pointer;
+  background: transparent; border: 0; border-radius: 7px; color: var(--text);
   font: inherit;
 }
-.dock-item-art--plate {
-  position: absolute; top: 3px; left: 50%; width: 82px; height: 44px; transform: translateX(-50%);
-  background: var(--dock-serving-plate-art) center / contain no-repeat;
+.dock-item-art {
+  position: absolute; top: 0; left: 50%; width: 52px; height: 40px; transform: translateX(-50%);
+  background-position: center; background-size: contain; background-repeat: no-repeat;
   pointer-events: none;
 }
-.dock-card.selected { border-color: var(--ember); box-shadow: 0 0 0 1px var(--ember); }
-.dock-card .dock-menu { font-size: 12px; font-weight: 600; }
-.dock-card .dock-quality { font-size: 10px; padding: 1px 6px; border-radius: 5px; }
+.dock-item-art--food { background-image: var(--dock-food-art); }
+.dock-item-art--drink { background-image: var(--dock-drink-art); }
+.dock-card.selected { background: rgba(255, 137, 67, .14); box-shadow: inset 0 -2px 0 var(--ember); }
+.dock-card .dock-menu { font-size: 11px; font-weight: 700; }
+.dock-card .dock-quality { font-size: 9px; padding: 0 4px; border-radius: 4px; }
 .dock-card .dock-quality.q-good { background: color-mix(in srgb, var(--good) 26%, transparent); color: var(--good); }
 .dock-card .dock-quality.q-low { background: color-mix(in srgb, var(--warn) 26%, transparent); color: var(--warn); }
 

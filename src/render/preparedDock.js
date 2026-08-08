@@ -46,7 +46,7 @@ export function createPreparedDock({ container }) {
       card.dataset.testid = `dock-item-${it.id}`;
       card.dataset.good = it.good ? '1' : '0';
       card.dataset.preparedZone = zoneId;
-      card.innerHTML = `${zoneId === 'food' ? '<span class="dock-item-art dock-item-art--plate" aria-hidden="true"></span>' : ''}<span class="dock-menu">${it.menu}</span><span class="dock-quality ${it.good ? 'q-good' : 'q-low'}">${it.label}</span>`;
+      card.innerHTML = `<span class="dock-item-art dock-item-art--${zoneId}" aria-hidden="true"></span><span class="dock-menu">${it.menu}</span><span class="dock-quality ${it.good ? 'q-good' : 'q-low'}">${it.label}</span>`;
       card.addEventListener('click', () => select(it.id));
       zone.querySelector('.dock-zone-items').appendChild(card);
     }

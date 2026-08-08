@@ -101,12 +101,12 @@ guideToggle.addEventListener('click', () => {
 const canvas = el('scene');
 const runtimeAssets = await loadD1RuntimeAssets();
 document.getElementById('dockShelf')?.style.setProperty(
-  '--dock-shelf-art',
-  `url("${runtimeAssets.SERVICE_COUNTER.url}")`,
+  '--dock-food-art',
+  `url("${runtimeAssets.ORDER_NEGIMA.url}")`,
 );
 document.getElementById('dockShelf')?.style.setProperty(
-  '--dock-serving-plate-art',
-  `url("${runtimeAssets.SERVING_PLATE.url}")`,
+  '--dock-drink-art',
+  `url("${runtimeAssets.ORDER_DRAFT_BEER.url}")`,
 );
 document.body.dataset.assetPlaceholderCount = String(runtimeAssets.readiness.placeholderCount);
 document.body.dataset.runtimeAssetsReady = String(runtimeAssets.readiness.ready);
@@ -771,6 +771,18 @@ function renderServeTargets() {
         ? `${seatLabel}. 정리 필요. 3초 동안 눌러 정리하세요.`
         : `${seatLabel} ${customerLabel}. ${remaining}.${seat?.canOrder ? ' 주문 접수 가능.' : ''}${eligible ? ` 선택한 ${selected.menu} 제공 가능.` : ''}`,
     );
+  }
+  positionServeTargets();
+}
+
+function positionServeTargets() {
+  if (customerServePanel.hidden) return;
+  for (const [seatId, { button }] of serveTargetButtons) {
+    const anchor = R.seatBubbleWorld[seatId];
+    if (!anchor) continue;
+    const point = R.projectToScreen(anchor);
+    button.style.left = `${point.x}px`;
+    button.style.top = `${point.y + 24}px`;
   }
 }
 
@@ -1668,6 +1680,7 @@ function loop(now) {
   updateDrinkPanel(active);
   updateLabels();
   customers.tick(active);
+  positionServeTargets();
   updateTsukiokaArt(now);
   if (businessRenderDue) render();
   R.renderFrame(now);

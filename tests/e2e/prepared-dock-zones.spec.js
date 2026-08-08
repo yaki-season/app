@@ -25,12 +25,24 @@ test('prepared food and drinks use separate visible pickup zones', async ({ page
   await expect(drinkZone).not.toContainText('\uB124\uAE30\uB9C8');
   await expect(foodCard).toHaveAttribute('data-prepared-zone', 'food');
   await expect(drinkCard).toHaveAttribute('data-prepared-zone', 'drink');
-  await expect(foodCard.locator('.dock-item-art--plate')).toBeVisible();
-  await expect(drinkCard.locator('.dock-item-art--plate')).toHaveCount(0);
-  await expect(foodCard.locator('.dock-item-art--plate')).toHaveCSS(
+  await expect(foodCard.locator('.dock-item-art--food')).toBeVisible();
+  await expect(drinkCard.locator('.dock-item-art--drink')).toBeVisible();
+  await expect(foodCard.locator('.dock-item-art--food')).toHaveCSS(
     'background-image',
-    /pr-serving-plate-r2-b1\.png/,
+    /order-icon-negima-r1-b1\.png/,
   );
+  await expect(drinkCard.locator('.dock-item-art--drink')).toHaveCSS(
+    'background-image',
+    /order-icon-draft-beer-r1-b1\.png/,
+  );
+  const zoneBackgrounds = await Promise.all([
+    foodZone.evaluate((node) => getComputedStyle(node).backgroundImage),
+    drinkZone.evaluate((node) => getComputedStyle(node).backgroundImage),
+  ]);
+  for (const background of zoneBackgrounds) {
+    expect(background).not.toContain('radial-gradient');
+    expect(background).not.toContain('st-service-counter');
+  }
 
   const [foodBox, drinkBox] = await Promise.all([foodZone.boundingBox(), drinkZone.boundingBox()]);
   expect(foodBox).not.toBeNull();
