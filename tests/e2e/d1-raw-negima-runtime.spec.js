@@ -136,6 +136,22 @@ test('approved grill negima sprites exact-load and follow every cooking stage', 
   await D(page, 'cookElapse', 8);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].approvedStage)
     .toBe('proper');
+  await D(page, 'cookClickSlot', 0);
+  await page.waitForTimeout(120);
+  await expect.poll(() => D(page, 'cookSlots')).toEqual([
+    expect.objectContaining({ status: 'flipping', flipping: true }),
+    expect.objectContaining({ status: 'front' }),
+  ]);
+  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
+    .toMatchObject({ approvedStage: 'proper', visualFlipRadians: 0 });
+  await page.waitForTimeout(240);
+  await expect.poll(() => D(page, 'cookSlots')).toEqual([
+    expect.objectContaining({ status: 'back', contactFace: 'back' }),
+    expect.objectContaining({ status: 'front' }),
+  ]);
+  await D(page, 'cookElapse', 8);
+  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].approvedStage)
+    .toBe('proper');
   await D(page, 'cookElapse', 8);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].approvedStage)
     .toBe('overcooked');

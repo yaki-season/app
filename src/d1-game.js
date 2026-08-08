@@ -1466,7 +1466,8 @@ function clickGrillSlot(i, now) {
 }
 
 function grillNegimaStage(view) {
-  if (!view?.cooking || (view.doneness === 'under' && view.faceElapsedSec <= 1.2)) return 'raw';
+  if (!view?.cooking) return 'raw';
+  if (view.doneness === 'under' && view.faceElapsedSec <= 1.2) return 'raw';
   if (view.doneness === 'perfect') return 'proper';
   if (view.doneness === 'over') return 'overcooked';
   if (view.doneness === 'burnt') return 'burnt';
@@ -1498,8 +1499,11 @@ function updateGrillVisual(now) {
     );
     if (rawInstance) {
       rawInstance.holder.visible = showApprovedRaw;
-      rawInstance.setStage(grillNegimaStage(v));
-      rawInstance.flipPivot.rotation.y = v?.visualRotationRad ?? 0;
+      if (!v?.flipping) rawInstance.setStage(grillNegimaStage(v));
+      // The approved grill artwork is a front-facing 2D sprite. Rotating its zero-thickness
+      // plane around Y makes the skewer collapse into a sheet of paper mid-flip. Keep the
+      // artwork facing the camera; the cook state still switches contact faces normally.
+      rawInstance.flipPivot.rotation.y = 0;
     }
     // public pgSlot은 visual과 raycast를 한 mesh가 맡으므로 visible=false로 숨기면 입력도 끊긴다.
     // mesh/raycast는 유지하고 staged 동안 color write만 막아 procedural pink 픽셀을 교체한다.
@@ -1750,6 +1754,7 @@ Object.assign(d1GameDebug, {
       key,
       approvedRawVisible: rawNegimaInstances[key]?.holder.visible === true,
       approvedStage: rawNegimaInstances[key]?.stage?.() ?? null,
+      visualFlipRadians: rawNegimaInstances[key]?.flipPivot?.rotation?.y ?? null,
       proceduralFallbackVisible: (
         R.objectMesh[key]?.visible === true
         && R.objectMesh[key]?.material?.colorWrite !== false
