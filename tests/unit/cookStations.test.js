@@ -272,6 +272,35 @@ describe('createCookStations', () => {
     });
   });
 
+  it('새 페이지 이어하기는 이전 performance.now 기준의 만료된 입력 잠금을 제거한다', () => {
+    const source = createCookStations({ slots: 1 });
+    assemble(source);
+    source.placeToGrill(100_000);
+    source.clickSlot(0, 108_000);
+    source.slotViews(108_300);
+    const saved = source.snapshot(116_300);
+    expect(saved.grill[0]).toMatchObject({
+      status: 'back',
+      inputLockedUntil: 108_300,
+      elapsedSec: { front: 8, back: 8 },
+    });
+
+    const restored = createCookStations({ slots: 1 });
+    expect(restored.restore(saved, 100)).toEqual({ ok: true });
+    expect(restored.slotViews(100)[0]).toMatchObject({
+      status: 'back',
+      inputLocked: false,
+      nextAction: 'retrieve',
+      frontElapsedSec: 8,
+      backElapsedSec: 8,
+    });
+    expect(restored.clickSlot(0, 100)).toMatchObject({
+      ok: true,
+      retrieved: true,
+      quality: { grade: 'Perfect' },
+    });
+  });
+
   it('D1은 2칸을 열고 explicit transfer된 첫 2개가 놓인 시점에 앞면 타이머를 함께 시작한다', () => {
     const cook = createD1CookStations();
     expect(cook.slotCount()).toBe(2);

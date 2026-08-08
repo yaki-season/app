@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { routeD1ReleaseDefinition } from './d1-release-definition.js';
+import { FIRST_ORDER_RUNTIME_STORAGE_KEY } from '../../src/d1/firstOrderRuntimeStorage.js';
 
 test.describe.configure({ retries: 0 });
 
@@ -29,8 +30,8 @@ const REQUIRED_RUNTIME_FILES = Object.freeze([
   '/public/assets/core/cooking/mdl-skewer-base-pixel-albedo-r2-b1.png',
   '/public/assets/core/cooking/mdl-ingredient-chicken-r1-b2.glb',
   '/public/assets/core/cooking/mdl-ingredient-chicken-pixel-albedo-r1-b2.png',
-  '/public/assets/core/cooking/mdl-ingredient-negi-r3-b1.glb',
-  '/public/assets/core/cooking/mdl-ingredient-negi-pixel-albedo-r3-b1.png',
+  '/public/assets/core/cooking/mdl-ingredient-negi-r4-b1.glb',
+  '/public/assets/core/cooking/mdl-ingredient-negi-pixel-albedo-r4-b1.png',
   '/public/assets/core/cooking/spr-assembly-tray-negima-r1-b1.png',
 ]);
 
@@ -158,6 +159,74 @@ test('approved grill negima sprites exact-load and follow every cooking stage', 
   await D(page, 'cookElapse', 5);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].approvedStage)
     .toBe('burnt');
+});
+
+test('이어하기는 이전 페이지에서 만료된 그릴 잠금을 제거해 완성 꼬치를 즉시 회수한다', async ({ page }) => {
+  await routeD1ReleaseDefinition(page);
+  await page.goto('/src/d1-game.html?reset=1');
+  const restoredRuntime = {
+    stateVersion: 1,
+    cook: {
+      stateVersion: 1,
+      assembly: { index: 0, complete: false },
+      assembledCount: 2,
+      transferredCount: 2,
+      waiting: 0,
+      initialBatch: { required: 2, placed: 2, started: true },
+      grill: [{
+        status: 'back',
+        orientationFaceDown: 'back',
+        contactFace: 'back',
+        elapsedSec: { front: 8, back: 8 },
+        faceReadyAtMs: { front: 108_000, back: 116_300 },
+        lastUpdatedAt: 116_300,
+        flip: null,
+        inputLockedUntil: 108_300,
+      }, {
+      status: 'empty',
+      orientationFaceDown: 'front',
+      contactFace: null,
+      elapsedSec: { front: 0, back: 0 },
+      faceReadyAtMs: { front: null, back: null },
+      lastUpdatedAt: null,
+      flip: null,
+      inputLockedUntil: 0,
+      }],
+    },
+  };
+  // 이전 문서는 pagehide에서 현재 상태를 다시 저장한다. 실제 새 문서 부팅 직전에 과거
+  // performance.now() 기준 snapshot을 주입해 public shell의 이어하기 navigation을 재현한다.
+  await page.addInitScript(({ key, snapshot }) => {
+    if (location.search.includes('resume=1')) {
+      localStorage.setItem(key, JSON.stringify(snapshot));
+    }
+  }, { key: FIRST_ORDER_RUNTIME_STORAGE_KEY, snapshot: restoredRuntime });
+
+  await page.goto('/src/d1-game.html?resume=1');
+  await expect.poll(() => rawRuntime(page), { timeout: 15_000 })
+    .toMatchObject({ status: 'ready', exactLoadReady: true });
+  await D(page, 'requestScreen', 'SCR-SVC-GRILL');
+  await expect.poll(() => D(page, 'activeScreen')).toBe('SCR-SVC-GRILL');
+  await expect.poll(() => D(page, 'isTransitioning')).toBe(false);
+  await expect.poll(() => D(page, 'cookSlots').then(([slot]) => ({
+    status: slot.status,
+    inputLocked: slot.inputLocked,
+    nextAction: slot.nextAction,
+  }))).toEqual({ status: 'back', inputLocked: false, nextAction: 'retrieve' });
+  const restoredSlot = (await D(page, 'cookSlots'))[0];
+  expect(restoredSlot.frontElapsedSec).toBeCloseTo(8, 4);
+  expect(restoredSlot.backElapsedSec).toBeGreaterThanOrEqual(8);
+
+  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
+    .toMatchObject({ approvedRawVisible: true, interactionVisible: true });
+  const grillSlotKey = (await D(page, 'rawNegimaRuntime')).slots[0].key;
+  await expect.poll(() => D(page, 'screenPosOf', grillSlotKey)).not.toBeNull();
+  await clickObject(page, grillSlotKey);
+  await expect.poll(() => D(page, 'cookSlots').then((slots) => slots[0].status)).toBe('empty');
+  await expect.poll(() => D(page, 'grillFinishedInventory')).toMatchObject({ total: 1 });
+  await expect.poll(() => D(page, 'dockItems')).toEqual([
+    expect.objectContaining({ menu: '네기마', label: 'Perfect' }),
+  ]);
 });
 
 test('조립대에서 승인 닭·파가 순서대로 쌓이고 완성 네기마가 오른쪽 트레이로 이동한다', async ({ page }) => {

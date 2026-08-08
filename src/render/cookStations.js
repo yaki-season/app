@@ -414,8 +414,14 @@ export function createCookStations({
       slot.lastUpdatedAt = slot.status === 'empty' || slot.status === 'staged' ? null : now;
       if (slot.flip) {
         slot.flip.completeAt = now + FLIP_AIRBORNE_MS;
+        slot.inputLockedUntil = now + INPUT_LOCK_MS;
         slot.contactFace = null;
         slot.status = 'flipping';
+      } else {
+        // inputLockedUntil은 performance.now() 기준 절대값이다. 새 문서에서 이어하기를 하면
+        // 시간 원점이 다시 0부터 시작하므로 저장된 값을 유지할 경우 이미 끝난 0.3초 잠금이
+        // 이전 페이지의 전체 실행 시간만큼 되살아난다. 뒤집기 중이 아니면 잠금은 만료 상태다.
+        slot.inputLockedUntil = 0;
       }
     }
     return { ok: true };
