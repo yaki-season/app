@@ -1,7 +1,6 @@
-# YAKI SEASON — SCN-001 단일 손님 테스트 화면
+# YAKI SEASON
 
-현재 `/src/index.html`은 츠키오카의 네기마 한 주문을 조립·굽기·서빙하는 회귀·통합 테스트 화면이다.
-프로덕션의 기본 화면이나 아트 인수 결과가 아니다.
+공개 실행 흐름은 시작 화면에서 새 게임 또는 이어하기를 선택하고, S0 프롤로그를 거쳐 D1 영업으로 이어진다.
 
 ## 프로덕션 아트 계약
 
@@ -50,7 +49,7 @@ npm install
 npm run dev
 ```
 
-브라우저에서 `http://localhost:8777/src/index.html`을 연다.
+브라우저에서 `http://127.0.0.1:8777/src/public-shell.html`을 연다.
 
 ## 검증
 
