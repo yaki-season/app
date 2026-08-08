@@ -104,6 +104,10 @@ document.getElementById('dockShelf')?.style.setProperty(
   '--dock-shelf-art',
   `url("${runtimeAssets.SERVICE_COUNTER.url}")`,
 );
+document.getElementById('dockShelf')?.style.setProperty(
+  '--dock-serving-plate-art',
+  `url("${runtimeAssets.SERVING_PLATE.url}")`,
+);
 document.body.dataset.assetPlaceholderCount = String(runtimeAssets.readiness.placeholderCount);
 document.body.dataset.runtimeAssetsReady = String(runtimeAssets.readiness.ready);
 document.body.dataset.runtimeContractValid = String(runtimeAssets.readiness.contractAudit.valid);
@@ -490,7 +494,7 @@ function openServeQuantity(seatId) {
   const selected = dock.selected();
   if (!selected) {
     firstOrderGuide.invalid('완성품 카드가 선택되지 않았습니다.');
-    showHint('선반에서 낼 완성품을 고르세요');
+    showHint('요리 서빙대나 음료 픽업대에서 낼 완성품을 고르세요');
     return;
   }
   const seat = seatView(seatId);
@@ -875,7 +879,7 @@ function finishDrink() {
     firstOrderGuide.preparedItem('beer', performance.now());
     glassPlaced = false;
     persistFirstOrderRuntime();
-    showHint('생맥주를 선반에 올렸어요');
+    showHint('생맥주를 음료 픽업대에 올렸어요');
   }
   pour.reset();
   render();
@@ -1182,7 +1186,7 @@ function guideText(view) {
     const eligibleCount = view.seats.filter((seat) => seatCanReceiveSelected(seat, selected)).length;
     return `선택한 ${selected.menu} · 제공 가능한 손님 ${eligibleCount}명을 직접 고르세요.`;
   }
-  if (waiting) return '선반에서 완성품을 고른 뒤 일치하는 남은 주문이 있는 손님을 선택하세요.';
+  if (waiting) return '요리 서빙대나 음료 픽업대에서 완성품을 고른 뒤 일치하는 남은 주문이 있는 손님을 선택하세요.';
   const remainingSec = Math.max(0, Math.ceil((view.clock.targetMs - view.clock.elapsedMs) / 1000));
   const remaining = `${Math.floor(remainingSec / 60)}:${String(remainingSec % 60).padStart(2, '0')}`;
   return `23:30 자동 마감까지 ${remaining} · 다음 손님을 기다리며 조립·그릴·드링크를 준비할 수 있습니다.`;

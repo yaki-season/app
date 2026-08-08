@@ -9,6 +9,11 @@ export function qualityFromCook(frontResult, backResult) {
   return frontResult === 'over' || backResult === 'over' ? 'low' : 'good';
 }
 
+export function preparedItemZone(item) {
+  if (item?.zone === 'drink' || item?.zone === 'food') return item.zone;
+  return /맥주|술|사케|하이볼/.test(item?.menu ?? '') ? 'drink' : 'food';
+}
+
 export function createPreparedDock({ container }) {
   let items = [];
   let selectedId = null;
@@ -17,22 +22,43 @@ export function createPreparedDock({ container }) {
   function render() {
     if (!container) return;
     container.innerHTML = '';
+
+    const zones = Object.fromEntries([
+      ['food', '요리 서빙대'],
+      ['drink', '음료 픽업대'],
+    ].map(([zoneId, label]) => {
+      const zone = document.createElement('section');
+      zone.className = `dock-zone dock-zone--${zoneId}`;
+      zone.dataset.preparedZone = zoneId;
+      zone.dataset.testid = `dock-zone-${zoneId}`;
+      zone.setAttribute('aria-label', label);
+      zone.innerHTML = `<strong class="dock-zone-label">${label}</strong><div class="dock-zone-items"></div><span class="dock-zone-empty">비어 있음</span>`;
+      container.appendChild(zone);
+      return [zoneId, zone];
+    }));
+
     for (const it of items) {
+      const zoneId = preparedItemZone(it);
+      const zone = zones[zoneId];
       const card = document.createElement('button');
       card.type = 'button';
       card.className = `dock-card${it.id === selectedId ? ' selected' : ''}`;
       card.dataset.testid = `dock-item-${it.id}`;
       card.dataset.good = it.good ? '1' : '0';
-      card.innerHTML = `<span class="dock-menu">${it.menu}</span><span class="dock-quality ${it.good ? 'q-good' : 'q-low'}">${it.label}</span>`;
+      card.dataset.preparedZone = zoneId;
+      card.innerHTML = `${zoneId === 'food' ? '<span class="dock-item-art dock-item-art--plate" aria-hidden="true"></span>' : ''}<span class="dock-menu">${it.menu}</span><span class="dock-quality ${it.good ? 'q-good' : 'q-low'}">${it.label}</span>`;
       card.addEventListener('click', () => select(it.id));
-      container.appendChild(card);
+      zone.querySelector('.dock-zone-items').appendChild(card);
+    }
+    for (const zone of Object.values(zones)) {
+      zone.classList.toggle('is-empty', !zone.querySelector('.dock-card'));
     }
     container.hidden = items.length === 0;
   }
 
   // item: { menu, label, good } — 메뉴명, 품질 라벨, 손님 만족 여부.
   function add(item) {
-    const it = { id: `p${++seq}`, menu: item.menu, label: item.label, good: !!item.good };
+    const it = { id: `p${++seq}`, menu: item.menu, label: item.label, good: !!item.good, zone: preparedItemZone(item) };
     items.push(it);
     if (!selectedId) selectedId = it.id;
     render();

@@ -153,21 +153,48 @@ body {
 .drink-overflow[hidden] { display: none; }
 .drink-overflow button { background: rgba(48,38,30,0.9); color: var(--text); border: 1px solid var(--line); }
 
-/* 공용 준비 목록 (완성품 선반) — 퀵 전환 위 */
+/* 완성품 선택 UI — 요리 서빙대와 음료 픽업대를 시각적으로 분리한다. */
 .dock-shelf {
   position: fixed; left: 50%; bottom: 78px; transform: translateX(-50%); z-index: 11;
-  width: min(53.125vw, 1020px); min-width: 520px; aspect-ratio: 1020 / 210;
-  box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: clamp(26px, 3vw, 52px) clamp(64px, 7vw, 134px) clamp(8px, 1vw, 18px);
-  background: var(--dock-shelf-art) center / 100% 100% no-repeat;
+  width: min(72vw, 1180px); min-width: 620px;
+  box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(240px, .65fr); gap: 12px;
+  padding: 0;
+  background: none;
   border: 0; border-radius: 0;
 }
 .dock-shelf[hidden] { display: none; }
+.dock-zone {
+  position: relative; min-height: 112px; box-sizing: border-box;
+  display: grid; grid-template-rows: auto 1fr; align-items: center;
+  padding: 30px 24px 12px; overflow: hidden;
+  border: 1px solid rgba(224, 157, 79, .55); border-radius: 14px;
+  box-shadow: 0 7px 20px rgba(0, 0, 0, .48);
+}
+.dock-zone--food { background: var(--dock-shelf-art) center 58% / 122% 122% no-repeat, rgba(34, 23, 16, .96); }
+.dock-zone--drink {
+  background:
+    radial-gradient(circle at 30% 63%, transparent 0 25px, rgba(200, 143, 66, .82) 26px 29px, transparent 30px),
+    radial-gradient(circle at 70% 63%, transparent 0 25px, rgba(200, 143, 66, .82) 26px 29px, transparent 30px),
+    linear-gradient(180deg, rgba(62, 41, 27, .98), rgba(27, 19, 15, .98));
+}
+.dock-zone-label {
+  position: absolute; top: 8px; left: 12px; padding: 3px 8px;
+  border-radius: 999px; background: rgba(20, 14, 11, .82); color: #ffe1a8;
+  font-size: 12px; letter-spacing: .04em;
+}
+.dock-zone-items { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
+.dock-zone-empty { display: none; place-self: center; color: rgba(255, 238, 210, .48); font-size: 12px; }
+.dock-zone.is-empty .dock-zone-empty { display: block; }
 .dock-card {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  min-width: 56px; min-height: 52px; padding: 6px 10px; cursor: pointer;
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px;
+  min-width: 92px; min-height: 72px; padding: 34px 10px 6px; cursor: pointer;
   background: rgba(48,38,30,0.9); border: 1px solid var(--line); border-radius: 9px; color: var(--text);
   font: inherit;
+}
+.dock-item-art--plate {
+  position: absolute; top: 3px; left: 50%; width: 82px; height: 44px; transform: translateX(-50%);
+  background: var(--dock-serving-plate-art) center / contain no-repeat;
+  pointer-events: none;
 }
 .dock-card.selected { border-color: var(--ember); box-shadow: 0 0 0 1px var(--ember); }
 .dock-card .dock-menu { font-size: 12px; font-weight: 600; }

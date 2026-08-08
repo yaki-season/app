@@ -27,6 +27,10 @@ document.getElementById('dockShelf')?.style.setProperty(
   '--dock-shelf-art',
   `url("${runtimeAssets.SERVICE_COUNTER.url}")`,
 );
+document.getElementById('dockShelf')?.style.setProperty(
+  '--dock-serving-plate-art',
+  `url("${runtimeAssets.SERVING_PLATE.url}")`,
+);
 const R = createProductionRenderer(canvas, { runtimeAssets });
 R.setObjectVisible('custTsukioka', false);
 const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
@@ -78,7 +82,7 @@ const scheduleReservation = () => {
   }
 };
 
-// 공용 준비 목록 (완성품 선반). 조리와 서빙을 분리한다.
+// 완성품 목록. 선택/제공 로직은 하나로 유지하고 요리/음료의 시각 구역만 분리한다.
 const dock = createPreparedDock({ container: el('dockShelf') });
 
 // 생맥주 따르기 (드링크 화면). 레버 아래=맥주, 위=거품 (GPL-004).
@@ -195,7 +199,7 @@ function finishDrink() {
   const q = pour.finish(); // Perfect | Good | OK
   if (q) {
     dock.add({ menu: '생맥주', label: q, good: q === 'Perfect' || q === 'Good' });
-    showHint('생맥주를 선반에 올렸어요');
+    showHint('생맥주를 음료 픽업대에 올렸어요');
   }
   pour.reset();
   render();
@@ -360,7 +364,7 @@ function handle(key, now) {
     }
     case 'grillFinishedTray':
       showHint(dock.items().some((item) => item.menu === '네기마')
-        ? '완료 트레이 · 완성품은 아래 선반에서 선택하세요'
+        ? '완료 트레이 · 완성품은 아래 요리 서빙대에서 선택하세요'
         : '완료된 네기마가 아직 없어요');
       break;
     default:
@@ -373,7 +377,7 @@ function handle(key, now) {
           showHint('주문을 받았어요');
         } else if (v.canServe) {
           const item = dock.selected();
-          if (!item) { showHint('선반에서 완성품을 고르세요'); break; }
+          if (!item) { showHint('요리 서빙대나 음료 픽업대에서 완성품을 고르세요'); break; }
           const r = ops.serve(seatId, item, now);
           if (r.ok) {
             dock.consumeSelected();
@@ -557,7 +561,7 @@ function clickGrillSlot(i, now) {
   const r = cook.clickSlot(i, now);
   if (r.retrieved) {
     dock.add({ menu: '네기마', label: r.quality.good ? '좋음' : '과다', good: r.quality.good });
-    showHint('완성품을 선반에 올렸어요');
+    showHint('완성품을 요리 서빙대에 올렸어요');
   } else if (r.flipped) {
     showHint('꼬치를 뒤집는 중 · 0.3초 뒤 뒷면 조리가 시작됩니다');
   } else if (!r.ok && r.reason === 'not-ready') {
@@ -672,8 +676,8 @@ function updateGrillOverlays(now, activeScreen) {
 }
 
 // ── 직원 자동 제조 (드링크) ──────────────────────────────────
-// 드링크 직원을 고용하면 주기적으로 생맥주를 선반에 자동으로 올린다. 품질은 qualityCap(초급 good) 상한,
-// mistakeRate 확률로 낮은 품질(OK). 선반이 넘치지 않게 버퍼 상한(3잔)까지만 만든다.
+// 드링크 직원을 고용하면 주기적으로 생맥주를 음료 픽업대에 자동으로 올린다. 품질은 qualityCap(초급 good) 상한,
+// mistakeRate 확률로 낮은 품질(OK). 픽업대가 넘치지 않게 버퍼 상한(3잔)까지만 만든다.
 const AUTO_DRINK_BASE_SEC = 10;
 let lastAutoDrinkMs = 0;
 function autoProduceTick(now, force = false) {
