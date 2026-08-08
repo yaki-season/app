@@ -30,6 +30,16 @@ body {
   font: 16px/1.55 system-ui, "Malgun Gothic", sans-serif;
 }
 
+/* 시작 화면 배경. UI-003 SCR-SYS-START의 start.scene은 "가게 외관 또는 간결한 브랜드 배경"이며
+   프롤로그 외관 재사용을 허용한다. --start-scene은 승인 manifest에서 해석한 URL을 JS가 넣는다.
+   해석에 실패하면 값이 비어 있고 이 규칙 전체가 무효가 되어 기본 그라데이션이 그대로 남는다. */
+body[data-screen-id="SCR-SYS-START"][style*="--start-scene"] {
+  background:
+    linear-gradient(180deg, #17100dd9, #17100d66 38%, #17100de6),
+    var(--start-scene) center / cover no-repeat fixed,
+    linear-gradient(145deg, #20130e, var(--bg) 68%);
+}
+
 button, .button-link {
   min-height: 44px;
   border: 1px solid var(--line);

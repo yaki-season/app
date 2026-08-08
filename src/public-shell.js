@@ -25,6 +25,16 @@ import {
   readTextFile,
 } from './public-shell/browserFiles.js';
 import { createPublicShellDialogs } from './public-shell/publicShellDialogs.js';
+import {
+  indexApprovedRuntimeAssets,
+  resolveApprovedRuntimeAsset,
+  runtimeAssetUrl,
+} from './assets/runtimeAssetResolver.js';
+
+// UI-003 SCR-SYS-START의 start.scene은 "가게 외관 또는 간결한 브랜드 배경"이고 프롤로그 외관
+// 재사용을 허용한다. 전용 브랜드 아트(BR-LOGO-*)는 아직 미제작이라 승인된 S0 폐점 외관을 쓴다.
+// 파일명이 아니라 manifest stable ID로 연결한다.
+const START_SCENE_ASSET_ID = 'BG-EXTERIOR-S0-CLOSED';
 
 const SCREEN = Object.freeze({
   START: 'SCR-SYS-START',
@@ -431,7 +441,28 @@ async function refreshLoadResult() {
   return loadResult;
 }
 
+// 시작 화면 배경을 승인 manifest에서 해석해 CSS 변수로 넘긴다. 셸 부팅을 막으면 안 되므로
+// 실패는 조용히 삼킨다 — 변수가 없으면 CSS가 기본 그라데이션을 그대로 쓴다.
+async function applyStartSceneBackground(fetchImpl = globalThis.fetch) {
+  try {
+    // /src/ 아래에서 열리면 /public/assets/… 로 해석된다(정션에 의존하지 않는다).
+    const response = await fetchImpl(runtimeAssetUrl('/assets/manifest.json'));
+    if (!response.ok) return null;
+    const asset = resolveApprovedRuntimeAsset(
+      indexApprovedRuntimeAssets(await response.json()),
+      START_SCENE_ASSET_ID,
+    );
+    if (!asset) return null;
+    document.body.style.setProperty('--start-scene', `url("${asset.url}")`);
+    document.body.dataset.startSceneAssetId = asset.id;
+    return asset;
+  } catch {
+    return null;
+  }
+}
+
 export async function bootPublicShell() {
+  void applyStartSceneBackground();
   const definition = createS0D3CampaignDefinition();
   storagePort = createS0D3StoragePort(window.localStorage);
   const repository = new CampaignSaveRepository({
