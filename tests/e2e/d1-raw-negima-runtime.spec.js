@@ -129,9 +129,11 @@ test('approved raw grill negima exact-loads and GLSL colours that same image thr
   ]);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
     .toMatchObject({
-      approvedRawVisible: false,
+      // 승인 평면 하나를 계속 두고 재질만 바꾼다. 굽는 동안 GLSL이 그 이미지를 칠한다.
+      approvedRawVisible: true,
       approvedStage: 'cooking',
-      shaderColorVisible: true,
+      shaderOnApprovedPlane: true,
+      shaderCookingActive: true,
       shaderUsesApprovedRaw: true,
       interactionVisible: true,
     });
@@ -226,8 +228,9 @@ test('이어하기는 이전 페이지에서 만료된 그릴 잠금을 제거�
   // 입력(회수 클릭)은 어느 쪽이든 살아 있어야 한다.
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
     .toMatchObject({
-      approvedRawVisible: false,
-      shaderColorVisible: true,
+      approvedRawVisible: true,
+      shaderOnApprovedPlane: true,
+      shaderCookingActive: true,
       shaderUsesApprovedRaw: true,
       interactionVisible: true,
     });

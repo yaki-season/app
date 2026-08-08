@@ -1803,7 +1803,9 @@ Object.assign(d1GameDebug, {
     slots: SLOT_KEYS.map((key) => ({
       key,
       approvedRawVisible: rawNegimaInstances[key]?.holder.visible === true,
-      approvedStage: rawNegimaInstances[key]?.stage?.() ?? null,
+      // 승인 평면은 계속 떠 있고 재질만 바뀌므로, 단계는 평면 상태가 아니라 조리 판정에서 읽는다.
+      approvedStage: grillNegimaStage(cook.slotViews(performance.now())[slotIndexOf(key)]),
+      shaderCookingActive: rawNegimaInstances[key]?.cookingActive?.() === true,
       visualFlipRadians: rawNegimaInstances[key]?.flipPivot?.rotation?.y ?? null,
       proceduralFallbackVisible: (
         R.objectMesh[key]?.visible === true

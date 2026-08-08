@@ -370,6 +370,8 @@ function grillSpriteInstanceForSlot(stageTextures, slotMesh, sourceTransform) {
       return true;
     },
     usesCookingMaterial: () => holder.userData.cookingMaterial === true,
+    // 지금 평면이 굽는 셰이더 재질을 쓰는가(= 조리 중). 평면·지오메트리는 바뀌지 않는다.
+    cookingActive: () => planes.raw.material === holder.userData.cookingMaterialRef,
   };
 }
 
