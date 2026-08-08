@@ -59,15 +59,15 @@ test('6석 프로덕션 renderer와 승인 손님 배경이 조리 스테이션�
   expect(layers.custBg.url).toContain('/public/assets/core/customer/bg-interior-base-r3-b1.png');
   expect(layers.custSeating.url).toContain('/public/assets/core/customer/bg-seating-6-r2-b1.png');
   expect(layers.custTsukioka.url).toContain('/public/assets/core/customer/d1-tsukioka-waiting-r3-b1.png');
-  expect(layers.custCounter.url).toContain('/public/assets/core/customer/service-counter-u-r4-b1.png');
+  expect(layers.custCounter.url).toContain('/public/assets/core/customer/service-table-straight-r5-b1.png');
   expect(Object.values(layers).map((layer) => layer.renderOrder)).toEqual([0, 10, 20, 50]);
   expect(layers.custBg.scale).toEqual([1, 1, 1]);
   expect(layers.custSeating.scale).toEqual([1, 1, 1]);
   expect(layers.custTsukioka.scale).toEqual([1, 1, 1]);
-  expect(layers.custCounter.scale).toEqual([1.18, 1, 1]);
+  expect(layers.custCounter.scale).toEqual([1, 0.78, 1]);
   const viewport = page.viewportSize();
   await page.screenshot({
-    path: `/private/tmp/yaki-d1-approved-live-${viewport.width}x${viewport.height}.png`,
+    path: `../tmp/customer-review/yaki-d1-approved-live-${viewport.width}x${viewport.height}.png`,
   });
 });
 

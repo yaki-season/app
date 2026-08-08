@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeSeats, OBJECTS, SCREEN_BY_ID } from '../../src/config/screenLayout.js';
+import { computeSeats, D1_SEATING_RECT, OBJECTS, SCREEN_BY_ID } from '../../src/config/screenLayout.js';
 
 describe('드링크 스테이션 화면 배치', () => {
   it('개발용 슬롯은 숨기고 승인 빈잔 덱 위치에 클릭 영역만 노출한다', () => {
@@ -18,13 +18,16 @@ describe('드링크 스테이션 화면 배치', () => {
 });
 
 describe('손님 화면 원경 배치', () => {
-  it('배경은 원경으로 두고 3면 카운터는 화면 밖까지 이어지는 전경으로 당긴다', () => {
+  it('배경은 원경으로 두고 일자형 카운터는 화면 전체 폭의 낮은 전경으로 둔다', () => {
     expect(OBJECTS.custBg.imageScale).toBeLessThan(1.3);
-    expect(OBJECTS.custCounter.imageScaleX).toBeGreaterThan(1);
-    expect(OBJECTS.custCounter.imageScaleY).toBe(1);
+    expect(OBJECTS.custCounter.imageScale).toBe(1);
+    expect(OBJECTS.custCounter.imageScaleX).toBeUndefined();
+    expect(OBJECTS.custCounter.imageScaleY).toBe(0.78);
     expect(OBJECTS.custCounter.imageOffsetY).toBeGreaterThan(0);
     expect(OBJECTS.custBg.stableAssetId).toBe('BG-INTERIOR-BASE');
     expect(OBJECTS.custCounter.stableAssetId).toBe('BG-SERVICE-TABLE-ARTIST009');
+    expect(SCREEN_BY_ID['SCR-SVC-CUSTOMERS'].objects).toContain('custSeating');
+    expect(D1_SEATING_RECT.y).toBeCloseTo(190 / 1080);
   });
 
   it('손님 하단을 새 카운터 상판 높이에 맞춘다', () => {

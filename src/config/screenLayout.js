@@ -64,13 +64,11 @@ export const SEAT_ACTOR_TEXTURE = null;
 export const SEAT_ACTOR_UV = null;
 
 // BG-SEATING-6 R2 (1672×941 source → FHD placement).
-// 승인 합성 evidence의 y=-117은 당시 일자 카운터(상단 FHD 500) 기준이고 Gate-1 전용이다
-// (consumerScreenFinalApproved:false). 현재 전경은 U자 카운터 R4이고 전경 연출로 0.18 하강해
-// 실제 상단이 FHD 756이다. 옛 값을 쓰면 의자와 카운터 사이에 270px 빈 벽이 생겨 손님·의자가
-// 떠 보인다. 승인 합성의 의자 하단↔카운터 상단 11px 관계를 그대로 재현하도록 258.8px 내린다.
+// 승인된 일자형 카운터 R5는 세로 0.78배로 줄이고 아래로 내린다. 의자도 함께 낮춰
+// 등받이 상단만 카운터 위로 보이고 하단은 상판 뒤에 가려지도록 맞춘다.
 export const D1_SEATING_RECT = Object.freeze({
   x: 10 / 1920,
-  y: 141.8 / 1080,
+  y: 190 / 1080,
   width: (1672 * 1.13679424) / 1920,
   height: (941 * 1.13679424) / 1080,
 });
@@ -110,14 +108,13 @@ export const OBJECTS = {
   bg: { rect: { x: 0, y: 0, width: 1, height: 1 }, layer: 'background', color: 0x241c15, kind: 'fullframe' },
 
   // 손님 화면 승인 아트 레이어 (풀프레임 이미지). 좌석 액터·serve는 SEATS에서 동적 생성.
-  // R4 배경은 1:1 원경으로 유지하고, U자 카운터만 전경에서 확대·하강한다.
+  // 배경은 1:1 원경으로 유지하고, 일자형 카운터만 전경에서 축소·하강한다.
   custBg: { kind: 'image', full: true, imageScale: 1, layer: 'background', order: 0, stableAssetId: CUSTOMER_ART.background, opaque: true },
   custSeating: { kind: 'image', rect: D1_SEATING_RECT, layer: 'fixture', order: 10, stableAssetId: CUSTOMER_ART.seating, opaque: false },
-  // 츠키오카 full-frame 아트는 logical-seat-anchor-fhd(1086,594) 즉 카운터 상단 500 기준으로
-  // 그려졌다. 현재 카운터는 전경 연출로 0.18 내려가 상단이 FHD 756이므로, 승인 합성의
-  // 관계(카운터 상단 +94px = 앉는 지점)를 지키려면 앉는 지점이 850이어야 한다. 256px 내린다.
+  // 츠키오카 full-frame 아트는 기존 좌석 앵커를 유지하되, 하단이 낮춘 일자형 카운터
+  // 뒤에 자연스럽게 가려지도록 승인 위치를 그대로 사용한다.
   custTsukioka: { kind: 'image', full: true, imageOffsetY: 256 / 1080, layer: 'actor', order: 20, stableAssetId: CUSTOMER_ART.waiting, opaque: false },
-  custCounter: { kind: 'image', full: true, imageScaleX: 1.18, imageScaleY: 1, imageOffsetY: 0.18, layer: 'foreground', order: 50, stableAssetId: CUSTOMER_ART.counter, opaque: false },
+  custCounter: { kind: 'image', full: true, imageScale: 1, imageScaleY: 0.78, imageOffsetY: 0.25, layer: 'foreground', order: 50, stableAssetId: CUSTOMER_ART.counter, opaque: false },
 
   // 조리 화면 승인 배경 아트 (풀프레임 이미지, 불투명). 화면별 배경. dummy `bg`를 대체한다.
   drinkBg: { kind: 'image', full: true, layer: 'background', order: 0, stableAssetId: COOKING_ART.drinkBackground, opaque: true },
