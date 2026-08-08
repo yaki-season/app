@@ -22,10 +22,11 @@ const REQUIRED_RUNTIME_FILES = Object.freeze([
   '/public/assets/core/cooking/mdl-negima-grill-raw-r1-b1.json',
   '/public/assets/core/cooking/mdl-skewer-base-r2-b1.glb',
   '/public/assets/core/cooking/mdl-skewer-base-pixel-albedo-r2-b1.png',
-  '/public/assets/core/cooking/mdl-ingredient-chicken-r1-b1.glb',
-  '/public/assets/core/cooking/mdl-ingredient-chicken-pixel-albedo-r1-b1.png',
+  '/public/assets/core/cooking/mdl-ingredient-chicken-r1-b2.glb',
+  '/public/assets/core/cooking/mdl-ingredient-chicken-pixel-albedo-r1-b2.png',
   '/public/assets/core/cooking/mdl-ingredient-negi-r3-b1.glb',
   '/public/assets/core/cooking/mdl-ingredient-negi-pixel-albedo-r3-b1.png',
+  '/public/assets/core/cooking/spr-assembly-tray-negima-r1-b1.png',
 ]);
 
 test('approved RAW R1을 exact-load 뒤 staged 한 상태에만 실제 렌더하고 기존 입력을 보존한다', async ({ page }, testInfo) => {
@@ -44,12 +45,13 @@ test('approved RAW R1을 exact-load 뒤 staged 한 상태에만 실제 렌더하
     sourceRevision: 1,
     sourceModelCount: 3,
     sourceAlbedoCount: 3,
+    traySpriteCount: 1,
     composedIngredientCount: 5,
     triangleCount: 476,
     rootNode: 'grillNegimaRoot',
     flipPivotNode: 'flipPivot',
   });
-  expect(loaded.diagnostics.network).toHaveLength(7);
+  expect(loaded.diagnostics.network).toHaveLength(8);
   expect(loaded.diagnostics.network.every(({ status, sha256Match }) => (
     status === 200 && sha256Match === true
   ))).toBe(true);
@@ -126,7 +128,7 @@ test('approved RAW R1을 exact-load 뒤 staged 한 상태에만 실제 렌더하
     });
 });
 
-test('조립대에서 승인 닭·파가 순서대로 쌓이고 완성 네기마가 오른쪽 트레이로 이동한다', async ({ page }, testInfo) => {
+test('조립대에서 승인 닭·파가 순서대로 쌓이고 완성 네기마가 오른쪽 트레이로 이동한다', async ({ page }) => {
   await routeD1ReleaseDefinition(page);
   await page.goto('/src/d1-game.html?reset=1');
   await expect.poll(() => rawRuntime(page), { timeout: 15_000 })
@@ -147,18 +149,14 @@ test('조립대에서 승인 닭·파가 순서대로 쌓이고 완성 네기마
   expect(emptySkewer.slots.map(({ x }) => x)).toEqual(
     [...emptySkewer.slots.map(({ x }) => x)].sort((left, right) => left - right),
   );
+  expect((await D(page, 'assemblyArtRuntime')).build.ingredientRenderOrders)
+    .toEqual([205, 204, 203, 202, 201]);
 
   for (const [index, key] of ['binChicken', 'binLeek', 'binChicken', 'binLeek', 'binChicken'].entries()) {
     await clickObject(page, key);
     await expect.poll(() => D(page, 'assemblyArtRuntime')).toMatchObject({
       build: { visible: true, ingredientCount: index + 1 },
     });
-    if (index === 2) {
-      await page.screenshot({
-        path: testInfo.outputPath(`assembly-progress-3-${page.viewportSize().width}x${page.viewportSize().height}.png`),
-        fullPage: true,
-      });
-    }
     await page.waitForTimeout(230);
   }
 
@@ -189,18 +187,20 @@ test('조립대에서 승인 닭·파가 순서대로 쌓이고 완성 네기마
     expect.objectContaining({ visible: true, ingredientCount: 5 }),
   ]);
   for (const item of (await D(page, 'assemblyArtRuntime')).tray.slice(0, 2)) {
-    expect(item.geometry.tip.x).toBeGreaterThan(item.geometry.handle.x);
-    expect(Math.abs(item.geometry.tip.y - item.geometry.handle.y)).toBeLessThan(4);
+    expect(item.geometry.tip.x).toBeLessThan(item.geometry.handle.x);
+    expect(item.geometry.tip.y).toBeLessThan(item.geometry.handle.y);
+    const tiltDegrees = Math.atan2(
+      item.geometry.handle.x - item.geometry.tip.x,
+      item.geometry.handle.y - item.geometry.tip.y,
+    ) * 180 / Math.PI;
+    expect(tiltDegrees).toBeGreaterThan(13);
+    expect(tiltDegrees).toBeLessThan(17);
   }
-  await page.screenshot({
-    path: testInfo.outputPath(`assembly-approved-art-${page.viewportSize().width}x${page.viewportSize().height}.png`),
-    fullPage: true,
-  });
 });
 
 test('exact source 하나라도 실패하면 RAW binding을 열지 않고 procedural fallback·inventory 증거를 유지한다', async ({ page }) => {
   await routeD1ReleaseDefinition(page);
-  await page.route('**/mdl-ingredient-chicken-pixel-albedo-r1-b1.png', (route) => (
+  await page.route('**/mdl-ingredient-chicken-pixel-albedo-r1-b2.png', (route) => (
     route.fulfill({ status: 503, contentType: 'text/plain', body: 'forced exact-load failure' })
   ));
   await page.goto('/src/d1-game.html?reset=1');

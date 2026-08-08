@@ -38,6 +38,7 @@ describe('D1 approved RAW negima exact-load binding', () => {
         approved(D1_RAW_NEGIMA_RUNTIME_ASSET_ID.SKEWER_BASE, 'glb', [albedo('skewer')]),
         approved(D1_RAW_NEGIMA_RUNTIME_ASSET_ID.CHICKEN, 'glb', [albedo('chicken')]),
         approved(D1_RAW_NEGIMA_RUNTIME_ASSET_ID.NEGI, 'glb', [albedo('negi')]),
+        approved(D1_RUNTIME_ASSET_ID.ASSEMBLY_TRAY_NEGIMA),
       ],
     };
 
@@ -47,6 +48,7 @@ describe('D1 approved RAW negima exact-load binding', () => {
     expect(Object.values(bundle.sources).every((source) => (
       source.model.format === 'glb' && source.albedo.role === 'pixel-albedo'
     ))).toBe(true);
+    expect(bundle.traySprite.id).toBe('SPR-ASSEMBLY-TRAY-NEGIMA');
   });
 
   it('승인 R1 sequence·pivot·476 triangles가 다르면 consumer가 거부한다', () => {

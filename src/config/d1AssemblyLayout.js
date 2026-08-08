@@ -14,21 +14,31 @@ export const D1_ASSEMBLY_BUILD_SLOT = Object.freeze({
   }),
 });
 
+const D1_ASSEMBLY_TRAY_CENTER_X = Object.freeze([
+  0.825,
+  0.795,
+  0.855,
+  0.765,
+  0.885,
+  0.915,
+]);
+
 export const D1_ASSEMBLY_TRAY_SLOTS = Object.freeze(
   Array.from({ length: 6 }, (_, index) => Object.freeze({
     key: `assemblyTraySlot${index}`,
     // 오른쪽 전달 트레이 안에서 평행한 가로 꼬치가 아래로 겹쳐 쌓인다.
     rect: Object.freeze({
-      x: 0.755 + (index % 2) * 0.004,
-      y: 0.435 + index * 0.035,
-      width: 0.19,
-      height: 0.095,
+      x: D1_ASSEMBLY_TRAY_CENTER_X[index] - 0.055,
+      y: 0.39 + (index % 2) * 0.004,
+      width: 0.11,
+      height: 0.28,
     }),
     sourceModelTransform: Object.freeze({
       horizontalScale: 1,
       verticalScale: 1,
       fit: 'contain',
-      rootRotationRadians: Object.freeze({ x: 0, y: 0, z: -Math.PI / 2 }),
+      // 날카로운 윗부분이 왼쪽으로 15° 기울도록 +Z 회전한다.
+      rootRotationRadians: Object.freeze({ x: 0, y: 0, z: Math.PI / 12 }),
     }),
   })),
 );

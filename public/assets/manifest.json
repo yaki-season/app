@@ -609,7 +609,7 @@
     },
     {
       "id": "ST-ASSEMBLY-TIER-1",
-      "sourceRevision": 3,
+      "sourceRevision": 5,
       "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-SVC-ASSEMBLY",
@@ -626,17 +626,18 @@
       "anchors": [],
       "clips": [],
       "mirrorSafe": false,
-      "source": "ARTSRC:ST-ASSEMBLY-TIER-1:R3",
-      "provenance": "PROV:ST-ASSEMBLY-TIER-1:R3",
+      "source": "ARTSRC:ST-ASSEMBLY-TIER-1:R5",
+      "provenance": "PROV:ST-ASSEMBLY-TIER-1:R5",
       "license": "YAKI SEASON internal approved artwork",
       "specRefs": [
         "ART-003 v5.9.0",
-        "ART-002 v3.6.1"
+        "ART-002 v3.6.1",
+        "User approval 2026-08-08: brighter flat cutting board R3"
       ],
-      "reviewedAt": "2026-07-29",
-      "url": "/assets/core/cooking/st-assembly-tier-1-r3-b1.png",
-      "sha256": "b15d40f448b54e49eb0dc895a291d02db6800d85aaddf8d706ad5ecea41b30ca",
-      "bytes": 988222,
+      "reviewedAt": "2026-08-08",
+      "url": "/assets/core/cooking/st-assembly-tier-1-r5-b1.png",
+      "sha256": "7b0038e178e61a486d69859158ca35f5cf3e4530c359f957c74702233d9b729e",
+      "bytes": 1248626,
       "dimensions": {
         "width": 1920,
         "height": 1080
@@ -775,7 +776,7 @@
     {
       "id": "MDL-INGREDIENT-CHICKEN",
       "sourceRevision": 1,
-      "runtimeBuild": 1,
+      "runtimeBuild": 2,
       "status": "approved",
       "screenUnit": "SCR-SVC-ASSEMBLY",
       "profile": "bundle-model",
@@ -810,17 +811,17 @@
       "specRefs": [
         "ART-003 v5.9.0"
       ],
-      "reviewedAt": "2026-07-29",
-      "url": "/assets/core/cooking/mdl-ingredient-chicken-r1-b1.glb",
+      "reviewedAt": "2026-08-08",
+      "url": "/assets/core/cooking/mdl-ingredient-chicken-r1-b2.glb",
       "sha256": "740d48acc998a9bea5b16c46d4be66d143efb57a8cb42726c757d0e22e9da7dc",
       "bytes": 5168,
       "format": "glb",
       "companions": [
         {
           "role": "pixel-albedo",
-          "url": "/assets/core/cooking/mdl-ingredient-chicken-pixel-albedo-r1-b1.png",
-          "sha256": "4baa5ca99f5f190053930461251f0497219731048a7d3caddf5ae2e03cfefb47",
-          "bytes": 43760,
+          "url": "/assets/core/cooking/mdl-ingredient-chicken-pixel-albedo-r1-b2.png",
+          "sha256": "6bf074e4e62ee708924834ee484514be45eab11193bde66ccd75480e1b6b8115",
+          "bytes": 54052,
           "format": "png",
           "dimensions": {
             "width": 192,
@@ -931,6 +932,55 @@
       "sha256": "ffffd4c5e5d63cb81fb7a6e413d7604abc6d7f39797d477a240f7d16f6534869",
       "bytes": 1177,
       "format": "json"
+    },
+    {
+      "id": "SPR-ASSEMBLY-TRAY-NEGIMA",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY",
+      "profile": "standalone-raster",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "anchors": [
+        {
+          "id": "tip",
+          "x": 0.5,
+          "y": 0.047
+        },
+        {
+          "id": "handle",
+          "x": 0.5,
+          "y": 0.953
+        }
+      ],
+      "clips": [
+        "waiting-tray"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:SPR-ASSEMBLY-TRAY-NEGIMA:R1",
+      "provenance": "PROV:SPR-ASSEMBLY-TRAY-NEGIMA:R1",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0",
+        "User approval 2026-08-08: vertical tray negima R2"
+      ],
+      "reviewedAt": "2026-08-08",
+      "url": "/assets/core/cooking/spr-assembly-tray-negima-r1-b1.png",
+      "sha256": "edc686239227b4c2e5629c896ef5645ea49bb69074d5f1473c80b31c58722485",
+      "bytes": 81947,
+      "dimensions": {
+        "width": 128,
+        "height": 512
+      },
+      "format": "png"
     },
     {
       "id": "BG-SEATING-6",

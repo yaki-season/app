@@ -181,10 +181,14 @@ async function bootRawNegimaRuntime() {
       D1_ASSEMBLY_BUILD_SLOT.sourceModelTransform,
     );
     R.scene.add(assemblyNegimaInstances.build.holder);
-    for (const slot of D1_ASSEMBLY_TRAY_SLOTS) {
+    for (const [index, slot] of D1_ASSEMBLY_TRAY_SLOTS.entries()) {
       const trayMesh = R.objectMesh[slot.key];
       if (!trayMesh) throw new Error(`조립 트레이 배치 mesh 누락: ${slot.key}`);
-      const instance = compositor.createInstance(trayMesh, slot.sourceModelTransform);
+      const instance = compositor.createTrayInstance(
+        trayMesh,
+        slot.sourceModelTransform,
+        index,
+      );
       assemblyNegimaInstances.tray.push(instance);
       R.scene.add(instance.holder);
     }
@@ -1688,6 +1692,7 @@ Object.assign(d1GameDebug, {
     build: {
       visible: assemblyNegimaInstances.build?.holder.visible === true,
       ingredientCount: assemblyNegimaInstances.build?.ingredientCount?.() ?? 0,
+      ingredientRenderOrders: assemblyNegimaInstances.build?.ingredientRenderOrders?.() ?? [],
       geometry: assemblyInstanceGeometry(assemblyNegimaInstances.build),
     },
     tray: assemblyNegimaInstances.tray.map((instance) => ({

@@ -44,6 +44,7 @@ export const D1_RUNTIME_COMPONENT_INVENTORY = Object.freeze([
   row('SCR-SVC-ASSEMBLY', 'D1-assembly-empty-skewer', 'assembly.skewer', 'MDL-SKEWER-BASE', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING),
   row('SCR-SVC-ASSEMBLY', 'D1-assembly-chicken', 'assembly.bins.chicken', 'MDL-INGREDIENT-CHICKEN', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING),
   row('SCR-SVC-ASSEMBLY', 'D1-assembly-negi', 'assembly.bins.negi', 'MDL-INGREDIENT-NEGI', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING),
+  row('SCR-SVC-ASSEMBLY', 'D1-assembly-finished-negima', 'assembly.finished.tray', 'SPR-ASSEMBLY-TRAY-NEGIMA', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING, 'bound', ['waiting-tray']),
 
   row('SCR-SVC-GRILL', 'D1-grill-base', 'grill.scene', 'BG-WORKSPACE-GRILL', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING, 'bound'),
   row('SCR-SVC-GRILL', 'D1-grill-six-slots', 'grill.slot', 'ST-GRILL-TIER-1', ART_SEMANTIC_OWNER_ID.ARTIST_1_D1_COOKING, 'bound'),

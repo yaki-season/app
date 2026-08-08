@@ -24,14 +24,18 @@ async function sha256(bytes, cryptoImpl = globalThis.crypto) {
 
 function exactAssetPlan(bundle) {
   if (!bundle?.composition) throw new Error('RAW 네기마 composition manifest binding이 없습니다');
-  const plan = [{ role: 'composition', asset: bundle.composition }];
+  if (!bundle?.traySprite) throw new Error('RAW negima assembly tray sprite manifest binding is missing');
+  const plan = [
+    { role: 'composition', asset: bundle.composition },
+    { role: 'tray-sprite', asset: bundle.traySprite },
+  ];
   for (const [name, source] of Object.entries(bundle.sources ?? {})) {
     plan.push(
       { role: `${name}-model`, asset: source.model },
       { role: `${name}-albedo`, asset: source.albedo },
     );
   }
-  if (plan.length !== 7) throw new Error(`RAW 네기마 exact asset 수 불일치: ${plan.length}/7`);
+  if (plan.length !== 8) throw new Error(`RAW negima exact asset count mismatch: ${plan.length}/8`);
   for (const item of plan) {
     if (!item.asset?.url || !item.asset?.sha256) {
       throw new Error(`RAW 네기마 exact manifest metadata 누락: ${item.role}`);
@@ -164,14 +168,31 @@ function buildComposition({ composition, models, textures }) {
   base.rotation.z = 0;
   flipPivot.add(base);
 
+  const chickenSource = bindNearestPixelAlbedo(models.chicken, textures.chicken);
+  const chickenBackingMesh = chickenSource.getObjectByName('chicken-body');
+  if (!chickenBackingMesh?.isMesh) {
+    throw new Error('Chicken pixel backing mesh is missing: chicken-body');
+  }
+  // The approved alpha sprite is the complete chicken visual. The low-poly body was only a
+  // modeling aid and otherwise leaks through transparent edge pixels as a pale white cap.
+  chickenBackingMesh.visible = false;
+  chickenBackingMesh.userData.hiddenBehindApprovedPixelSprite = true;
+
   const ingredientSources = {
-    chicken: bindNearestPixelAlbedo(models.chicken, textures.chicken),
+    chicken: chickenSource,
     'green-onion': bindNearestPixelAlbedo(models.negi, textures.negi),
   };
   for (const [index, ingredient] of composition.sequence.entries()) {
     const component = ingredientSources[ingredient].clone(true);
     component.name = `${ingredient}-${String(index + 1).padStart(2, '0')}`;
     component.scale.setScalar(composition.ingredientScaleRelativeToBase);
+    // 조립대에서는 먼저 꽂은 재료가 항상 위에 남고, 새 재료는 그 아래로 들어간다.
+    // 모든 픽셀 plane이 depthTest=false이므로 명시적인 renderOrder가 곧 겹침 계약이다.
+    const renderOrder = 200 + composition.sequence.length - index;
+    component.traverse((node) => {
+      if (node.isMesh) node.renderOrder = renderOrder;
+    });
+    component.userData.assemblyRenderOrder = renderOrder;
     const slot = base.getObjectByName(`slot-${String(index + 1).padStart(2, '0')}`);
     if (!slot) throw new Error(`승인 꼬치 base slot 누락: ${index + 1}`);
     slot.add(component);
@@ -184,12 +205,34 @@ function buildComposition({ composition, models, textures }) {
   return { root, flipPivot, triangles };
 }
 
-function instanceForSlot(sourceRoot, slotMesh, sourceTransform, initialIngredientCount) {
+function applyAssemblyIngredientPose(root) {
+  D1_RAW_NEGIMA_SEQUENCE.forEach((ingredient, index) => {
+    if (ingredient !== 'green-onion') return;
+    const component = root.getObjectByName(
+      `${ingredient}-${String(index + 1).padStart(2, '0')}`,
+    );
+    const pixelPlane = component?.getObjectByName('pixel-material-plane');
+    if (!pixelPlane) throw new Error(`조립대 파 pixel plane 누락: ${index + 1}`);
+    // R3의 격리 검토용 -26° 기울기를 조립대에서만 상쇄한다.
+    // 슬롯 원점과 plane 중심을 그대로 유지해 가로 꼬치가 파 몸통 중앙을 관통한다.
+    pixelPlane.rotation.z = 0;
+    component.userData.assemblyPixelPlaneRotationZ = 0;
+  });
+}
+
+function instanceForSlot(
+  sourceRoot,
+  slotMesh,
+  sourceTransform,
+  initialIngredientCount,
+  { assemblyPose = false } = {},
+) {
   const holder = new THREE.Group();
   holder.name = `rawNegimaSlot:${slotMesh.userData.objectKey}`;
   holder.userData.objectKey = slotMesh.userData.objectKey;
   holder.visible = false;
   const root = sourceRoot.clone(true);
+  if (assemblyPose) applyAssemblyIngredientPose(root);
   root.rotation.set(
     sourceTransform.rootRotationRadians.x,
     sourceTransform.rootRotationRadians.y,
@@ -243,9 +286,91 @@ function instanceForSlot(sourceRoot, slotMesh, sourceTransform, initialIngredien
       return normalized;
     },
     ingredientCount: () => holder.userData.ingredientCount,
+    ingredientRenderOrders: () => ingredientRoots.map((component) => (
+      component.userData.assemblyRenderOrder
+    )),
   };
   instance.setIngredientCount(initialIngredientCount);
   return instance;
+}
+
+function trayInstanceForSlot(texture, slotMesh, sourceTransform, stackIndex) {
+  const holder = new THREE.Group();
+  holder.name = `assemblyTrayNegimaSlot:${slotMesh.userData.objectKey}`;
+  holder.userData.objectKey = slotMesh.userData.objectKey;
+  holder.visible = false;
+
+  const root = new THREE.Group();
+  root.name = 'assemblyTrayNegimaRoot';
+  root.userData.assetId = 'SPR-ASSEMBLY-TRAY-NEGIMA';
+  root.rotation.set(
+    sourceTransform.rootRotationRadians.x,
+    sourceTransform.rootRotationRadians.y,
+    sourceTransform.rootRotationRadians.z,
+  );
+  root.scale.set(sourceTransform.horizontalScale, sourceTransform.verticalScale, 1);
+
+  const imageWidth = Number(texture.image?.width ?? 256);
+  const imageHeight = Number(texture.image?.height ?? 512);
+  const geometry = new THREE.PlaneGeometry(imageWidth / imageHeight, 1);
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    alphaTest: 0.02,
+    depthTest: false,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+  const plane = new THREE.Mesh(geometry, material);
+  plane.name = 'approvedAssemblyTrayNegimaSprite';
+  // ImageBitmap texture upload reverses this standalone plane relative to the approved PNG.
+  // Rotate only the artwork plane so the sharp tip remains at the landmarked top end.
+  plane.rotation.z = Math.PI;
+  plane.renderOrder = 300 + stackIndex;
+  plane.frustumCulled = false;
+  plane.raycast = () => {};
+  root.add(plane);
+
+  const addLandmark = (name, y) => {
+    const node = new THREE.Object3D();
+    node.name = name;
+    node.position.y = y;
+    root.add(node);
+  };
+  addLandmark('handle', -0.453);
+  addLandmark('tip', 0.453);
+  [0.24, 0.12, 0, -0.12, -0.24].forEach((y, index) => {
+    addLandmark(`slot-${String(index + 1).padStart(2, '0')}`, y);
+  });
+
+  root.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(root);
+  const center = bounds.getCenter(new THREE.Vector3());
+  const size = bounds.getSize(new THREE.Vector3());
+  root.position.sub(center);
+  holder.add(root);
+
+  slotMesh.geometry.computeBoundingBox();
+  const targetSize = slotMesh.geometry.boundingBox.getSize(new THREE.Vector3());
+  const sx = targetSize.x / size.x;
+  const sy = targetSize.y / size.y;
+  if (sourceTransform.fit === 'contain') {
+    holder.scale.setScalar(Math.min(sx, sy));
+  } else {
+    holder.scale.set(sx, sy, Math.min(sx, sy));
+  }
+  holder.position.copy(slotMesh.position);
+  holder.quaternion.copy(slotMesh.quaternion);
+  holder.userData.ingredientCount = D1_RAW_NEGIMA_SEQUENCE.length;
+  holder.userData.stackIndex = stackIndex;
+  holder.updateMatrixWorld(true);
+  return {
+    holder,
+    root,
+    targetSize,
+    ingredientCount: () => holder.userData.ingredientCount,
+  };
 }
 
 export async function createD1RawNegimaCompositor({
@@ -266,13 +391,22 @@ export async function createD1RawNegimaCompositor({
     const composition = validateD1RawNegimaComposition(JSON.parse(
       new TextDecoder().decode(bytesByRole.composition),
     ));
-    const [skewerBase, chicken, negi, skewerAlbedo, chickenAlbedo, negiAlbedo] = await Promise.all([
+    const [
+      skewerBase,
+      chicken,
+      negi,
+      skewerAlbedo,
+      chickenAlbedo,
+      negiAlbedo,
+      traySprite,
+    ] = await Promise.all([
       parseGltf(gltfLoader, bytesByRole['skewerBase-model']),
       parseGltf(gltfLoader, bytesByRole['chicken-model']),
       parseGltf(gltfLoader, bytesByRole['negi-model']),
       textureFromPng(bytesByRole['skewerBase-albedo'], createImageBitmapImpl),
       textureFromPng(bytesByRole['chicken-albedo'], createImageBitmapImpl),
       textureFromPng(bytesByRole['negi-albedo'], createImageBitmapImpl),
+      textureFromPng(bytesByRole['tray-sprite'], createImageBitmapImpl),
     ]);
     const built = buildComposition({
       composition,
@@ -286,6 +420,7 @@ export async function createD1RawNegimaCompositor({
       network: Object.freeze(network.map((entry) => Object.freeze({ ...entry }))),
       sourceModelCount: 3,
       sourceAlbedoCount: 3,
+      traySpriteCount: 1,
       composedIngredientCount: composition.sequence.length,
       triangleCount: built.triangles,
       materialCount: materialCount(built.root),
@@ -303,7 +438,10 @@ export async function createD1RawNegimaCompositor({
         )
       ),
       createAssemblyInstance: (slotMesh, sourceTransform) => (
-        instanceForSlot(built.root, slotMesh, sourceTransform, 0)
+        instanceForSlot(built.root, slotMesh, sourceTransform, 0, { assemblyPose: true })
+      ),
+      createTrayInstance: (slotMesh, sourceTransform, stackIndex = 0) => (
+        trayInstanceForSlot(traySprite, slotMesh, sourceTransform, stackIndex)
       ),
     });
   } catch (error) {

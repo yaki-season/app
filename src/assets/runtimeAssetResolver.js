@@ -43,6 +43,7 @@ export const D1_RUNTIME_ASSET_ID = Object.freeze({
   GRILL_BACKGROUND: 'BG-WORKSPACE-GRILL',
   ASSEMBLY_BACKGROUND: 'BG-WORKSPACE-ASSEMBLY',
   ASSEMBLY_STATION: 'ST-ASSEMBLY-TIER-1',
+  ASSEMBLY_TRAY_NEGIMA: 'SPR-ASSEMBLY-TRAY-NEGIMA',
   GRILL_STATION: 'ST-GRILL-TIER-1',
   GRILL_FINISHED_TRAY: 'ST-GRILL-FINISHED-TRAY',
 });
@@ -272,6 +273,11 @@ export function resolveD1RawNegimaRuntimeBundle(assetIndex) {
     assetIndex,
     D1_RAW_NEGIMA_RUNTIME_ASSET_ID.NEGI,
   );
+  const traySprite = resolveApprovedRuntimeAsset(
+    assetIndex,
+    D1_RUNTIME_ASSET_ID.ASSEMBLY_TRAY_NEGIMA,
+  );
+  if (!traySprite) throw new Error('RAW 네기마 조립 트레이 sprite 누락');
   const sources = { skewerBase, chicken, negi };
   for (const [sourceName, asset] of Object.entries(sources)) {
     if (!asset) throw new Error(`RAW 네기마 승인 source model 누락: ${sourceName}`);
@@ -282,6 +288,7 @@ export function resolveD1RawNegimaRuntimeBundle(assetIndex) {
 
   return Object.freeze({
     composition,
+    traySprite,
     sources: Object.freeze(Object.fromEntries(
       Object.entries(sources).map(([key, model]) => [key, Object.freeze({
         model,
