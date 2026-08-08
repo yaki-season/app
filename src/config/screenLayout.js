@@ -13,6 +13,11 @@ import {
   D1_GRILL_WAITING_TRAY,
   createD1GrillObjects,
 } from './d1GrillLayout.js';
+import {
+  D1_ASSEMBLY_BUILD_SLOT,
+  D1_ASSEMBLY_TRAY_SLOTS,
+  createD1AssemblyObjects,
+} from './d1AssemblyLayout.js';
 
 // 레이어 z 깊이 (카메라는 +z에서 -z를 바라본다. 값이 작을수록 멀다.)
 export const LAYER_Z = {
@@ -128,11 +133,12 @@ export const OBJECTS = {
   grillBg: { kind: 'image', full: true, layer: 'background', order: 0, stableAssetId: COOKING_ART.grillBackground, opaque: true },
   assemblyBg: { kind: 'image', full: true, layer: 'background', order: 0, stableAssetId: COOKING_ART.assemblyBackground, opaque: true },
 
-  // 조립 화면 (스테이션 바디는 승인 아트. 재료통·지그는 상호작용 더미 유지 — 아트 미승인)
+  // 조립 화면. 재료통·지그 입력은 투명 핫스팟이고 실제 꼬치/재료는 승인 GLB overlay가 맡는다.
   workbench: { kind: 'image', full: true, layer: 'fixture', order: 1, stableAssetId: COOKING_ART.assemblyStation, opaque: false },
   binChicken: { rect: { x: 0.03, y: 0.38, width: 0.135, height: 0.34 }, hitRect: { x: 0.025, y: 0.36, width: 0.15, height: 0.38 }, layer: 'interactive', color: 0xd98a5f, kind: 'hotspot' },
   binLeek: { rect: { x: 0.165, y: 0.38, width: 0.11, height: 0.34 }, hitRect: { x: 0.155, y: 0.36, width: 0.13, height: 0.38 }, layer: 'interactive', color: 0x8fc06a, kind: 'hotspot' },
   jigSkewer: { rect: { x: 0.39, y: 0.40, width: 0.305, height: 0.31 }, hitRect: { x: 0.38, y: 0.38, width: 0.325, height: 0.35 }, layer: 'interactive', color: 0xc9a86a, kind: 'hotspot' },
+  ...createD1AssemblyObjects(),
 
   // 그릴 화면 (다중 칸). 대기 트레이의 꼬치를 빈 칸에 올려 각각 독립적으로 굽는다.
   grillBody: { kind: 'image', full: true, layer: 'fixture', order: 1, stableAssetId: COOKING_ART.grillStation, opaque: false },
@@ -219,7 +225,15 @@ export const SCREENS = [
     id: 'SCR-SVC-ASSEMBLY',
     name: '조립',
     look: { x: 0.0, y: -2.6, z: -3.6 }, // 아래 작업대
-    objects: ['assemblyBg', 'workbench', 'binChicken', 'binLeek', 'jigSkewer'],
+    objects: [
+      'assemblyBg',
+      'workbench',
+      'binChicken',
+      'binLeek',
+      'jigSkewer',
+      D1_ASSEMBLY_BUILD_SLOT.key,
+      ...D1_ASSEMBLY_TRAY_SLOTS.map(({ key }) => key),
+    ],
   },
   {
     id: 'SCR-SVC-GRILL',

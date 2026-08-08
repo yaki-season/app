@@ -295,14 +295,18 @@ export function resolveD1RawNegimaRuntimeBundle(assetIndex) {
 // runtime-only readiness다. 호출 전에는 기존 report가 RAW를 unboundApprovedIds에 유지한다.
 export function reportD1RawNegimaExactLoadReadiness(manifest) {
   const inventory = withD1RuntimeBoundAssetIds([
-    D1_RAW_NEGIMA_RUNTIME_ASSET_ID.COMPOSITION,
+    ...Object.values(D1_RAW_NEGIMA_RUNTIME_ASSET_ID),
   ]);
   const runtimeAssetIds = Object.freeze({
     ...D1_RUNTIME_ASSET_ID,
     GRILL_RAW: D1_RAW_NEGIMA_RUNTIME_ASSET_ID.COMPOSITION,
+    ASSEMBLY_SKEWER_BASE: D1_RAW_NEGIMA_RUNTIME_ASSET_ID.SKEWER_BASE,
+    ASSEMBLY_CHICKEN: D1_RAW_NEGIMA_RUNTIME_ASSET_ID.CHICKEN,
+    ASSEMBLY_NEGI: D1_RAW_NEGIMA_RUNTIME_ASSET_ID.NEGI,
   });
   const pendingIdsByScene = Object.freeze({
     ...D1_PENDING_RUNTIME_ASSET_IDS,
+    assembly: Object.freeze([]),
     grill: Object.freeze(D1_PENDING_RUNTIME_ASSET_IDS.grill.filter(
       (id) => id !== D1_RAW_NEGIMA_RUNTIME_ASSET_ID.COMPOSITION,
     )),

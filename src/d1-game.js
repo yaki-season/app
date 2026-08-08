@@ -37,6 +37,10 @@ import {
   D1_GRILL_FINISHED_TRAY,
   D1_PUBLIC_GRILL_LAYOUT,
 } from './config/d1GrillLayout.js';
+import {
+  D1_ASSEMBLY_BUILD_SLOT,
+  D1_ASSEMBLY_TRAY_SLOTS,
+} from './config/d1AssemblyLayout.js';
 import { createFirstOrderGuide } from './d1/firstOrderGuide.js';
 import { FIRST_ORDER_RUNTIME_STORAGE_KEY, clearFirstOrderRuntime } from './d1/firstOrderRuntimeStorage.js';
 import { RECIPE } from './config/recipe.js';
@@ -134,6 +138,10 @@ const guideFlippedSlots = new Set(restoredFirstOrderRuntime?.guideFlippedSlots ?
 const guideRetrievedSlots = new Set(restoredFirstOrderRuntime?.guideRetrievedSlots ?? []);
 const grillMats = {};
 const rawNegimaInstances = {};
+const assemblyNegimaInstances = {
+  build: null,
+  tray: [],
+};
 let rawNegimaReadiness = runtimeAssets.readiness;
 const rawNegimaRuntime = {
   status: runtimeAssets.GRILL_RAW_BUNDLE ? 'loading' : 'unavailable',
@@ -141,6 +149,7 @@ const rawNegimaRuntime = {
   error: null,
 };
 document.body.dataset.rawNegimaBindingStatus = rawNegimaRuntime.status;
+document.body.dataset.assemblyArtBindingStatus = rawNegimaRuntime.status;
 
 function publishRawNegimaReadiness(readiness) {
   rawNegimaReadiness = readiness;
@@ -165,17 +174,33 @@ async function bootRawNegimaRuntime() {
       rawNegimaInstances[key] = instance;
       R.scene.add(instance.holder);
     }
+    const buildMesh = R.objectMesh[D1_ASSEMBLY_BUILD_SLOT.key];
+    if (!buildMesh) throw new Error('조립 지그 배치 mesh 누락');
+    assemblyNegimaInstances.build = compositor.createAssemblyInstance(
+      buildMesh,
+      D1_ASSEMBLY_BUILD_SLOT.sourceModelTransform,
+    );
+    R.scene.add(assemblyNegimaInstances.build.holder);
+    for (const slot of D1_ASSEMBLY_TRAY_SLOTS) {
+      const trayMesh = R.objectMesh[slot.key];
+      if (!trayMesh) throw new Error(`조립 트레이 배치 mesh 누락: ${slot.key}`);
+      const instance = compositor.createInstance(trayMesh, slot.sourceModelTransform);
+      assemblyNegimaInstances.tray.push(instance);
+      R.scene.add(instance.holder);
+    }
     rawNegimaRuntime.status = 'ready';
     rawNegimaRuntime.diagnostics = compositor.diagnostics;
     rawNegimaReadiness = reportD1RawNegimaExactLoadReadiness(runtimeAssets.manifest);
     publishRawNegimaReadiness(rawNegimaReadiness);
     document.body.dataset.rawNegimaBindingStatus = 'ready';
+    document.body.dataset.assemblyArtBindingStatus = 'ready';
     render();
   } catch (error) {
     rawNegimaRuntime.status = 'failed';
     rawNegimaRuntime.error = error;
     rawNegimaRuntime.diagnostics = error.diagnostics ?? null;
     document.body.dataset.rawNegimaBindingStatus = 'failed';
+    document.body.dataset.assemblyArtBindingStatus = 'failed';
     publishRawNegimaReadiness(runtimeAssets.readiness);
     console.error('승인 RAW 네기마 exact-load 실패:', error);
   }
@@ -956,6 +981,7 @@ function render() {
   }
   // 그릴 칸 익힘 색 폴백(셰이더 로드 전)
   const views = cook.slotViews(now);
+  syncAssemblyVisual();
   renderGrillWaitingControl(views);
   // 클릭 결과를 다음 rAF까지 미루지 않는다. 0.3초 뒤집기 잠금처럼 짧은 상태도
   // 입력과 같은 렌더에서 DOM에 반영돼야 저사양·소형 화면에서도 건너뛰지 않는다.
@@ -980,6 +1006,20 @@ function render() {
   el('navLeft').disabled = !director.canLeft();
   el('navRight').disabled = !director.canRight();
   businessRenderDue = false;
+}
+
+function syncAssemblyVisual() {
+  const onAssembly = director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
+  const ready = rawNegimaRuntime.status === 'ready';
+  const progress = cook.assemblyProgress();
+  if (assemblyNegimaInstances.build) {
+    assemblyNegimaInstances.build.setIngredientCount(progress.index);
+    assemblyNegimaInstances.build.holder.visible = onAssembly && ready;
+  }
+  const waitingCount = cook.waitingCount();
+  assemblyNegimaInstances.tray.forEach((instance, index) => {
+    instance.holder.visible = onAssembly && ready && index < waitingCount;
+  });
 }
 
 function renderGrillWaitingControl(slotViews) {
@@ -1265,7 +1305,7 @@ function handle(key, now) {
         const ordinal = cook.assemblyProgress().assembledCount;
         firstOrderGuide.complete(`negima.assemble.${ordinal}`);
         persistFirstOrderRuntime();
-        showHint('꼬치 완성 · 완성 꼬치 자체를 눌러 트레이로 옮기세요');
+        showHint('네기마 완성 · 완성 꼬치를 눌러 오른쪽 트레이로 옮기세요');
       }
       break;
     }
@@ -1625,6 +1665,18 @@ Object.assign(d1GameDebug, {
         ?? false
       ),
     })),
+  }),
+  assemblyArtRuntime: () => ({
+    status: rawNegimaRuntime.status,
+    build: {
+      visible: assemblyNegimaInstances.build?.holder.visible === true,
+      ingredientCount: assemblyNegimaInstances.build?.ingredientCount?.() ?? 0,
+    },
+    tray: assemblyNegimaInstances.tray.map((instance) => ({
+      visible: instance.holder.visible === true,
+      ingredientCount: instance.ingredientCount(),
+    })),
+    waitingCount: cook.waitingCount(),
   }),
   dockItems: () => dock.items(),
   dockSelectedId: () => dock.selectedId(),

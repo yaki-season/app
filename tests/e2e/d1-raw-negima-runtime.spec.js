@@ -12,6 +12,12 @@ const rawRuntime = (page) => page.evaluate(() => (
   window.__d1GameDebug.rawNegimaRuntime?.() ?? { status: 'booting' }
 ));
 
+async function clickObject(page, key) {
+  const position = await D(page, 'screenPosOf', key);
+  if (!position) throw new Error(`보이지 않는 조작 대상: ${key}`);
+  await page.mouse.click(position.x, position.y);
+}
+
 const REQUIRED_RUNTIME_FILES = Object.freeze([
   '/public/assets/core/cooking/mdl-negima-grill-raw-r1-b1.json',
   '/public/assets/core/cooking/mdl-skewer-base-r2-b1.glb',
@@ -48,6 +54,9 @@ test('approved RAW R1을 exact-load 뒤 staged 한 상태에만 실제 렌더하
     status === 200 && sha256Match === true
   ))).toBe(true);
   expect(loaded.readiness.unboundApprovedIds).not.toContain('MDL-NEGIMA-GRILL-RAW');
+  expect(loaded.readiness.unboundApprovedIds).not.toContain('MDL-SKEWER-BASE');
+  expect(loaded.readiness.unboundApprovedIds).not.toContain('MDL-INGREDIENT-CHICKEN');
+  expect(loaded.readiness.unboundApprovedIds).not.toContain('MDL-INGREDIENT-NEGI');
   expect(loaded.readiness.contractValid).toBe(true);
   expect(Object.fromEntries(responses)).toEqual(Object.fromEntries(
     REQUIRED_RUNTIME_FILES.map((url) => [url, 200]),
@@ -115,6 +124,61 @@ test('approved RAW R1을 exact-load 뒤 staged 한 상태에만 실제 렌더하
       proceduralFallbackVisible: true,
       interactionVisible: true,
     });
+});
+
+test('조립대에서 승인 닭·파가 순서대로 쌓이고 완성 네기마가 오른쪽 트레이로 이동한다', async ({ page }, testInfo) => {
+  await routeD1ReleaseDefinition(page);
+  await page.goto('/src/d1-game.html?reset=1');
+  await expect.poll(() => rawRuntime(page), { timeout: 15_000 })
+    .toMatchObject({ status: 'ready', exactLoadReady: true });
+  await D(page, 'requestScreen', 'SCR-SVC-ASSEMBLY');
+  await expect.poll(() => D(page, 'activeScreen')).toBe('SCR-SVC-ASSEMBLY');
+  await expect.poll(() => D(page, 'isTransitioning')).toBe(false);
+
+  await expect.poll(() => D(page, 'assemblyArtRuntime')).toMatchObject({
+    status: 'ready',
+    build: { visible: true, ingredientCount: 0 },
+    waitingCount: 0,
+  });
+
+  for (const [index, key] of ['binChicken', 'binLeek', 'binChicken', 'binLeek', 'binChicken'].entries()) {
+    await clickObject(page, key);
+    await expect.poll(() => D(page, 'assemblyArtRuntime')).toMatchObject({
+      build: { visible: true, ingredientCount: index + 1 },
+    });
+    await page.waitForTimeout(230);
+  }
+
+  await clickObject(page, 'jigSkewer');
+  await expect.poll(() => D(page, 'assemblyArtRuntime')).toMatchObject({
+    build: { visible: true, ingredientCount: 0 },
+    waitingCount: 1,
+  });
+  expect((await D(page, 'assemblyArtRuntime')).tray[0]).toMatchObject({
+    visible: true,
+    ingredientCount: 5,
+  });
+
+  for (const [index, key] of ['binChicken', 'binLeek', 'binChicken', 'binLeek', 'binChicken'].entries()) {
+    await clickObject(page, key);
+    await expect.poll(() => D(page, 'assemblyArtRuntime')).toMatchObject({
+      build: { visible: true, ingredientCount: index + 1 },
+    });
+    await page.waitForTimeout(230);
+  }
+  await clickObject(page, 'jigSkewer');
+  await expect.poll(() => D(page, 'assemblyArtRuntime')).toMatchObject({
+    build: { visible: true, ingredientCount: 0 },
+    waitingCount: 2,
+  });
+  expect((await D(page, 'assemblyArtRuntime')).tray.slice(0, 2)).toEqual([
+    expect.objectContaining({ visible: true, ingredientCount: 5 }),
+    expect.objectContaining({ visible: true, ingredientCount: 5 }),
+  ]);
+  await page.screenshot({
+    path: testInfo.outputPath(`assembly-approved-art-${page.viewportSize().width}x${page.viewportSize().height}.png`),
+    fullPage: true,
+  });
 });
 
 test('exact source 하나라도 실패하면 RAW binding을 열지 않고 procedural fallback·inventory 증거를 유지한다', async ({ page }) => {

@@ -76,9 +76,11 @@ describe('D1 approved RAW negima exact-load binding', () => {
     const readiness = reportD1RawNegimaExactLoadReadiness(manifest);
 
     expect(readiness.contractAudit.valid).toBe(true);
-    expect(readiness.placeholderCount).toBe(baseline.placeholderCount - 1);
-    expect(readiness.placeholderIds).not.toContain('MDL-NEGIMA-GRILL-RAW');
-    expect(readiness.unboundApprovedIds).not.toContain('MDL-NEGIMA-GRILL-RAW');
-    expect(readiness.contractAudit.inventoryBoundIds).toContain('MDL-NEGIMA-GRILL-RAW');
+    expect(readiness.placeholderCount).toBe(baseline.placeholderCount - 4);
+    for (const assetId of Object.values(D1_RAW_NEGIMA_RUNTIME_ASSET_ID)) {
+      expect(readiness.placeholderIds).not.toContain(assetId);
+      expect(readiness.unboundApprovedIds).not.toContain(assetId);
+      expect(readiness.contractAudit.inventoryBoundIds).toContain(assetId);
+    }
   });
 });

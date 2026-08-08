@@ -184,7 +184,7 @@ function buildComposition({ composition, models, textures }) {
   return { root, flipPivot, triangles };
 }
 
-function instanceForSlot(sourceRoot, slotMesh, sourceTransform) {
+function instanceForSlot(sourceRoot, slotMesh, sourceTransform, initialIngredientCount) {
   const holder = new THREE.Group();
   holder.name = `rawNegimaSlot:${slotMesh.userData.objectKey}`;
   holder.userData.objectKey = slotMesh.userData.objectKey;
@@ -214,7 +214,33 @@ function instanceForSlot(sourceRoot, slotMesh, sourceTransform) {
   holder.updateMatrixWorld(true);
   const flipPivot = root.getObjectByName('flipPivot');
   if (!flipPivot) throw new Error('RAW 네기마 instance flipPivot 누락');
-  return { holder, root, flipPivot, targetSize };
+  const ingredientRoots = D1_RAW_NEGIMA_SEQUENCE.map((ingredient, index) => {
+    const component = root.getObjectByName(
+      `${ingredient}-${String(index + 1).padStart(2, '0')}`,
+    );
+    if (!component) throw new Error(`RAW 네기마 instance 재료 누락: ${index + 1}`);
+    return component;
+  });
+  const instance = {
+    holder,
+    root,
+    flipPivot,
+    targetSize,
+    setIngredientCount(count) {
+      const normalized = Math.max(0, Math.min(
+        D1_RAW_NEGIMA_SEQUENCE.length,
+        Math.trunc(Number(count) || 0),
+      ));
+      ingredientRoots.forEach((component, index) => {
+        component.visible = index < normalized;
+      });
+      holder.userData.ingredientCount = normalized;
+      return normalized;
+    },
+    ingredientCount: () => holder.userData.ingredientCount,
+  };
+  instance.setIngredientCount(initialIngredientCount);
+  return instance;
 }
 
 export async function createD1RawNegimaCompositor({
@@ -264,7 +290,15 @@ export async function createD1RawNegimaCompositor({
     return Object.freeze({
       diagnostics,
       createInstance: (slotMesh, sourceTransform) => (
-        instanceForSlot(built.root, slotMesh, sourceTransform)
+        instanceForSlot(
+          built.root,
+          slotMesh,
+          sourceTransform,
+          D1_RAW_NEGIMA_SEQUENCE.length,
+        )
+      ),
+      createAssemblyInstance: (slotMesh, sourceTransform) => (
+        instanceForSlot(built.root, slotMesh, sourceTransform, 0)
       ),
     });
   } catch (error) {
