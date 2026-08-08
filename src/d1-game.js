@@ -1055,11 +1055,14 @@ function assemblyInstanceGeometry(instance) {
 
 function renderGrillWaitingControl(slotViews) {
   const onGrill = director.activeScreenId() === 'SCR-SVC-GRILL';
+  const onCustomers = director.activeScreenId() === 'SCR-SVC-CUSTOMERS';
   const waitingCount = cook.waitingCount();
   const hasEmptySlot = slotViews.some((slot) => slot.status === 'empty');
   grillInventory.hidden = !onGrill;
-  dockShelf.classList.toggle('grill-station-hidden', onGrill);
-  dockShelf.setAttribute('aria-hidden', String(onGrill));
+  // The prepared inventory is shared state, but selecting it is a customer-station action.
+  // Keep the stock while hiding the service-counter art from every work station.
+  dockShelf.classList.toggle('station-context-hidden', !onCustomers);
+  dockShelf.setAttribute('aria-hidden', String(!onCustomers));
   grillWaitingNegima.disabled = !onGrill || waitingCount === 0 || !hasEmptySlot;
   grillWaitingNegima.dataset.waitingCount = String(waitingCount);
   grillWaitingNegima.dataset.hasEmptySlot = String(hasEmptySlot);

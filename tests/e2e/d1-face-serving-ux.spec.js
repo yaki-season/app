@@ -39,6 +39,34 @@ function intersectionArea(a, b) {
   return width * height;
 }
 
+test('prepared dock stays hidden at work stations and appears only at customers', async ({ page }) => {
+  const errors = await boot(page);
+  const itemId = await D(page, 'dockAdd', {
+    menu: '생맥주',
+    label: 'Perfect',
+    good: true,
+  });
+  const dock = page.getByTestId('dock-shelf');
+
+  for (const screenId of ['SCR-SVC-ASSEMBLY', 'SCR-SVC-GRILL', 'SCR-SVC-DRINK']) {
+    await goScreen(page, screenId);
+    await expect(dock).toBeHidden();
+    await expect(dock).toHaveAttribute('aria-hidden', 'true');
+  }
+
+  await goScreen(page, 'SCR-SVC-CUSTOMERS');
+  await expect(dock).toBeVisible();
+  await expect(dock).toHaveAttribute('aria-hidden', 'false');
+  await expect(page.getByTestId(`dock-item-${itemId}`)).toBeVisible();
+
+  await goScreen(page, 'SCR-SVC-ASSEMBLY');
+  await expect(dock).toBeHidden();
+  expect(await D(page, 'dockItems')).toEqual([
+    expect.objectContaining({ id: itemId, menu: '생맥주', label: 'Perfect' }),
+  ]);
+  expect(errors).toEqual([]);
+});
+
 test('그릴 시작 2칸은 접촉면·양면 누적·현재 행동을 FHD/720 compact DOM으로 겹침 없이 표시한다', async ({
   page,
 }) => {

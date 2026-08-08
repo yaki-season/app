@@ -241,7 +241,7 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide li {
 .grill-finished-quality--good .grill-finished-quality-marker { background: #7fc47a; }
 .grill-finished-quality--ok .grill-finished-quality-marker { background: #d18a53; }
 .grill-finished-quality--fail .grill-finished-quality-marker { background: #b85243; }
-.dock-shelf.grill-station-hidden { display: none !important; }
+.dock-shelf.station-context-hidden { display: none !important; }
 
 [data-guide-target="true"] {
   outline: 3px solid #fff0ca !important;
