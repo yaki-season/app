@@ -40,9 +40,12 @@ const RAW_R3_SLOT0_ANCHOR = normalizedPoint(RAW_R3_SLOT0_ANCHOR_FHD);
 const SLOT_LANE_STEP_FHD = 153.6;
 const SLOT_HIT_LEFT = Object.freeze([0.285, 0.365, 0.445, 0.525, 0.605, 0.685]);
 const RAW_R3_SOURCE_MODEL_TRANSFORM = Object.freeze({
-  horizontalScale: 1.45,
-  verticalScale: 1.18,
-  rootRotationRadians: Object.freeze({ x: -0.035, y: 0.055, z: 0 }),
+  // The grill consumes the whole skewer as one prop. Preserve its authored aspect ratio;
+  // stretching or tilting the root turns chicken into blocks and makes the sprite feel pasted on.
+  fit: 'contain',
+  horizontalScale: 1,
+  verticalScale: 1,
+  rootRotationRadians: Object.freeze({ x: 0, y: 0, z: 0 }),
 });
 
 // Artist 1의 사용자 승인 station consumption R3를 runtime screen-space 계약으로만 소비한다.
@@ -123,11 +126,19 @@ function rendererCompensatedRect(rect) {
 export const D1_PUBLIC_GRILL_LAYOUT = Object.freeze({
   contractId: 'D1-FIRST-BATCH-R3',
   initialPlacementSlots: Object.freeze([1, 2]),
-  slots: Object.freeze(D1_GRILL_SLOTS.slice(0, 2).map(({ visualRect }, index) => Object.freeze({
-    key: `pgSlot${index}`,
-    rect: rendererCompensatedRect(visualRect),
-    approvedVisualRect: visualRect,
-  }))),
+  // Two-skewer D1 composition on the new full-width grate. Both lanes sit around the ember
+  // core, with the rear/right lane slightly shorter and higher to follow the tabletop depth.
+  slots: Object.freeze([
+    { x: 744, y: 274, width: 132, height: 438 },
+    { x: 1052, y: 262, width: 126, height: 420 },
+  ].map((fhdRect, index) => {
+    const visualRect = normalizedRect(fhdRect);
+    return Object.freeze({
+      key: `pgSlot${index}`,
+      rect: rendererCompensatedRect(visualRect),
+      approvedVisualRect: visualRect,
+    });
+  })),
 });
 
 // CM-GRILL-STATION-QUEUED-SELECTION R3에서 연속 석쇠 안쪽만 보수적으로 잡은 검증 경계.

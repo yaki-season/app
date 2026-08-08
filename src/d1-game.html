@@ -53,18 +53,52 @@
   <button id="navLeft" class="side-nav left" data-testid="nav-left" aria-label="이전 화면">‹</button>
   <button id="navRight" class="side-nav right" data-testid="nav-right" aria-label="다음 화면">›</button>
 
-  <!-- 승인 waiting-rack visual은 canvas에 유지하고, 같은 placement intent를 semantic DOM으로 제공한다. -->
-  <button
-    id="grillWaitingNegima"
-    class="grill-waiting-negima"
-    type="button"
-    data-testid="grill-waiting-negima"
-    aria-describedby="grillWaitingNegimaHint"
+  <!-- 그릴 전용 재고 UI. 생꼬치는 한 장의 카드로 배치하고 완성품은 공용 준비 목록을 읽기 전용으로 투영한다. -->
+  <section
+    id="grillInventory"
+    class="grill-inventory"
+    data-testid="grill-inventory"
+    aria-label="그릴 재고"
     hidden
   >
-    <strong>네기마</strong>
-    <span id="grillWaitingNegimaHint">대기 없음</span>
-  </button>
+    <article class="grill-inventory-panel grill-inventory-panel--raw" aria-labelledby="grillRawInventoryTitle">
+      <header class="grill-inventory-heading">
+        <span>굽기 전</span>
+        <strong id="grillRawInventoryTitle">생꼬치 재고</strong>
+      </header>
+      <button
+        id="grillWaitingNegima"
+        class="grill-waiting-negima"
+        type="button"
+        data-testid="grill-waiting-negima"
+        aria-describedby="grillWaitingNegimaHint"
+      >
+        <span class="grill-skewer-symbol" aria-hidden="true"><i></i><b></b><b></b><b></b></span>
+        <span class="grill-inventory-card-copy">
+          <span class="grill-inventory-card-title">
+            <strong>네기마</strong>
+            <span id="grillWaitingNegimaCount" class="grill-inventory-count">× 0</span>
+          </span>
+          <span id="grillWaitingNegimaHint">대기 중인 꼬치가 없습니다</span>
+        </span>
+      </button>
+    </article>
+
+    <article class="grill-inventory-panel grill-inventory-panel--finished" aria-labelledby="grillFinishedInventoryTitle">
+      <header class="grill-inventory-heading">
+        <span>굽기 완료</span>
+        <strong id="grillFinishedInventoryTitle">완성 네기마</strong>
+        <span id="grillFinishedInventoryCount" class="grill-inventory-total">총 0개</span>
+      </header>
+      <div
+        id="grillFinishedQualityList"
+        class="grill-finished-quality-list"
+        data-testid="grill-finished-quality-list"
+        role="list"
+        aria-live="polite"
+      ></div>
+    </article>
+  </section>
 
   <!-- 드링크: 잔 채움·기준선·결과 -->
   <div id="drinkPanel" class="drink-panel" data-testid="drink-panel" hidden>

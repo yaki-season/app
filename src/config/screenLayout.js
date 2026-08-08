@@ -239,7 +239,8 @@ export const SCREENS = [
     id: 'SCR-SVC-GRILL',
     name: '그릴',
     look: { x: 0.0, y: -2.4, z: -3.0 }, // 아래 그릴 (더 가까이)
-    objects: ['grillBg', 'grillBody', 'grillWaitTray', ...D1_GRILL_SLOT_KEYS, ...GRILL_SLOT_KEYS, 'grillFinishedTray'],
+    // BG-WORKSPACE-GRILL R2가 중앙 석쇠까지 포함한다. 좌우 tray는 DOM 재고 카드가 대체한다.
+    objects: ['grillBg', ...D1_GRILL_SLOT_KEYS, ...GRILL_SLOT_KEYS],
   },
   {
     id: 'SCR-SVC-DRINK',

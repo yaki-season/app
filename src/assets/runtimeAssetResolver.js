@@ -74,6 +74,14 @@ export const D1_RAW_NEGIMA_RUNTIME_ASSET_ID = Object.freeze({
   NEGI: 'MDL-INGREDIENT-NEGI',
 });
 
+export const D1_GRILL_NEGIMA_SPRITE_ROLE = Object.freeze({
+  raw: 'grill-raw-sprite',
+  cooking: 'grill-cooking-sprite',
+  proper: 'grill-proper-sprite',
+  overcooked: 'grill-overcooked-sprite',
+  burnt: 'grill-burnt-sprite',
+});
+
 export function runtimeAssetUrl(url, pathname = globalThis.location?.pathname ?? '/') {
   if (!pathname.startsWith('/src/') || url.startsWith('/public/')) return url;
   return `/public${url}`;
@@ -278,6 +286,13 @@ export function resolveD1RawNegimaRuntimeBundle(assetIndex) {
     D1_RUNTIME_ASSET_ID.ASSEMBLY_TRAY_NEGIMA,
   );
   if (!traySprite) throw new Error('RAW 네기마 조립 트레이 sprite 누락');
+  const stageSprites = Object.freeze(Object.fromEntries(
+    Object.entries(D1_GRILL_NEGIMA_SPRITE_ROLE).map(([stage, role]) => {
+      const sprite = composition.companions.find((companion) => companion.role === role);
+      if (!sprite) throw new Error(`RAW negima grill ${stage} sprite missing: ${role}`);
+      return [stage, Object.freeze(sprite)];
+    }),
+  ));
   const sources = { skewerBase, chicken, negi };
   for (const [sourceName, asset] of Object.entries(sources)) {
     if (!asset) throw new Error(`RAW 네기마 승인 source model 누락: ${sourceName}`);
@@ -289,6 +304,7 @@ export function resolveD1RawNegimaRuntimeBundle(assetIndex) {
   return Object.freeze({
     composition,
     traySprite,
+    stageSprites,
     sources: Object.freeze(Object.fromEntries(
       Object.entries(sources).map(([key, model]) => [key, Object.freeze({
         model,

@@ -25,9 +25,12 @@ describe('D1 고정 6칸 그릴 레이아웃 계약', () => {
       initialPlacementSlots: [1, 2],
     });
     const slots = computeGrillSlots(D1_PUBLIC_GRILL_LAYOUT);
-    expect(slots.map(({ key, approvedVisualRect }) => ({ key, approvedVisualRect }))).toEqual([
-      { key: 'pgSlot0', approvedVisualRect: D1_GRILL_SLOTS[0].visualRect },
-      { key: 'pgSlot1', approvedVisualRect: D1_GRILL_SLOTS[1].visualRect },
+    expect(slots.map(({ key, approvedVisualRect }) => ({
+      key,
+      approvedVisualRect: rectAtViewport(approvedVisualRect, 1920, 1080),
+    }))).toEqual([
+      { key: 'pgSlot0', approvedVisualRect: { x: 744, y: 274, width: 132, height: 438 } },
+      { key: 'pgSlot1', approvedVisualRect: { x: 1052, y: 262, width: 126, height: 420 } },
     ]);
     for (const slot of slots) {
       expect(slot.rect.width).toBeLessThan(slot.approvedVisualRect.width);

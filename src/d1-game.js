@@ -211,8 +211,12 @@ async function bootRawNegimaRuntime() {
 }
 void bootRawNegimaRuntime();
 const grillStatusLayer = el('grillStatusLayer');
+const grillInventory = el('grillInventory');
 const grillWaitingNegima = el('grillWaitingNegima');
 const grillWaitingNegimaHint = el('grillWaitingNegimaHint');
+const grillWaitingNegimaCount = el('grillWaitingNegimaCount');
+const grillFinishedInventoryCount = el('grillFinishedInventoryCount');
+const grillFinishedQualityList = el('grillFinishedQualityList');
 const customerServePanel = el('customerServePanel');
 const customerServeTargets = el('customerServeTargets');
 const selectedPreparedItem = el('selectedPreparedItem');
@@ -232,7 +236,8 @@ function invokeLockedControl(key, now = performance.now()) {
   return true;
 }
 grillWaitingNegima.addEventListener('click', () => invokeLockedControl('grillWaitTray'));
-const dock = createPreparedDock({ container: el('dockShelf') });
+const dockShelf = el('dockShelf');
+const dock = createPreparedDock({ container: dockShelf });
 const momoPrep = el('momoPrep');
 momoPrep.hidden = true;
 momoPrep.addEventListener('click', () => {
@@ -987,6 +992,7 @@ function render() {
   const views = cook.slotViews(now);
   syncAssemblyVisual();
   renderGrillWaitingControl(views);
+  renderGrillFinishedInventory();
   // 클릭 결과를 다음 rAF까지 미루지 않는다. 0.3초 뒤집기 잠금처럼 짧은 상태도
   // 입력과 같은 렌더에서 DOM에 반영돼야 저사양·소형 화면에서도 건너뛰지 않는다.
   updateGrillStatus(now);
@@ -1047,15 +1053,18 @@ function renderGrillWaitingControl(slotViews) {
   const onGrill = director.activeScreenId() === 'SCR-SVC-GRILL';
   const waitingCount = cook.waitingCount();
   const hasEmptySlot = slotViews.some((slot) => slot.status === 'empty');
-  grillWaitingNegima.hidden = !onGrill;
+  grillInventory.hidden = !onGrill;
+  dockShelf.classList.toggle('grill-station-hidden', onGrill);
+  dockShelf.setAttribute('aria-hidden', String(onGrill));
   grillWaitingNegima.disabled = !onGrill || waitingCount === 0 || !hasEmptySlot;
   grillWaitingNegima.dataset.waitingCount = String(waitingCount);
   grillWaitingNegima.dataset.hasEmptySlot = String(hasEmptySlot);
+  grillWaitingNegimaCount.textContent = `× ${waitingCount}`;
   grillWaitingNegimaHint.textContent = waitingCount === 0
-    ? '대기 없음'
+    ? '조립대에서 완성 꼬치를 옮겨주세요'
     : hasEmptySlot
-      ? `대기 ${waitingCount}개 · 첫 빈 칸에 올리기`
-      : `대기 ${waitingCount}개 · 빈 칸 없음`;
+      ? '클릭하여 첫 빈 칸에 한 개 올리기'
+      : '빈 그릴 칸이 생기면 배치할 수 있습니다';
   grillWaitingNegima.setAttribute(
     'aria-label',
     waitingCount === 0
@@ -1064,6 +1073,60 @@ function renderGrillWaitingControl(slotViews) {
         ? `네기마. 대기 ${waitingCount}개. 다음 한 개를 첫 빈 그릴 칸에 올리기.`
         : `네기마. 대기 ${waitingCount}개. 빈 그릴 칸 없음.`,
   );
+}
+
+const GRILL_QUALITY_ORDER = Object.freeze(['Perfect', 'Good', 'OK', 'Fail']);
+const GRILL_QUALITY_LABEL = Object.freeze({
+  Perfect: '완벽',
+  Good: '좋음',
+  OK: '보통',
+  Fail: '실패',
+});
+
+function renderGrillFinishedInventory() {
+  const negimaItems = dock.items().filter((item) => item.menu === '네기마');
+  grillFinishedInventoryCount.textContent = `총 ${negimaItems.length}개`;
+  grillFinishedQualityList.innerHTML = '';
+
+  if (negimaItems.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'grill-inventory-empty';
+    empty.innerHTML = '<strong>완성된 꼬치가 없습니다</strong><span>다 구운 네기마를 회수하면 여기에 품질별로 표시됩니다.</span>';
+    grillFinishedQualityList.appendChild(empty);
+    return;
+  }
+
+  const grouped = new Map();
+  for (const item of negimaItems) grouped.set(item.label, (grouped.get(item.label) ?? 0) + 1);
+  const labels = [...grouped.keys()].sort((a, b) => {
+    const ai = GRILL_QUALITY_ORDER.indexOf(a);
+    const bi = GRILL_QUALITY_ORDER.indexOf(b);
+    return (ai < 0 ? GRILL_QUALITY_ORDER.length : ai) - (bi < 0 ? GRILL_QUALITY_ORDER.length : bi);
+  });
+  for (const label of labels) {
+    const card = document.createElement('div');
+    card.className = `grill-finished-quality grill-finished-quality--${label.toLowerCase()}`;
+    card.dataset.quality = label;
+    card.setAttribute('role', 'listitem');
+
+    const marker = document.createElement('span');
+    marker.className = 'grill-finished-quality-marker';
+    marker.setAttribute('aria-hidden', 'true');
+
+    const copy = document.createElement('span');
+    copy.className = 'grill-finished-quality-copy';
+    const menu = document.createElement('strong');
+    menu.textContent = '네기마';
+    const quality = document.createElement('span');
+    quality.textContent = GRILL_QUALITY_LABEL[label] ?? label;
+    copy.append(menu, quality);
+
+    const count = document.createElement('strong');
+    count.className = 'grill-finished-quality-count';
+    count.textContent = `× ${grouped.get(label)}`;
+    card.append(marker, copy, count);
+    grillFinishedQualityList.appendChild(card);
+  }
 }
 
 function renderReceipts() {
@@ -1361,7 +1424,7 @@ function handle(key, now) {
     }
     case 'grillFinishedTray':
       showHint(dock.items().some((item) => item.menu === '네기마')
-        ? '완료 트레이 · 완성품은 아래 선반에서 선택하세요'
+        ? '완성 네기마는 오른쪽 품질별 목록에서 확인할 수 있어요'
         : '완료된 네기마가 아직 없어요');
       break;
     default:
@@ -1382,7 +1445,7 @@ function clickGrillSlot(i, now) {
     }
     firstOrderGuide.preparedItem('negima', now);
     persistFirstOrderRuntime();
-    showHint('완성품을 선반에 올렸어요');
+    showHint('완성 네기마가 오른쪽 품질별 목록에 추가됐어요');
   }
   else if (r.flipped) {
     if (!guideFlippedSlots.has(i)) {
@@ -1400,6 +1463,14 @@ function clickGrillSlot(i, now) {
   }
   syncRiskCount(now);
   render();
+}
+
+function grillNegimaStage(view) {
+  if (!view?.cooking || (view.doneness === 'under' && view.faceElapsedSec <= 1.2)) return 'raw';
+  if (view.doneness === 'perfect') return 'proper';
+  if (view.doneness === 'over') return 'overcooked';
+  if (view.doneness === 'burnt') return 'burnt';
+  return 'cooking';
 }
 
 function updateGrillVisual(now) {
@@ -1421,12 +1492,14 @@ function updateGrillVisual(now) {
     const rawInstance = rawNegimaInstances[key];
     const showApprovedRaw = (
       rawNegimaRuntime.status === 'ready'
-      && v?.status === 'staged'
+      && v != null
+      && v.status !== 'empty'
       && director.activeScreenId() === 'SCR-SVC-GRILL'
     );
     if (rawInstance) {
       rawInstance.holder.visible = showApprovedRaw;
-      rawInstance.flipPivot.rotation.y = 0;
+      rawInstance.setStage(grillNegimaStage(v));
+      rawInstance.flipPivot.rotation.y = v?.visualRotationRad ?? 0;
     }
     // public pgSlot은 visual과 raycast를 한 mesh가 맡으므로 visible=false로 숨기면 입력도 끊긴다.
     // mesh/raycast는 유지하고 staged 동안 color write만 막아 procedural pink 픽셀을 교체한다.
@@ -1676,6 +1749,7 @@ Object.assign(d1GameDebug, {
     slots: SLOT_KEYS.map((key) => ({
       key,
       approvedRawVisible: rawNegimaInstances[key]?.holder.visible === true,
+      approvedStage: rawNegimaInstances[key]?.stage?.() ?? null,
       proceduralFallbackVisible: (
         R.objectMesh[key]?.visible === true
         && R.objectMesh[key]?.material?.colorWrite !== false
@@ -1704,7 +1778,7 @@ Object.assign(d1GameDebug, {
   }),
   dockItems: () => dock.items(),
   dockSelectedId: () => dock.selectedId(),
-  dockAdd: (item) => dock.add(item),
+  dockAdd: (item) => { const id = dock.add(item); render(); return id; },
   dockSelect: (id) => dock.select(id),
   d3TorchView: () => d3Grill.job(D3_TORCH_JOB_ID),
   d3TorchStage: () => {
@@ -1760,12 +1834,21 @@ Object.assign(d1GameDebug, {
     finishedTray: D1_GRILL_FINISHED_TRAY,
   }),
   grillWaitingControl: () => ({
-    hidden: grillWaitingNegima.hidden,
+    hidden: grillInventory.hidden,
     disabled: grillWaitingNegima.disabled,
     waitingCount: grillWaitingNegima.dataset.waitingCount,
     hasEmptySlot: grillWaitingNegima.dataset.hasEmptySlot,
     ariaLabel: grillWaitingNegima.getAttribute('aria-label'),
     rect: grillWaitingNegima.getBoundingClientRect().toJSON(),
+  }),
+  grillFinishedInventory: () => ({
+    hidden: grillInventory.hidden,
+    total: dock.items().filter((item) => item.menu === '네기마').length,
+    groups: [...grillFinishedQualityList.querySelectorAll('[data-quality]')].map((card) => ({
+      quality: card.dataset.quality,
+      text: card.textContent.replace(/\s+/g, ' ').trim(),
+      rect: card.getBoundingClientRect().toJSON(),
+    })),
   }),
   clickCustomer: () => {
     const seat = businessView()?.seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');

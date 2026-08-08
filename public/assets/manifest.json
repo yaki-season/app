@@ -1,7 +1,7 @@
 {
   "$schema": "https://yaki-season.local/assets/manifest.schema.json",
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-05",
+  "generatedAt": "2026-08-08",
   "specRefs": [
     "ART-002 v3.6.1",
     "ART-003 v5.0.0",
@@ -34,7 +34,10 @@
       "colorSpace": "sRGB",
       "alpha": "none",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 },
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
       "anchors": [],
       "clips": [],
       "mirrorSafe": false,
@@ -49,7 +52,10 @@
       "url": "/assets/core/customer/bg-interior-base-r3-b1.png",
       "sha256": "873c39354f87ccccb1ab3f00560642a43320aae62d8f6fb0591eb7e4a110283f",
       "bytes": 3455874,
-      "dimensions": { "width": 1920, "height": 1080 },
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
       "format": "png"
     },
     {
@@ -100,9 +106,20 @@
       "colorSpace": "sRGB",
       "alpha": "straight",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0.5, "y": 1 },
-      "anchors": [{ "x": 0.5, "y": 1 }],
-      "clips": ["empty", "occupied"],
+      "pivot": {
+        "x": 0.5,
+        "y": 1
+      },
+      "anchors": [
+        {
+          "x": 0.5,
+          "y": 1
+        }
+      ],
+      "clips": [
+        "empty",
+        "occupied"
+      ],
       "mirrorSafe": false,
       "source": "ARTSRC:ST-SERVICE-COUNTER:R4",
       "provenance": "PROV:ST-SERVICE-COUNTER:R4",
@@ -116,7 +133,10 @@
       "url": "/assets/core/customer/st-service-counter-r4-b1.png",
       "sha256": "d7395e6872cb919767d1c2fe1b124c993fede30857b1f4c47fd00eaf4a84d349",
       "bytes": 771617,
-      "dimensions": { "width": 1672, "height": 941 },
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
       "format": "png"
     },
     {
@@ -131,9 +151,20 @@
       "colorSpace": "sRGB",
       "alpha": "straight",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0.5, "y": 1 },
-      "anchors": [{ "id": "food", "x": 0.5, "y": 0.48 }],
-      "clips": ["occupied"],
+      "pivot": {
+        "x": 0.5,
+        "y": 1
+      },
+      "anchors": [
+        {
+          "id": "food",
+          "x": 0.5,
+          "y": 0.48
+        }
+      ],
+      "clips": [
+        "occupied"
+      ],
       "mirrorSafe": true,
       "source": "ARTSRC:PR-SERVING-PLATE:R2",
       "provenance": "PROV:PR-SERVING-PLATE:R2",
@@ -146,7 +177,10 @@
       "url": "/assets/core/customer/pr-serving-plate-r2-b1.png",
       "sha256": "27135460b14d4f31ac8083ab908e74214697fb0350cb7672a74975243066edf7",
       "bytes": 744150,
-      "dimensions": { "width": 1672, "height": 941 },
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
       "format": "png"
     },
     {
@@ -161,9 +195,20 @@
       "colorSpace": "sRGB",
       "alpha": "straight",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0.5, "y": 1 },
-      "anchors": [{ "id": "seat", "x": 0.5, "y": 1 }],
-      "clips": ["cleanup-needed"],
+      "pivot": {
+        "x": 0.5,
+        "y": 1
+      },
+      "anchors": [
+        {
+          "id": "seat",
+          "x": 0.5,
+          "y": 1
+        }
+      ],
+      "clips": [
+        "cleanup-needed"
+      ],
       "mirrorSafe": true,
       "source": "ARTSRC:PR-EMPTY-DISH-SET:R1",
       "provenance": "PROV:PR-EMPTY-DISH-SET:R1",
@@ -176,7 +221,10 @@
       "url": "/assets/core/customer/pr-empty-dish-set-r1-b1.png",
       "sha256": "c9783d32963ca7f182b100b33418660133eedc4d67b65bbc31e25ffd1d747ee3",
       "bytes": 1120225,
-      "dimensions": { "width": 1536, "height": 1024 },
+      "dimensions": {
+        "width": 1536,
+        "height": 1024
+      },
       "format": "png"
     },
     {
@@ -191,9 +239,21 @@
       "colorSpace": "sRGB",
       "alpha": "straight",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0.5, "y": 0.5 },
-      "anchors": [{ "id": "cleanup", "x": 0.5, "y": 0.5 }],
-      "clips": ["wiping-left", "wiping-right"],
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "anchors": [
+        {
+          "id": "cleanup",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "clips": [
+        "wiping-left",
+        "wiping-right"
+      ],
       "mirrorSafe": true,
       "source": "ARTSRC:ST-CLEANUP-OVERLAY:R1",
       "provenance": "PROV:ST-CLEANUP-OVERLAY:R1",
@@ -206,7 +266,10 @@
       "url": "/assets/core/customer/st-cleanup-overlay-r1-b1.png",
       "sha256": "35a2cfc79cbd06eeab462ff8285d3ef9a3627b5c75286b4d068d41b09b714c0d",
       "bytes": 118496,
-      "dimensions": { "width": 1024, "height": 256 },
+      "dimensions": {
+        "width": 1024,
+        "height": 256
+      },
       "format": "png"
     },
     {
@@ -221,9 +284,19 @@
       "colorSpace": "sRGB",
       "alpha": "straight",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0.5, "y": 1 },
-      "anchors": [{ "x": 0.5, "y": 1 }],
-      "clips": ["waiting"],
+      "pivot": {
+        "x": 0.5,
+        "y": 1
+      },
+      "anchors": [
+        {
+          "x": 0.5,
+          "y": 1
+        }
+      ],
+      "clips": [
+        "waiting"
+      ],
       "mirrorSafe": false,
       "source": "ARTSRC:CH-EXTRA-SOLO-SERVICE:R7",
       "provenance": "PROV:CH-EXTRA-SOLO-SERVICE:R7",
@@ -237,7 +310,10 @@
       "url": "/assets/core/customer/ch-extra-solo-service-r7-b1.png",
       "sha256": "81ad4e50ef45d963829bd1ab981273c5a7e59e074c047598e6cba13a17e462e8",
       "bytes": 1392381,
-      "dimensions": { "width": 1121, "height": 1403 },
+      "dimensions": {
+        "width": 1121,
+        "height": 1403
+      },
       "format": "png"
     },
     {
@@ -532,42 +608,6 @@
       "dimensions": {
         "width": 1254,
         "height": 1254
-      },
-      "format": "png"
-    },
-    {
-      "id": "BG-WORKSPACE-GRILL",
-      "sourceRevision": 1,
-      "runtimeBuild": 1,
-      "status": "approved",
-      "screenUnit": "SCR-SVC-GRILL",
-      "profile": "complete-layer",
-      "pack": "core",
-      "kind": "image",
-      "colorSpace": "sRGB",
-      "alpha": "none",
-      "lossPolicy": "lossless-required",
-      "pivot": {
-        "x": 0,
-        "y": 0
-      },
-      "anchors": [],
-      "clips": [],
-      "mirrorSafe": false,
-      "source": "ARTSRC:BG-WORKSPACE-GRILL:R1",
-      "provenance": "PROV:BG-WORKSPACE-GRILL:R1",
-      "license": "YAKI SEASON internal approved artwork",
-      "specRefs": [
-        "ART-003 v5.9.0",
-        "ART-002 v3.6.1"
-      ],
-      "reviewedAt": "2026-07-29",
-      "url": "/assets/core/cooking/bg-workspace-grill-r1-b1.png",
-      "sha256": "5511d93a94e265d9320ce1badbbe64a29dbed9300470292baad41c420c60d449",
-      "bytes": 2115788,
-      "dimensions": {
-        "width": 1920,
-        "height": 1080
       },
       "format": "png"
     },
@@ -926,13 +966,71 @@
       "specRefs": [
         "ART-003 v5.9.0",
         "GPL-004 v1.39.0",
-        "Developer 1 D1_GRILL_FOOD_FOOTPRINT raw R3 consumption contract"
+        "Developer 1 D1_GRILL_FOOD_FOOTPRINT raw R3 consumption contract",
+        "User approval 2026-08-08: five-stage grill negima sprites"
       ],
-      "reviewedAt": "2026-07-30",
+      "reviewedAt": "2026-08-08",
       "url": "/assets/core/cooking/mdl-negima-grill-raw-r1-b1.json",
       "sha256": "ffffd4c5e5d63cb81fb7a6e413d7604abc6d7f39797d477a240f7d16f6534869",
       "bytes": 1177,
-      "format": "json"
+      "format": "json",
+      "companions": [
+        {
+          "role": "grill-raw-sprite",
+          "url": "/assets/core/cooking/spr-negima-grill-raw-r1-b1.png",
+          "sha256": "76f3be91f8ab1ad5dc88a5a418561af4171d56a7a11fd2a82beff1050fc83eda",
+          "bytes": 73717,
+          "format": "png",
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          }
+        },
+        {
+          "role": "grill-cooking-sprite",
+          "url": "/assets/core/cooking/spr-negima-grill-cooking-r1-b1.png",
+          "sha256": "23983f39f0cad340b6c195bab798efed91438cdc2ee473824e1949eeb860cfaf",
+          "bytes": 70823,
+          "format": "png",
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          }
+        },
+        {
+          "role": "grill-proper-sprite",
+          "url": "/assets/core/cooking/spr-negima-grill-proper-r1-b1.png",
+          "sha256": "65d0e532c340c9deaa228d8724a5e8bca7e67cafef88d30b471121365656bc6e",
+          "bytes": 68114,
+          "format": "png",
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          }
+        },
+        {
+          "role": "grill-overcooked-sprite",
+          "url": "/assets/core/cooking/spr-negima-grill-overcooked-r1-b1.png",
+          "sha256": "f3b7b29453291b9e55961af08ad401ded36e69b11f0c6e6e4699aef35a4182c6",
+          "bytes": 64724,
+          "format": "png",
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          }
+        },
+        {
+          "role": "grill-burnt-sprite",
+          "url": "/assets/core/cooking/spr-negima-grill-burnt-r1-b1.png",
+          "sha256": "c015f617f5d1e0d12ebe321da1ab11cb5bfaf14bbbc62a019c51d55974e29863",
+          "bytes": 45466,
+          "format": "png",
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          }
+        }
+      ]
     },
     {
       "id": "SPR-ASSEMBLY-TRAY-NEGIMA",
@@ -1419,6 +1517,42 @@
         "height": 1403
       },
       "format": "png"
+    },
+    {
+      "id": "BG-WORKSPACE-GRILL",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-GRILL",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:BG-WORKSPACE-GRILL:R2",
+      "provenance": "PROV:BG-WORKSPACE-GRILL:R2",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "GPL-004 v1.41.0",
+        "UI-003 v3.3.0"
+      ],
+      "reviewedAt": "2026-08-08",
+      "url": "/assets/core/cooking/bg-workspace-grill-r2-b1.png",
+      "sha256": "22fded7de11c84b98942195dc4268b4d7abf6ece6fa85629e2aca44285139675",
+      "bytes": 3467099,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
     }
   ],
   "retainedAssets": [
@@ -1624,6 +1758,42 @@
           "format": "json"
         }
       ]
+    },
+    {
+      "id": "BG-WORKSPACE-GRILL",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-GRILL",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:BG-WORKSPACE-GRILL:R1",
+      "provenance": "PROV:BG-WORKSPACE-GRILL:R1",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "ART-003 v5.9.0",
+        "ART-002 v3.6.1"
+      ],
+      "reviewedAt": "2026-07-29",
+      "url": "/assets/core/cooking/bg-workspace-grill-r1-b1.png",
+      "sha256": "5511d93a94e265d9320ce1badbbe64a29dbed9300470292baad41c420c60d449",
+      "bytes": 2115788,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
     }
   ]
 }

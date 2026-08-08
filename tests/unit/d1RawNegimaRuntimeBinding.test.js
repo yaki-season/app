@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { D1_RUNTIME_COMPONENT_INVENTORY } from '../../src/assets/d1RuntimeInventory.js';
 import {
+  D1_GRILL_NEGIMA_SPRITE_ROLE,
   D1_RAW_NEGIMA_RUNTIME_ASSET_ID,
   D1_RUNTIME_ASSET_ID,
   indexApprovedRuntimeAssets,
@@ -32,9 +33,19 @@ describe('D1 approved RAW negima exact-load binding', () => {
       sha256: `${id}-albedo-sha`,
       format: 'png',
     });
+    const stageSprite = (role) => ({
+      role,
+      url: `/assets/${role}.png`,
+      sha256: `${role}-sha`,
+      format: 'png',
+    });
     const manifest = {
       assets: [
-        approved(D1_RAW_NEGIMA_RUNTIME_ASSET_ID.COMPOSITION, 'json'),
+        approved(
+          D1_RAW_NEGIMA_RUNTIME_ASSET_ID.COMPOSITION,
+          'json',
+          Object.values(D1_GRILL_NEGIMA_SPRITE_ROLE).map(stageSprite),
+        ),
         approved(D1_RAW_NEGIMA_RUNTIME_ASSET_ID.SKEWER_BASE, 'glb', [albedo('skewer')]),
         approved(D1_RAW_NEGIMA_RUNTIME_ASSET_ID.CHICKEN, 'glb', [albedo('chicken')]),
         approved(D1_RAW_NEGIMA_RUNTIME_ASSET_ID.NEGI, 'glb', [albedo('negi')]),
@@ -44,6 +55,13 @@ describe('D1 approved RAW negima exact-load binding', () => {
 
     const bundle = resolveD1RawNegimaRuntimeBundle(indexApprovedRuntimeAssets(manifest));
     expect(bundle.composition.id).toBe('MDL-NEGIMA-GRILL-RAW');
+    expect(Object.keys(bundle.stageSprites)).toEqual([
+      'raw',
+      'cooking',
+      'proper',
+      'overcooked',
+      'burnt',
+    ]);
     expect(Object.keys(bundle.sources)).toEqual(['skewerBase', 'chicken', 'negi']);
     expect(Object.values(bundle.sources).every((source) => (
       source.model.format === 'glb' && source.albedo.role === 'pixel-albedo'

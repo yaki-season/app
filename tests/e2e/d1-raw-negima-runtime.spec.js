@@ -20,6 +20,11 @@ async function clickObject(page, key) {
 
 const REQUIRED_RUNTIME_FILES = Object.freeze([
   '/public/assets/core/cooking/mdl-negima-grill-raw-r1-b1.json',
+  '/public/assets/core/cooking/spr-negima-grill-raw-r1-b1.png',
+  '/public/assets/core/cooking/spr-negima-grill-cooking-r1-b1.png',
+  '/public/assets/core/cooking/spr-negima-grill-proper-r1-b1.png',
+  '/public/assets/core/cooking/spr-negima-grill-overcooked-r1-b1.png',
+  '/public/assets/core/cooking/spr-negima-grill-burnt-r1-b1.png',
   '/public/assets/core/cooking/mdl-skewer-base-r2-b1.glb',
   '/public/assets/core/cooking/mdl-skewer-base-pixel-albedo-r2-b1.png',
   '/public/assets/core/cooking/mdl-ingredient-chicken-r1-b2.glb',
@@ -29,7 +34,7 @@ const REQUIRED_RUNTIME_FILES = Object.freeze([
   '/public/assets/core/cooking/spr-assembly-tray-negima-r1-b1.png',
 ]);
 
-test('approved RAW R1을 exact-load 뒤 staged 한 상태에만 실제 렌더하고 기존 입력을 보존한다', async ({ page }, testInfo) => {
+test('approved grill negima sprites exact-load and follow every cooking stage', async ({ page }, testInfo) => {
   await routeD1ReleaseDefinition(page);
   const responses = new Map();
   page.on('response', (response) => {
@@ -46,12 +51,13 @@ test('approved RAW R1을 exact-load 뒤 staged 한 상태에만 실제 렌더하
     sourceModelCount: 3,
     sourceAlbedoCount: 3,
     traySpriteCount: 1,
+    grillStageSpriteCount: 5,
     composedIngredientCount: 5,
     triangleCount: 476,
     rootNode: 'grillNegimaRoot',
     flipPivotNode: 'flipPivot',
   });
-  expect(loaded.diagnostics.network).toHaveLength(8);
+  expect(loaded.diagnostics.network).toHaveLength(13);
   expect(loaded.diagnostics.network.every(({ status, sha256Match }) => (
     status === 200 && sha256Match === true
   ))).toBe(true);
@@ -80,9 +86,14 @@ test('approved RAW R1을 exact-load 뒤 staged 한 상태에만 실제 렌더하
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
     .toMatchObject({
       approvedRawVisible: true,
+      approvedStage: 'raw',
       proceduralFallbackVisible: false,
       interactionVisible: true,
     });
+  await page.screenshot({
+    path: testInfo.outputPath(`raw-staged-${page.viewportSize().width}x${page.viewportSize().height}.png`),
+    fullPage: true,
+  });
   const pixelEvidence = await page.evaluate(() => {
     const { renderer, camera, scene } = window.__d1GameDebug.renderer;
     renderer.render(scene, camera);
@@ -100,7 +111,7 @@ test('approved RAW R1을 exact-load 뒤 staged 한 상태에만 실제 렌더하
     let salmonIngredientPixels = 0;
     for (let offset = 0; offset < pixels.length; offset += 4) {
       const [r, g, b] = pixels.subarray(offset, offset + 3);
-      if (g > 70 && g > r * 1.15 && g > b * 1.4) greenIngredientPixels += 1;
+      if (g > 60 && g > r * 0.85 && g > b * 1.35) greenIngredientPixels += 1;
       if (r > 130 && r > g * 1.25 && g > b * 1.05) salmonIngredientPixels += 1;
     }
     return { greenIngredientPixels, salmonIngredientPixels };
@@ -108,11 +119,6 @@ test('approved RAW R1을 exact-load 뒤 staged 한 상태에만 실제 렌더하
   expect(pixelEvidence.greenIngredientPixels).toBeGreaterThan(50);
   expect(pixelEvidence.salmonIngredientPixels).toBeGreaterThan(50);
   expect(await D(page, 'grillContract')).toMatchObject({ initialPlacementSlots: [1, 2] });
-  await page.screenshot({
-    path: testInfo.outputPath(`raw-staged-${page.viewportSize().width}x${page.viewportSize().height}.png`),
-    fullPage: true,
-  });
-
   await page.waitForTimeout(220);
   await waiting.focus();
   await page.keyboard.press('Space');
@@ -122,10 +128,20 @@ test('approved RAW R1을 exact-load 뒤 staged 한 상태에만 실제 렌더하
   ]);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
     .toMatchObject({
-      approvedRawVisible: false,
-      proceduralFallbackVisible: true,
+      approvedRawVisible: true,
+      approvedStage: 'cooking',
+      proceduralFallbackVisible: false,
       interactionVisible: true,
     });
+  await D(page, 'cookElapse', 8);
+  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].approvedStage)
+    .toBe('proper');
+  await D(page, 'cookElapse', 8);
+  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].approvedStage)
+    .toBe('overcooked');
+  await D(page, 'cookElapse', 5);
+  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].approvedStage)
+    .toBe('burnt');
 });
 
 test('조립대에서 승인 닭·파가 순서대로 쌓이고 완성 네기마가 오른쪽 트레이로 이동한다', async ({ page }) => {

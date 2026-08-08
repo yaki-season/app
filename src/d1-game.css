@@ -107,41 +107,141 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide li {
   white-space: nowrap;
 }
 
-.grill-waiting-negima {
+.grill-inventory {
   position: fixed;
+  inset: 0;
   z-index: 19;
-  /* ST-GRILL-WAITING-RACK R2 subject 우측 +8px, 공용 hint 하단 +8px. */
-  top: calc(73.333333vh + 52px);
-  left: calc(22.135417vw + 8px);
-  display: flex;
-  width: 14vw;
-  min-width: 150px;
+  pointer-events: none;
+}
+.grill-inventory[hidden] { display: none; }
+.grill-inventory-panel {
+  position: fixed;
+  top: 25.5vh;
+  width: 16.8vw;
+  max-width: 322px;
+  min-width: 190px;
+  overflow: hidden;
   min-height: 44px;
   box-sizing: border-box;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border: 2px solid #fff0ca;
-  border-radius: 9px;
-  padding: 5px 8px;
+  border: 1px solid rgba(181, 134, 84, .72);
+  border-radius: 14px;
+  padding: 10px;
   color: #fff0ca;
-  background: rgba(89, 49, 26, .96);
-  box-shadow: 0 5px 16px rgba(0, 0, 0, .42);
-  font: inherit;
-  font-size: clamp(10px, .68vw, 13px);
-  cursor: pointer;
+  background: linear-gradient(155deg, rgba(31, 23, 17, .96), rgba(12, 10, 9, .94));
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .5), inset 0 1px rgba(255, 240, 202, .08);
+  backdrop-filter: blur(5px);
 }
-.grill-waiting-negima[hidden] { display: none; }
-.grill-waiting-negima strong { color: #fff; font-size: 1.08em; }
-.grill-waiting-negima span { min-width: 0; color: #f2d4a3; line-height: 1.15; }
+.grill-inventory-panel--raw { left: 3.7vw; }
+.grill-inventory-panel--finished { right: 3.7vw; }
+.grill-inventory-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  align-items: end;
+  margin-bottom: 9px;
+  padding: 0 2px 8px;
+  border-bottom: 1px solid rgba(181, 134, 84, .34);
+}
+.grill-inventory-heading > span:first-child {
+  grid-column: 1 / -1;
+  color: #d18a53;
+  font-size: clamp(9px, .55vw, 11px);
+  font-weight: 800;
+  letter-spacing: .13em;
+}
+.grill-inventory-heading strong { font-size: clamp(13px, .78vw, 15px); }
+.grill-inventory-total {
+  color: #e8c594;
+  font-size: clamp(10px, .625vw, 12px);
+  font-variant-numeric: tabular-nums;
+}
+.grill-waiting-negima {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  width: 100%;
+  min-height: 92px;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e69a5e;
+  border-radius: 11px;
+  padding: 10px;
+  color: #fff0ca;
+  text-align: left;
+  background: linear-gradient(135deg, rgba(107, 56, 29, .96), rgba(54, 31, 20, .96));
+  box-shadow: 0 5px 16px rgba(0, 0, 0, .38), inset 0 1px rgba(255, 222, 174, .18);
+  font: inherit;
+  font-size: clamp(10px, .65vw, 12px);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.grill-waiting-negima:hover:not(:disabled) { border-color: #fff0ca; transform: translateY(-1px); }
+.grill-inventory-card-copy { display: grid; min-width: 0; gap: 7px; }
+.grill-inventory-card-title { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; }
+.grill-inventory-card-title strong { color: #fff; font-size: clamp(14px, .82vw, 16px); }
+.grill-inventory-card-copy > span:last-child { min-width: 0; color: #f2d4a3; line-height: 1.3; }
+.grill-inventory-count { color: #ffd49d; font-size: 1.08em; font-weight: 800; font-variant-numeric: tabular-nums; }
+.grill-skewer-symbol { position: relative; display: block; width: 44px; height: 58px; }
+.grill-skewer-symbol i {
+  position: absolute; left: 21px; top: 2px; width: 3px; height: 55px;
+  border-radius: 2px; background: linear-gradient(#f4c078, #8f5428);
+  transform: rotate(8deg);
+}
+.grill-skewer-symbol b {
+  position: absolute; left: 8px; width: 28px; height: 15px;
+  border: 2px solid rgba(255, 230, 181, .35); border-radius: 48%;
+  background: #b35b37; transform: rotate(8deg);
+}
+.grill-skewer-symbol b:nth-of-type(1) { top: 7px; }
+.grill-skewer-symbol b:nth-of-type(2) { top: 23px; background: #62883c; }
+.grill-skewer-symbol b:nth-of-type(3) { top: 39px; }
 .grill-waiting-negima:focus-visible { outline: 3px solid var(--ember); outline-offset: 3px; }
 .grill-waiting-negima:disabled {
   border-color: rgba(181, 134, 84, .78);
   color: var(--dim);
-  background: rgba(35, 27, 21, .9);
+  background: rgba(35, 27, 21, .94);
   box-shadow: none;
   cursor: default;
 }
+.grill-waiting-negima:disabled .grill-skewer-symbol { filter: grayscale(.75); opacity: .58; }
+.grill-finished-quality-list { display: grid; gap: 7px; }
+.grill-inventory-empty {
+  display: grid;
+  gap: 5px;
+  min-height: 92px;
+  place-content: center;
+  margin: 0;
+  border: 1px dashed rgba(181, 134, 84, .48);
+  border-radius: 10px;
+  padding: 12px;
+  color: #bfa98f;
+  font-size: clamp(10px, .625vw, 12px);
+  line-height: 1.35;
+  text-align: center;
+}
+.grill-inventory-empty strong { color: #ead8bd; }
+.grill-finished-quality {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  min-height: 58px;
+  border: 1px solid rgba(181, 134, 84, .4);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: rgba(48, 38, 30, .82);
+}
+.grill-finished-quality-marker { width: 9px; height: 36px; border-radius: 999px; background: #c78c51; }
+.grill-finished-quality-copy { display: grid; gap: 1px; }
+.grill-finished-quality-copy strong { color: #fff; font-size: clamp(11px, .68vw, 13px); }
+.grill-finished-quality-copy span { color: #d9c3a6; font-size: clamp(9px, .56vw, 11px); }
+.grill-finished-quality-count { color: #fff0ca; font-size: clamp(13px, .78vw, 15px); font-variant-numeric: tabular-nums; }
+.grill-finished-quality--perfect .grill-finished-quality-marker { background: #f3bd5f; box-shadow: 0 0 9px rgba(243, 189, 95, .48); }
+.grill-finished-quality--good .grill-finished-quality-marker { background: #7fc47a; }
+.grill-finished-quality--ok .grill-finished-quality-marker { background: #d18a53; }
+.grill-finished-quality--fail .grill-finished-quality-marker { background: #b85243; }
+.dock-shelf.grill-station-hidden { display: none !important; }
 
 [data-guide-target="true"] {
   outline: 3px solid #fff0ca !important;
@@ -155,11 +255,11 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide li {
 .grill-status-layer {
   position: fixed;
   z-index: 9;
-  top: 28vh;
-  left: 45.5vw;
-  width: 30.2vw;
+  top: 68.5vh;
+  left: 35.5vw;
+  width: 29vw;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(4px, 0.55vw, 10px);
   pointer-events: none;
 }
@@ -168,10 +268,10 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide li {
   min-width: 0;
   border: 1px solid rgba(181, 134, 84, 0.76);
   border-radius: 9px;
-  padding: 6px;
+  padding: 5px 6px;
   background: rgba(16, 11, 8, 0.9);
   color: var(--text);
-  font-size: clamp(9px, 0.62vw, 12px);
+  font-size: clamp(8px, 0.54vw, 10px);
   line-height: 1.22;
   text-align: center;
 }
@@ -205,9 +305,7 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide li {
   font-variant-numeric: tabular-nums;
 }
 .grill-preserved {
-  margin: 4px 0 0;
-  color: #f7ddb0;
-  overflow-wrap: anywhere;
+  display: none;
 }
 .grill-action {
   margin: 4px 0 0;

@@ -29,13 +29,16 @@ function exactAssetPlan(bundle) {
     { role: 'composition', asset: bundle.composition },
     { role: 'tray-sprite', asset: bundle.traySprite },
   ];
+  for (const [stage, sprite] of Object.entries(bundle.stageSprites ?? {})) {
+    plan.push({ role: `stage-${stage}`, asset: sprite });
+  }
   for (const [name, source] of Object.entries(bundle.sources ?? {})) {
     plan.push(
       { role: `${name}-model`, asset: source.model },
       { role: `${name}-albedo`, asset: source.albedo },
     );
   }
-  if (plan.length !== 8) throw new Error(`RAW negima exact asset count mismatch: ${plan.length}/8`);
+  if (plan.length !== 13) throw new Error(`RAW negima exact asset count mismatch: ${plan.length}/13`);
   for (const item of plan) {
     if (!item.asset?.url || !item.asset?.sha256) {
       throw new Error(`RAW 네기마 exact manifest metadata 누락: ${item.role}`);
@@ -220,6 +223,127 @@ function applyAssemblyIngredientPose(root) {
   });
 }
 
+const GRILL_BODY_COLORS = Object.freeze({
+  'bamboo-shaft': 0x9d5920,
+  'bamboo-tip': 0xd69a40,
+  'handle-cap': 0x2a1509,
+  'handle-ring-1': 0xd69a40,
+  'handle-ring-2': 0xd69a40,
+  'chicken-body': 0x73301e,
+  'negi-body': 0x315b17,
+});
+
+function applyGrillIngredientPose(root) {
+  root.traverse((node) => {
+    if (!node.isMesh) return;
+    const materials = (Array.isArray(node.material) ? node.material : [node.material])
+      .map((sourceMaterial) => {
+        const material = sourceMaterial.clone();
+        material.side = THREE.DoubleSide;
+        material.depthTest = true;
+        material.depthWrite = true;
+        if (material.map) {
+          material.color.setRGB(1, 0.94, 0.86);
+          material.transparent = true;
+          material.alphaTest = 0.02;
+        } else {
+          const bodyColor = GRILL_BODY_COLORS[node.name];
+          if (bodyColor != null) material.color.setHex(bodyColor);
+          material.transparent = false;
+          material.opacity = 1;
+        }
+        material.needsUpdate = true;
+        return material;
+      });
+    node.material = Array.isArray(node.material) ? materials : materials[0];
+    node.renderOrder = 0;
+    node.visible = true;
+  });
+}
+
+function grillSpriteInstanceForSlot(stageTextures, slotMesh, sourceTransform) {
+  const holder = new THREE.Group();
+  holder.name = `grillNegimaSpriteSlot:${slotMesh.userData.objectKey}`;
+  holder.userData.objectKey = slotMesh.userData.objectKey;
+  holder.visible = false;
+
+  const root = new THREE.Group();
+  root.name = 'grillNegimaSpriteRoot';
+  root.userData.assetId = D1_RAW_NEGIMA_COMPOSITION_ID;
+  root.rotation.set(
+    sourceTransform.rootRotationRadians.x,
+    sourceTransform.rootRotationRadians.y,
+    sourceTransform.rootRotationRadians.z,
+  );
+  root.scale.set(sourceTransform.horizontalScale, sourceTransform.verticalScale, 1);
+
+  const flipPivot = new THREE.Group();
+  flipPivot.name = 'flipPivot';
+  root.add(flipPivot);
+
+  const planes = {};
+  Object.entries(stageTextures).forEach(([stage, texture], index) => {
+    const imageWidth = Number(texture.image?.width ?? 109);
+    const imageHeight = Number(texture.image?.height ?? 494);
+    const geometry = new THREE.PlaneGeometry(imageWidth / imageHeight, 1);
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      alphaTest: 0.02,
+      depthTest: false,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    });
+    const plane = new THREE.Mesh(geometry, material);
+    plane.name = `approvedGrillNegimaSprite:${stage}`;
+    // ImageBitmap upload reverses this standalone artwork plane. Rotate the plane only so
+    // the sharp tip stays at the authored top and the handle remains at the bottom.
+    plane.rotation.z = Math.PI;
+    plane.renderOrder = 320 + index;
+    plane.frustumCulled = false;
+    plane.raycast = () => {};
+    plane.visible = stage === 'raw';
+    planes[stage] = plane;
+    flipPivot.add(plane);
+  });
+
+  root.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(root);
+  const center = bounds.getCenter(new THREE.Vector3());
+  const size = bounds.getSize(new THREE.Vector3());
+  root.position.sub(center);
+  holder.add(root);
+
+  slotMesh.geometry.computeBoundingBox();
+  const targetSize = slotMesh.geometry.boundingBox.getSize(new THREE.Vector3());
+  const sx = targetSize.x / size.x;
+  const sy = targetSize.y / size.y;
+  const uniformScale = Math.min(sx, sy);
+  holder.scale.setScalar(uniformScale);
+  holder.position.copy(slotMesh.position);
+  holder.quaternion.copy(slotMesh.userData.grillBaseQuaternion ?? slotMesh.quaternion);
+  holder.userData.stage = 'raw';
+  holder.updateMatrixWorld(true);
+
+  return {
+    holder,
+    root,
+    flipPivot,
+    targetSize,
+    setStage(stage) {
+      const normalized = Object.hasOwn(planes, stage) ? stage : 'raw';
+      Object.entries(planes).forEach(([key, plane]) => {
+        plane.visible = key === normalized;
+      });
+      holder.userData.stage = normalized;
+      return normalized;
+    },
+    stage: () => holder.userData.stage,
+    ingredientCount: () => D1_RAW_NEGIMA_SEQUENCE.length,
+  };
+}
+
 function instanceForSlot(
   sourceRoot,
   slotMesh,
@@ -233,6 +357,7 @@ function instanceForSlot(
   holder.visible = false;
   const root = sourceRoot.clone(true);
   if (assemblyPose) applyAssemblyIngredientPose(root);
+  else applyGrillIngredientPose(root);
   root.rotation.set(
     sourceTransform.rootRotationRadians.x,
     sourceTransform.rootRotationRadians.y,
@@ -408,6 +533,12 @@ export async function createD1RawNegimaCompositor({
       textureFromPng(bytesByRole['negi-albedo'], createImageBitmapImpl),
       textureFromPng(bytesByRole['tray-sprite'], createImageBitmapImpl),
     ]);
+    const stageTextures = Object.freeze(Object.fromEntries(await Promise.all(
+      Object.keys(bundle.stageSprites).map(async (stage) => [
+        stage,
+        await textureFromPng(bytesByRole[`stage-${stage}`], createImageBitmapImpl),
+      ]),
+    )));
     const built = buildComposition({
       composition,
       models: { skewerBase, chicken, negi },
@@ -421,6 +552,7 @@ export async function createD1RawNegimaCompositor({
       sourceModelCount: 3,
       sourceAlbedoCount: 3,
       traySpriteCount: 1,
+      grillStageSpriteCount: Object.keys(stageTextures).length,
       composedIngredientCount: composition.sequence.length,
       triangleCount: built.triangles,
       materialCount: materialCount(built.root),
@@ -430,12 +562,7 @@ export async function createD1RawNegimaCompositor({
     return Object.freeze({
       diagnostics,
       createInstance: (slotMesh, sourceTransform) => (
-        instanceForSlot(
-          built.root,
-          slotMesh,
-          sourceTransform,
-          D1_RAW_NEGIMA_SEQUENCE.length,
-        )
+        grillSpriteInstanceForSlot(stageTextures, slotMesh, sourceTransform)
       ),
       createAssemblyInstance: (slotMesh, sourceTransform) => (
         instanceForSlot(built.root, slotMesh, sourceTransform, 0, { assemblyPose: true })

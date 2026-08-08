@@ -79,15 +79,9 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .hint {
   margin: 0;
 }
 
-/* 공용 완성품 선반은 기본적으로 하단 중앙을 차지한다. 그릴 화면에서는 대기 네기마
-   버튼이 승인 rack 아트(가로)와 hint 하단 +8px(세로)에 이중으로 고정돼 있어 선반을
-   피할 자리가 없다. 이 화면에서만 선반을 오른쪽으로 붙여 버튼·그릴 칸과 분리한다. */
+/* 그릴 화면은 같은 공용 재고를 오른쪽의 읽기 전용 품질 목록으로 투영한다. */
 body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .dock-shelf {
-  left: auto;
-  right: 24px;
-  transform: none;
-  width: min(40vw, 780px);
-  min-width: 460px;
+  display: none !important;
 }
 
 body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .end-day {
@@ -121,11 +115,6 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .end-day {
     /* 대기 네기마 rack은 3D 투영이라 작은 뷰포트일수록 상대적으로 아래에 온다(720에서 73.56vh).
        기본 73.33vh면 1.6px 겹치므로 이 구간에서만 hint를 내린다. quick-nav 위 여유는 유지된다. */
     top: 76vh;
-  }
-
-  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .grill-waiting-negima {
-    /* 이 구간에서 내려간 hint 하단 +8px를 유지한다. */
-    top: calc(76vh + 52px);
   }
 
   body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) #navRight {
