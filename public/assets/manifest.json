@@ -873,7 +873,7 @@
     },
     {
       "id": "MDL-INGREDIENT-NEGI",
-      "sourceRevision": 3,
+      "sourceRevision": 4,
       "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-SVC-ASSEMBLY",
@@ -890,34 +890,34 @@
       },
       "bounds": {
         "min": {
-          "x": -0.1275,
-          "y": -0.11,
+          "x": -0.142,
+          "y": -0.157,
           "z": -0.078
         },
         "max": {
-          "x": 0.1275,
-          "y": 0.11,
+          "x": 0.142,
+          "y": 0.157,
           "z": 0.078
         }
       },
       "anchors": [],
       "clips": [],
       "mirrorSafe": false,
-      "source": "ARTSRC:MDL-INGREDIENT-NEGI:R3",
-      "provenance": "PROV:MDL-INGREDIENT-NEGI:R3",
+      "source": "ARTSRC:MDL-INGREDIENT-NEGI:R4",
+      "provenance": "PROV:MDL-INGREDIENT-NEGI:R4",
       "license": "YAKI SEASON internal approved artwork",
       "specRefs": [
         "ART-003 v5.9.0"
       ],
-      "reviewedAt": "2026-07-29",
-      "url": "/assets/core/cooking/mdl-ingredient-negi-r3-b1.glb",
-      "sha256": "065a918355c625f4c2f364d26dc0e20b3326155c799399905c04aa48494bb3e3",
-      "bytes": 5112,
+      "reviewedAt": "2026-08-08",
+      "url": "/assets/core/cooking/mdl-ingredient-negi-r4-b1.glb",
+      "sha256": "e730bcdef227330b792a7ec9469146cab46427b12a270b549d2167f552fa5160",
+      "bytes": 5056,
       "format": "glb",
       "companions": [
         {
           "role": "pixel-albedo",
-          "url": "/assets/core/cooking/mdl-ingredient-negi-pixel-albedo-r3-b1.png",
+          "url": "/assets/core/cooking/mdl-ingredient-negi-pixel-albedo-r4-b1.png",
           "sha256": "8712631509a5477d81ab88b6e99dd62ae803225560667cd60ec8d18fe131aa95",
           "bytes": 55025,
           "format": "png",
