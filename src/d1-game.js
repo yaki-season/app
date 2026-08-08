@@ -1496,6 +1496,10 @@ function grillNegimaStage(view) {
   return 'cooking';
 }
 
+// 뒤집는 동안에는 단계 표시를 고정한다. 회전 중 판정이 잠깐 비조리로 보여 'raw'로 튀면
+// 화면·회귀 모두에서 단계가 깜빡인다. 마지막으로 확정된 단계를 들고 있는다.
+const rawNegimaStageBySlot = {};
+
 // 승인 원본 평면에 굽는 셰이더를 입힌다. 셰이더 재질과 승인 번들은 각각 비동기로 준비되므로
 // 양쪽이 다 준비된 시점에 호출한다(재질 로드 완료 시, 그리고 번들 부팅 완료 시).
 function bindCookingMaterialToApprovedPlane(key) {
@@ -1510,6 +1514,8 @@ function bindCookingMaterialToApprovedPlane(key) {
   if (mesh && mesh.material === g.material) {
     mesh.material = new THREE.MeshBasicMaterial({
       transparent: true, opacity: 0, colorWrite: false, depthWrite: false,
+      // 뒤집힌 칸(rotation π)에서도 raycast가 닿아야 회수 클릭이 산다. FrontSide면 뒷면이라 놓친다.
+      side: THREE.DoubleSide,
     });
   }
   return true;
@@ -1545,8 +1551,9 @@ function updateGrillVisual(now) {
     );
     if (rawInstance) {
       rawInstance.holder.visible = showApprovedRaw;
+      if (!v?.flipping) rawNegimaStageBySlot[key] = grillNegimaStage(v);
       if (shaderOnApprovedPlane) rawInstance.setCooking?.(v?.cooking === true);
-      else if (!v?.flipping) rawInstance.setStage(grillNegimaStage(v));
+      else if (!v?.flipping) rawInstance.setStage(rawNegimaStageBySlot[key]);
       // The approved grill artwork is a front-facing 2D sprite. Rotating its zero-thickness
       // plane around Y makes the skewer collapse into a sheet of paper mid-flip. Keep the
       // artwork facing the camera; the cook state still switches contact faces normally.
@@ -1804,7 +1811,8 @@ Object.assign(d1GameDebug, {
       key,
       approvedRawVisible: rawNegimaInstances[key]?.holder.visible === true,
       // 승인 평면은 계속 떠 있고 재질만 바뀌므로, 단계는 평면 상태가 아니라 조리 판정에서 읽는다.
-      approvedStage: grillNegimaStage(cook.slotViews(performance.now())[slotIndexOf(key)]),
+      approvedStage: rawNegimaStageBySlot[key]
+        ?? grillNegimaStage(cook.slotViews(performance.now())[slotIndexOf(key)]),
       shaderCookingActive: rawNegimaInstances[key]?.cookingActive?.() === true,
       visualFlipRadians: rawNegimaInstances[key]?.flipPivot?.rotation?.y ?? null,
       proceduralFallbackVisible: (
