@@ -609,7 +609,7 @@
     },
     {
       "id": "ST-ASSEMBLY-TIER-1",
-      "sourceRevision": 5,
+      "sourceRevision": 6,
       "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-SVC-ASSEMBLY",
@@ -626,18 +626,19 @@
       "anchors": [],
       "clips": [],
       "mirrorSafe": false,
-      "source": "ARTSRC:ST-ASSEMBLY-TIER-1:R5",
-      "provenance": "PROV:ST-ASSEMBLY-TIER-1:R5",
+      "source": "ARTSRC:ST-ASSEMBLY-TIER-1:R6",
+      "provenance": "PROV:ST-ASSEMBLY-TIER-1:R6",
       "license": "YAKI SEASON internal approved artwork",
       "specRefs": [
         "ART-003 v5.9.0",
         "ART-002 v3.6.1",
-        "User approval 2026-08-08: brighter flat cutting board R3"
+        "User approval 2026-08-08: brighter flat cutting board R3",
+        "User-requested fix 2026-08-08: restore clipped tray edge"
       ],
       "reviewedAt": "2026-08-08",
-      "url": "/assets/core/cooking/st-assembly-tier-1-r5-b1.png",
-      "sha256": "7b0038e178e61a486d69859158ca35f5cf3e4530c359f957c74702233d9b729e",
-      "bytes": 1248626,
+      "url": "/assets/core/cooking/st-assembly-tier-1-r6-b1.png",
+      "sha256": "beb4f0fdb6216edf43398b6dc9874d8a04ca0663aaf9818f578d26c961995018",
+      "bytes": 1259531,
       "dimensions": {
         "width": 1920,
         "height": 1080
