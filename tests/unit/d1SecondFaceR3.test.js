@@ -15,6 +15,8 @@ describe('D1 second-face R3 승인 셰이더 계약', () => {
   it('preset은 시간·품질 값을 소유하지 않는다', () => {
     expect(SECOND_FACE_R3_PARAMS).not.toHaveProperty('elapsedSec');
     expect(SECOND_FACE_R3_PARAMS).not.toHaveProperty('doneness');
+    expect(SECOND_FACE_R3_PARAMS.cookedTint[1]).toBeGreaterThanOrEqual(0.9);
+    expect(SECOND_FACE_R3_PARAMS.cookedTint[2]).toBeGreaterThanOrEqual(0.8);
     expect(SECOND_FACE_R3_PARAMS).not.toHaveProperty('quality');
   });
 });

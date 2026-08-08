@@ -155,6 +155,7 @@ export async function createGrillMaterial() {
     .replace(/^precision.*$/m, '');
 
   const { texture, width, height } = makeNegimaTexture();
+  let ownedTexture = texture;
 
   const uniforms = {
     uTex: { value: texture },
@@ -184,6 +185,17 @@ export async function createGrillMaterial() {
     setTime: (sec) => { uniforms.uTime.value = sec; },
     /** 타레 도포량 실시간 조정(선택). */
     setTare: (t) => { uniforms.uTareAmount.value = t; },
+    /** Keep the approved source image and let GLSL change only its cooking colour. */
+    setTexture: (nextTexture) => {
+      if (!nextTexture || uniforms.uTex.value === nextTexture) return;
+      if (ownedTexture) ownedTexture.dispose();
+      ownedTexture = null;
+      uniforms.uTex.value = nextTexture;
+      uniforms.uTexSize.value.set(
+        Number(nextTexture.image?.width ?? width),
+        Number(nextTexture.image?.height ?? height),
+      );
+    },
     /** 런타임 튜너가 파라미터를 바꿀 때 uniform에 반영. */
     setParam: (key, value) => {
       const u = uniforms[cap(key)];
@@ -192,6 +204,6 @@ export async function createGrillMaterial() {
       else if (u.value && u.value.isVector3) u.value.set(value[0], value[1], value[2]);
       else u.value = value;
     },
-    dispose: () => { material.dispose(); texture.dispose(); },
+    dispose: () => { material.dispose(); ownedTexture?.dispose(); },
   };
 }

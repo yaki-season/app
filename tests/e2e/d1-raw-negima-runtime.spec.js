@@ -35,7 +35,7 @@ const REQUIRED_RUNTIME_FILES = Object.freeze([
   '/public/assets/core/cooking/spr-assembly-tray-negima-r1-b1.png',
 ]);
 
-test('approved grill negima sprites exact-load and follow every cooking stage', async ({ page }, testInfo) => {
+test('approved raw grill negima exact-loads and GLSL colours that same image through cooking', async ({ page }, testInfo) => {
   await routeD1ReleaseDefinition(page);
   const responses = new Map();
   page.on('response', (response) => {
@@ -129,14 +129,19 @@ test('approved grill negima sprites exact-load and follow every cooking stage', 
   ]);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
     .toMatchObject({
-      approvedRawVisible: true,
+      approvedRawVisible: false,
       approvedStage: 'cooking',
-      proceduralFallbackVisible: false,
+      shaderColorVisible: true,
+      shaderUsesApprovedRaw: true,
       interactionVisible: true,
     });
   await D(page, 'cookElapse', 8);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].approvedStage)
     .toBe('proper');
+  await page.screenshot({
+    path: testInfo.outputPath(`glsl-proper-${page.viewportSize().width}x${page.viewportSize().height}.png`),
+    fullPage: true,
+  });
   await D(page, 'cookClickSlot', 0);
   await page.waitForTimeout(120);
   await expect.poll(() => D(page, 'cookSlots')).toEqual([
@@ -217,8 +222,15 @@ test('이어하기는 이전 페이지에서 만료된 그릴 잠금을 제거�
   expect(restoredSlot.frontElapsedSec).toBeCloseTo(8, 4);
   expect(restoredSlot.backElapsedSec).toBeGreaterThanOrEqual(8);
 
+  // 다 익은 슬롯이므로 승인 원본 스프라이트가 아니라 GLSL이 그 이미지를 칠한 상태여야 한다.
+  // 입력(회수 클릭)은 어느 쪽이든 살아 있어야 한다.
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
-    .toMatchObject({ approvedRawVisible: true, interactionVisible: true });
+    .toMatchObject({
+      approvedRawVisible: false,
+      shaderColorVisible: true,
+      shaderUsesApprovedRaw: true,
+      interactionVisible: true,
+    });
   const grillSlotKey = (await D(page, 'rawNegimaRuntime')).slots[0].key;
   await expect.poll(() => D(page, 'screenPosOf', grillSlotKey)).not.toBeNull();
   await clickObject(page, grillSlotKey);

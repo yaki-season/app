@@ -25,4 +25,13 @@ describe('grill shader parameters', () => {
     expect(Object.isFrozen(GRILL_PARAMS.rawTint)).toBe(true);
     expect(Object.isFrozen(GRILL_PARAM_RANGES.tareAmount)).toBe(true);
   });
+
+  it('keeps edible negima golden and delays broad burnt colouring', () => {
+    expect(GRILL_PARAMS.cookedTint[1]).toBeGreaterThanOrEqual(0.9);
+    expect(GRILL_PARAMS.cookedTint[2]).toBeGreaterThanOrEqual(0.75);
+    expect(GRILL_PARAMS.cookToBurntEdge[0]).toBeGreaterThanOrEqual(0.8);
+    expect(GRILL_PARAMS.charStartDoneness).toBeGreaterThanOrEqual(0.65);
+    expect(GRILL_PARAMS.charThreshold[1]).toBeGreaterThanOrEqual(0.4);
+    expect(GRILL_PARAMS.tareTintAmount).toBeLessThanOrEqual(0.2);
+  });
 });

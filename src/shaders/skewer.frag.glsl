@@ -28,6 +28,14 @@ uniform float uRawSaturation;
 uniform vec3 uCookedTint;
 uniform float uCookedContrast;
 uniform vec3 uCookedWarmth;
+uniform vec3 uGlazeChickenShadow;
+uniform vec3 uGlazeChickenLight;
+uniform vec3 uGlazeLeekShadow;
+uniform vec3 uGlazeLeekLight;
+uniform float uGlazeAmount;
+uniform float uGlazeLeekRatio;
+uniform vec3 uCaramelShadow;
+uniform vec3 uCaramelLight;
 uniform vec2 uRawToCookEdge;
 uniform vec3 uBurntColor;
 uniform float uBurntLuminance;
@@ -35,6 +43,9 @@ uniform float uBurntMix;
 uniform vec2 uCookToBurntEdge;
 uniform vec3 uCharColor;
 uniform float uCharNoiseScale;
+uniform float uCharBandScale;
+uniform float uCharBandSharpness;
+uniform float uCharBandWeight;
 uniform float uCharStartDoneness;
 uniform vec2 uCharThreshold;
 uniform float uCharSoftness;
@@ -95,12 +106,30 @@ vec3 cookColor(vec3 base, float d) {
     vec3 raw = mix(vec3(lum), base, uRawSaturation) * uRawTint;
 
     // Perfect: 마이야르 반응 — 황갈색으로 굽고 대비를 올린다
-    vec3 done = base * uCookedTint;
-    done = (done - 0.5) * uCookedContrast + 0.5;
-    done += uCookedWarmth * lum;
+    // Preserve the source artwork: chicken becomes amber-golden while leek keeps
+    // its cream/green identity instead of receiving one flat muddy-brown tint.
+    float leek = smoothstep(0.015, 0.14, base.g - base.r);
+    vec3 corrected = base * uCookedTint;
+    corrected = (corrected - 0.5) * uCookedContrast + 0.5;
+    corrected += uCookedWarmth * lum;
 
-    // 탄 상태: 명도를 죽이고 적갈색만 남긴다
-    vec3 burnt = mix(vec3(lum * uBurntLuminance), uBurntColor, uBurntMix);
+    // 목표색을 명도로 보간해 굽힌 윤기를 만든다. 단일 색으로 mix하면 평평해져 식욕이 죽는다.
+    float shade = smoothstep(0.05, 0.74, lum);
+    vec3 chickenGolden = mix(corrected, mix(uGlazeChickenShadow, uGlazeChickenLight, shade), uGlazeAmount);
+    vec3 leekGolden = mix(corrected, mix(uGlazeLeekShadow, uGlazeLeekLight, shade),
+                          uGlazeAmount * uGlazeLeekRatio);
+    vec3 done = mix(chickenGolden, leekGolden, leek);
+
+    // Reference-driven tare caramelisation: sparse glossy red-amber patches,
+    // never a grey coat over the entire skewer.
+    float caramelNoise = fbm(vUv * 11.0 + vec2(3.7, 8.1));
+    float caramel = smoothstep(0.46, 0.78, caramelNoise) * smoothstep(0.34, 0.78, d);
+    float highlightGuard = 1.0 - smoothstep(0.45, 0.96, lum);
+    vec3 caramelColor = mix(uCaramelShadow, uCaramelLight, lum);
+    done = mix(done, caramelColor, caramel * highlightGuard * mix(0.62, 0.20, leek));
+
+    // 탄 상태: 회색으로 탈색하지 않는다. 구워진 색을 눌러 따뜻한 갈색을 남긴다.
+    vec3 burnt = mix(done * uBurntLuminance, uBurntColor, uBurntMix);
 
     // 0 → 0.5 구간과 0.5 → 1 구간을 나눠 보간
     vec3 c = mix(raw, done, smoothstep(uRawToCookEdge.x, uRawToCookEdge.y, d));
@@ -127,7 +156,10 @@ void main() {
         uCharThreshold.y,
         smoothstep(uCharStartDoneness, 1.0, uDoneness)
     );
-    float char = smoothstep(charThreshold, charThreshold + uCharSoftness, n);
+    // 석쇠 살에 닿은 가로 띠에서만 탄다. 전면 노이즈만 쓰면 중앙까지 그을려 탁해진다.
+    float band = pow(abs(sin(vUv.y * uCharBandScale)), uCharBandSharpness);
+    float contact = mix(1.0, band, uCharBandWeight);
+    float char = smoothstep(charThreshold, charThreshold + uCharSoftness, n * contact);
 
     // 가장자리가 먼저 탄다 — 중심에서 멀수록 가중
     float edge = smoothstep(uCharEdgeRange.x, uCharEdgeRange.y, length(vUv - 0.5));

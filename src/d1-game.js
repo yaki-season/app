@@ -150,6 +150,7 @@ let rawNegimaReadiness = runtimeAssets.readiness;
 const rawNegimaRuntime = {
   status: runtimeAssets.GRILL_RAW_BUNDLE ? 'loading' : 'unavailable',
   diagnostics: null,
+  grillRawTexture: null,
   error: null,
 };
 document.body.dataset.rawNegimaBindingStatus = rawNegimaRuntime.status;
@@ -198,6 +199,7 @@ async function bootRawNegimaRuntime() {
     }
     rawNegimaRuntime.status = 'ready';
     rawNegimaRuntime.diagnostics = compositor.diagnostics;
+    rawNegimaRuntime.grillRawTexture = compositor.grillRawTexture;
     rawNegimaReadiness = reportD1RawNegimaExactLoadReadiness(runtimeAssets.manifest);
     publishRawNegimaReadiness(rawNegimaReadiness);
     document.body.dataset.rawNegimaBindingStatus = 'ready';
@@ -1489,6 +1491,7 @@ function updateGrillVisual(now) {
     if (!mesh) continue;
     const g = grillMats[key];
     if (g) {
+      g.setTexture(rawNegimaRuntime.grillRawTexture);
       g.setTime(now / 1000);
       for (const [param, value] of Object.entries(d1SecondFaceR3Params(v))) g.setParam(param, value);
       g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
@@ -1502,6 +1505,7 @@ function updateGrillVisual(now) {
       rawNegimaRuntime.status === 'ready'
       && v != null
       && v.status !== 'empty'
+      && grillNegimaStage(v) === 'raw'
       && director.activeScreenId() === 'SCR-SVC-GRILL'
     );
     if (rawInstance) {
@@ -1766,6 +1770,11 @@ Object.assign(d1GameDebug, {
         R.objectMesh[key]?.visible === true
         && R.objectMesh[key]?.material?.colorWrite !== false
       ),
+      shaderColorVisible: (
+        R.objectMesh[key]?.visible === true
+        && R.objectMesh[key]?.material?.colorWrite !== false
+      ),
+      shaderUsesApprovedRaw: grillMats[key]?.uniforms?.uTex?.value === rawNegimaRuntime.grillRawTexture,
       interactionVisible: (
         R.interactionMesh[key]?.visible
         ?? R.objectMesh[key]?.visible
