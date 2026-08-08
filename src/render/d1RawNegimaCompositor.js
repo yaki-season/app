@@ -208,7 +208,12 @@ function instanceForSlot(sourceRoot, slotMesh, sourceTransform, initialIngredien
   const targetSize = slotMesh.geometry.boundingBox.getSize(new THREE.Vector3());
   const sx = targetSize.x / size.x;
   const sy = targetSize.y / size.y;
-  holder.scale.set(sx, sy, Math.min(sx, sy));
+  if (sourceTransform.fit === 'contain') {
+    const uniformScale = Math.min(sx, sy);
+    holder.scale.setScalar(uniformScale);
+  } else {
+    holder.scale.set(sx, sy, Math.min(sx, sy));
+  }
   holder.position.copy(slotMesh.position);
   holder.quaternion.copy(slotMesh.userData.grillBaseQuaternion ?? slotMesh.quaternion);
   holder.updateMatrixWorld(true);

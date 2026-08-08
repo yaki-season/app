@@ -140,12 +140,25 @@ test('조립대에서 승인 닭·파가 순서대로 쌓이고 완성 네기마
     build: { visible: true, ingredientCount: 0 },
     waitingCount: 0,
   });
+  const emptySkewer = (await D(page, 'assemblyArtRuntime')).build.geometry;
+  expect(emptySkewer.tip.x).toBeGreaterThan(emptySkewer.handle.x);
+  expect(Math.abs(emptySkewer.tip.y - emptySkewer.handle.y)).toBeLessThan(4);
+  expect(emptySkewer.tip.x - emptySkewer.handle.x).toBeGreaterThan(180);
+  expect(emptySkewer.slots.map(({ x }) => x)).toEqual(
+    [...emptySkewer.slots.map(({ x }) => x)].sort((left, right) => left - right),
+  );
 
   for (const [index, key] of ['binChicken', 'binLeek', 'binChicken', 'binLeek', 'binChicken'].entries()) {
     await clickObject(page, key);
     await expect.poll(() => D(page, 'assemblyArtRuntime')).toMatchObject({
       build: { visible: true, ingredientCount: index + 1 },
     });
+    if (index === 2) {
+      await page.screenshot({
+        path: testInfo.outputPath(`assembly-progress-3-${page.viewportSize().width}x${page.viewportSize().height}.png`),
+        fullPage: true,
+      });
+    }
     await page.waitForTimeout(230);
   }
 
@@ -175,6 +188,10 @@ test('조립대에서 승인 닭·파가 순서대로 쌓이고 완성 네기마
     expect.objectContaining({ visible: true, ingredientCount: 5 }),
     expect.objectContaining({ visible: true, ingredientCount: 5 }),
   ]);
+  for (const item of (await D(page, 'assemblyArtRuntime')).tray.slice(0, 2)) {
+    expect(item.geometry.tip.x).toBeGreaterThan(item.geometry.handle.x);
+    expect(Math.abs(item.geometry.tip.y - item.geometry.handle.y)).toBeLessThan(4);
+  }
   await page.screenshot({
     path: testInfo.outputPath(`assembly-approved-art-${page.viewportSize().width}x${page.viewportSize().height}.png`),
     fullPage: true,

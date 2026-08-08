@@ -3,28 +3,32 @@
 
 export const D1_ASSEMBLY_BUILD_SLOT = Object.freeze({
   key: 'assemblyBuildSlot',
-  rect: Object.freeze({ x: 0.495, y: 0.405, width: 0.10, height: 0.29 }),
+  // 승인 검토본의 중심 (1042, 565)과 가로 꼬치 footprint를 따른다.
+  rect: Object.freeze({ x: 0.425, y: 0.445, width: 0.235, height: 0.16 }),
   sourceModelTransform: Object.freeze({
-    horizontalScale: 1.35,
-    verticalScale: 1.08,
-    rootRotationRadians: Object.freeze({ x: -0.035, y: 0.055, z: 0 }),
+    horizontalScale: 1,
+    verticalScale: 1,
+    fit: 'contain',
+    // Local +Y is the skewer length axis. -90° maps handle→tip to left→right.
+    rootRotationRadians: Object.freeze({ x: 0, y: 0, z: -Math.PI / 2 }),
   }),
 });
 
 export const D1_ASSEMBLY_TRAY_SLOTS = Object.freeze(
   Array.from({ length: 6 }, (_, index) => Object.freeze({
     key: `assemblyTraySlot${index}`,
-    // 오른쪽 트레이 안에서 살짝 겹쳐 쌓여 보이도록 배치한다.
+    // 오른쪽 전달 트레이 안에서 평행한 가로 꼬치가 아래로 겹쳐 쌓인다.
     rect: Object.freeze({
-      x: 0.735 + index * 0.036,
-      y: 0.425 + (index % 2) * 0.012,
-      width: 0.09,
-      height: 0.27,
+      x: 0.755 + (index % 2) * 0.004,
+      y: 0.435 + index * 0.035,
+      width: 0.19,
+      height: 0.095,
     }),
     sourceModelTransform: Object.freeze({
-      horizontalScale: 1.35,
-      verticalScale: 1.08,
-      rootRotationRadians: Object.freeze({ x: -0.035, y: 0.055, z: 0 }),
+      horizontalScale: 1,
+      verticalScale: 1,
+      fit: 'contain',
+      rootRotationRadians: Object.freeze({ x: 0, y: 0, z: -Math.PI / 2 }),
     }),
   })),
 );

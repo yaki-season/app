@@ -1022,6 +1022,23 @@ function syncAssemblyVisual() {
   });
 }
 
+function assemblyInstanceGeometry(instance) {
+  if (!instance) return null;
+  instance.root.updateWorldMatrix(true, true);
+  const screenPoint = (name) => {
+    const node = instance.root.getObjectByName(name);
+    if (!node) return null;
+    return R.projectToScreen(node.getWorldPosition(new THREE.Vector3()));
+  };
+  return {
+    handle: screenPoint('handle'),
+    tip: screenPoint('tip'),
+    slots: Array.from({ length: 5 }, (_, index) => (
+      screenPoint(`slot-${String(index + 1).padStart(2, '0')}`)
+    )),
+  };
+}
+
 function renderGrillWaitingControl(slotViews) {
   const onGrill = director.activeScreenId() === 'SCR-SVC-GRILL';
   const waitingCount = cook.waitingCount();
@@ -1671,10 +1688,12 @@ Object.assign(d1GameDebug, {
     build: {
       visible: assemblyNegimaInstances.build?.holder.visible === true,
       ingredientCount: assemblyNegimaInstances.build?.ingredientCount?.() ?? 0,
+      geometry: assemblyInstanceGeometry(assemblyNegimaInstances.build),
     },
     tray: assemblyNegimaInstances.tray.map((instance) => ({
       visible: instance.holder.visible === true,
       ingredientCount: instance.ingredientCount(),
+      geometry: assemblyInstanceGeometry(instance),
     })),
     waitingCount: cook.waitingCount(),
   }),
