@@ -72,12 +72,16 @@ test('레버 아래를 누르고 있으면 맥주가 흐른다 (홀드 배선)',
   await boot(page);
   await go(page, 'SCR-SVC-DRINK');
   await page.evaluate(() => window.__prodDebug.pourState()); // reset 없이 초기 idle
-  const pos = await page.evaluate(() => window.__prodDebug.screenPosOf('drinkLeverLower'));
+  const pos = await page.evaluate(() => window.__prodDebug.screenPosOf('drinkLeverDrag'));
   await page.mouse.move(pos.x, pos.y);
   await page.mouse.down();
+  await page.waitForTimeout(150);
+  let s = await page.evaluate(() => window.__prodDebug.pourState());
+  expect(s.beerSec).toBeCloseTo(0, 2);
+  await page.mouse.move(pos.x, pos.y + 60, { steps: 4 });
   await page.waitForTimeout(400);
   await page.mouse.up();
-  const s = await page.evaluate(() => window.__prodDebug.pourState());
+  s = await page.evaluate(() => window.__prodDebug.pourState());
   expect(s.beerSec).toBeGreaterThan(0.1); // 누른 동안 맥주가 찼다
 });
 

@@ -7,7 +7,7 @@ export const FIRST_ORDER_GUIDE_STATUS = Object.freeze({
 const BASE_STEPS = Object.freeze([
   ['order.accept', '주문 접수', 'SCR-SVC-CUSTOMERS', 'serve-target-seat-01', '츠키오카를 눌러 주문을 받으세요.'],
   ['beer.glass', '빈 잔 놓기', 'SCR-SVC-DRINK', 'glassRack', '빈 잔을 눌러 노즐 아래에 놓으세요.'],
-  ['beer.pour', '생맥주 따르기', 'SCR-SVC-DRINK', 'drinkLeverLower', '아래 레버로 맥주, 위 레버로 거품을 채우세요.'],
+  ['beer.pour', '생맥주 따르기', 'SCR-SVC-DRINK', 'drinkLeverDrag', '중립 레버를 아래로 드래그해 맥주를, 위로 드래그해 거품을 채우세요.'],
   ['beer.finish', '생맥주 완성', 'SCR-SVC-DRINK', 'drink-finish', '완성 버튼을 눌러 생맥주를 준비 목록에 놓으세요.'],
   ['negima.assemble.1', '네기마 1 조립', 'SCR-SVC-ASSEMBLY', 'assembly-ingredient', '닭-파-닭-파-닭 순서로 첫 꼬치를 완성하세요.'],
   ['negima.transfer.1', '네기마 1 트레이 이동', 'SCR-SVC-ASSEMBLY', 'jigSkewer', '완성된 첫 꼬치 자체를 눌러 전달 트레이로 옮기세요.'],

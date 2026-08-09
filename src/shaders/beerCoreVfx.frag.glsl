@@ -21,14 +21,16 @@ float softCircle(vec2 p, vec2 center, float radius) {
 
 void main() {
   vec2 uv = vUv;
-  float wobble = sin(uTime * 15.0 + uv.y * 34.0) * 0.008;
 
   // 노즐에서 잔으로 떨어지는 두 종류의 유체 줄기.
-  float streamX = 0.5 + wobble;
-  float streamBody = 1.0 - smoothstep(0.026, 0.045, abs(uv.x - streamX));
+  float streamX = 0.5;
+  float streamWidth = mix(0.014, 0.017, uPourFoam);
+  float streamBody = 1.0 - smoothstep(streamWidth * 0.62, streamWidth, abs(uv.x - streamX));
   float streamRange = smoothstep(0.47, 0.51, uv.y) * (1.0 - smoothstep(0.91, 0.95, uv.y));
   float stream = streamBody * streamRange * max(uPourBeer, uPourFoam);
-  vec3 streamColor = mix(vec3(0.94, 0.48, 0.06), vec3(1.0, 0.94, 0.72), uPourFoam);
+  vec3 streamColor = mix(vec3(0.98, 0.52, 0.07), vec3(1.0, 0.98, 0.88), uPourFoam);
+  float streamHighlight = (1.0 - smoothstep(0.0015, 0.005, abs(uv.x - (streamX - 0.004))))
+                        * stream * (1.0 - uPourFoam) * 0.32;
 
   // 잔 윗면의 거품 왕관. 서로 다른 크기의 포말이 계속 재배치된다.
   float crown = 0.0;
@@ -57,6 +59,7 @@ void main() {
   mist = clamp(mist, 0.0, 1.0) * uFinished;
 
   vec3 color = streamColor * stream
+             + vec3(1.0, 0.78, 0.26) * streamHighlight
              + vec3(1.0, 0.96, 0.80) * crown
              + vec3(0.78, 0.29, 0.025) * (spill + puddle)
              + vec3(0.92, 0.94, 0.88) * mist;

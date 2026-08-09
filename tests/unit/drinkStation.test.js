@@ -1,6 +1,6 @@
 // 생맥주 따르기 판정 검증 (GPL-004 §41,44,49-2).
 import { describe, it, expect } from 'vitest';
-import { createDrinkPour } from '../../src/render/drinkStation.js';
+import { createDrinkPour, DRINK } from '../../src/render/drinkStation.js';
 
 // 특정 시간만큼 한 존을 흘린다.
 function pour(p, zone, seconds, t0 = 0) {
@@ -10,6 +10,11 @@ function pour(p, zone, seconds, t0 = 0) {
 }
 
 describe('createDrinkPour', () => {
+  it('목표 주입량과 넘침 한계를 분리한다', () => {
+    expect(DRINK.glassCapacity).toBe(4.0);
+    expect(DRINK.totalCap).toBeGreaterThan(DRINK.glassCapacity);
+  });
+
   it('맥주·거품 모두 적정이면 Perfect', () => {
     const p = createDrinkPour();
     let t = pour(p, 'beer', 3.0);

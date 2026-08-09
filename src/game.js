@@ -14,8 +14,9 @@ import { settleDay } from './render/daySettlement.js';
 import { reputationDelta, catalog, buy, effectiveEconomy, ownedEffects, grillUnlockState } from './render/progression.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
+import { drinkLeverZoneForDelta } from './render/drinkLeverDrag.js';
 import { createCookStations } from './render/cookStations.js';
-import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS, GRILL_SLOT_KEYS, DEFAULT_GRILL_SLOTS } from './config/screenLayout.js';
+import { SCREENS, SCREEN_IDS, SCREEN_BY_ID, INITIAL_SCREEN, SCREEN_TRANSITION_MS, OBJECTS, SEAT_IDS, GRILL_SLOT_KEYS, DEFAULT_GRILL_SLOTS, COOKING_ART, DRINK_ART_STATE } from './config/screenLayout.js';
 import { D1_GRILL_SLOTS, D1_GRILL_FINISHED_TRAY } from './config/d1GrillLayout.js';
 import { RECIPE, COOK_THRESHOLDS_SEC, DONENESS, canAdvance } from './config/recipe.js';
 import { loadD1RuntimeAssets } from './assets/runtimeAssetResolver.js';
@@ -87,13 +88,13 @@ const dock = createPreparedDock({ container: el('dockShelf') });
 
 // 생맥주 따르기 (드링크 화면). 레버 아래=맥주, 위=거품 (GPL-004).
 const pour = createDrinkPour();
-const LEVER_ZONE = { drinkLeverLower: 'beer', drinkLeverUpper: 'foam' };
+let activeDrinkLeverDrag = null;
 
 // 더미 오브젝트 이름표 (아트 전 식별용). 활성 화면의 보이는 오브젝트 위에 DOM 텍스트를 얹는다.
 const OBJECT_LABELS = {
   workbench: '조립대', binChicken: '닭', binLeek: '파', jigSkewer: '완성 꼬치',
   grillBody: '숯불 그릴', grillSkewer: '꼬치', grillFinishedTray: '완료 트레이 (개발)',
-  drinkTower: '맥주 타워', glassRack: '잔 랙', drinkLeverUpper: '레버·거품', drinkLeverLower: '레버·맥주',
+  drinkTower: '맥주 타워', glassRack: '잔 랙', drinkLeverDrag: '레버',
 };
 // 큰 고정물은 라벨을 위쪽으로 올려 위에 놓인 조작 대상 라벨과 겹치지 않게 한다(화면 px 오프셋).
 const LABEL_UP = { workbench: 74, grillBody: 74, drinkTower: 46, glassRack: 24 };
@@ -171,16 +172,16 @@ const stampEl = drinkPanel.querySelector('.stamp');
 const finishBtn = drinkPanel.querySelector('[data-act="finish"]');
 const overflowEl = drinkPanel.querySelector('.drink-overflow');
 const GLASS_PX = 150;
-// 기준선: 목표 총 채움 4.0초를 cap(4.7) 대비 높이로 (한 번만).
-drinkPanel.querySelector('.target-line').style.bottom = `${(4.0 / DRINK.totalCap) * GLASS_PX}px`;
+// 목표량에 도달하면 잔이 시각적으로도 가득 찬다.
+drinkPanel.querySelector('.target-line').style.bottom = `${GLASS_PX}px`;
 
 function updateDrinkPanel(activeScreen) {
   const show = activeScreen === 'SCR-SVC-DRINK';
   drinkPanel.hidden = !show;
   if (!show) return;
   const s = pour.state();
-  const beerH = Math.min(1, s.beerSec / DRINK.totalCap) * GLASS_PX;
-  const foamH = Math.min(1, s.foamSec / DRINK.totalCap) * GLASS_PX;
+  const beerH = Math.min(1, s.beerSec / DRINK.glassCapacity) * GLASS_PX;
+  const foamH = Math.min(1 - beerH / GLASS_PX, s.foamSec / DRINK.glassCapacity) * GLASS_PX;
   beerEl.style.height = `${beerH}px`;
   foamEl.style.height = `${foamH}px`;
   foamEl.style.bottom = `${beerH}px`;
@@ -313,12 +314,36 @@ function hitTest(e) {
   return hit ? hit.object.userData.objectKey : null;
 }
 
+function setDrinkLeverDragZone(zone, now) {
+  if (!activeDrinkLeverDrag || activeDrinkLeverDrag.zone === zone) return;
+  pour.release(now);
+  if (zone) pour.press(zone, now);
+  activeDrinkLeverDrag.zone = zone;
+  const companion = zone === 'beer'
+    ? DRINK_ART_STATE.leverBeer
+    : zone === 'foam'
+      ? DRINK_ART_STATE.leverFoam
+      : DRINK_ART_STATE.leverNeutral;
+  R.setObjectTexture?.('drinkStation', COOKING_ART.drinkStation, companion);
+}
+
+function updateDrinkLeverDrag(e) {
+  if (!activeDrinkLeverDrag || e.pointerId !== activeDrinkLeverDrag.pointerId) return;
+  const zone = drinkLeverZoneForDelta(e.clientY - activeDrinkLeverDrag.startY);
+  setDrinkLeverDragZone(zone, performance.now());
+}
+
 canvas.addEventListener('pointerdown', (e) => {
   if (director.controlsLocked()) return; // 전환 중 새 화면 조작 잠금 (§71)
   const key = hitTest(e);
   if (!key) return;
   const now = performance.now();
-  if (LEVER_ZONE[key]) { pour.press(LEVER_ZONE[key], now); return; } // 누르는 동안 흐름
+  if (key === 'drinkLeverDrag') {
+    activeDrinkLeverDrag = { pointerId: e.pointerId, startY: e.clientY, zone: null };
+    canvas.setPointerCapture?.(e.pointerId);
+    e.preventDefault();
+    return;
+  }
   // 정리 필요 좌석은 3초 홀드 (§7-1). 누르는 동안 게이지가 찬다.
   if (key.startsWith('seatServe:')) {
     const seatId = key.slice('seatServe:'.length);
@@ -330,9 +355,19 @@ canvas.addEventListener('pointerdown', (e) => {
   handle(key, now);
 });
 // 손을 떼면 흐름 정지 (§38). 정리 홀드는 3초 충족 시 완료, 아니면 취소(§7-3).
-function releasePointers() {
+canvas.addEventListener('pointermove', updateDrinkLeverDrag);
+function releasePointers(e) {
   const now = performance.now();
-  pour.release(now);
+  if (activeDrinkLeverDrag && (!e || e.pointerId === activeDrinkLeverDrag.pointerId)) {
+    setDrinkLeverDragZone(null, now);
+    if (canvas.hasPointerCapture?.(activeDrinkLeverDrag.pointerId)) {
+      canvas.releasePointerCapture(activeDrinkLeverDrag.pointerId);
+    }
+    activeDrinkLeverDrag = null;
+  } else {
+    pour.release(now);
+  }
+  R.setObjectTexture?.('drinkStation', COOKING_ART.drinkStation, DRINK_ART_STATE.leverNeutral);
   if (cleanupHold && ops) {
     if (now - cleanupHold.startMs >= ops.cfg.cleanupMs) { ops.cleanup(cleanupHold.seatId); showHint('정리 완료'); }
     cleanupHold = null;

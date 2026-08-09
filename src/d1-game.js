@@ -14,6 +14,7 @@ import {
   createD1CookStations,
 } from './render/cookStations.js';
 import { createDrinkPour, DRINK } from './render/drinkStation.js';
+import { drinkLeverZoneForDelta } from './render/drinkLeverDrag.js';
 import { createBeerLiquidMaterial } from './render/beerLiquidMaterial.js';
 import { createBeerCoreVfxMaterial } from './render/beerCoreVfxMaterial.js';
 import { createPreparedDock } from './render/preparedDock.js';
@@ -395,7 +396,7 @@ createBeerCoreVfxMaterial().then((controller) => {
   mesh.material = controller.material;
   mesh.renderOrder = 22;
 }).catch((error) => console.error('맥주 코어 VFX 셰이더 로드 실패:', error));
-const LEVER_ZONE = { drinkLeverLower: 'beer', drinkLeverUpper: 'foam' };
+let activeDrinkLeverDrag = null;
 const customers = createCustomerAdapter({ renderer: R, container: el('bubbleLayer') });
 
 function persistFirstOrderRuntime() {
@@ -440,8 +441,7 @@ const CLICKABLE = new Set([
   ...SLOT_KEYS,
   'grillFinishedTray',
   'glassRack',
-  'drinkLeverUpper',
-  'drinkLeverLower',
+  'drinkLeverDrag',
 ]);
 
 // ── D1BusinessDayUiPort 화면 소비 상태 ───────────────────────
@@ -818,7 +818,7 @@ const OBJECT_LABELS = {
   workbench: '조립대', binChicken: '닭', binLeek: '파', jigSkewer: '완성 꼬치',
   grillBody: '숯불 그릴', grillWaitTray: '대기', grillFinishedTray: '완료 트레이 (개발)',
   drinkTower: '맥주 타워', glassRack: '빈잔 놓기',
-  drinkLeverUpper: '레버·거품', drinkLeverLower: '레버·맥주',
+  drinkLeverDrag: '레버',
 };
 const LABEL_UP = { workbench: 74, grillBody: 74, drinkTower: 46, glassRack: 24 };
 const labelEls = {};
@@ -854,7 +854,7 @@ const stampEl = drinkPanel.querySelector('.stamp');
 const finishBtn = drinkPanel.querySelector('[data-act="finish"]');
 const overflowEl = drinkPanel.querySelector('.drink-overflow');
 const GLASS_PX = 150;
-drinkPanel.querySelector('.target-line').style.bottom = `${(4.0 / DRINK.totalCap) * GLASS_PX}px`;
+drinkPanel.querySelector('.target-line').style.bottom = `${GLASS_PX}px`;
 
 function updateDrinkPanel(activeScreen) {
   const show = activeScreen === 'SCR-SVC-DRINK';
@@ -864,19 +864,19 @@ function updateDrinkPanel(activeScreen) {
   drinkPanel.hidden = !show;
   const s = pour.state();
   beerLiquid?.setState({
-    beerFill: s.beerSec / DRINK.totalCap,
-    foamFill: s.foamSec / DRINK.totalCap,
+    beerFill: s.beerSec / DRINK.glassCapacity,
+    foamFill: s.foamSec / DRINK.glassCapacity,
     overflow: s.phase === 'overflow',
   });
   beerCoreVfx?.setState({
     active: s.active,
-    foamFill: s.foamSec / DRINK.totalCap,
+    foamFill: s.foamSec / DRINK.glassCapacity,
     overflow: s.phase === 'overflow',
     finished: s.phase === 'ready' && s.beerOk && s.foamOk,
   });
   if (!show) return;
-  const beerH = Math.min(1, s.beerSec / DRINK.totalCap) * GLASS_PX;
-  const foamH = Math.min(1, s.foamSec / DRINK.totalCap) * GLASS_PX;
+  const beerH = Math.min(1, s.beerSec / DRINK.glassCapacity) * GLASS_PX;
+  const foamH = Math.min(1 - beerH / GLASS_PX, s.foamSec / DRINK.glassCapacity) * GLASS_PX;
   beerEl.style.height = `${beerH}px`;
   foamEl.style.height = `${foamH}px`;
   foamEl.style.bottom = `${beerH}px`;
@@ -1341,22 +1341,41 @@ function hitTest(e) {
   const hit = raycaster.intersectObjects(targets, false)[0];
   return hit ? hit.object.userData.objectKey : null;
 }
+
+function setDrinkLeverDragZone(zone, now) {
+  if (!activeDrinkLeverDrag || activeDrinkLeverDrag.zone === zone) return;
+  pour.release(now);
+  if (zone) pour.press(zone, now);
+  activeDrinkLeverDrag.zone = zone;
+  const companion = zone === 'beer'
+    ? DRINK_ART_STATE.leverBeer
+    : zone === 'foam'
+      ? DRINK_ART_STATE.leverFoam
+      : DRINK_ART_STATE.leverNeutral;
+  R.setObjectTexture?.('drinkStation', COOKING_ART.drinkStation, companion);
+}
+
+function updateDrinkLeverDrag(e) {
+  if (!activeDrinkLeverDrag || e.pointerId !== activeDrinkLeverDrag.pointerId) return;
+  const zone = drinkLeverZoneForDelta(e.clientY - activeDrinkLeverDrag.startY);
+  setDrinkLeverDragZone(zone, performance.now());
+}
+
 canvas.addEventListener('pointerdown', (e) => {
   if (director.controlsLocked()) return;
   const key = hitTest(e);
   if (!key) return;
   const now = performance.now();
-  if (LEVER_ZONE[key]) {
+  if (key === 'drinkLeverDrag') {
     if (!glassPlaced) {
       reportGuideInvalid('빈 잔을 먼저 놓아야 레버를 사용할 수 있습니다.');
       showHint('빈 잔을 먼저 놓으세요');
       render();
       return;
     }
-    R.setObjectTexture?.('drinkStation', COOKING_ART.drinkStation, LEVER_ZONE[key] === 'beer'
-      ? DRINK_ART_STATE.leverBeer
-      : DRINK_ART_STATE.leverFoam);
-    pour.press(LEVER_ZONE[key], now);
+    activeDrinkLeverDrag = { pointerId: e.pointerId, startY: e.clientY, zone: null };
+    canvas.setPointerCapture?.(e.pointerId);
+    e.preventDefault();
     return;
   }
   if (key.startsWith('seatServe:')) {
@@ -1371,8 +1390,18 @@ canvas.addEventListener('pointerdown', (e) => {
   }
   invokeLockedControl(key, now);
 });
-function releasePointers() {
-  pour.release(performance.now());
+canvas.addEventListener('pointermove', updateDrinkLeverDrag);
+function releasePointers(e) {
+  const now = performance.now();
+  if (activeDrinkLeverDrag && (!e || e.pointerId === activeDrinkLeverDrag.pointerId)) {
+    setDrinkLeverDragZone(null, now);
+    if (canvas.hasPointerCapture?.(activeDrinkLeverDrag.pointerId)) {
+      canvas.releasePointerCapture(activeDrinkLeverDrag.pointerId);
+    }
+    activeDrinkLeverDrag = null;
+  } else {
+    pour.release(now);
+  }
   R.setObjectTexture?.('drinkStation', COOKING_ART.drinkStation, DRINK_ART_STATE.leverNeutral);
   const drink = pour.state();
   if (drink.beerSec > 0 && drink.foamSec > 0) {

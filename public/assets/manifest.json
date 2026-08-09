@@ -1407,7 +1407,7 @@
     {
       "id": "MDL-BEER-LEVER",
       "sourceRevision": 1,
-      "runtimeBuild": 1,
+      "runtimeBuild": 2,
       "status": "approved",
       "screenUnit": "SCR-SVC-DRINK",
       "profile": "state-raster",
@@ -1440,10 +1440,10 @@
         "ART-003 v5.8.0",
         "Artist 3 task 025 MDL-BEER-LEVER R1"
       ],
-      "reviewedAt": "2026-08-03",
-      "url": "/assets/core/drink/mdl-beer-lever-neutral-r1-b1.png",
-      "sha256": "17b4091b89735679949ed2bd7bb73d8567111954dd96ec50cbc09c1d03ad1ceb",
-      "bytes": 194337,
+      "reviewedAt": "2026-08-09",
+      "url": "/assets/core/drink/mdl-beer-lever-neutral-r1-b2.png",
+      "sha256": "cd21e1cd4b57fb2b4adccd1570ee36fd70963b7da5521b1be9f4b6059bd1495c",
+      "bytes": 259891,
       "dimensions": {
         "width": 1920,
         "height": 1080
@@ -1452,9 +1452,9 @@
       "companions": [
         {
           "role": "lever-beer",
-          "url": "/assets/core/drink/mdl-beer-lever-beer-r1-b1.png",
-          "sha256": "272dedeecb2d54b9b3f53250df54a2d6a8fc34f2457e19bf0d06e251deb0fea4",
-          "bytes": 195610,
+          "url": "/assets/core/drink/mdl-beer-lever-beer-r1-b2.png",
+          "sha256": "376c9390e5f733ceb8e12d9823be28b5a0d8999ecba11cbfd44311891feb0f00",
+          "bytes": 260204,
           "format": "png",
           "dimensions": {
             "width": 1920,
@@ -1463,9 +1463,9 @@
         },
         {
           "role": "lever-foam",
-          "url": "/assets/core/drink/mdl-beer-lever-foam-r1-b1.png",
-          "sha256": "08170f39edaca70cf140852080c273adbb3463fc6d98fc40bc0cf742bc520736",
-          "bytes": 194537,
+          "url": "/assets/core/drink/mdl-beer-lever-foam-r1-b2.png",
+          "sha256": "70a556252bcef80ce2044bcb2be53ab4b5a19de89e4cd2ed1a45961cd4d4912b",
+          "bytes": 259532,
           "format": "png",
           "dimensions": {
             "width": 1920,
