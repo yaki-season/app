@@ -23,12 +23,14 @@ export const GRILL_PARAMS = freezeParams({
   glazeLeekLight: [1.00, 1.00, 0.604],
   // 값은 모두 선형 공간이다. three가 sRGB 텍스처를 하드웨어 디코드해 넘기고 셰이더가
   // 출력에서만 다시 인코딩하므로, 의도한 sRGB 색을 선형으로 변환해 둔다.
-  glazeAmount: 0.62,
+  glazeAmount: 0.85,
   glazeLeekRatio: 0.42,
   // 타레가 눌어붙은 자국. 거의 검은 얼룩이 아니라 붉은 호박색 윤기여야 한다.
   caramelShadow: [0.263, 0.033, 0.005],
   caramelLight: [0.748, 0.147, 0.013],
-  rawToCookEdge: [0.0, 0.55],
+  // 적정(uDoneness 0.5)에서 다 익은 색에 도달한다. 그 뒤로는 캐러멜·그을음·탄색이 이어받아
+  // 계속 변한다. 이 상한을 늘리면 적정까지 색이 거의 안 변해 '안 익는다'로 보인다.
+  rawToCookEdge: [0.0, 0.5],
   // 탄 상태도 회색으로 탈색하지 않고 따뜻한 갈색을 남긴다.
   burntColor: [0.030, 0.0075, 0.0029],
   burntLuminance: 0.34,
