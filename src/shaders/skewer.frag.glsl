@@ -114,7 +114,7 @@ vec3 cookColor(vec3 base, float d) {
     corrected += uCookedWarmth * lum;
 
     // 목표색을 명도로 보간해 굽힌 윤기를 만든다. 단일 색으로 mix하면 평평해져 식욕이 죽는다.
-    float shade = smoothstep(0.05, 0.74, lum);
+    float shade = smoothstep(0.015, 0.42, lum);
     vec3 chickenGolden = mix(corrected, mix(uGlazeChickenShadow, uGlazeChickenLight, shade), uGlazeAmount);
     vec3 leekGolden = mix(corrected, mix(uGlazeLeekShadow, uGlazeLeekLight, shade),
                           uGlazeAmount * uGlazeLeekRatio);
@@ -137,15 +137,17 @@ vec3 cookColor(vec3 base, float d) {
     return c;
 }
 
-// 승인 아트는 sRGB로 인코딩돼 있다. 원시 ShaderMaterial은 three의 자동 변환을 타지 않으므로
-// 여기서 선형으로 풀어 계산하고, 출력 직전에 다시 sRGB로 인코딩한다. 그러지 않으면 이중
-// 인코딩이 되어 굽기 전부터 과포화·적색 편향이 생기고 생파의 녹색이 사라진다.
-vec3 srgbToLinear(vec3 c) { return pow(max(c, vec3(0.0)), vec3(2.2)); }
-vec3 linearToSrgb(vec3 c) { return pow(max(c, vec3(0.0)), vec3(1.0 / 2.2)); }
+// three는 sRGB 텍스처를 SRGB8_ALPHA8로 올리므로 texture()는 이미 선형값을 준다. 반면 원시
+// ShaderMaterial 출력에는 색공간 변환을 걸어주지 않는다. 따라서 계산은 선형에서 하고 출력만
+// sRGB로 인코딩해야 doneness 0에서 승인 원본 재질과 픽셀이 일치한다. 이게 어긋나면 굽기
+// 시작 순간 재질이 교체되며 색이 튄다.
+vec3 linearToSrgb(vec3 c) {
+    c = max(c, vec3(0.0));
+    return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
+}
 
 void main() {
     vec4 tex = texture(uTex, vUv);
-    tex.rgb = srgbToLinear(tex.rgb);
 
     // 배경(투명 픽셀)은 건드리지 않는다
     if (tex.a < 0.01) {
