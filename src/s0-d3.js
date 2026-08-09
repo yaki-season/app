@@ -38,6 +38,8 @@ const visualTitle = document.querySelector('#visual-title');
 const visualDescription = document.querySelector('#visual-description');
 const portrait = document.querySelector('#portrait-placeholder');
 const storyPortrait = document.querySelector('#story-portrait');
+const storyIllustration = document.querySelector('#story-illustration');
+const storyBackground = document.querySelector('#story-background');
 const content = document.querySelector('#content-panel');
 const actions = document.querySelector('#actions');
 const visualPlaceholder = document.querySelector('#visual-placeholder');
@@ -54,6 +56,71 @@ let returnMode = null;
 let dayId = 'S0';
 let campaignBridge = null;
 let approvedRuntimeAssets = new Map();
+
+const STORY_BACKGROUND_ASSET_IDS = Object.freeze({
+  S0: 'BG-EXTERIOR-S0-GATE-OPEN',
+  DEFAULT: 'BG-INTERIOR-BASE',
+});
+const S0_STORY_ILLUSTRATION_ASSET_ID = 'IL-S0-AKI-REOPENED-SHOP';
+const STORY_ILLUSTRATION_BY_DIALOGUE_ID = Object.freeze({
+  'DLG-D1-PRE-001': Object.freeze({
+    assetId: 'IL-D1-PREOPEN-AKI',
+    alt: '영업을 앞두고 첫 손님을 기다리는 아사노 아키',
+  }),
+  'DLG-D1-PRE-002': Object.freeze({
+    assetId: 'IL-D1-PREOPEN-TSUKIOKA',
+    alt: '다시 문을 연 가게를 찾아온 츠키오카 세이지',
+  }),
+});
+
+function hideStoryIllustration() {
+  storyIllustration.hidden = true;
+  storyIllustration.removeAttribute('src');
+  delete document.body.dataset.storyIllustrationAssetId;
+}
+
+function renderStoryIllustration(activeDayId, dialogueId) {
+  const binding = activeDayId === 'S0'
+    ? { assetId: S0_STORY_ILLUSTRATION_ASSET_ID, alt: '비 갠 밤, 다시 연 가게 앞에 선 아사노 아키' }
+    : STORY_ILLUSTRATION_BY_DIALOGUE_ID[dialogueId];
+  if (!binding) {
+    hideStoryIllustration();
+    return false;
+  }
+  const asset = resolveApprovedRuntimeAsset(approvedRuntimeAssets, binding.assetId);
+  if (!asset) {
+    hideStoryIllustration();
+    return false;
+  }
+  storyIllustration.src = asset.url;
+  storyIllustration.alt = binding.alt;
+  storyIllustration.hidden = false;
+  document.body.dataset.storyIllustrationAssetId = asset.id;
+  return true;
+}
+
+function hideStoryBackground() {
+  storyBackground.hidden = true;
+  storyBackground.removeAttribute('src');
+  storyBackground.removeAttribute('data-required-asset-id');
+  delete document.body.dataset.storyBackgroundAssetId;
+}
+
+function renderStoryBackground(activeDayId) {
+  const requiredAssetId = activeDayId === 'S0'
+    ? STORY_BACKGROUND_ASSET_IDS.S0
+    : STORY_BACKGROUND_ASSET_IDS.DEFAULT;
+  const asset = resolveApprovedRuntimeAsset(approvedRuntimeAssets, requiredAssetId);
+  if (!asset) {
+    hideStoryBackground();
+    return;
+  }
+  storyBackground.src = asset.url;
+  storyBackground.dataset.requiredAssetId = asset.id;
+  storyBackground.alt = activeDayId === 'S0' ? '비 갠 밤의 가게 외관' : '밤의 야키토리 가게 내부';
+  storyBackground.hidden = false;
+  document.body.dataset.storyBackgroundAssetId = asset.id;
+}
 
 function hideStoryPortrait() {
   storyPortrait.hidden = true;
@@ -232,6 +299,8 @@ function renderS0() {
     : '정식 S0 아트는 Artist 023 handoff 전까지 단순 도형으로 표시합니다.';
   portrait.hidden = true;
   hideStoryPortrait();
+  hideStoryIllustration();
+  hideStoryBackground();
   if (exteriorBackgroundBinding) {
     renderS0ExteriorBackground(exteriorBackgroundBinding, binding);
   } else {
@@ -282,7 +351,9 @@ function renderStory() {
   visualTitle.textContent = `${speaker.displayName} · 이야기 초상`;
   visualDescription.textContent = speaker.id === FIXED_CHARACTER.AKI.id
     ? '승인된 CH-AKI-STORY 초상입니다.'
-    : `${story.sourceMasterId} 교체 전 semantic placeholder입니다.`;
+    : speaker.id === FIXED_CHARACTER.TSUKIOKA.id
+      ? '승인된 CH-TSUKIOKA-STORY 초상입니다.'
+      : `${story.sourceMasterId} 교체 전 semantic placeholder입니다.`;
   for (const name of [
     'componentId',
     'requiredAssetId',
@@ -305,7 +376,15 @@ function renderStory() {
   interactionVisual.hidden = true;
   interactionVisual.removeAttribute('src');
   interactionVisual.removeAttribute('style');
-  renderStoryPortrait(speaker, line.dialogueId);
+  if (renderStoryIllustration(story.dayId, line.dialogueId)) {
+    hideStoryBackground();
+    hideStoryPortrait();
+    developmentLabel.hidden = true;
+    visualPlaceholder.dataset.assetMode = 'approved';
+  } else {
+    renderStoryBackground(story.dayId);
+    renderStoryPortrait(speaker, line.dialogueId);
+  }
   setIds({ screen: story.screenId, state: `${story.dayId}-${story.timing}`, scene: story.sceneId, dialogue: line.dialogueId });
   content.innerHTML = `<p class="speaker">${speaker.displayName}</p><p class="dialogue">${line.text}</p><p>${lineIndex + 1} / ${story.lines.length}</p>`;
   const nextLabel = lineIndex === story.lines.length - 1 ? '장면 완료' : '다음 대사';
@@ -354,6 +433,8 @@ function renderSummary() {
   visualDescription.textContent = '이야기를 건너뛰어도 진행 정보는 세 줄 안에 유지됩니다.';
   portrait.hidden = true;
   hideStoryPortrait();
+  hideStoryIllustration();
+  renderStoryBackground(story.dayId);
   setIds({ screen: story.screenId, state: `${story.dayId}-skip-summary`, scene: story.sceneId, dialogue: 'SUMMARY-3-LINES' });
   content.innerHTML = `<h2>3줄 요약</h2><ol class="summary">${story.skipSummary.map((line) => `<li>${line}</li>`).join('')}</ol>`;
   actions.replaceChildren(button('요약 확인', async () => {
@@ -369,6 +450,8 @@ function renderBusiness() {
   visualDescription.textContent = '플레이어 손·팔·몸을 표시하지 않습니다. 실제 영업은 개발자 1 공개 port 연결 뒤 교체됩니다.';
   portrait.hidden = true;
   hideStoryPortrait();
+  hideStoryIllustration();
+  hideStoryBackground();
   setIds({ screen: 'SCR-SVC-CUSTOMERS', state: `${dayId}-business-placeholder`, scene: 'none', dialogue: 'none' });
   content.innerHTML = '<h2><span class="development-label">개발 중</span> 영업 결과 대기</h2><p>오디오 없이 주문·위험·결과를 텍스트와 비색상 표식으로 전달할 자리입니다.</p>';
   actions.replaceChildren(button('영업 결과 보기', () => {
@@ -382,6 +465,8 @@ function renderSettlement() {
   heading.textContent = `${dayId} · 정산`;
   visualTitle.textContent = '아사노 아키 · 정산 초상';
   visualDescription.textContent = '승인된 CH-AKI-STORY 초상과 정산 결과를 함께 표시합니다.';
+  hideStoryIllustration();
+  renderStoryBackground(dayId);
   renderStoryPortrait(FIXED_CHARACTER.AKI, 'DLG-D1-POST-002');
   setIds({ screen: 'SCR-POST-SETTLEMENT', state: `${dayId}-settlement-placeholder`, scene: 'none', dialogue: 'none' });
   content.innerHTML = '<h2><span class="development-label">개발 중</span> 오늘의 변화</h2><p>주문 → 품질·기다림 → 매출·팁 → 명성 → 다음 변화 순서로 표시합니다.</p>';
@@ -399,6 +484,8 @@ function renderComplete() {
   visualDescription.textContent = 'D4 연결은 developer-2/005 범위이므로 이 화면에서 시작하지 않습니다.';
   portrait.hidden = true;
   hideStoryPortrait();
+  hideStoryIllustration();
+  hideStoryBackground();
   setIds({ screen: 'SCR-POST-NEXT-GOAL', state: 'D3-complete', scene: 'none', dialogue: 'none' });
   content.innerHTML = '<h2>S0~D3 확인 완료</h2><p>아사노 아키와 츠키오카 세이지만 고정 인물로 사용했고, 다른 손님은 이름 없는 엑스트라 유형으로 유지했습니다.</p>';
   actions.replaceChildren(button('처음부터 다시 보기', async () => {
@@ -415,6 +502,8 @@ function renderCampaignError(error) {
   visualDescription.textContent = '진행 상태를 덮어쓰지 않았습니다.';
   portrait.hidden = true;
   hideStoryPortrait();
+  hideStoryIllustration();
+  hideStoryBackground();
   setIds({ screen: 'SCR-SYS-RECOVERY', state: 'campaign-error', scene: 'none', dialogue: 'none' });
   const title = document.createElement('h2');
   title.textContent = '진행을 계속할 수 없습니다';
