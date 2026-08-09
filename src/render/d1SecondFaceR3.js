@@ -6,8 +6,8 @@ export const SECOND_FACE_R3_PARAMS = Object.freeze({
   // 뒷면도 raw 단계는 승인 원본과 같아야 재질 교체가 눈에 띄지 않는다.
   rawTint: Object.freeze([1.0, 1.0, 1.0]),
   rawSaturation: 1.0,
-  cookedTint: Object.freeze([1.06, 0.98, 0.86]),
-  cookedWarmth: Object.freeze([0.045, 0.016, 0.0]),
+  cookedTint: Object.freeze([1.03, 0.96, 0.82]),
+  cookedWarmth: Object.freeze([0.035, 0.014, 0.0]),
 });
 
 export function d1SecondFaceR3Params(view) {

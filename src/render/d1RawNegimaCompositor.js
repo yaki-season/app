@@ -592,8 +592,7 @@ export async function createD1RawNegimaCompositor({
     });
     return Object.freeze({
       diagnostics,
-      // D1 cooking uses this approved raw sprite as the immutable shader source.
-      // Legacy cooked sprites remain in the bundle for compatibility/audit only.
+      // All five approved planes remain available for exact stage switching.
       grillRawTexture: stageTextures.raw,
       createInstance: (slotMesh, sourceTransform) => (
         grillSpriteInstanceForSlot(stageTextures, slotMesh, sourceTransform)

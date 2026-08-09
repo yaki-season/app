@@ -98,7 +98,7 @@ describe('작업 011 D1 cookStations 핵심 acceptance', () => {
     expect(cook.waitingCount()).toBe(1);
   });
 
-  it('D1은 2칸/batch2이며 첫 꼬치는 time0 staged, 둘째 배치 시각에 두 칸이 함께 시작한다', () => {
+  it('D1은 2칸이며 각 꼬치를 놓는 시각부터 서로 독립적으로 굽는다', () => {
     const cook = createD1CookStations();
     expect(cook.slotCount()).toBe(2);
 
@@ -107,29 +107,19 @@ describe('작업 011 D1 cookStations 핵심 acceptance', () => {
     assemble(cook);
     cook.transferAssembly();
 
-    expect(cook.placeToGrill(1_000)).toMatchObject({
-      slot: 0,
-      staged: true,
-      batchStarted: false,
-      remainingForBatch: 1,
-    });
-    expect(cook.slotViews(50_000)[0]).toMatchObject({
-      status: 'staged',
-      cooking: false,
-      frontElapsedSec: 0,
+    expect(cook.placeToGrill(1_000)).toEqual({ ok: true, slot: 0 });
+    expect(cook.slotViews(5_000)[0]).toMatchObject({
+      status: 'front',
+      cooking: true,
+      frontElapsedSec: 4,
       backElapsedSec: 0,
     });
 
-    expect(cook.placeToGrill(5_000)).toMatchObject({
-      slot: 1,
-      staged: false,
-      batchStarted: true,
-      startedSlots: [0, 1],
-    });
+    expect(cook.placeToGrill(5_000)).toEqual({ ok: true, slot: 1 });
     expect(cook.slotViews(5_000)).toEqual([
-      expect.objectContaining({ status: 'front', cooking: true, frontElapsedSec: 0 }),
+      expect.objectContaining({ status: 'front', cooking: true, frontElapsedSec: 4 }),
       expect.objectContaining({ status: 'front', cooking: true, frontElapsedSec: 0 }),
     ]);
-    expect(cook.slotViews(13_000).map(({ frontElapsedSec }) => frontElapsedSec)).toEqual([8, 8]);
+    expect(cook.slotViews(13_000).map(({ frontElapsedSec }) => frontElapsedSec)).toEqual([12, 8]);
   });
 });

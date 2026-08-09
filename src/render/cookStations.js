@@ -44,27 +44,14 @@ function qualityFor(frontResult, backResult) {
 export function createCookStations({
   slots = 1,
   recipe = RECIPE,
-  initialBatchSize = 1,
   explicitAssemblyTransfer = false,
 } = {}) {
   const normalizedSlotCount = Math.max(1, slots);
-  if (
-    !Number.isInteger(initialBatchSize)
-    || initialBatchSize < 1
-    || initialBatchSize > normalizedSlotCount
-  ) {
-    throw new TypeError('initialBatchSize는 1 이상 전체 그릴 칸 이하의 정수여야 합니다.');
-  }
   let assembly = { index: 0, complete: false };
   let assembledCount = 0;
   let transferredCount = 0;
   let waiting = 0;
   let grill = Array.from({ length: normalizedSlotCount }, () => emptySlot());
-  let initialBatch = {
-    required: initialBatchSize,
-    placed: 0,
-    started: initialBatchSize === 1,
-  };
 
   function emptySlot() {
     return {
@@ -143,43 +130,14 @@ export function createCookStations({
     const index = freeSlotIndex();
     if (index < 0) return { ok: false, reason: 'no-slot' };
     waiting -= 1;
-    const stagingInitialBatch = !initialBatch.started;
     grill[index] = {
       ...emptySlot(),
-      status: stagingInitialBatch ? 'staged' : FACE.FRONT,
+      status: FACE.FRONT,
       orientationFaceDown: FACE.FRONT,
-      contactFace: stagingInitialBatch ? null : FACE.FRONT,
-      lastUpdatedAt: stagingInitialBatch ? null : now,
+      contactFace: FACE.FRONT,
+      lastUpdatedAt: now,
     };
-    if (!stagingInitialBatch) return { ok: true, slot: index, batchStarted: false };
-
-    initialBatch.placed += 1;
-    if (initialBatch.placed < initialBatch.required) {
-      return {
-        ok: true,
-        slot: index,
-        staged: true,
-        batchStarted: false,
-        remainingForBatch: initialBatch.required - initialBatch.placed,
-      };
-    }
-
-    const startedSlots = [];
-    grill.forEach((slot, slotIndex) => {
-      if (slot.status !== 'staged') return;
-      slot.status = FACE.FRONT;
-      slot.contactFace = FACE.FRONT;
-      slot.lastUpdatedAt = now;
-      startedSlots.push(slotIndex);
-    });
-    initialBatch.started = true;
-    return {
-      ok: true,
-      slot: index,
-      staged: false,
-      batchStarted: true,
-      startedSlots,
-    };
+    return { ok: true, slot: index };
   }
 
   function currentElapsedSec(slot) {
@@ -189,8 +147,7 @@ export function createCookStations({
   function nextActionFor(slot, now) {
     if (!slot || slot.status === 'empty') return COOK_SLOT_NEXT_ACTION.NONE;
     if (
-      slot.status === 'staged'
-      || slot.flip
+      slot.flip
       || now < slot.inputLockedUntil
       || !slot.contactFace
     ) {
@@ -380,7 +337,6 @@ export function createCookStations({
       transferredCount,
       waiting,
       grill,
-      initialBatch,
     });
   }
 
@@ -401,17 +357,17 @@ export function createCookStations({
       : transferredCount + (assembly.complete ? 1 : 0);
     waiting = saved.waiting;
     grill = structuredClone(saved.grill);
-    initialBatch = saved.initialBatch
-      ? structuredClone(saved.initialBatch)
-      : {
-          required: initialBatchSize,
-          placed: initialBatchSize,
-          started: true,
-        };
     for (const slot of grill) {
       slot.faceReadyAtMs ??= { front: null, back: null };
+      // 구형 D1 저장은 첫 두 꼬치를 staged로 보관했다. 독립 조리 규칙에서는
+      // 이어하기 직후 그 꼬치도 앞면 접촉 상태로 전환해 멈춘 제작물을 남기지 않는다.
+      if (slot.status === 'staged') {
+        slot.status = FACE.FRONT;
+        slot.orientationFaceDown = FACE.FRONT;
+        slot.contactFace = FACE.FRONT;
+      }
       // 저장 이후 실제 경과 시간은 영업 조리에 적용하지 않는다.
-      slot.lastUpdatedAt = slot.status === 'empty' || slot.status === 'staged' ? null : now;
+      slot.lastUpdatedAt = slot.status === 'empty' ? null : now;
       if (slot.flip) {
         slot.flip.completeAt = now + FLIP_AIRBORNE_MS;
         slot.inputLockedUntil = now + INPUT_LOCK_MS;
@@ -472,11 +428,6 @@ export function createCookStations({
       transferredCount = 0;
       waiting = 0;
       grill = grill.map(() => emptySlot());
-      initialBatch = {
-        required: initialBatchSize,
-        placed: 0,
-        started: initialBatchSize === 1,
-      };
     },
   };
 }
@@ -485,7 +436,6 @@ export function createD1CookStations(options = {}) {
   return createCookStations({
     ...options,
     slots: 2,
-    initialBatchSize: 2,
     explicitAssemblyTransfer: true,
   });
 }

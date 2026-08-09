@@ -23,7 +23,7 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) #receipts {
   left: 9.166667vw;
   width: 66.5625vw;
   min-height: max(44px, 5.925926vh);
-  display: grid;
+  display: none;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: max(6px, 0.625vw);
 }

@@ -106,27 +106,67 @@ vec3 cookColor(vec3 base, float d) {
     vec3 raw = mix(vec3(lum), base, uRawSaturation) * uRawTint;
 
     // Perfect: 마이야르 반응 — 황갈색으로 굽고 대비를 올린다
-    // Preserve the source artwork: chicken becomes amber-golden while leek keeps
-    // its cream/green identity instead of receiving one flat muddy-brown tint.
-    float leek = smoothstep(0.015, 0.14, base.g - base.r);
+    // Preserve the source detail while mapping it onto the sampled reference palette.
+    // sRGB 텍스처가 선형 공간으로 디코드되면 파의 G-R 차가 작아진다. 좁은 경계로
+    // 닭과 파를 다시 분리해, 적정 단계에서도 파의 녹색이 회색으로 죽지 않게 한다.
+    float leek = smoothstep(0.50, 0.68, base.g / max(base.r, 0.001));
     vec3 corrected = base * uCookedTint;
     corrected = (corrected - 0.5) * uCookedContrast + 0.5;
     corrected += uCookedWarmth * lum;
 
     // 목표색을 명도로 보간해 굽힌 윤기를 만든다. 단일 색으로 mix하면 평평해져 식욕이 죽는다.
-    float shade = smoothstep(0.015, 0.42, lum);
+    float shade = smoothstep(0.045, 0.28, lum);
     vec3 chickenGolden = mix(corrected, mix(uGlazeChickenShadow, uGlazeChickenLight, shade), uGlazeAmount);
     vec3 leekGolden = mix(corrected, mix(uGlazeLeekShadow, uGlazeLeekLight, shade),
                           uGlazeAmount * uGlazeLeekRatio);
     vec3 done = mix(chickenGolden, leekGolden, leek);
+    float chicken = 1.0 - leek;
+    float foodMask = smoothstep(0.075, 0.16, lum);
+
+    // Ingredient silhouette and folds receive direct heat first. Sampling alpha two source
+    // pixels away creates a wider, irregular rim instead of recolouring the whole sprite.
+    vec2 detailTexel = 2.0 / uTexSize;
+    float neighbourAlpha = min(
+        min(texture(uTex, vUv + vec2(detailTexel.x, 0.0)).a,
+            texture(uTex, vUv - vec2(detailTexel.x, 0.0)).a),
+        min(texture(uTex, vUv + vec2(0.0, detailTexel.y)).a,
+            texture(uTex, vUv - vec2(0.0, detailTexel.y)).a)
+    );
+    float heatEdge = (1.0 - smoothstep(0.08, 0.92, neighbourAlpha)) * foodMask;
+    float crease = (1.0 - smoothstep(0.065, 0.17, lum)) * foodMask;
+
+    // Fatty highlights stay juicy and golden. Only the pockets reaching a hot edge are
+    // converted to deep rendered-fat brown below.
+    float fatNoise = fbm(vUv * vec2(8.0, 13.0) + vec2(6.2, 2.7));
+    float fatPocket = chicken * foodMask * smoothstep(0.18, 0.38, lum)
+        * smoothstep(0.42, 0.68, fatNoise);
+    vec3 fatGold = mix(uGlazeChickenLight, uTareSheen, 0.16);
+    done = mix(done, fatGold, fatPocket * 0.34 * smoothstep(0.12, 0.38, d));
 
     // Reference-driven tare caramelisation: sparse glossy red-amber patches,
     // never a grey coat over the entire skewer.
-    float caramelNoise = fbm(vUv * 11.0 + vec2(3.7, 8.1));
-    float caramel = smoothstep(0.46, 0.78, caramelNoise) * smoothstep(0.34, 0.78, d);
-    float highlightGuard = 1.0 - smoothstep(0.45, 0.96, lum);
-    vec3 caramelColor = mix(uCaramelShadow, uCaramelLight, lum);
-    done = mix(done, caramelColor, caramel * highlightGuard * mix(0.62, 0.20, leek));
+    float caramelNoise = fbm(vUv * vec2(4.2, 8.0) + vec2(3.7, 8.1));
+    // 적정 구간부터 회갈색 살결 사이에 불규칙한 갈색 소스 자국만 남긴다.
+    float caramel = smoothstep(0.40, 0.56, caramelNoise) * smoothstep(0.18, 0.42, d);
+    float highlightGuard = 1.0 - smoothstep(0.60, 0.98, lum);
+    vec3 caramelColor = mix(uCaramelShadow, uCaramelLight, smoothstep(0.04, 0.30, lum));
+    done = mix(done, caramelColor,
+               caramel * highlightGuard * foodMask * mix(0.82, 0.18, leek));
+
+    // Rendered fat chars at the exposed rim; recessed meat folds brown more gently.
+    float renderedFatSear = heatEdge * fatPocket;
+    float structuralSear = clamp(heatEdge * 0.72 + crease * 0.34 + renderedFatSear * 0.55,
+                                 0.0, 1.0)
+        * smoothstep(0.18, 0.44, d);
+    done = mix(done, uCaramelShadow, structuralSear * mix(0.68, 0.48, leek));
+
+    // Broken diagonal sear marks: one or two short dark-brown contacts per ingredient,
+    // gated by the source luminance so the bamboo shaft is not painted like meat.
+    float grillBand = pow(abs(sin((vUv.y * 17.0 + vUv.x * 1.6) * 3.14159265)), 12.0);
+    float brokenBand = smoothstep(0.36, 0.58,
+        fbm(vUv * vec2(6.0, 10.0) + vec2(1.9, 4.3)));
+    float earlySear = grillBand * brokenBand * foodMask * smoothstep(0.20, 0.44, d);
+    done = mix(done, uCaramelShadow, earlySear * mix(0.72, 0.34, leek));
 
     // 탄 상태: 회색으로 탈색하지 않는다. 구워진 색을 눌러 따뜻한 갈색을 남긴다.
     vec3 burnt = mix(done * uBurntLuminance, uBurntColor, uBurntMix);

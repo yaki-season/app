@@ -11,9 +11,9 @@ const D1_PUBLIC_GRILL_BASELINE = Object.freeze({
   initialBatch: Object.freeze({
     placementCount: 2,
     placementSlots: Object.freeze([1, 2]),
-    placementState: 'staged',
-    timerStartPolicy: 'afterInitialBatchPlaced',
-    startPolicy: 'simultaneous',
+    placementState: 'active',
+    timerStartPolicy: 'onEachPlacement',
+    startPolicy: 'independent',
   }),
 });
 
@@ -134,12 +134,15 @@ export function validateD1PublicRuntimeFixture(contract, fixture) {
     errors.push('[runtime.firstOrder] 정본 D1 첫 주문의 수량 또는 순서와 다름');
   }
   if (!sameJson(runtime.grill, baseline.grill)) {
-    errors.push('[runtime.grill] 명성 해금 시작 2칸·최대 8칸·초기 배치 2개 계약과 다름');
+    errors.push('[runtime.grill] 명성 해금 시작 2칸·최대 8칸·꼬치별 독립 시작 계약과 다름');
   }
 
   const starts = fixture.initialBatchStartedAtMs || [];
-  if (starts.length !== baseline.grill.initialBatch.placementCount || new Set(starts).size !== 1) {
-    errors.push('[initialBatch] 첫 2개 staged 제작물은 같은 시각에 시작해야 함');
+  if (
+    starts.length !== baseline.grill.initialBatch.placementCount
+    || starts.some((startedAtMs) => !Number.isFinite(startedAtMs))
+  ) {
+    errors.push('[initialBatch] 첫 2개 제작물은 각 배치 시각에 독립적으로 시작해야 함');
   }
 
   for (const transition of fixture.tickTransitions || []) {

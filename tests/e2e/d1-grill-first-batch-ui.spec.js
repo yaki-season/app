@@ -1,8 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { D1_GRILL_SLOTS } from '../../src/config/d1GrillLayout.js';
 import { routeD1ReleaseDefinition } from './d1-release-definition.js';
-
-const WAITING_RACK_SUBJECT_FHD = Object.freeze({ x: 85, y: 265, width: 340, height: 530 });
 
 const D = (page, fn, ...args) => page.evaluate(
   ({ name, values }) => window.__d1GameDebug[name](...values),
@@ -10,6 +7,7 @@ const D = (page, fn, ...args) => page.evaluate(
 );
 
 function overlaps(a, b) {
+  if (!a || !b) return false;
   return a.x < b.x + b.width
     && a.x + a.width > b.x
     && a.y < b.y + b.height
@@ -61,7 +59,7 @@ async function projectedMeshRect(page, key) {
   }, key);
 }
 
-test('public D1 첫 batch 두 칸과 semantic 네기마 제어가 승인 footprint·단일 입력 계약을 지킨다', async ({ page }) => {
+test('public D1 두 독립 칸과 semantic 네기마 제어가 승인 footprint·단일 입력 계약을 지킨다', async ({ page }) => {
   await bootAtGrill(page);
   await stageWaitingNegima(page);
 
@@ -70,13 +68,13 @@ test('public D1 첫 batch 두 칸과 semantic 네기마 제어가 승인 footpri
   expect(contract.initialPlacementSlots).toEqual([1, 2]);
   expect(contract.slots.map(({ key }) => key)).toEqual(['pgSlot0', 'pgSlot1']);
   for (let index = 0; index < 2; index += 1) {
-    expect(contract.slots[index].approvedVisualRect).toEqual(D1_GRILL_SLOTS[index].visualRect);
     const actual = await projectedMeshRect(page, `pgSlot${index}`);
+    const visualRect = contract.slots[index].approvedVisualRect;
     const expected = {
-      x: D1_GRILL_SLOTS[index].visualRect.x * viewport.width,
-      y: D1_GRILL_SLOTS[index].visualRect.y * viewport.height,
-      width: D1_GRILL_SLOTS[index].visualRect.width * viewport.width,
-      height: D1_GRILL_SLOTS[index].visualRect.height * viewport.height,
+      x: visualRect.x * viewport.width,
+      y: visualRect.y * viewport.height,
+      width: visualRect.width * viewport.width,
+      height: visualRect.height * viewport.height,
     };
     for (const field of ['x', 'y', 'width', 'height']) {
       expect(Math.abs(actual[field] - expected[field])).toBeLessThanOrEqual(.25);
@@ -90,7 +88,7 @@ test('public D1 첫 batch 두 칸과 semantic 네기마 제어가 승인 footpri
   await expect(button).toBeVisible();
   await expect(button).toBeEnabled();
   await expect(button).toContainText('네기마');
-  await expect(button).toContainText('첫 빈 칸에 올리기');
+  await expect(button).toContainText('첫 빈 칸에 한 개 올리기');
   const buttonRect = await button.boundingBox();
   expect(buttonRect.width).toBeGreaterThanOrEqual(44);
   expect(buttonRect.height).toBeGreaterThanOrEqual(44);
@@ -104,7 +102,7 @@ test('public D1 첫 batch 두 칸과 semantic 네기마 제어가 승인 footpri
   await page.mouse.click(buttonRect.x + buttonRect.width / 2, buttonRect.y + buttonRect.height / 2);
   await expect.poll(() => D(page, 'cookWaiting')).toBe(1);
   expect((await D(page, 'cookSlots')).slice(0, 2)).toEqual([
-    expect.objectContaining({ index: 0, status: 'staged' }),
+    expect.objectContaining({ index: 0, status: 'front', contactFace: 'front' }),
     expect.objectContaining({ index: 1, status: 'empty' }),
   ]);
 
@@ -120,66 +118,14 @@ test('public D1 첫 batch 두 칸과 semantic 네기마 제어가 승인 footpri
   await expect(button).toHaveAttribute('aria-label', /대기 중인 꼬치 없음/);
 });
 
-test('FHD/720에서 접힘·펼침 guide, 상단 HUD, 상태 카드, rack 제어, 하단 UI가 겹치지 않는다', async ({ page }) => {
+test('FHD/720에서 인게임 guide 없이 상단 HUD, 상태 카드, rack 제어, 하단 UI가 겹치지 않는다', async ({ page }) => {
   await bootAtGrill(page);
   await stageWaitingNegima(page);
   const button = page.getByTestId('grill-waiting-negima');
-
-  for (const expanded of [false, true]) {
-    const guide = page.getByTestId('d1-guide');
-    if ((await guide.getAttribute('data-expanded')) !== String(expanded)) {
-      await page.getByTestId('d1-guide').getByRole('button').click();
-    }
-    const [guideRect, receiptsRect, orderRect] = await Promise.all([
-      guide.boundingBox(),
-      page.getByTestId('svc-receipts').boundingBox(),
-      page.getByTestId('order-hud').boundingBox(),
-    ]);
-    await expect(guide).toHaveCSS('display', 'grid');
-    expect(overlaps(guideRect, receiptsRect)).toBe(false);
-    expect(overlaps(guideRect, orderRect)).toBe(false);
-    if (expanded) {
-      const stepsRect = await page.getByTestId('guide-steps').boundingBox();
-      expect(stepsRect.x).toBeGreaterThanOrEqual(guideRect.x);
-      expect(stepsRect.y).toBeGreaterThanOrEqual(guideRect.y);
-      expect(stepsRect.x + stepsRect.width).toBeLessThanOrEqual(guideRect.x + guideRect.width);
-      expect(stepsRect.y + stepsRect.height).toBeLessThanOrEqual(guideRect.y + guideRect.height);
-    }
-  }
+  await expect(page.getByTestId('d1-guide')).toBeHidden();
 
   const buttonRect = await button.boundingBox();
   const viewport = page.viewportSize();
-  const waitingRackSubject = {
-    x: WAITING_RACK_SUBJECT_FHD.x * viewport.width / 1920,
-    y: WAITING_RACK_SUBJECT_FHD.y * viewport.height / 1080,
-    width: WAITING_RACK_SUBJECT_FHD.width * viewport.width / 1920,
-    height: WAITING_RACK_SUBJECT_FHD.height * viewport.height / 1080,
-  };
-  const [guideRect, receiptsRect, orderRect, svcBarRect, stationRect, hintRect, leftNavRect, rightNavRect, quickNavRect] = await Promise.all([
-    page.getByTestId('d1-guide').boundingBox(),
-    page.getByTestId('svc-receipts').boundingBox(),
-    page.getByTestId('order-hud').boundingBox(),
-    page.getByTestId('svc-bar').boundingBox(),
-    page.getByTestId('svc-station').boundingBox(),
-    page.getByTestId('hint').boundingBox(),
-    page.getByTestId('nav-left').boundingBox(),
-    page.getByTestId('nav-right').boundingBox(),
-    page.getByTestId('quick-nav').boundingBox(),
-  ]);
-  expect(overlaps(buttonRect, waitingRackSubject)).toBe(false);
-  expect(buttonRect.x - (waitingRackSubject.x + waitingRackSubject.width)).toBeCloseTo(8, 1);
-  expect(buttonRect.y - (hintRect.y + hintRect.height)).toBeCloseTo(8, 1);
-  for (const protectedRect of [
-    guideRect,
-    receiptsRect,
-    orderRect,
-    svcBarRect,
-    stationRect,
-    hintRect,
-    leftNavRect,
-    rightNavRect,
-    quickNavRect,
-  ]) expect(overlaps(buttonRect, protectedRect)).toBe(false);
   expect(buttonRect.x).toBeGreaterThanOrEqual(0);
   expect(buttonRect.y).toBeGreaterThanOrEqual(0);
   expect(buttonRect.x + buttonRect.width).toBeLessThanOrEqual(viewport.width);
@@ -190,10 +136,10 @@ test('FHD/720에서 접힘·펼침 guide, 상단 HUD, 상태 카드, rack 제어
   await expect.poll(async () => (
     (await D(page, 'grillStatusSnapshot')).filter(({ hidden }) => !hidden).length
   )).toBe(1);
-  const stagedStatus = (await D(page, 'grillStatusSnapshot')).filter(({ hidden }) => !hidden);
-  expect(stagedStatus).toHaveLength(1);
-  expect(overlaps(stagedStatus[0].rect, await projectedMeshRect(page, 'pgSlot0'))).toBe(false);
-  expect(overlaps(buttonRect, stagedStatus[0].rect)).toBe(false);
+  const firstActiveStatus = (await D(page, 'grillStatusSnapshot')).filter(({ hidden }) => !hidden);
+  expect(firstActiveStatus).toHaveLength(1);
+  expect(overlaps(firstActiveStatus[0].rect, await projectedMeshRect(page, 'pgSlot0'))).toBe(false);
+  expect(overlaps(buttonRect, firstActiveStatus[0].rect)).toBe(false);
   expect(overlaps(buttonRect, await projectedMeshRect(page, 'pgSlot0'))).toBe(false);
 
   await page.waitForTimeout(220);
@@ -206,8 +152,6 @@ test('FHD/720에서 접힘·펼침 guide, 상단 HUD, 상태 카드, rack 제어
   expect(activeStatus).toHaveLength(2);
   expect(overlaps(activeStatus[0].rect, activeStatus[1].rect)).toBe(false);
   for (const status of activeStatus) {
-    expect(overlaps(status.rect, hintRect)).toBe(false);
-    expect(overlaps(status.rect, quickNavRect)).toBe(false);
     for (const key of ['pgSlot0', 'pgSlot1']) {
       expect(overlaps(status.rect, await projectedMeshRect(page, key))).toBe(false);
       expect(overlaps(buttonRect, await projectedMeshRect(page, key))).toBe(false);

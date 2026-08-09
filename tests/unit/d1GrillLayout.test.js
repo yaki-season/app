@@ -19,7 +19,7 @@ import {
 import { OBJECTS as D1_OBJECTS, SCREEN_BY_ID as D1_SCREENS } from '../../src/config/d1Layout.js';
 
 describe('D1 고정 6칸 그릴 레이아웃 계약', () => {
-  it('public D1 첫 batch는 승인 R3의 첫 두 visual footprint를 pgSlot 시각·hit 단일 면으로 쓴다', () => {
+  it('public D1의 두 독립 칸은 승인 R3의 첫 두 visual footprint를 pgSlot 시각·hit 단일 면으로 쓴다', () => {
     expect(D1_PUBLIC_GRILL_LAYOUT).toMatchObject({
       contractId: 'D1-FIRST-BATCH-R3',
       initialPlacementSlots: [1, 2],

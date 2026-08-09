@@ -392,9 +392,7 @@ function handle(key, now) {
     case 'grillWaitTray': {
       const r = cook.placeToGrill(now); // 대기 꼬치를 빈 칸에
       if (!r.ok) showHint(r.reason === 'no-waiting' ? '대기 중인 꼬치가 없어요' : '빈 그릴 칸이 없어요');
-      else if (r.staged) showHint(`첫 배치 동시 시작 · 꼬치 ${r.remainingForBatch}개를 더 올리세요`);
-      else if (r.batchStarted) showHint('첫 배치 동시 조리 시작 · 8초 뒤 꼬치를 클릭해 뒤집으세요');
-      else showHint('앞면 조리 시작 · 8초 뒤 꼬치를 클릭해 뒤집으세요');
+      else showHint(`${r.slot + 1}번 꼬치 앞면 조리 시작 · 각 꼬치는 독립적으로 익습니다`);
       break;
     }
     case 'grillFinishedTray':

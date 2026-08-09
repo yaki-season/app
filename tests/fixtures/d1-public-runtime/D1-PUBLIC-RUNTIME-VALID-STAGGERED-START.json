@@ -1,0 +1,6 @@
+{
+  "id": "D1-PUBLIC-RUNTIME-VALID-STAGGERED-START",
+  "expectedValid": true,
+  "initialBatchStartedAtMs": [1000, 3000],
+  "tickTransitions": []
+}

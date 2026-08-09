@@ -59,7 +59,7 @@ describe('createCookStations', () => {
     expect(cook.placeToGrill(0)).toEqual({ ok: false, reason: 'no-slot' });
   });
 
-  it('다중 칸: 두 꼬치를 동시에 독립적으로 굽는다', () => {
+  it('다중 칸: 두 꼬치를 서로 다른 시각부터 독립적으로 굽는다', () => {
     const cook = createCookStations({ slots: 2 });
     assemble(cook); assemble(cook);
     expect(cook.placeToGrill(0).slot).toBe(0);
@@ -145,23 +145,25 @@ describe('createCookStations', () => {
     });
   });
 
-  it('slotViews는 빈 칸·초기 staged·공중 회전의 다음 행동을 도메인 값으로 제공한다', () => {
+  it('slotViews는 빈 칸·배치 즉시 조리·공중 회전의 다음 행동을 도메인 값으로 제공한다', () => {
     const cook = createD1CookStations();
     expect(cook.slotViews(0)[0].nextAction).toBe(COOK_SLOT_NEXT_ACTION.NONE);
 
     cook.debugFillAssembly();
-    expect(cook.placeToGrill(0)).toMatchObject({ slot: 0, staged: true });
+    expect(cook.placeToGrill(0)).toMatchObject({ slot: 0 });
     expect(cook.slotViews(10_000)[0]).toMatchObject({
-      status: 'staged',
-      nextAction: COOK_SLOT_NEXT_ACTION.WAIT,
+      status: 'front',
+      cooking: true,
+      frontElapsedSec: 10,
+      nextAction: COOK_SLOT_NEXT_ACTION.FLIP,
     });
 
     cook.debugFillAssembly();
     cook.debugFillAssembly();
     cook.placeToGrill(0);
     cook.placeToGrill(0);
-    expect(cook.clickSlot(0, 3_000)).toMatchObject({ ok: true, flipped: true });
-    expect(cook.slotViews(3_200)[0]).toMatchObject({
+    expect(cook.clickSlot(0, 13_000)).toMatchObject({ ok: true, flipped: true });
+    expect(cook.slotViews(13_200)[0]).toMatchObject({
       status: 'flipping',
       inputLocked: true,
       nextAction: COOK_SLOT_NEXT_ACTION.WAIT,
@@ -272,6 +274,49 @@ describe('createCookStations', () => {
     });
   });
 
+  it('구형 staged 저장은 이어하기 시 첫 꼬치의 앞면 조리로 즉시 복구한다', () => {
+    const restored = createD1CookStations();
+    const legacy = {
+      stateVersion: 1,
+      assembly: { index: 0, complete: false },
+      waiting: 1,
+      initialBatch: { required: 2, placed: 1, started: false },
+      grill: [
+        {
+          status: 'staged',
+          orientationFaceDown: 'front',
+          contactFace: null,
+          elapsedSec: { front: 0, back: 0 },
+          faceReadyAtMs: { front: null, back: null },
+          lastUpdatedAt: null,
+          flip: null,
+          inputLockedUntil: 0,
+        },
+        {
+          status: 'empty',
+          orientationFaceDown: 'front',
+          contactFace: null,
+          elapsedSec: { front: 0, back: 0 },
+          faceReadyAtMs: { front: null, back: null },
+          lastUpdatedAt: null,
+          flip: null,
+          inputLockedUntil: 0,
+        },
+      ],
+    };
+
+    expect(restored.restore(legacy, 10_000)).toEqual({ ok: true });
+    expect(restored.slotViews(12_000)).toEqual([
+      expect.objectContaining({
+        status: 'front',
+        contactFace: 'front',
+        cooking: true,
+        frontElapsedSec: 2,
+      }),
+      expect.objectContaining({ status: 'empty' }),
+    ]);
+  });
+
   it('새 페이지 이어하기는 이전 performance.now 기준의 만료된 입력 잠금을 제거한다', () => {
     const source = createCookStations({ slots: 1 });
     assemble(source);
@@ -301,7 +346,7 @@ describe('createCookStations', () => {
     });
   });
 
-  it('D1은 2칸을 열고 explicit transfer된 첫 2개가 놓인 시점에 앞면 타이머를 함께 시작한다', () => {
+  it('D1은 2칸을 열고 explicit transfer된 각 꼬치를 놓는 즉시 독립적으로 굽는다', () => {
     const cook = createD1CookStations();
     expect(cook.slotCount()).toBe(2);
 
@@ -315,26 +360,17 @@ describe('createCookStations', () => {
     expect(cook.waitingCount()).toBe(1);
     expect(cook.transferAssembly()).toMatchObject({ ok: true, transferred: true, waiting: 2 });
 
-    expect(cook.placeToGrill(1_000)).toMatchObject({
-      slot: 0,
-      staged: true,
-      batchStarted: false,
-      remainingForBatch: 1,
-    });
-    expect(cook.slotViews(10_000)[0]).toMatchObject({
-      status: 'staged',
-      cooking: false,
-      frontElapsedSec: 0,
+    expect(cook.placeToGrill(1_000)).toEqual({ ok: true, slot: 0 });
+    expect(cook.slotViews(3_000)[0]).toMatchObject({
+      status: 'front',
+      cooking: true,
+      frontElapsedSec: 2,
       backElapsedSec: 0,
     });
 
-    expect(cook.placeToGrill(3_000)).toMatchObject({
-      slot: 1,
-      batchStarted: true,
-      startedSlots: [0, 1],
-    });
+    expect(cook.placeToGrill(3_000)).toEqual({ ok: true, slot: 1 });
     expect(cook.slotViews(11_000)).toEqual([
-      expect.objectContaining({ status: 'front', frontElapsedSec: 8 }),
+      expect.objectContaining({ status: 'front', frontElapsedSec: 10 }),
       expect.objectContaining({ status: 'front', frontElapsedSec: 8 }),
     ]);
   });

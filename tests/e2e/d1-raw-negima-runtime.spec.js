@@ -35,7 +35,7 @@ const REQUIRED_RUNTIME_FILES = Object.freeze([
   '/public/assets/core/cooking/spr-assembly-tray-negima-r1-b1.png',
 ]);
 
-test('approved raw grill negima exact-loads and GLSL colours that same image through cooking', async ({ page }, testInfo) => {
+test('approved grill negima exact-loads and switches the approved raster for each cooking stage', async ({ page }, testInfo) => {
   await routeD1ReleaseDefinition(page);
   const responses = new Map();
   page.on('response', (response) => {
@@ -81,7 +81,7 @@ test('approved raw grill negima exact-loads and GLSL colours that same image thr
   await expect(waiting).toBeEnabled();
   await waiting.click();
   await expect.poll(() => D(page, 'cookSlots')).toEqual([
-    expect.objectContaining({ status: 'staged', contactFace: null }),
+    expect.objectContaining({ status: 'front', contactFace: 'front' }),
     expect.objectContaining({ status: 'empty' }),
   ]);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
@@ -90,9 +90,10 @@ test('approved raw grill negima exact-loads and GLSL colours that same image thr
       approvedStage: 'raw',
       proceduralFallbackVisible: false,
       interactionVisible: true,
+      visualMirrorX: 1,
     });
   await page.screenshot({
-    path: testInfo.outputPath(`raw-staged-${page.viewportSize().width}x${page.viewportSize().height}.png`),
+    path: testInfo.outputPath(`raw-independent-first-${page.viewportSize().width}x${page.viewportSize().height}.png`),
     fullPage: true,
   });
   const pixelEvidence = await page.evaluate(() => {
@@ -131,17 +132,18 @@ test('approved raw grill negima exact-loads and GLSL colours that same image thr
     .toMatchObject({
       // 승인 평면 하나를 계속 두고 재질만 바꾼다. 굽는 동안 GLSL이 그 이미지를 칠한다.
       approvedRawVisible: true,
-      approvedStage: 'cooking',
-      shaderOnApprovedPlane: true,
-      shaderCookingActive: true,
-      shaderUsesApprovedRaw: true,
+      approvedStage: 'raw',
+      visibleSpriteStage: 'raw',
+      shaderOnApprovedPlane: false,
+      shaderCookingActive: false,
+      shaderUsesApprovedRaw: false,
       interactionVisible: true,
     });
   await D(page, 'cookElapse', 8);
-  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].approvedStage)
-    .toBe('proper');
+  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
+    .toMatchObject({ approvedStage: 'proper', visibleSpriteStage: 'proper' });
   await page.screenshot({
-    path: testInfo.outputPath(`glsl-proper-${page.viewportSize().width}x${page.viewportSize().height}.png`),
+    path: testInfo.outputPath(`raster-proper-${page.viewportSize().width}x${page.viewportSize().height}.png`),
     fullPage: true,
   });
   await D(page, 'cookClickSlot', 0);
@@ -157,15 +159,22 @@ test('approved raw grill negima exact-loads and GLSL colours that same image thr
     expect.objectContaining({ status: 'back', contactFace: 'back' }),
     expect.objectContaining({ status: 'front' }),
   ]);
+  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
+    .toMatchObject({
+      approvedStage: 'raw',
+      visibleSpriteStage: 'raw',
+      visualMirrorX: -1,
+      visualDoneness: null,
+    });
   await D(page, 'cookElapse', 8);
-  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].approvedStage)
-    .toBe('proper');
+  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
+    .toMatchObject({ approvedStage: 'proper', visibleSpriteStage: 'proper' });
   await D(page, 'cookElapse', 8);
-  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].approvedStage)
-    .toBe('overcooked');
+  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
+    .toMatchObject({ approvedStage: 'overcooked', visibleSpriteStage: 'overcooked' });
   await D(page, 'cookElapse', 5);
-  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].approvedStage)
-    .toBe('burnt');
+  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
+    .toMatchObject({ approvedStage: 'burnt', visibleSpriteStage: 'burnt' });
 });
 
 test('이어하기는 이전 페이지에서 만료된 그릴 잠금을 제거해 완성 꼬치를 즉시 회수한다', async ({ page }) => {

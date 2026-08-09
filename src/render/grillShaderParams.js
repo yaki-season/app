@@ -12,22 +12,24 @@ export const GRILL_PARAMS = freezeParams({
   // doneness 0에서 같은 색을 내야 올리자마자 색이 튀지 않는다. 그래서 raw 단계는 항등이다.
   rawTint: [1.0, 1.0, 1.0],
   rawSaturation: 1.0,
-  cookedTint: [1.06, 0.94, 0.80],
-  cookedContrast: 1.10,
-  cookedWarmth: [0.06, 0.026, 0.0],
+  cookedTint: [1.03, 0.96, 0.82],
+  cookedContrast: 1.08,
+  cookedWarmth: [0.035, 0.014, 0.0],
   // 타레 글레이즈 목표색. 명도에 따라 그림자→하이라이트로 보간해 굽힌 윤기를 만든다.
   // 닭은 호박빛, 파는 크림빛을 유지한다(레퍼런스: 파는 갈변해도 아이보리로 남는다).
-  glazeChickenShadow: [0.507, 0.147, 0.030],
-  glazeChickenLight: [1.00, 0.748, 0.285],
-  glazeLeekShadow: [0.296, 0.285, 0.107],
-  glazeLeekLight: [1.00, 1.00, 0.604],
+  // Reference palette (linear RGB): golden cooked flesh, amber tare,
+  // deep-brown sear marks, and warm grilled negi.
+  glazeChickenShadow: [0.1812, 0.0976, 0.0612], // #765846
+  glazeChickenLight: [0.6795, 0.3231, 0.0742],  // #d79a4d
+  glazeLeekShadow: [0.0369, 0.0595, 0.0103],    // #36451a
+  glazeLeekLight: [0.2542, 0.2664, 0.0319],     // #8a8d32
   // 값은 모두 선형 공간이다. three가 sRGB 텍스처를 하드웨어 디코드해 넘기고 셰이더가
   // 출력에서만 다시 인코딩하므로, 의도한 sRGB 색을 선형으로 변환해 둔다.
-  glazeAmount: 0.85,
-  glazeLeekRatio: 0.42,
+  glazeAmount: 1.0,
+  glazeLeekRatio: 1.0,
   // 타레가 눌어붙은 자국. 거의 검은 얼룩이 아니라 붉은 호박색 윤기여야 한다.
-  caramelShadow: [0.263, 0.033, 0.005],
-  caramelLight: [0.748, 0.147, 0.013],
+  caramelShadow: [0.1195, 0.0194, 0.0075], // #612615
+  caramelLight: [0.4793, 0.1119, 0.0176],  // #b85e24
   // 적정(uDoneness 0.5)에서 다 익은 색에 도달한다. 그 뒤로는 캐러멜·그을음·탄색이 이어받아
   // 계속 변한다. 이 상한을 늘리면 적정까지 색이 거의 안 변해 '안 익는다'로 보인다.
   // 올린 직후에는 생것 그대로 두고, 잠시 뒤부터 적정(0.5)까지 서서히 익는다.
@@ -51,13 +53,13 @@ export const GRILL_PARAMS = freezeParams({
   charBandScale: 26.0,
   charBandSharpness: 2.6,
   charBandWeight: 0.82,
-  tareAmount: 0.42,
+  tareAmount: 0.32,
   tareSheen: [1.00, 0.674, 0.296],
   tareSpecPower: 30.0,
-  tareGloss: 1.15,
+  tareGloss: 0.82,
   tareNormalStrength: 2.2,
-  tareTint: [0.911, 0.638, 0.342],
-  tareTintAmount: 0.10,
+  tareTint: [0.88, 0.56, 0.23],
+  tareTintAmount: 0.07,
   emberColor: [0.147, 0.022, 0.0023],
   emberFlickerSpeed: [7.3, 3.1],
   emberRise: [0.85, 0.15],

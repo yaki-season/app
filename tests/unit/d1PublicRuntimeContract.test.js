@@ -43,7 +43,9 @@ describe('작업 007 D1 공개 runtime 데이터 계약', () => {
         initialBatch: {
           placementCount: 2,
           placementSlots: [1, 2],
-          timerStartPolicy: 'afterInitialBatchPlaced',
+          placementState: 'active',
+          timerStartPolicy: 'onEachPlacement',
+          startPolicy: 'independent',
         },
       },
     });
@@ -56,11 +58,16 @@ describe('작업 007 D1 공개 runtime 데이터 계약', () => {
     }
   });
 
-  it('초기 batch 크기가 2가 아닌 fixture를 명시적으로 거부한다', () => {
+  it('초기 배치 시각이 두 꼬치 분량이 아닌 fixture를 명시적으로 거부한다', () => {
     const fixture = fixtures.find(({ id }) => id === 'D1-PUBLIC-RUNTIME-ERR-BATCH-SIZE-3');
     const result = validateD1PublicRuntimeFixture(contract, fixture);
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain('[initialBatch] 첫 2개 staged 제작물은 같은 시각에 시작해야 함');
+    expect(result.errors).toContain('[initialBatch] 첫 2개 제작물은 각 배치 시각에 독립적으로 시작해야 함');
+  });
+
+  it('두 꼬치의 시작 시각이 달라도 독립 시작 fixture로 허용한다', () => {
+    const fixture = fixtures.find(({ id }) => id === 'D1-PUBLIC-RUNTIME-VALID-STAGGERED-START');
+    expect(validateD1PublicRuntimeFixture(contract, fixture)).toEqual({ valid: true, errors: [] });
   });
 
   it('Good 1건과 Low 1건의 정산 기대값을 계약 economy에서 계산한다', () => {
