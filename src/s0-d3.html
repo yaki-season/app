@@ -3,43 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>YAKI SEASON — S0~D3 시나리오</title>
+  <title>YAKI SEASON</title>
   <link rel="stylesheet" href="./s0-d3.css">
 </head>
 <body>
   <main id="scenario-app" class="scenario-app" data-testid="scenario-app">
     <header class="scenario-header">
-      <div>
-        <p class="eyebrow">S0~D3 시나리오 UI</p>
-        <h1 id="screen-heading">남겨진 열쇠</h1>
-      </div>
-      <dl class="id-strip" aria-label="현재 화면 식별자">
-        <div><dt>screen</dt><dd id="screen-id"></dd></div>
-        <div><dt>state</dt><dd id="state-id"></dd></div>
-        <div><dt>scene</dt><dd id="scene-id"></dd></div>
-        <div><dt>dialogue</dt><dd id="dialogue-id"></dd></div>
-      </dl>
+      <h1 id="screen-heading">남겨진 열쇠</h1>
     </header>
 
-    <section id="visual-placeholder" class="visual-placeholder" aria-labelledby="visual-title">
+    <section id="visual-placeholder" class="visual-placeholder" aria-label="이야기 장면">
       <div id="s0-art-camera" class="s0-art-camera" aria-hidden="true">
         <img id="s0-exterior-background" class="s0-exterior-background" alt="" hidden>
         <img id="s0-interaction-visual" class="s0-interaction-visual" alt="" hidden>
       </div>
-      <span id="development-label" class="development-label">개발 중</span>
       <img id="story-illustration" class="story-illustration" alt="" hidden>
       <img id="story-background" class="story-background" alt="" hidden>
       <img id="story-portrait" class="story-portrait" alt="" hidden>
-      <div id="portrait-placeholder" class="portrait-placeholder" hidden aria-hidden="true">秋</div>
-      <div class="visual-copy">
-        <h2 id="visual-title">임시 장면</h2>
-        <p id="visual-description">정식 아트 handoff 전까지 단순 도형으로 표시합니다.</p>
-      </div>
     </section>
 
     <section id="content-panel" class="content-panel" aria-live="polite"></section>
     <nav id="actions" class="actions" aria-label="시나리오 조작"></nav>
-    <p class="silent-note">오디오 없음 · 안내와 결과는 텍스트·형태·진행 표식으로 제공합니다.</p>
   </main>
   <script type="module" src="./s0-d3.js"></script>
 </body>

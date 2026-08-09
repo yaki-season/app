@@ -220,28 +220,23 @@ test('손상 active에서 검증된 백업을 복원하고 원본을 복구 영�
   expect(stored.recovery).toBe(broken);
 });
 
-test('D4는 경고 확인 뒤 읽기 전용으로 열리고 저장·보상·gameplay를 바꾸지 않는다', async ({ page }) => {
+test('공개 시작 화면에는 미출시 D4 개발 예고를 노출하지 않는다', async ({ page }) => {
   const d4Save = await makeSave({ campaignId: 'd4-reader', completedDays: 3, balance: 42 });
   await installStorage(page, { [SAVE_STORAGE_KEYS.ACTIVE]: d4Save });
   await openShell(page);
 
   const before = await page.evaluate(() => JSON.stringify(localStorage));
-  await page.getByRole('button', { name: 'D4 개발 예고' }).click();
-  await expect(page.locator('dialog')).toHaveAttribute('data-overlay-id', 'OVR-CONFIRM');
-  await page.getByRole('button', { name: '읽기 전용 예고 열기' }).click();
-  await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-SYS-D4-PREVIEW');
-  await expect(page.getByText('gameplay 0 · 보상 0 · 저장 write 0')).toBeVisible();
-  await page.getByRole('button', { name: '시작 화면으로 돌아가기' }).click();
-  await expect(page.getByText('D4 예고 종료 · 저장 불변')).toBeVisible();
-
+  await expect(page.getByRole('button', { name: 'D4 개발 예고' })).toHaveCount(0);
+  await expect(page.getByText('PUBLIC WEB SHELL')).toHaveCount(0);
+  await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-SYS-START');
   const after = await page.evaluate(() => JSON.stringify(localStorage));
   expect(after).toBe(before);
-  expect(await page.evaluate(() => window.__publicShellDebug.getState().d4Invariant)).toBe(true);
 });
 
 test('진단 다운로드에는 로컬 경로·저장 payload·원본 콘텐츠가 없다', async ({ page }) => {
   await installStorage(page, { [SAVE_STORAGE_KEYS.ACTIVE]: '{"broken"' });
   await openShell(page);
+  await page.getByRole('button', { name: '저장 복구' }).click();
   await page.getByRole('button', { name: '진단 정보' }).click();
   await expect(page.getByText('개인정보, 브라우저 경로, 저장 payload')).toBeVisible();
 

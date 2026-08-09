@@ -2,7 +2,6 @@ import {
   CampaignSaveRepository,
   DiagnosticsRepository,
   PERSISTENCE_ERROR_CODE,
-  SAVE_STORAGE_KEYS,
   SettingsRepository,
   createSaveFilePort,
   validateCampaignState,
@@ -15,7 +14,6 @@ import {
 import {
   DEFAULT_PUBLIC_SETTINGS,
   buildSafeDiagnostic,
-  isD4PreviewSave,
   saveSummary,
   serializeSafeDiagnostic,
   validatePublicSettings,
@@ -39,7 +37,6 @@ const START_SCENE_ASSET_ID = 'BG-EXTERIOR-S0-CLOSED';
 const SCREEN = Object.freeze({
   START: 'SCR-SYS-START',
   RECOVERY: 'SCR-SYS-RECOVERY',
-  D4_PREVIEW: 'SCR-SYS-D4-PREVIEW',
 });
 
 const screen = document.querySelector('#shell-screen');
@@ -55,8 +52,6 @@ let settings = { ...DEFAULT_PUBLIC_SETTINGS };
 let currentScreenId = SCREEN.START;
 let lastDiagnostic = buildSafeDiagnostic();
 let lastOperation = 'booting';
-let d4Before = null;
-let d4Invariant = null;
 let shellDialogs;
 
 function element(tag, {
@@ -190,9 +185,14 @@ function importButton() {
 
 function summaryDefinition(summary) {
   const list = element('dl', { className: 'summary-list' });
+  const checkpointLabel = {
+    'day-start': '영업 시작 전',
+    settlement: '영업 정산 후',
+    prologue: '이야기 시작',
+  }[summary.checkpointType] ?? '최근 저장';
   for (const [term, value] of [
     ['진행 위치', summary.dayLabel],
-    ['체크포인트', summary.checkpointType],
+    ['저장 지점', checkpointLabel],
     ['완료 날짜', summary.completedDayId ?? '없음'],
     ['저장 시각', summary.writtenAt],
   ]) {
@@ -217,7 +217,7 @@ function renderStart(extraStatus = null) {
   );
   if (extraStatus) intro.append(extraStatus);
   else if (valid) {
-    const card = operationStatus('success', '이어할 저장이 있습니다', `${summary.dayLabel} · ${summary.checkpointType}`);
+    const card = operationStatus('success', '이어할 저장이 있습니다', summary.dayLabel);
     card.append(summaryDefinition(summary));
     intro.append(card);
   } else if (missing) {
@@ -250,11 +250,6 @@ function renderStart(extraStatus = null) {
     actionButton('일시정지', shellDialogs.openPause),
     actionButton('저장 파일 다운로드', downloadSave, { disabled: !valid, id: 'export-save-button' }),
     importButton(),
-    actionButton('진단 정보', shellDialogs.openDiagnostics),
-    actionButton('D4 개발 예고', requestD4Preview, {
-      disabled: !isD4PreviewSave(loadResult),
-      id: 'd4-preview-button',
-    }),
   );
   const grid = element('div', { className: 'screen-grid' });
   grid.append(intro, menu);
@@ -371,71 +366,6 @@ async function handleSelectedFile(file) {
   renderImportReview(validation, text);
 }
 
-async function storageSnapshot() {
-  const entries = await Promise.all([
-    SAVE_STORAGE_KEYS.ACTIVE,
-    SAVE_STORAGE_KEYS.BACKUP_1,
-    SAVE_STORAGE_KEYS.BACKUP_2,
-    SAVE_STORAGE_KEYS.RECOVERY_SOURCE,
-  ].map(async (key) => [key, await storagePort.get(key)]));
-  return Object.fromEntries(entries);
-}
-
-function requestD4Preview() {
-  if (!isD4PreviewSave(loadResult)) return;
-  shellDialogs.open({
-    overlayId: 'OVR-CONFIRM',
-    kicker: '개발 중 콘텐츠',
-    title: 'D4 예고를 열까요?',
-    content: [
-      element('p', { text: '이 화면은 읽기 전용입니다. 주문·조리·보상·저장을 변경하지 않습니다.' }),
-      element('p', { className: 'warning', text: '실제 D4 gameplay는 아직 제공하지 않습니다.' }),
-    ],
-    actions: [
-      actionButton('취소', shellDialogs.close),
-      actionButton('읽기 전용 예고 열기', async () => {
-        shellDialogs.close();
-        d4Before = await storageSnapshot();
-        d4Invariant = null;
-        renderD4Preview();
-      }, { primary: true }),
-    ],
-  });
-}
-
-function renderD4Preview() {
-  setScreen(SCREEN.D4_PREVIEW);
-  const article = element('article');
-  article.append(
-    element('span', { className: 'development-label', text: '개발 중' }),
-    element('p', { className: 'eyebrow', text: 'D4 · READ-ONLY PREVIEW' }),
-    element('h1', { text: '다음 영업의 징후' }),
-    element('p', { className: 'lead', text: '가게의 흐름이 넓어지고, 새로운 즉시 제공 동선이 열릴 예정입니다.' }),
-    element('p', { className: 'read-only-mark', text: '읽기 전용 · gameplay 0 · 보상 0 · 저장 write 0' }),
-  );
-  const details = element('div', { className: 'summary-card' });
-  details.append(
-    element('h2', { text: '예고 범위' }),
-    element('p', { text: '화면 구조와 다음 목표만 안내합니다. 수치, 주문, 해금 소유권은 확정하거나 변경하지 않습니다.' }),
-  );
-  const actions = element('nav', { className: 'menu', attributes: { 'aria-label': 'D4 예고 행동' } });
-  actions.append(actionButton('시작 화면으로 돌아가기', async () => {
-    const after = await storageSnapshot();
-    d4Invariant = JSON.stringify(d4Before) === JSON.stringify(after);
-    lastOperation = d4Invariant ? 'd4-read-only-preserved' : 'd4-invariant-failed';
-    await refreshLoadResult();
-    renderStart(operationStatus(
-      d4Invariant ? 'success' : 'error',
-      d4Invariant ? 'D4 예고 종료 · 저장 불변' : 'D4 예고 저장 불변식 오류',
-      d4Invariant ? '예고 전후 활성 저장·백업·복구 원본이 모두 같습니다.' : '진단 정보를 확인해 주세요.',
-    ));
-  }, { primary: true }));
-  const grid = element('div', { className: 'screen-grid' });
-  grid.append(article, details, actions);
-  screen.append(grid);
-  screen.focus({ preventScroll: true });
-}
-
 async function refreshLoadResult() {
   loadResult = await savePort.loadForContinue();
   return loadResult;
@@ -516,7 +446,6 @@ export async function bootPublicShell() {
       overlayId: document.body.dataset.overlayId ?? null,
       saveState: currentSaveState(),
       lastOperation,
-      d4Invariant,
       settings: { ...settings },
     }),
     refresh: async () => {

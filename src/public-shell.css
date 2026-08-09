@@ -78,11 +78,11 @@ button:disabled { cursor: not-allowed; opacity: .48; }
   margin-inline: auto;
   padding: var(--safe-y) var(--safe-x);
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: clamp(16px, 3vh, 34px);
 }
 
-.shell-header, .shell-footer {
+.shell-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -151,19 +151,7 @@ h2 { line-height: 1.2; }
 .summary-list { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0; }
 .summary-list dt { color: var(--muted); }
 .summary-list dd { margin: 0; overflow-wrap: anywhere; }
-.development-label {
-  display: inline-block;
-  margin-bottom: 12px;
-  border: 1px solid #e7a567;
-  border-radius: 999px;
-  padding: 4px 10px;
-  color: #ffdba4;
-  font-size: .78rem;
-  font-weight: 900;
-  letter-spacing: .08em;
-}
 .read-only-mark { color: var(--good); font-weight: 900; }
-.shell-footer { color: var(--muted); font-size: .78rem; }
 
 dialog {
   width: min(640px, calc(100% - 32px));
@@ -209,8 +197,7 @@ body[data-reduced-motion="true"] * { scroll-behavior: auto !important; animation
 @media (max-width: 760px) {
   .screen-grid { grid-template-columns: 1fr; }
   .screen-grid > nav.menu { grid-template-columns: 1fr; }
-  .shell-header, .shell-footer { align-items: flex-start; }
-  .shell-footer { display: grid; }
+  .shell-header { align-items: flex-start; }
 }
 
 @media (max-height: 760px) and (min-width: 900px) {

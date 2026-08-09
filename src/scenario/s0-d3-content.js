@@ -27,7 +27,7 @@ export const S0_INTERACTIONS = Object.freeze([
     stateId: 'S0-STATE-KEY',
     screenId: 'SCR-STORY-PROLOGUE',
     phaseId: 'exterior-key',
-    actionLabel: '남겨진 열쇠 선택',
+    actionLabel: '열쇠 집기',
     resultText: '차가운 황동 열쇠를 집었습니다.',
   }),
   Object.freeze({
@@ -35,7 +35,7 @@ export const S0_INTERACTIONS = Object.freeze([
     stateId: 'S0-STATE-GATE',
     screenId: 'SCR-STORY-PROLOGUE',
     phaseId: 'gate-open',
-    actionLabel: '가게 대문 열기',
+    actionLabel: '가게 문 열기',
     resultText: '잠금이 풀리고 오래 닫혀 있던 대문이 열렸습니다.',
   }),
 ]);

@@ -2,9 +2,9 @@ import { test, expect } from '@playwright/test';
 
 async function skipStory(page) {
   await page.getByRole('button', { name: '이야기 건너뛰기' }).click();
-  await expect(page.getByRole('heading', { name: '3줄 요약' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '이야기 요약' })).toBeVisible();
   await expect(page.locator('.summary li')).toHaveCount(3);
-  await page.getByRole('button', { name: '요약 확인' }).click();
+  await page.locator('#actions .primary').click();
 }
 
 test('S0: 열쇠→대문 2클릭 뒤 점화 대사를 거쳐 D1로 이어진다', async ({ page }) => {
@@ -54,10 +54,10 @@ test('S0: 열쇠→대문 2클릭 뒤 점화 대사를 거쳐 D1로 이어진다
   expect(keyPlacement.y).toBeCloseTo(650 * keyPlacement.scale, 1);
   expect(keyPlacement.width).toBeCloseTo(224 * keyPlacement.scale, 1);
   expect(keyPlacement.height).toBeCloseTo(150 * keyPlacement.scale, 1);
-  await expect(page.getByText('개발 중')).toBeHidden();
-  await expect(page.getByRole('heading', { name: '무실패 2클릭 · 1/2' })).toBeVisible();
+  await expect(page.getByText('개발 중')).toHaveCount(0);
+  await expect(page.getByText('가게 앞에 놓인 낯익은 열쇠가 눈에 들어옵니다.')).toBeVisible();
 
-  await page.getByRole('button', { name: '남겨진 열쇠 선택' }).click();
+  await page.getByRole('button', { name: '열쇠 집기' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-state-id', 'S0-STATE-GATE');
   await expect(page.locator('body')).toHaveAttribute(
     'data-component-id',
@@ -67,8 +67,8 @@ test('S0: 열쇠→대문 2클릭 뒤 점화 대사를 거쳐 D1로 이어진다
     'data-interaction-component-id',
     'prologue.gate',
   );
-  await expect(page.getByRole('heading', { name: '무실패 2클릭 · 2/2' })).toBeVisible();
-  await page.getByRole('button', { name: '가게 대문 열기' }).click();
+  await expect(page.getByText('열쇠가 맞았습니다. 오래 닫혀 있던 가게의 문이 열립니다.')).toBeVisible();
+  await page.getByRole('button', { name: '가게 문 열기' }).click();
 
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-S0-DECISION');
   await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-S0-001');
@@ -84,32 +84,32 @@ test('S0: 열쇠→대문 2클릭 뒤 점화 대사를 거쳐 D1로 이어진다
     'data-story-illustration-asset-id',
     'IL-S0-AKI-REOPENED-SHOP',
   );
-  await expect(page.locator('#portrait-placeholder')).toBeHidden();
+  await expect(page.locator('#portrait-placeholder')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '숯불 점화' })).toHaveCount(0);
   await page.getByRole('button', { name: '이야기 건너뛰기' }).click();
-  await expect(page.getByRole('heading', { name: '3줄 요약' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '이야기 요약' })).toBeVisible();
   await expect(page.locator('.summary li')).toHaveText([
     '할아버지의 열쇠로 가게를 다시 열었다.',
     '화로의 숯불이 다시 붙었다.',
     'D1 목표: 네기마와 생맥주로 첫 손님을 맞는다.',
   ]);
-  await page.getByRole('button', { name: '요약 확인' }).click();
+  await page.locator('#actions .primary').click();
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D1-PREOPEN');
 });
 
 test('키보드만으로 S0 첫 상호작용을 진행한다', async ({ page }) => {
   await page.goto('/src/s0-d3.html');
-  const keyButton = page.getByRole('button', { name: '남겨진 열쇠 선택' });
+  const keyButton = page.getByRole('button', { name: '열쇠 집기' });
   await keyButton.focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('body')).toHaveAttribute('data-state-id', 'S0-STATE-GATE');
-  await expect(page.getByRole('button', { name: '가게 대문 열기' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '가게 문 열기' })).toBeVisible();
 });
 
 test('D1 영업 전 첫 두 대사에서 인물별 전체 장면을 표시한다', async ({ page }) => {
   await page.goto('/src/s0-d3.html?new=1');
-  await page.getByRole('button', { name: '남겨진 열쇠 선택' }).click();
-  await page.getByRole('button', { name: '가게 대문 열기' }).click();
+  await page.getByRole('button', { name: '열쇠 집기' }).click();
+  await page.getByRole('button', { name: '가게 문 열기' }).click();
   await skipStory(page);
   await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-D1-PRE-001');
   await expect(page.locator('#story-illustration')).toHaveAttribute(
@@ -122,7 +122,7 @@ test('D1 영업 전 첫 두 대사에서 인물별 전체 장면을 표시한다
   );
   await expect(page.locator('#story-portrait')).toBeHidden();
   await expect(page.locator('#story-background')).toBeHidden();
-  await page.getByRole('button', { name: '다음 대사' }).click();
+  await page.getByRole('button', { name: '계속', exact: true }).click();
   await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-D1-PRE-002');
   await expect(page.locator('#story-illustration')).toBeVisible();
   await expect(page.locator('#story-illustration')).toHaveAttribute(
@@ -135,7 +135,7 @@ test('D1 영업 전 첫 두 대사에서 인물별 전체 장면을 표시한다
   );
   await expect(page.locator('#story-portrait')).toBeHidden();
   await expect(page.locator('#story-background')).toBeHidden();
-  await expect(page.locator('#portrait-placeholder')).toBeHidden();
+  await expect(page.locator('#portrait-placeholder')).toHaveCount(0);
 });
 
 test('KEY exact PR-SHOP-KEY가 없으면 승인 closed 배경 위에서도 placeholder를 유지한다', async ({
@@ -168,7 +168,7 @@ test('KEY exact PR-SHOP-KEY가 없으면 승인 closed 배경 위에서도 place
   );
   await expect(page.locator('#s0-exterior-background')).toBeVisible();
   await expect(page.locator('#s0-interaction-visual')).toBeHidden();
-  await expect(page.getByText('개발 중')).toBeVisible();
+  await expect(page.getByText('개발 중')).toHaveCount(0);
 });
 
 test('GATE는 PR-SHOP-GATE-S0 없이 exact background 한 장과 DOM action만 렌더한다', async ({
@@ -194,7 +194,7 @@ test('GATE는 PR-SHOP-GATE-S0 없이 exact background 한 장과 DOM action만 �
   });
   await page.goto('/src/s0-d3.html');
   await expect(page.locator('body')).toHaveAttribute('data-asset-mode', 'placeholder');
-  await page.getByRole('button', { name: '남겨진 열쇠 선택' }).click();
+  await page.getByRole('button', { name: '열쇠 집기' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-required-asset-id',
     'BG-EXTERIOR-S0-GATE-OPEN',
@@ -220,8 +220,8 @@ test('GATE는 PR-SHOP-GATE-S0 없이 exact background 한 장과 DOM action만 �
     'src',
     '/public/assets/s0/gate-open-approved.png',
   );
-  await expect(page.getByText('개발 중')).toBeHidden();
-  const action = page.getByRole('button', { name: '가게 대문 열기' });
+  await expect(page.getByText('개발 중')).toHaveCount(0);
+  const action = page.getByRole('button', { name: '가게 문 열기' });
   await expect(action).toBeVisible();
   const backgroundBox = await page.locator('#s0-exterior-background').boundingBox();
   const actionBox = await action.boundingBox();
@@ -245,7 +245,7 @@ test.describe('기준 viewport', () => {
       expect(box.y).toBeGreaterThanOrEqual(0);
       expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
       expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 2);
-      await expect(page.getByRole('button', { name: '남겨진 열쇠 선택' })).toBeVisible();
+      await expect(page.getByRole('button', { name: '열쇠 집기' })).toBeVisible();
     });
   }
 });
