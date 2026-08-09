@@ -122,23 +122,29 @@ test('approved grill negima exact-loads and switches the approved raster for eac
   expect(pixelEvidence.salmonIngredientPixels).toBeGreaterThan(50);
   expect(await D(page, 'grillContract')).toMatchObject({ initialPlacementSlots: [1, 2] });
   await page.waitForTimeout(220);
+  const firstElapsedBeforeSecond = (await D(page, 'cookSlots'))[0].faceElapsedSec;
   await waiting.focus();
   await page.keyboard.press('Space');
   await expect.poll(() => D(page, 'cookSlots')).toEqual([
     expect.objectContaining({ status: 'front', contactFace: 'front' }),
     expect.objectContaining({ status: 'front', contactFace: 'front' }),
   ]);
-  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
-    .toMatchObject({
-      // 승인 평면 하나를 계속 두고 재질만 바꾼다. 굽는 동안 GLSL이 그 이미지를 칠한다.
+  const afterSecondPlacement = await D(page, 'rawNegimaRuntime');
+  const slotViewsAfterSecond = await D(page, 'cookSlots');
+  // 두 번째 꼬치를 올려도 첫 번째 꼬치의 시간과 래스터 단계는 초기화되지 않는다.
+  expect(slotViewsAfterSecond[0].faceElapsedSec).toBeGreaterThanOrEqual(firstElapsedBeforeSecond);
+  expect(slotViewsAfterSecond[1].faceElapsedSec).toBeLessThan(slotViewsAfterSecond[0].faceElapsedSec);
+  expect(['raw', 'cooking', 'proper']).toContain(afterSecondPlacement.slots[0].approvedStage);
+  expect(['raw', 'cooking']).toContain(afterSecondPlacement.slots[1].approvedStage);
+  for (const slot of afterSecondPlacement.slots) {
+    expect(slot).toMatchObject({
       approvedRawVisible: true,
-      approvedStage: 'raw',
-      visibleSpriteStage: 'raw',
       shaderOnApprovedPlane: false,
       shaderCookingActive: false,
       shaderUsesApprovedRaw: false,
       interactionVisible: true,
     });
+  }
   await D(page, 'cookElapse', 8);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
     .toMatchObject({ approvedStage: 'proper', visibleSpriteStage: 'proper' });
@@ -238,9 +244,11 @@ test('이어하기는 이전 페이지에서 만료된 그릴 잠금을 제거�
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
     .toMatchObject({
       approvedRawVisible: true,
-      shaderOnApprovedPlane: true,
-      shaderCookingActive: true,
-      shaderUsesApprovedRaw: true,
+      approvedStage: 'proper',
+      visibleSpriteStage: 'proper',
+      shaderOnApprovedPlane: false,
+      shaderCookingActive: false,
+      shaderUsesApprovedRaw: false,
       interactionVisible: true,
     });
   const grillSlotKey = (await D(page, 'rawNegimaRuntime')).slots[0].key;
