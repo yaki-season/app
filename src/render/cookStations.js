@@ -3,7 +3,13 @@
 // 조립·대기·다중 그릴 칸을 분리하고, 그릴 제작물은 방향·접촉면·양면 누적 시간을 독립 보존한다.
 // 렌더러는 slotViews snapshot만 소비하며 품질·진행 판정은 이 모듈이 소유한다.
 
-import { RECIPE, DONENESS, COOK_THRESHOLDS_SEC, classifyDoneness } from '../config/recipe.js';
+import {
+  RECIPE,
+  EARLY_CAMPAIGN_RECIPES,
+  DONENESS,
+  COOK_THRESHOLDS_SEC,
+  classifyDoneness,
+} from '../config/recipe.js';
 
 const FLIP_AIRBORNE_MS = 300;
 const INPUT_LOCK_MS = 300;
@@ -44,18 +50,25 @@ function qualityFor(frontResult, backResult) {
 export function createCookStations({
   slots = 1,
   recipe = RECIPE,
+  recipes = null,
+  defaultMenuId = 'negima',
   explicitAssemblyTransfer = false,
 } = {}) {
   const normalizedSlotCount = Math.max(1, slots);
-  let assembly = { index: 0, complete: false };
+  const recipeBook = Object.freeze(recipes
+    ? Object.fromEntries(Object.entries(recipes).map(([menuId, sequence]) => [menuId, [...sequence]]))
+    : { [defaultMenuId]: [...recipe] });
+  if (!recipeBook[defaultMenuId]) throw new Error(`기본 조립 레시피 누락: ${defaultMenuId}`);
+  let assembly = { menuId: defaultMenuId, index: 0, complete: false };
   let assembledCount = 0;
   let transferredCount = 0;
-  let waiting = 0;
+  let waitingItems = [];
   let grill = Array.from({ length: normalizedSlotCount }, () => emptySlot());
 
   function emptySlot() {
     return {
       status: 'empty',
+      menuId: null,
       orientationFaceDown: FACE.FRONT,
       contactFace: null,
       elapsedSec: { front: 0, back: 0 },
@@ -91,53 +104,70 @@ export function createCookStations({
   }
 
   // ── 조립 ───────────────────────────────────────────────────
+  function selectRecipe(menuId) {
+    if (!recipeBook[menuId]) return { ok: false, reason: 'unknown-recipe' };
+    if (assembly.index > 0 || assembly.complete) return { ok: false, reason: 'assembly-in-progress' };
+    assembly.menuId = menuId;
+    return { ok: true, menuId, recipe: [...recipeBook[menuId]] };
+  }
+
   function clickIngredient(ingredient) {
     if (assembly.complete) return { ok: false, reason: 'transfer-required' };
-    const expected = recipe[assembly.index];
+    const activeRecipe = recipeBook[assembly.menuId];
+    const expected = activeRecipe[assembly.index];
     if (ingredient !== expected) return { ok: false, reason: 'order' };
     assembly.index += 1;
-    if (assembly.index >= recipe.length) {
+    if (assembly.index >= activeRecipe.length) {
+      const completedMenuId = assembly.menuId;
       assembledCount += 1;
       if (explicitAssemblyTransfer) {
         assembly.complete = true;
       } else {
-        waiting += 1;
+        waitingItems.push(completedMenuId);
         transferredCount += 1;
-        assembly = { index: 0, complete: false };
+        assembly = { menuId: completedMenuId, index: 0, complete: false };
       }
-      return { ok: true, completed: true };
+      return { ok: true, completed: true, menuId: completedMenuId };
     }
-    return { ok: true, completed: false };
+    return { ok: true, completed: false, menuId: assembly.menuId };
   }
   const assemblyIndex = () => assembly.index;
   const assemblyComplete = () => assembly.complete;
   function transferAssembly() {
     if (!assembly.complete) return { ok: false, reason: 'not-complete' };
-    waiting += 1;
+    const menuId = assembly.menuId;
+    waitingItems.push(menuId);
     transferredCount += 1;
-    assembly = { index: 0, complete: false };
-    return { ok: true, transferred: true, waiting, transferredCount };
+    assembly = { menuId, index: 0, complete: false };
+    return { ok: true, transferred: true, menuId, waiting: waitingItems.length, transferredCount };
   }
-  const waitingCount = () => waiting;
+  const waitingCount = (menuId = null) => menuId == null
+    ? waitingItems.length
+    : waitingItems.filter((itemMenuId) => itemMenuId === menuId).length;
 
   // ── 그릴 ───────────────────────────────────────────────────
   function freeSlotIndex() {
     return grill.findIndex((slot) => slot.status === 'empty');
   }
 
-  function placeToGrill(now) {
-    if (waiting <= 0) return { ok: false, reason: 'no-waiting' };
+  function placeToGrill(now, menuId = null) {
+    if (waitingItems.length <= 0) return { ok: false, reason: 'no-waiting' };
+    const waitingIndex = menuId == null ? 0 : waitingItems.indexOf(menuId);
+    if (waitingIndex < 0) return { ok: false, reason: 'no-menu-waiting' };
     const index = freeSlotIndex();
     if (index < 0) return { ok: false, reason: 'no-slot' };
-    waiting -= 1;
+    const [placedMenuId] = waitingItems.splice(waitingIndex, 1);
     grill[index] = {
       ...emptySlot(),
       status: FACE.FRONT,
+      menuId: placedMenuId,
       orientationFaceDown: FACE.FRONT,
       contactFace: FACE.FRONT,
       lastUpdatedAt: now,
     };
-    return { ok: true, slot: index };
+    return menuId == null
+      ? { ok: true, slot: index }
+      : { ok: true, slot: index, menuId: placedMenuId };
   }
 
   function currentElapsedSec(slot) {
@@ -232,6 +262,7 @@ export function createCookStations({
       return { ...result, flipped: result.ok };
     }
 
+    const menuId = slot.menuId ?? defaultMenuId;
     const quality = {
       ...qualityFor(frontResult, backResult),
       frontResult,
@@ -239,8 +270,8 @@ export function createCookStations({
     };
     grill[index] = emptySlot();
     return quality.servable
-      ? { ok: true, retrieved: true, quality }
-      : { ok: false, retrieved: false, discarded: true, reason: 'fully-burnt', quality };
+      ? { ok: true, retrieved: true, menuId, quality }
+      : { ok: false, retrieved: false, discarded: true, menuId, reason: 'fully-burnt', quality };
   }
 
   function removeFromGrill(index, now) {
@@ -311,6 +342,7 @@ export function createCookStations({
       return {
         index,
         status: slot.status,
+        menuId: slot.menuId,
         doneness: slot.contactFace ? classifyDoneness(faceElapsedSec) : null,
         faceElapsedSec,
         frontElapsedSec: slot.elapsedSec.front,
@@ -335,7 +367,8 @@ export function createCookStations({
       assembly,
       assembledCount,
       transferredCount,
-      waiting,
+      waiting: waitingItems.length,
+      waitingItems,
       grill,
     });
   }
@@ -350,14 +383,20 @@ export function createCookStations({
       return { ok: false, reason: 'invalid-snapshot' };
     }
     assembly = structuredClone(saved.assembly);
+    assembly.menuId = recipeBook[assembly.menuId] ? assembly.menuId : defaultMenuId;
     assembly.complete = assembly.complete === true;
     transferredCount = Number.isInteger(saved.transferredCount) ? saved.transferredCount : saved.waiting;
     assembledCount = Number.isInteger(saved.assembledCount)
       ? saved.assembledCount
       : transferredCount + (assembly.complete ? 1 : 0);
-    waiting = saved.waiting;
+    waitingItems = Array.isArray(saved.waitingItems)
+      ? saved.waitingItems.filter((menuId) => recipeBook[menuId])
+      : Array.from({ length: saved.waiting }, () => defaultMenuId);
+    while (waitingItems.length < saved.waiting) waitingItems.push(defaultMenuId);
+    if (waitingItems.length > saved.waiting) waitingItems = waitingItems.slice(0, saved.waiting);
     grill = structuredClone(saved.grill);
     for (const slot of grill) {
+      slot.menuId = slot.status === 'empty' ? null : (recipeBook[slot.menuId] ? slot.menuId : defaultMenuId);
       slot.faceReadyAtMs ??= { front: null, back: null };
       // 구형 D1 저장은 첫 두 꼬치를 staged로 보관했다. 독립 조리 규칙에서는
       // 이어하기 직후 그 꼬치도 앞면 접촉 상태로 전환해 멈춘 제작물을 남기지 않는다.
@@ -385,6 +424,10 @@ export function createCookStations({
 
   return {
     clickIngredient,
+    selectRecipe,
+    selectedMenuId: () => assembly.menuId,
+    currentRecipe: () => [...recipeBook[assembly.menuId]],
+    recipeIds: () => Object.keys(recipeBook),
     assemblyIndex,
     assemblyComplete,
     transferAssembly,
@@ -395,6 +438,7 @@ export function createCookStations({
       transferredCount,
     }),
     waitingCount,
+    waitingItems: () => [...waitingItems],
     placeToGrill,
     clickSlot,
     beginFlip,
@@ -418,15 +462,17 @@ export function createCookStations({
         if (slot.inputLockedUntil) slot.inputLockedUntil -= sec * 1000;
       }
     },
-    debugFillAssembly() {
-      waiting += 1;
-      assembly = { index: 0, complete: false };
+    debugFillAssembly(menuId = assembly.menuId) {
+      if (!recipeBook[menuId]) return false;
+      waitingItems.push(menuId);
+      assembly = { menuId, index: 0, complete: false };
+      return true;
     },
     reset() {
-      assembly = { index: 0, complete: false };
+      assembly = { menuId: defaultMenuId, index: 0, complete: false };
       assembledCount = 0;
       transferredCount = 0;
-      waiting = 0;
+      waitingItems = [];
       grill = grill.map(() => emptySlot());
     },
   };
@@ -436,6 +482,8 @@ export function createD1CookStations(options = {}) {
   return createCookStations({
     ...options,
     slots: 2,
+    recipes: options.recipes ?? EARLY_CAMPAIGN_RECIPES,
+    defaultMenuId: options.defaultMenuId ?? 'negima',
     explicitAssemblyTransfer: true,
   });
 }

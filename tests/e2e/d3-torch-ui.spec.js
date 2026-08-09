@@ -40,7 +40,7 @@ test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다',
   await page.goto('/src/d1-game.html?day=d3');
   await expect.poll(() => page.evaluate(() => !!window.__d1GameDebug)).toBe(true);
 
-  await page.getByTestId('momo-prep').click();
+  await page.evaluate(() => window.__d1GameDebug.d3TorchStage());
   await expect(page.getByTestId('d3-torch-panel')).toBeVisible();
   await page.getByTestId('d3-apply-tare').click();
   await expect(page.getByTestId('d3-torch-state')).toContainText('토치 대기');
@@ -106,10 +106,18 @@ test('D3 8명·7주문은 마지막 정리 뒤 정산하고 D4-preview로 전환
         }
       }
       D.businessAdvance(16000);
-      for (const seat of D.businessView().seats.filter((item) => item.cleanupNeeded)) D.businessBeginCleanup(seat.seatId);
-      D.businessAdvance(3000);
+      while (D.businessView().seats.some((item) => item.cleanupNeeded)) {
+        const seat = D.businessView().seats.find((item) => item.cleanupNeeded);
+        D.businessBeginCleanup(seat.seatId);
+        D.businessAdvance(3000);
+      }
     }
     D.businessAdvanceTo(420000);
+    while (D.businessView().seats.some((item) => item.cleanupNeeded)) {
+      const seat = D.businessView().seats.find((item) => item.cleanupNeeded);
+      D.businessBeginCleanup(seat.seatId);
+      D.businessAdvance(3000);
+    }
     await D.businessPostAction();
     for (let i = 0; i < 5; i += 1) await D.businessPostAction();
     await D.businessPostAction();
@@ -124,7 +132,7 @@ test('D3가 개방되지 않은 저장에서는 직접 URL로 기능 UI를 열 �
   await page.evaluate(() => localStorage.clear());
   await page.goto('/src/d1-game.html?day=d3');
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady?.())).toBe(true);
-  await expect(page.getByTestId('momo-prep')).toBeHidden();
+  await expect(page.getByTestId('assembly-recipe-picker')).toBeHidden();
   await expect(page.getByTestId('d3-torch-panel')).toBeHidden();
   expect(await page.evaluate(() => window.__d1GameDebug.businessSession().ok)).toBe(false);
 });

@@ -7,6 +7,10 @@ import { createProductionRenderer } from './render/productionRenderer.js';
 import { createStationDirector } from './render/stationDirector.js';
 import { createD1RawNegimaCompositor } from './render/d1RawNegimaCompositor.js';
 import {
+  D2_MOMO_RUNTIME_URLS,
+  loadD2MomoSpriteRuntime,
+} from './render/d2MomoSpriteRuntime.js';
+import {
   COOK_SLOT_NEXT_ACTION,
   createD1CookStations,
 } from './render/cookStations.js';
@@ -48,7 +52,6 @@ import {
 } from './config/d1AssemblyLayout.js';
 import { createFirstOrderGuide } from './d1/firstOrderGuide.js';
 import { FIRST_ORDER_RUNTIME_STORAGE_KEY, clearFirstOrderRuntime } from './d1/firstOrderRuntimeStorage.js';
-import { RECIPE } from './config/recipe.js';
 import {
   loadD1RuntimeAssets,
   reportD1RawNegimaExactLoadReadiness,
@@ -87,6 +90,13 @@ window.__d1GameDebug = d1GameDebug;
 
 const requestedDayId = new URLSearchParams(window.location.search).get('day');
 const ACTIVE_DAY_ID = ['d2', 'd3'].includes(requestedDayId) ? requestedDayId : 'd1';
+const DAY_META = Object.freeze({
+  d1: { label: 'D1', nextLabel: 'D2', nextNodeLabel: '둘째 날 이야기' },
+  d2: { label: 'D2', nextLabel: 'D3', nextNodeLabel: '셋째 날 이야기' },
+  d3: { label: 'D3', nextLabel: 'D4', nextNodeLabel: '다음 날 예고' },
+});
+const ACTIVE_DAY = DAY_META[ACTIVE_DAY_ID];
+document.title = `YAKI SEASON — ${ACTIVE_DAY.label} 영업`;
 const DAY_GUIDE_POLICY = Object.freeze({
   d1: { title: '첫 주문 · 총 3항목', mode: 'sequential' },
   d2: { title: 'D2 · 복습 도움', mode: 'review', steps: ['주문을 직접 확인하세요', '조립·그릴·드링크를 병행하세요', '필요하면 전체 보기를 다시 여세요'] },
@@ -94,6 +104,11 @@ const DAY_GUIDE_POLICY = Object.freeze({
 });
 const MENU_ID_BY_LABEL = Object.freeze({ '생맥주': 'beer', '네기마': 'negima', '모모': 'momo' });
 const menuIdForLabel = (label) => MENU_ID_BY_LABEL[label] ?? null;
+const MENU_META = Object.freeze({
+  negima: { label: '네기마' },
+  momo: { label: '모모' },
+});
+const skewerLabel = (menuId) => MENU_META[menuId]?.label ?? '꼬치';
 
 const el = (id) => document.getElementById(id);
 const guide = el('guide');
@@ -114,6 +129,10 @@ document.getElementById('dockShelf')?.style.setProperty(
   '--dock-drink-art',
   `url("${runtimeAssets.ORDER_DRAFT_BEER.url}")`,
 );
+document.getElementById('dockShelf')?.style.setProperty(
+  '--dock-momo-art',
+  `url("${D2_MOMO_RUNTIME_URLS.order}")`,
+);
 document.body.dataset.assetPlaceholderCount = String(runtimeAssets.readiness.placeholderCount);
 document.body.dataset.runtimeAssetsReady = String(runtimeAssets.readiness.ready);
 document.body.dataset.runtimeContractValid = String(runtimeAssets.readiness.contractAudit.valid);
@@ -129,7 +148,9 @@ function readFirstOrderRuntime() {
   try {
     const value = window.localStorage.getItem(FIRST_ORDER_RUNTIME_STORAGE_KEY);
     const parsed = value ? JSON.parse(value) : null;
-    return parsed?.stateVersion === 1 ? parsed : null;
+    if (parsed?.stateVersion !== 1) return null;
+    if (parsed.dayId) return parsed.dayId === ACTIVE_DAY_ID ? parsed : null;
+    return ACTIVE_DAY_ID === 'd1' ? parsed : null;
   } catch {
     return null;
   }
@@ -152,6 +173,16 @@ const assemblyNegimaInstances = {
   build: null,
   tray: [],
 };
+const momoInstances = {
+  grill: {},
+  build: null,
+  tray: [],
+};
+const momoRuntime = {
+  status: ACTIVE_DAY_ID === 'd1' ? 'disabled' : 'loading',
+  error: null,
+};
+document.body.dataset.d2MomoBindingStatus = momoRuntime.status;
 let rawNegimaReadiness = runtimeAssets.readiness;
 const rawNegimaRuntime = {
   status: runtimeAssets.GRILL_RAW_BUNDLE ? 'loading' : 'unavailable',
@@ -223,11 +254,54 @@ async function bootRawNegimaRuntime() {
   }
 }
 void bootRawNegimaRuntime();
+
+async function bootMomoRuntime() {
+  if (ACTIVE_DAY_ID === 'd1') return;
+  try {
+    const runtime = await loadD2MomoSpriteRuntime();
+    for (const key of SLOT_KEYS) {
+      const slotMesh = R.objectMesh[key];
+      if (!slotMesh) throw new Error(`모모 그릴 slot mesh 누락: ${key}`);
+      const instance = runtime.createGrillInstance(
+        slotMesh,
+        D1_GRILL_FOOD_FOOTPRINT.sourceModelTransform,
+      );
+      momoInstances.grill[key] = instance;
+      R.scene.add(instance.holder);
+    }
+    const buildMesh = R.objectMesh[D1_ASSEMBLY_BUILD_SLOT.key];
+    if (!buildMesh) throw new Error('모모 조립 지그 mesh 누락');
+    momoInstances.build = runtime.createAssemblyInstance(
+      buildMesh,
+      D1_ASSEMBLY_BUILD_SLOT.sourceModelTransform,
+    );
+    R.scene.add(momoInstances.build.holder);
+    for (const [index, slot] of D1_ASSEMBLY_TRAY_SLOTS.entries()) {
+      const trayMesh = R.objectMesh[slot.key];
+      if (!trayMesh) throw new Error(`모모 조립 트레이 mesh 누락: ${slot.key}`);
+      const instance = runtime.createTrayInstance(trayMesh, slot.sourceModelTransform);
+      momoInstances.tray.push(instance);
+      R.scene.add(instance.holder);
+    }
+    momoRuntime.status = runtime.status;
+    document.body.dataset.d2MomoBindingStatus = momoRuntime.status;
+    render();
+  } catch (error) {
+    momoRuntime.status = 'failed';
+    momoRuntime.error = error;
+    document.body.dataset.d2MomoBindingStatus = 'failed';
+    console.error('D2 모모 후보 아트 로드 실패:', error);
+  }
+}
+void bootMomoRuntime();
 const grillStatusLayer = el('grillStatusLayer');
 const grillInventory = el('grillInventory');
 const grillWaitingNegima = el('grillWaitingNegima');
 const grillWaitingNegimaHint = el('grillWaitingNegimaHint');
 const grillWaitingNegimaCount = el('grillWaitingNegimaCount');
+const grillWaitingMomo = el('grillWaitingMomo');
+const grillWaitingMomoHint = el('grillWaitingMomoHint');
+const grillWaitingMomoCount = el('grillWaitingMomoCount');
 const grillFinishedInventoryCount = el('grillFinishedInventoryCount');
 const grillFinishedQualityList = el('grillFinishedQualityList');
 const customerServePanel = el('customerServePanel');
@@ -249,25 +323,23 @@ function invokeLockedControl(key, now = performance.now()) {
   return true;
 }
 grillWaitingNegima.addEventListener('click', () => invokeLockedControl('grillWaitTray'));
+grillWaitingMomo.addEventListener('click', () => invokeLockedControl('grillWaitMomo'));
 const dockShelf = el('dockShelf');
 const dock = createPreparedDock({ container: dockShelf });
-const momoPrep = el('momoPrep');
-momoPrep.hidden = true;
-momoPrep.addEventListener('click', () => {
-  if (ACTIVE_DAY_ID === 'd3') {
-    const id = 'D3-MOMO-TARE-ACTIVE';
-    if (!d3Grill.job(id)) {
-      d3Grill.stageCookedItem({ id, menuId: 'momo', seasoning: 'tare', bothFacesCooked: true });
+const assemblyRecipePicker = el('assemblyRecipePicker');
+for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
+  button.addEventListener('click', () => {
+    const result = cook.selectRecipe(button.dataset.menuId);
+    if (!result.ok) {
+      showHint(result.reason === 'assembly-in-progress'
+        ? '지금 조립 중인 꼬치를 먼저 완성하세요'
+        : '아직 고를 수 없는 꼬치입니다');
+      return;
     }
     persistFirstOrderRuntime();
-    showHint('양면 조리 완료 · 타레와 토치 마감을 진행하세요');
-    renderD3Torch();
-    return;
-  }
-  dock.add({ menu: '모모', label: 'Perfect', good: true });
-  showHint('모모 꼬치를 준비 목록에 올렸어요');
-  render();
-});
+    render();
+  });
+}
 const D3_TORCH_JOB_ID = 'D3-MOMO-TARE-ACTIVE';
 const d3TorchPanel = el('d3TorchPanel');
 const d3TorchTrack = el('d3TorchTrack');
@@ -408,6 +480,7 @@ function persistFirstOrderRuntime() {
   try {
     window.localStorage.setItem(FIRST_ORDER_RUNTIME_STORAGE_KEY, JSON.stringify({
       stateVersion: 1,
+      dayId: ACTIVE_DAY_ID,
       guide: firstOrderGuide.snapshot(),
       cook: cook.snapshot(performance.now()),
       d3Grill: d3Grill.snapshot(),
@@ -450,13 +523,17 @@ const CLICKABLE = new Set([
 ]);
 
 // ── D1BusinessDayUiPort 화면 소비 상태 ───────────────────────
-const ORDER_ICON = { '생맥주': '/assets/core/ui/order-icon-draft-beer-r1-b1.png', '네기마': '/assets/core/ui/order-icon-negima-r1-b1.png' };
+const ORDER_ICON = {
+  '생맥주': '/assets/core/ui/order-icon-draft-beer-r1-b1.png',
+  '네기마': '/assets/core/ui/order-icon-negima-r1-b1.png',
+  '모모': D2_MOMO_RUNTIME_URLS.order,
+};
 const PHASE_LABEL = {
   open: '영업 중',
   'closing-drain': '마감 정리',
   'charcoal-down': '숯불',
   settlement: '정산',
-  complete: 'D2 준비',
+  complete: '다음 날 준비',
 };
 const SETTLEMENT_LABEL = {
   'customers-orders': '1. 방문 손님과 완료 주문',
@@ -1025,22 +1102,28 @@ function shouldShow(key) {
 }
 
 function extraKind(customerId) {
-  if (customerId?.startsWith('D1-OFFICE')) return 'office';
-  if (customerId?.startsWith('D1-SOLO')) return 'solo';
+  if (/^D[1-3]-(OFFICE|COMMUTER)/.test(customerId ?? '')) return 'office';
+  if (/^D[1-3]-SOLO/.test(customerId ?? '')) return 'solo';
   return null;
 }
 
 function tsukiokaArtFor(seat, nowMs) {
   if (!seat) return runtimeAssets.TSUKIOKA_WAITING;
+  const view = businessView();
+  const servedBeer = seatHasServedMenu(view, seat, 'beer');
+  const servedSkewer = seatHasServedMenu(view, seat, 'negima')
+    || seatHasServedMenu(view, seat, 'momo');
   if (seat.phase === 'eating' || seat.phase === 'done') {
-    return resolveD1ReceivedEatingFrame(runtimeAssets, nowMs);
+    if (servedBeer && servedSkewer) return resolveD1ReceivedEatingFrame(runtimeAssets, nowMs);
+    if (servedBeer) return runtimeAssets.TSUKIOKA_PARTIAL_BEER;
+    if (servedSkewer) return runtimeAssets.TSUKIOKA_RECEIVED_EATING;
   }
-  const order = businessView()?.orders.find((item) => item.orderId === seat.orderId);
+  const order = view?.orders.find((item) => item.orderId === seat.orderId);
   const partiallyServed = order?.lines.some((line) => line.served > 0)
     && order.lines.some((line) => line.remaining > 0);
-  return partiallyServed
-    ? runtimeAssets.TSUKIOKA_PARTIAL_BEER
-    : runtimeAssets.TSUKIOKA_WAITING;
+  if (partiallyServed && servedBeer) return runtimeAssets.TSUKIOKA_PARTIAL_BEER;
+  if (partiallyServed && servedSkewer) return runtimeAssets.TSUKIOKA_RECEIVED_EATING;
+  return runtimeAssets.TSUKIOKA_WAITING;
 }
 
 function seatHasServedMenu(view, seat, menuId) {
@@ -1085,13 +1168,15 @@ function syncCustomers() {
   for (const seatId of SEAT_IDS) {
     const seat = seats.find((item) => item.seatId === seatId);
     const servedNegima = seatHasServedMenu(view, seat, 'negima');
+    const servedMomo = seatHasServedMenu(view, seat, 'momo');
+    const servedSkewer = servedNegima || servedMomo;
     const servedBeer = seatHasServedMenu(view, seat, 'beer');
     const kind = extraKind(seat?.customerId);
     const officeArt = kind === 'office'
       ? resolveD1OfficeCustomerFrame(runtimeAssets.COMMUTER_CUSTOMER, {
         customerId: seat.customerId,
         phase: seat.phase,
-        servedNegima,
+        servedNegima: servedSkewer,
         servedBeer,
         nowMs,
       })
@@ -1104,7 +1189,13 @@ function syncCustomers() {
       && !seat.cleanupNeeded
       && !['empty', 'leaving', 'cleanup'].includes(seat.phase);
     const dirtyTable = Boolean(seat?.cleanupNeeded || seat?.phase === 'leaving');
-    R.setSeatPlateVisible(seatId, onCustomers && customerPresent && servedNegima);
+    R.setSeatPlateUrl(
+      seatId,
+      servedMomo && !servedNegima
+        ? D2_MOMO_RUNTIME_URLS.servedPlate
+        : '/assets/core/customer/pr-served-negima-plate-r2-b1.png',
+    );
+    R.setSeatPlateVisible(seatId, onCustomers && customerPresent && servedSkewer);
     R.setSeatBeerVisible(seatId, onCustomers && customerPresent
       && servedBeer && !tsukiokaHoldingBeer && !officeHoldingBeer);
     R.setSeatEmptyDishesVisible(seatId, onCustomers && dirtyTable);
@@ -1183,15 +1274,24 @@ function render() {
 
 function syncAssemblyVisual() {
   const onAssembly = director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
-  const ready = rawNegimaRuntime.status === 'ready';
+  const selectedMenuId = cook.selectedMenuId();
+  const negimaReady = rawNegimaRuntime.status === 'ready';
+  const momoReady = momoRuntime.status === 'approved';
   const progress = cook.assemblyProgress();
   if (assemblyNegimaInstances.build) {
     assemblyNegimaInstances.build.setIngredientCount(progress.index);
-    assemblyNegimaInstances.build.holder.visible = onAssembly && ready;
+    assemblyNegimaInstances.build.holder.visible = onAssembly && negimaReady && selectedMenuId === 'negima';
   }
-  const waitingCount = cook.waitingCount();
+  if (momoInstances.build) {
+    momoInstances.build.setIngredientCount(progress.index);
+    momoInstances.build.holder.visible = onAssembly && momoReady && selectedMenuId === 'momo';
+  }
+  const waitingItems = cook.waitingItems();
   assemblyNegimaInstances.tray.forEach((instance, index) => {
-    instance.holder.visible = onAssembly && ready && index < waitingCount;
+    instance.holder.visible = onAssembly && negimaReady && waitingItems[index] === 'negima';
+  });
+  momoInstances.tray.forEach((instance, index) => {
+    instance.holder.visible = onAssembly && momoReady && waitingItems[index] === 'momo';
   });
 }
 
@@ -1215,30 +1315,40 @@ function assemblyInstanceGeometry(instance) {
 function renderGrillWaitingControl(slotViews) {
   const onGrill = director.activeScreenId() === 'SCR-SVC-GRILL';
   const onCustomers = director.activeScreenId() === 'SCR-SVC-CUSTOMERS';
-  const waitingCount = cook.waitingCount();
+  const waitingByMenu = {
+    negima: cook.waitingCount('negima'),
+    momo: cook.waitingCount('momo'),
+  };
   const hasEmptySlot = slotViews.some((slot) => slot.status === 'empty');
   grillInventory.hidden = !onGrill;
   // The prepared inventory is shared state, but selecting it is a customer-station action.
   // Keep the stock while hiding the service-counter art from every work station.
   dockShelf.classList.toggle('station-context-hidden', !onCustomers);
   dockShelf.setAttribute('aria-hidden', String(!onCustomers));
-  grillWaitingNegima.disabled = !onGrill || waitingCount === 0 || !hasEmptySlot;
-  grillWaitingNegima.dataset.waitingCount = String(waitingCount);
-  grillWaitingNegima.dataset.hasEmptySlot = String(hasEmptySlot);
-  grillWaitingNegimaCount.textContent = `× ${waitingCount}`;
-  grillWaitingNegimaHint.textContent = waitingCount === 0
-    ? '조립대에서 완성 꼬치를 옮겨주세요'
-    : hasEmptySlot
-      ? '클릭하여 첫 빈 칸에 한 개 올리기'
-      : '빈 그릴 칸이 생기면 배치할 수 있습니다';
-  grillWaitingNegima.setAttribute(
-    'aria-label',
-    waitingCount === 0
-      ? '네기마. 대기 중인 꼬치 없음.'
+  const syncCard = (menuId, card, countEl, hintEl) => {
+    const count = waitingByMenu[menuId];
+    const label = skewerLabel(menuId);
+    card.hidden = menuId === 'momo' && ACTIVE_DAY_ID === 'd1';
+    card.disabled = !onGrill || count === 0 || !hasEmptySlot;
+    card.dataset.waitingCount = String(count);
+    card.dataset.hasEmptySlot = String(hasEmptySlot);
+    countEl.textContent = `× ${count}`;
+    hintEl.textContent = count === 0
+      ? `조립대에서 ${label}를 완성해 주세요`
       : hasEmptySlot
-        ? `네기마. 대기 ${waitingCount}개. 다음 한 개를 첫 빈 그릴 칸에 올리기.`
-        : `네기마. 대기 ${waitingCount}개. 빈 그릴 칸 없음.`,
-  );
+        ? '클릭하여 첫 빈 칸에 한 개 올리기'
+        : '빈 그릴 칸이 생기면 배치할 수 있습니다';
+    card.setAttribute(
+      'aria-label',
+      count === 0
+        ? `${label}. 대기 중인 꼬치 없음.`
+        : hasEmptySlot
+          ? `${label}. 대기 ${count}개. 다음 한 개를 첫 빈 그릴 칸에 올리기.`
+          : `${label}. 대기 ${count}개. 빈 그릴 칸 없음.`,
+    );
+  };
+  syncCard('negima', grillWaitingNegima, grillWaitingNegimaCount, grillWaitingNegimaHint);
+  syncCard('momo', grillWaitingMomo, grillWaitingMomoCount, grillWaitingMomoHint);
 }
 
 const GRILL_QUALITY_ORDER = Object.freeze(['Perfect', 'Good', 'OK', 'Fail']);
@@ -1250,29 +1360,37 @@ const GRILL_QUALITY_LABEL = Object.freeze({
 });
 
 function renderGrillFinishedInventory() {
-  const negimaItems = dock.items().filter((item) => item.menu === '네기마');
-  grillFinishedInventoryCount.textContent = `총 ${negimaItems.length}개`;
+  const skewerItems = dock.items().filter((item) => ['네기마', '모모'].includes(item.menu));
+  grillFinishedInventoryCount.textContent = `총 ${skewerItems.length}개`;
   grillFinishedQualityList.innerHTML = '';
 
-  if (negimaItems.length === 0) {
+  if (skewerItems.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'grill-inventory-empty';
-    empty.innerHTML = '<strong>완성된 꼬치가 없습니다</strong><span>다 구운 네기마를 그릴에서 꺼내면 여기에 품질별로 표시됩니다.</span>';
+    empty.innerHTML = '<strong>완성된 꼬치가 없습니다</strong><span>다 구운 꼬치를 그릴에서 꺼내면 여기에 종류와 품질별로 표시됩니다.</span>';
     grillFinishedQualityList.appendChild(empty);
     return;
   }
 
   const grouped = new Map();
-  for (const item of negimaItems) grouped.set(item.label, (grouped.get(item.label) ?? 0) + 1);
+  for (const item of skewerItems) {
+    const key = `${item.menu}\u0000${item.label}`;
+    grouped.set(key, (grouped.get(key) ?? 0) + 1);
+  }
   const labels = [...grouped.keys()].sort((a, b) => {
-    const ai = GRILL_QUALITY_ORDER.indexOf(a);
-    const bi = GRILL_QUALITY_ORDER.indexOf(b);
+    const [aMenu, aQuality] = a.split('\u0000');
+    const [bMenu, bQuality] = b.split('\u0000');
+    if (aMenu !== bMenu) return aMenu.localeCompare(bMenu, 'ko');
+    const ai = GRILL_QUALITY_ORDER.indexOf(aQuality);
+    const bi = GRILL_QUALITY_ORDER.indexOf(bQuality);
     return (ai < 0 ? GRILL_QUALITY_ORDER.length : ai) - (bi < 0 ? GRILL_QUALITY_ORDER.length : bi);
   });
-  for (const label of labels) {
+  for (const key of labels) {
+    const [menuLabel, label] = key.split('\u0000');
     const card = document.createElement('div');
     card.className = `grill-finished-quality grill-finished-quality--${label.toLowerCase()}`;
     card.dataset.quality = label;
+    card.dataset.menu = menuLabel;
     card.setAttribute('role', 'listitem');
 
     const marker = document.createElement('span');
@@ -1282,14 +1400,14 @@ function renderGrillFinishedInventory() {
     const copy = document.createElement('span');
     copy.className = 'grill-finished-quality-copy';
     const menu = document.createElement('strong');
-    menu.textContent = '네기마';
+    menu.textContent = menuLabel;
     const quality = document.createElement('span');
     quality.textContent = GRILL_QUALITY_LABEL[label] ?? label;
     copy.append(menu, quality);
 
     const count = document.createElement('strong');
     count.className = 'grill-finished-quality-count';
-    count.textContent = `× ${grouped.get(label)}`;
+    count.textContent = `× ${grouped.get(key)}`;
     card.append(marker, copy, count);
     grillFinishedQualityList.appendChild(card);
   }
@@ -1299,7 +1417,7 @@ function renderReceipts() {
   const ol = el('receipts');
   ol.innerHTML = '';
   const idx = cook.assemblyIndex();
-  RECIPE.forEach((ing, i) => {
+  cook.currentRecipe().forEach((ing, i) => {
     const li = document.createElement('li');
     li.textContent = ing === 'chicken' ? '닭' : '파';
     li.dataset.testid = `order-slot-${i}`;
@@ -1308,7 +1426,13 @@ function renderReceipts() {
     ol.appendChild(li);
   });
   const w = document.createElement('li');
-  w.textContent = `대기 ${cook.waitingCount()}`;
+  const waiting = [
+    ['네기마', cook.waitingCount('negima')],
+    ['모모', cook.waitingCount('momo')],
+  ].filter(([, count]) => count > 0);
+  w.textContent = waiting.length
+    ? waiting.map(([label, count]) => `${label} ${count}`).join(' · ')
+    : '대기 0';
   w.dataset.testid = 'wait-count';
   w.style.width = 'auto';
   w.style.padding = '0 8px';
@@ -1329,15 +1453,15 @@ function renderOrderHud() {
 }
 
 function guideText(view) {
-  if (businessBootError) return `D1 시작 실패 · ${businessBootError.message ?? businessBootError.code}`;
-  if (!view) return 'S0 저장을 확인하고 D1 영업을 준비하는 중입니다.';
+  if (businessBootError) return `${ACTIVE_DAY.label} 시작 실패 · ${businessBootError.message ?? businessBootError.code}`;
+  if (!view) return `${ACTIVE_DAY.label} 영업을 준비하는 중입니다.`;
   if (view.phase === 'closing-drain') {
     const risk = view.limits.riskProcessCount;
     return `23:30 마감. 남은 주문 ${view.closing.unfinishedOrderCount}건·좌석 정리 ${view.closing.cleanupSeatCount}건${risk ? `·그릴 위험 공정 ${risk}건` : ''}을 끝내세요.`;
   }
   if (view.phase === 'charcoal-down') return '모든 주문을 drain했습니다. 남은 숯불을 낮추세요.';
   if (view.phase === 'settlement') return '영업 결과를 다섯 단계로 확인한 뒤 한 번만 저장합니다.';
-  if (view.phase === 'complete') return 'D1 완료 저장 성공 · D2 영업 전 상태로 전환했습니다.';
+  if (view.phase === 'complete') return `${ACTIVE_DAY.label} 영업을 마쳤습니다. ${ACTIVE_DAY.nextLabel} 준비를 저장했습니다.`;
   const cleanup = view.seats.find((seat) => seat.cleanupNeeded);
   if (cleanup) return `${cleanup.seatId} 좌석을 3초 동안 눌러 정리하세요.`;
   const ordering = view.seats.find((seat) => seat.canOrder);
@@ -1364,7 +1488,7 @@ function renderFirstOrderGuide() {
     el('guideCurrent').textContent = policy.mode === 'review' ? '복습형 · 선택 도움' : '신규 행동';
     el('guideNextAction').textContent = policy.mode === 'review'
       ? guideText(businessView())
-      : (d3Grill.job(D3_TORCH_JOB_ID) ? '타레·토치 패널의 상태를 따라 마감하세요.' : '모모 꼬치 준비를 눌러 타레·토치 마감을 시작하세요.');
+      : (d3Grill.job(D3_TORCH_JOB_ID) ? '타레·토치 패널의 상태를 따라 마감하세요.' : '조립대에서 모모를 만들고 양면을 구워 회수하세요.');
     el('guideSteps').replaceChildren(...policy.steps.map((label) => {
       const row = document.createElement('li');
       row.dataset.status = 'review';
@@ -1415,10 +1539,19 @@ function renderFirstOrderGuide() {
 
 function renderBusiness() {
   const view = businessView();
+  guide.hidden = ACTIVE_DAY_ID !== 'd1';
   const activeDayFeatureOpen = businessSession?.ok === true
     && businessSession.completed !== true
     && view?.dayId?.toLowerCase() === ACTIVE_DAY_ID;
-  momoPrep.hidden = !activeDayFeatureOpen || !['d2', 'd3'].includes(ACTIVE_DAY_ID);
+  const recipePickerOpen = activeDayFeatureOpen
+    && ['d2', 'd3'].includes(ACTIVE_DAY_ID)
+    && director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
+  assemblyRecipePicker.hidden = !recipePickerOpen;
+  for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
+    const selected = button.dataset.menuId === cook.selectedMenuId();
+    button.setAttribute('aria-pressed', String(selected));
+    button.disabled = !selected && (cook.assemblyIndex() > 0 || cook.assemblyComplete());
+  }
   el('businessClock').textContent = view?.clock?.label ?? '--:--';
   el('businessPhase').textContent = PHASE_LABEL[view?.phase] ?? (businessBootError ? '오류' : '준비');
   renderFirstOrderGuide();
@@ -1440,7 +1573,7 @@ function renderBusiness() {
     panel.dataset.componentId = 'settlement.ledger.economy';
     panel.dataset.requiredAssetId = 'UI-ECONOMY-ICONS';
     const summary = view.settlement.summary;
-    el('postBusinessTitle').textContent = 'D1 정산 · 5단계';
+    el('postBusinessTitle').textContent = `${ACTIVE_DAY.label} 정산 · 5단계`;
     el('postBusinessSummary').textContent = summary
       ? `방문 ${summary.customers.visited} · 완료 주문 ${summary.orders.completed}\n매출 ${summary.economy.revenue} + 팁 ${summary.economy.tip} = ${summary.economy.total}`
       : '';
@@ -1453,7 +1586,7 @@ function renderBusiness() {
       steps.appendChild(row);
     }
     action.textContent = view.settlement.ready
-      ? (finalizing ? '저장 중…' : 'D1 보상 저장 · D2 전환')
+      ? (finalizing ? '저장 중…' : `${ACTIVE_DAY.label} 보상 저장 · ${ACTIVE_DAY.nextLabel} 전환`)
       : `다음 결과 확인 (${view.settlement.revealedSteps.length + 1}/5)`;
     action.disabled = finalizing;
   }
@@ -1462,7 +1595,9 @@ function renderBusiness() {
   el('resultOverlay').hidden = !completed;
   if (completed) {
     const campaign = businessSession?.bridge?.getState?.();
-    el('resultMessage').textContent = `D1 완료 · 보상 ${campaign?.economy?.balance ?? 44} · 명성 ${campaign?.economy?.reputation ?? 12} · D2 저장 완료`;
+    el('resultMessage').textContent = `${ACTIVE_DAY.label} 완료 · 보상 ${campaign?.economy?.balance ?? 44} · 명성 ${campaign?.economy?.reputation ?? 12} · ${ACTIVE_DAY.nextLabel} 저장 완료`;
+    el('continueButton').textContent = `${ACTIVE_DAY.nextLabel}로 계속`;
+    el('continueButton').href = ACTIVE_DAY_ID === 'd2' ? './s0-d3.html?post=d2' : './s0-d3.html';
   }
 }
 
@@ -1586,9 +1721,11 @@ function handle(key, now) {
         showHint(r.reason === 'transfer-required' ? '완성 꼬치를 먼저 옮기세요' : '순서가 달라요');
       } else if (r.completed) {
         const ordinal = cook.assemblyProgress().assembledCount;
-        firstOrderGuide.complete(`negima.assemble.${ordinal}`);
+        if (ACTIVE_DAY_ID === 'd1' && r.menuId === 'negima') {
+          firstOrderGuide.complete(`negima.assemble.${ordinal}`);
+        }
         persistFirstOrderRuntime();
-        showHint('네기마 완성 · 완성 꼬치를 눌러 오른쪽 트레이로 옮기세요');
+        showHint(`${skewerLabel(r.menuId)} 완성 · 꼬치를 눌러 오른쪽 트레이로 옮기세요`);
       }
       break;
     }
@@ -1598,29 +1735,36 @@ function handle(key, now) {
         reportGuideInvalid('재료 다섯 개를 먼저 올바른 순서로 조립하세요.');
         showHint('아직 완성된 꼬치가 없어요');
       } else {
-        firstOrderGuide.complete(`negima.transfer.${r.transferredCount}`);
+        if (ACTIVE_DAY_ID === 'd1' && r.menuId === 'negima') {
+          firstOrderGuide.complete(`negima.transfer.${r.transferredCount}`);
+        }
         persistFirstOrderRuntime();
-        showHint(`완성 꼬치 ${r.transferredCount}/2 · 전달 트레이 이동 완료`);
+        showHint(`${skewerLabel(r.menuId)} · 전달 트레이 이동 완료`);
       }
       break;
     }
-    case 'grillWaitTray': {
-      const r = cook.placeToGrill(now);
+    case 'grillWaitTray':
+    case 'grillWaitMomo': {
+      const menuId = key === 'grillWaitMomo' ? 'momo' : 'negima';
+      const r = cook.placeToGrill(now, menuId);
       if (!r.ok) {
-        reportGuideInvalid(r.reason === 'no-waiting' ? '전달 트레이에 네기마가 없습니다.' : '빈 그릴 칸이 없습니다.');
-        showHint(r.reason === 'no-waiting' ? '대기 중인 꼬치가 없어요' : '빈 그릴 칸이 없어요');
+        const noWaiting = ['no-waiting', 'no-menu-waiting'].includes(r.reason);
+        reportGuideInvalid(noWaiting ? `전달 트레이에 ${skewerLabel(menuId)}가 없습니다.` : '빈 그릴 칸이 없습니다.');
+        showHint(noWaiting ? `대기 중인 ${skewerLabel(menuId)}가 없어요` : '빈 그릴 칸이 없어요');
       } else {
-        firstOrderGuide.complete(r.slot === 0 ? 'grill.place.1' : 'grill.place.2');
-        showHint(`${r.slot + 1}번 꼬치 앞면 조리 시작 · 다른 꼬치와 독립적으로 익습니다`);
+        if (ACTIVE_DAY_ID === 'd1' && menuId === 'negima') {
+          firstOrderGuide.complete(r.slot === 0 ? 'grill.place.1' : 'grill.place.2');
+        }
+        showHint(`${r.slot + 1}번 ${skewerLabel(menuId)} 앞면 조리 시작 · 다른 꼬치와 독립적으로 익습니다`);
       }
       persistFirstOrderRuntime();
       syncRiskCount(now);
       break;
     }
     case 'grillFinishedTray':
-      showHint(dock.items().some((item) => item.menu === '네기마')
-        ? '완성 네기마는 오른쪽 품질별 목록에서 확인할 수 있어요'
-        : '완료된 네기마가 아직 없어요');
+      showHint(dock.items().some((item) => ['네기마', '모모'].includes(item.menu))
+        ? '완성 꼬치는 오른쪽 종류·품질별 목록에서 확인할 수 있어요'
+        : '완료된 꼬치가 아직 없어요');
       break;
     default:
       if (key.startsWith('seatServe:')) activateSeat(key.slice('seatServe:'.length));
@@ -1632,18 +1776,27 @@ function handle(key, now) {
 function clickGrillSlot(i, now) {
   const r = cook.clickSlot(i, now);
   if (r.retrieved) {
-    dock.add({ menu: '네기마', label: r.quality.grade, good: r.quality.good });
-    if (!guideRetrievedSlots.has(i)) {
+    const menuId = r.menuId ?? 'negima';
+    const label = skewerLabel(menuId);
+    if (ACTIVE_DAY_ID === 'd3' && menuId === 'momo' && !d3Grill.job(D3_TORCH_JOB_ID)) {
+      d3Grill.stageCookedItem({ id: D3_TORCH_JOB_ID, menuId: 'momo', seasoning: 'tare', bothFacesCooked: true });
+    } else {
+      dock.add({ menu: label, label: r.quality.grade, good: r.quality.good });
+    }
+    if (ACTIVE_DAY_ID === 'd1' && menuId === 'negima' && !guideRetrievedSlots.has(i)) {
       guideRetrievedSlots.add(i);
       guideRetrieveCount += 1;
       firstOrderGuide.complete(`grill.retrieve.${guideRetrieveCount}`);
     }
-    firstOrderGuide.preparedItem('negima', now);
+    if (ACTIVE_DAY_ID === 'd1' && menuId === 'negima') firstOrderGuide.preparedItem('negima', now);
     persistFirstOrderRuntime();
-    showHint('완성 네기마가 오른쪽 품질별 목록에 추가됐어요');
+    showHint(ACTIVE_DAY_ID === 'd3' && menuId === 'momo'
+      ? '구운 모모를 타레·토치 마감대로 옮겼어요'
+      : `완성 ${label}가 오른쪽 종류·품질별 목록에 추가됐어요`);
   }
   else if (r.flipped) {
-    if (!guideFlippedSlots.has(i)) {
+    const menuId = cook.slotViews(now)[i]?.menuId ?? 'negima';
+    if (ACTIVE_DAY_ID === 'd1' && menuId === 'negima' && !guideFlippedSlots.has(i)) {
       guideFlippedSlots.add(i);
       guideFlipCount += 1;
       firstOrderGuide.complete(`grill.flip.${guideFlipCount}`);
@@ -1678,6 +1831,7 @@ function grillNegimaStage(view) {
 // 뒤집는 동안에는 단계 표시를 고정한다. 회전 중 판정이 잠깐 비조리로 보여 'raw'로 튀면
 // 화면·회귀 모두에서 단계가 깜빡인다. 마지막으로 확정된 단계를 들고 있는다.
 const rawNegimaStageBySlot = {};
+const momoStageBySlot = {};
 
 function bindCookingMaterialToApprovedPlane(key) {
   const g = grillMats[key];
@@ -1717,14 +1871,16 @@ function updateGrillVisual(now) {
       grillFlipQuaternion.setFromAxisAngle(GRILL_FLIP_AXIS, v?.visualRotationRad ?? 0),
     );
     const rawInstance = rawNegimaInstances[key];
-    // 승인 원본(raw) 한 장을 계속 두고 GLSL이 색만 바꾼다. 단계마다 래스터를 갈아끼우면
-    // 실루엣과 디테일이 통째로 바뀌어 사용자에게 "이미지가 교체된다"로 보인다.
-    // 단계별 그을음·살코기 디테일은 셰이더가 재현한다(사용자 확정, 2026-08-10).
+    const momoInstance = momoInstances.grill[key];
+    const menuId = v?.menuId ?? 'negima';
+    // 네기마는 승인 원본(raw) 한 장에 GLSL 조리색을 적용한다. 모모는 승인된 단계별
+    // 래스터를 선택해 적정·과다·탄 상태의 국소 그을음과 살코기 디테일을 보존한다.
     const shaderOnApprovedPlane = rawInstance?.usesCookingMaterial?.() === true;
     const showApprovedSprite = (
       rawNegimaRuntime.status === 'ready'
       && v != null
       && v.status !== 'empty'
+      && menuId === 'negima'
       && director.activeScreenId() === 'SCR-SVC-GRILL'
     );
     if (rawInstance) {
@@ -1742,10 +1898,26 @@ function updateGrillVisual(now) {
         rawInstance.flipPivot.scale.x = v?.orientationFaceDown === 'back' ? -1 : 1;
       }
     }
+    const showMomoSprite = (
+      momoRuntime.status === 'approved'
+      && v != null
+      && v.status !== 'empty'
+      && menuId === 'momo'
+      && director.activeScreenId() === 'SCR-SVC-GRILL'
+    );
+    if (momoInstance) {
+      momoInstance.holder.visible = showMomoSprite;
+      if (!v?.flipping) {
+        momoStageBySlot[key] = visibleStage;
+        momoInstance.setStage(visibleStage);
+        momoInstance.flipPivot.scale.x = v?.orientationFaceDown === 'back' ? -1 : 1;
+      }
+      momoInstance.flipPivot.rotation.y = 0;
+    }
     // public pgSlot은 visual과 raycast를 한 mesh가 맡으므로 visible=false로 숨기면 입력도 끊긴다.
     // mesh/raycast는 유지하고 color write만 막는다. 승인 평면이 셰이더를 소유한 뒤에는
     // mesh가 raycast 전용이라 항상 막아둔다.
-    if (mesh.material) mesh.material.colorWrite = !showApprovedSprite;
+    if (mesh.material) mesh.material.colorWrite = !(showApprovedSprite || showMomoSprite);
   }
 }
 
@@ -1788,7 +1960,9 @@ async function finalizeBusinessDay() {
   if (!result.ok) {
     showHint(result.error.message);
   } else {
-    showHint(result.duplicate ? '이미 저장된 D1 보상입니다.' : 'D1 저장 완료 · D2로 전환했습니다.');
+    showHint(result.duplicate
+      ? `이미 저장된 ${ACTIVE_DAY.label} 보상입니다.`
+      : `${ACTIVE_DAY.label} 저장 완료 · ${ACTIVE_DAY.nextLabel}로 전환했습니다.`);
   }
   render();
   return result;
@@ -1986,6 +2160,20 @@ Object.assign(d1GameDebug, {
   custPhase: () => legacyCustomerPhase(),
   order: () => legacyFirstOrder(),
   customerArt: () => legacyFirstOrder().생맥주.done > 0 ? 'partial-beer' : 'waiting',
+  tsukiokaVisual: () => {
+    const seat = businessView()?.seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');
+    const art = tsukiokaArtFor(seat, performance.now());
+    const plate = seat ? R.seatBaseMesh[seat.seatId] : null;
+    const beer = seat ? R.seatBeerMesh[seat.seatId] : null;
+    return {
+      seatId: seat?.seatId ?? null,
+      artId: art?.id ?? null,
+      frameRole: art?.frameRole ?? null,
+      plateVisible: plate?.visible === true,
+      plateTextureUrl: plate?.material?.map?.image?.currentSrc ?? plate?.material?.map?.image?.src ?? null,
+      beerVisible: beer?.visible === true,
+    };
+  },
   texturesReady: () => R.texturesReady(),
   rawNegimaRuntime: () => ({
     status: rawNegimaRuntime.status,
@@ -2026,8 +2214,21 @@ Object.assign(d1GameDebug, {
       ),
     })),
   }),
+  momoRuntime: () => ({
+    status: momoRuntime.status,
+    error: momoRuntime.error ? String(momoRuntime.error.message ?? momoRuntime.error) : null,
+    slots: SLOT_KEYS.map((key) => ({
+      key,
+      visible: momoInstances.grill[key]?.holder.visible === true,
+      stage: momoInstances.grill[key]?.stage?.() ?? null,
+      approvedStage: momoStageBySlot[key]
+        ?? grillNegimaStage(cook.slotViews(performance.now())[slotIndexOf(key)]),
+      visualMirrorX: momoInstances.grill[key]?.flipPivot?.scale?.x ?? null,
+    })),
+  }),
   assemblyArtRuntime: () => ({
     status: rawNegimaRuntime.status,
+    selectedMenuId: cook.selectedMenuId(),
     build: {
       visible: assemblyNegimaInstances.build?.holder.visible === true,
       ingredientCount: assemblyNegimaInstances.build?.ingredientCount?.() ?? 0,
@@ -2039,7 +2240,21 @@ Object.assign(d1GameDebug, {
       ingredientCount: instance.ingredientCount(),
       geometry: assemblyInstanceGeometry(instance),
     })),
+    momo: {
+      status: momoRuntime.status,
+      build: {
+        visible: momoInstances.build?.holder.visible === true,
+        ingredientCount: momoInstances.build?.ingredientCount?.() ?? 0,
+        geometry: assemblyInstanceGeometry(momoInstances.build),
+      },
+      tray: momoInstances.tray.map((instance) => ({
+        visible: instance.holder.visible === true,
+        ingredientCount: instance.ingredientCount(),
+        geometry: assemblyInstanceGeometry(instance),
+      })),
+    },
     waitingCount: cook.waitingCount(),
+    waitingItems: cook.waitingItems(),
   }),
   dockItems: () => dock.items(),
   dockSelectedId: () => dock.selectedId(),
@@ -2058,7 +2273,8 @@ Object.assign(d1GameDebug, {
   d3TorchBegin: () => { const result = d3Grill.beginTorch(D3_TORCH_JOB_ID); persistFirstOrderRuntime(); render(); return result; },
   d3TorchSweep: (position, deltaMs) => { const result = d3Grill.sweepTorch(D3_TORCH_JOB_ID, { position, deltaMs }); persistFirstOrderRuntime(); render(); return result; },
   d3TorchFinish: () => { const result = d3Grill.finishTorch(D3_TORCH_JOB_ID); persistFirstOrderRuntime(); render(); return result; },
-  cookFillAssembly: () => cook.debugFillAssembly(),
+  cookSelectRecipe: (menuId) => { const result = cook.selectRecipe(menuId); render(); return result; },
+  cookFillAssembly: (menuId) => { const result = cook.debugFillAssembly(menuId); render(); return result; },
   cookAssemblyIndex: () => cook.assemblyIndex(),
   cookWaiting: () => cook.waitingCount(),
   cookSlots: () => cook.slotViews(performance.now()),
@@ -2081,9 +2297,9 @@ Object.assign(d1GameDebug, {
     text: button.textContent.replace(/\s+/g, ' ').trim(),
     ariaLabel: button.getAttribute('aria-label'),
   })),
-  cookPlace: () => {
+  cookPlace: (menuId = null) => {
     const now = performance.now();
-    const result = cook.placeToGrill(now);
+    const result = cook.placeToGrill(now, menuId);
     syncRiskCount(now);
     render();
     return result;
@@ -2105,11 +2321,20 @@ Object.assign(d1GameDebug, {
     hasEmptySlot: grillWaitingNegima.dataset.hasEmptySlot,
     ariaLabel: grillWaitingNegima.getAttribute('aria-label'),
     rect: grillWaitingNegima.getBoundingClientRect().toJSON(),
+    momo: {
+      hidden: grillWaitingMomo.hidden,
+      disabled: grillWaitingMomo.disabled,
+      waitingCount: grillWaitingMomo.dataset.waitingCount,
+      hasEmptySlot: grillWaitingMomo.dataset.hasEmptySlot,
+      ariaLabel: grillWaitingMomo.getAttribute('aria-label'),
+      rect: grillWaitingMomo.getBoundingClientRect().toJSON(),
+    },
   }),
   grillFinishedInventory: () => ({
     hidden: grillInventory.hidden,
-    total: dock.items().filter((item) => item.menu === '네기마').length,
+    total: dock.items().filter((item) => ['네기마', '모모'].includes(item.menu)).length,
     groups: [...grillFinishedQualityList.querySelectorAll('[data-quality]')].map((card) => ({
+      menu: card.dataset.menu,
       quality: card.dataset.quality,
       text: card.textContent.replace(/\s+/g, ' ').trim(),
       rect: card.getBoundingClientRect().toJSON(),

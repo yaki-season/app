@@ -7,7 +7,7 @@ import { checkContentRules, approvedOnly } from './rules.js';
 // 배열 파일은 여러 레코드, 단일 파일은 레코드 하나로 취급한다.
 const CONTENT_FILES = {
   processes: ['processes/grill.json'],
-  recipes: ['recipes/negima.json'],
+  recipes: ['recipes/negima.json', 'recipes/momo.json'],
   menus: ['menus/early-campaign.json'],
   customers: ['customers/types.json'],
   campaignCharacters: ['campaign/characters.json'],

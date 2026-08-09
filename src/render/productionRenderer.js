@@ -507,6 +507,17 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       const plate = seatBaseMesh[seatId];
       if (plate) plate.visible = visible && !inactiveSeats.has(seatId);
     },
+    setSeatPlateUrl: (seatId, url) => {
+      const plate = seatBaseMesh[seatId];
+      if (!plate?.material || !url) return false;
+      const next = texture(url);
+      if (plate.material.map === next) return false;
+      plate.material.map = next;
+      plate.material.color.setHex(0xffffff);
+      plate.material.colorWrite = true;
+      plate.material.needsUpdate = true;
+      return true;
+    },
     setSeatBeerVisible: (seatId, visible) => {
       const beer = seatBeerMesh[seatId];
       if (beer) beer.visible = visible && !inactiveSeats.has(seatId);

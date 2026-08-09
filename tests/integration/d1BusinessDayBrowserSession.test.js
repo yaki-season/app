@@ -192,7 +192,7 @@ describe('D2 브라우저 영업 세션 조립', () => {
     expect(d2.port.getViewModel()).toMatchObject({ dayId: 'D2', phase: 'open' });
     d2.port.advance(6_000);
     dispatch(d2.port, 'd2:accept:1', D1_UI_INTENT.ACCEPT_ORDER, { orderId: 'D2-ORDER-001' });
-    expect(serve(d2.port, 'D2-REGULAR-A', 'beer', 1)).toMatchObject({ ok: true, partial: true });
-    expect(serve(d2.port, 'D2-REGULAR-A', 'momo', 1)).toMatchObject({ ok: true, completedOrder: true });
+    expect(serve(d2.port, 'REGULAR_TSUKIOKA', 'beer', 1)).toMatchObject({ ok: true, partial: true });
+    expect(serve(d2.port, 'REGULAR_TSUKIOKA', 'momo', 1)).toMatchObject({ ok: true, completedOrder: true });
   });
 });

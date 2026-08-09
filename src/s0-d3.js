@@ -405,6 +405,12 @@ async function advanceAfterStory(story) {
     mode = 'complete';
     return;
   }
+  const alreadyCompleted = campaignBridge.getState()?.campaign?.completedDayIds
+    ?.includes(story.dayId.toLowerCase());
+  if (story.timing === 'post-settlement' && alreadyCompleted) {
+    storyIndex += 1;
+    return;
+  }
   const completed = await campaignBridge.completeDay(story.dayId);
   if (!completed.ok) throw new Error(completed.error.message);
   storyIndex += 1;
@@ -483,7 +489,22 @@ function renderCampaignError(error) {
   actions.replaceChildren();
 }
 
-function restorePresentationPosition(position) {
+function restorePresentationPosition(position, { postDayId = null } = {}) {
+  if (postDayId) {
+    const normalizedDayId = postDayId.toUpperCase();
+    const alreadyCompleted = campaignBridge.getState()?.campaign?.completedDayIds
+      ?.includes(postDayId.toLowerCase());
+    const postIndex = S0_D3_STORY_SCENES.findIndex((story) => (
+      story.dayId === normalizedDayId && story.timing === 'post-settlement'
+    ));
+    if (alreadyCompleted && postIndex >= 0) {
+      dayId = normalizedDayId;
+      storyIndex = postIndex;
+      lineIndex = 0;
+      mode = 'story';
+      return;
+    }
+  }
   if (position.kind === 'prologue') return;
   if (position.kind === 'complete') {
     mode = 'complete';
@@ -510,14 +531,15 @@ function render() {
 async function initialize() {
   await loadRuntimeAssets();
   campaignBridge = new S0D3CampaignBridge({ browserStorage: window.localStorage });
-  const forceNew = new URLSearchParams(window.location.search).get('new') === '1';
+  const params = new URLSearchParams(window.location.search);
+  const forceNew = params.get('new') === '1';
   if (forceNew) clearFirstOrderRuntime(window.localStorage);
   const loaded = await campaignBridge.loadOrStart({ forceNew });
   if (!loaded.ok) {
     renderCampaignError(new Error(loaded.error.message));
     return;
   }
-  restorePresentationPosition(campaignBridge.getPosition());
+  restorePresentationPosition(campaignBridge.getPosition(), { postDayId: params.get('post') });
   render();
 }
 

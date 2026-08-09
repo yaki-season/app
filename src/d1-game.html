@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>YAKI SEASON — D1 전체 영업</title>
+<title>YAKI SEASON — 영업</title>
 <link rel="stylesheet" href="./game.css">
 <link rel="stylesheet" href="./d1-game.css">
 <script type="importmap">
@@ -53,6 +53,12 @@
   <button id="navLeft" class="side-nav left" data-testid="nav-left" aria-label="이전 화면">‹</button>
   <button id="navRight" class="side-nav right" data-testid="nav-right" aria-label="다음 화면">›</button>
 
+  <nav id="assemblyRecipePicker" class="assembly-recipe-picker" data-testid="assembly-recipe-picker" aria-label="조립할 꼬치 선택" hidden>
+    <span>오늘의 꼬치</span>
+    <button type="button" data-menu-id="negima" aria-pressed="true">네기마</button>
+    <button type="button" data-menu-id="momo" aria-pressed="false">모모</button>
+  </nav>
+
   <!-- 그릴 전용 재고 UI. 생꼬치는 한 장의 카드로 배치하고 완성품은 공용 준비 목록을 읽기 전용으로 투영한다. -->
   <section
     id="grillInventory"
@@ -68,7 +74,7 @@
       </header>
       <button
         id="grillWaitingNegima"
-        class="grill-waiting-negima"
+        class="grill-waiting-card grill-waiting-negima"
         type="button"
         data-testid="grill-waiting-negima"
         aria-describedby="grillWaitingNegimaHint"
@@ -82,12 +88,28 @@
           <span id="grillWaitingNegimaHint">대기 중인 꼬치가 없습니다</span>
         </span>
       </button>
+      <button
+        id="grillWaitingMomo"
+        class="grill-waiting-card grill-waiting-momo"
+        type="button"
+        data-testid="grill-waiting-momo"
+        aria-describedby="grillWaitingMomoHint"
+      >
+        <img src="/assets/campaign/d2/order-icon-momo-r1-b1.png" alt="" aria-hidden="true">
+        <span class="grill-inventory-card-copy">
+          <span class="grill-inventory-card-title">
+            <strong>모모</strong>
+            <span id="grillWaitingMomoCount" class="grill-inventory-count">× 0</span>
+          </span>
+          <span id="grillWaitingMomoHint">대기 중인 꼬치가 없습니다</span>
+        </span>
+      </button>
     </article>
 
     <article class="grill-inventory-panel grill-inventory-panel--finished" aria-labelledby="grillFinishedInventoryTitle">
       <header class="grill-inventory-heading">
         <span>굽기 완료</span>
-        <strong id="grillFinishedInventoryTitle">완성 네기마</strong>
+        <strong id="grillFinishedInventoryTitle">완성 꼬치</strong>
         <span id="grillFinishedInventoryCount" class="grill-inventory-total">총 0개</span>
       </header>
       <div
@@ -121,10 +143,6 @@
 
   <!-- 공용 완성품 목록. 조작은 하나로 유지하고 요리/음료의 접지 구역만 분리한다. -->
   <div id="dockShelf" class="dock-shelf" data-testid="dock-shelf" aria-label="요리 서빙대와 음료 픽업대" hidden></div>
-
-  <button id="momoPrep" class="momo-prep" type="button" data-testid="momo-prep" hidden>
-    모모 꼬치 준비
-  </button>
 
   <section id="d3TorchPanel" class="d3-torch-panel" data-testid="d3-torch-panel" data-state-id="D3-MOMO-TARE-READY" aria-labelledby="d3TorchTitle" hidden>
     <div class="d3-torch-head">

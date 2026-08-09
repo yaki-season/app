@@ -161,7 +161,7 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide { disp
   font-size: clamp(10px, .625vw, 12px);
   font-variant-numeric: tabular-nums;
 }
-.grill-waiting-negima {
+.grill-waiting-card {
   position: relative;
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
@@ -182,7 +182,8 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide { disp
   cursor: pointer;
   pointer-events: auto;
 }
-.grill-waiting-negima:hover:not(:disabled) { border-color: #fff0ca; transform: translateY(-1px); }
+.grill-waiting-card + .grill-waiting-card { margin-top: 8px; }
+.grill-waiting-card:hover:not(:disabled) { border-color: #fff0ca; transform: translateY(-1px); }
 .grill-inventory-card-copy { display: grid; min-width: 0; gap: 7px; }
 .grill-inventory-card-title { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; }
 .grill-inventory-card-title strong { color: #fff; font-size: clamp(14px, .82vw, 16px); }
@@ -202,15 +203,22 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide { disp
 .grill-skewer-symbol b:nth-of-type(1) { top: 7px; }
 .grill-skewer-symbol b:nth-of-type(2) { top: 23px; background: #62883c; }
 .grill-skewer-symbol b:nth-of-type(3) { top: 39px; }
-.grill-waiting-negima:focus-visible { outline: 3px solid var(--ember); outline-offset: 3px; }
-.grill-waiting-negima:disabled {
+.grill-waiting-momo > img {
+  display: block;
+  width: 46px;
+  height: 66px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.grill-waiting-card:focus-visible { outline: 3px solid var(--ember); outline-offset: 3px; }
+.grill-waiting-card:disabled {
   border-color: rgba(181, 134, 84, .78);
   color: var(--dim);
   background: rgba(35, 27, 21, .94);
   box-shadow: none;
   cursor: default;
 }
-.grill-waiting-negima:disabled .grill-skewer-symbol { filter: grayscale(.75); opacity: .58; }
+.grill-waiting-card:disabled :is(.grill-skewer-symbol, img) { filter: grayscale(.75); opacity: .58; }
 .grill-finished-quality-list { display: grid; gap: 7px; }
 .grill-inventory-empty {
   display: grid;
@@ -546,12 +554,43 @@ body:has(.quick-nav button[data-screen="SCR-SVC-CUSTOMERS"].active) .order-hud {
 .serve-quantity div { display: flex; gap: 8px; justify-content: center; }
 .serve-quantity button { min-height: 44px; border: 2px solid var(--line); border-radius: 9px; padding: 8px 14px; background: #30261e; color: var(--text); font: inherit; font-weight: 700; }
 .serve-quantity button:focus-visible { outline: 3px solid #fff0ca; outline-offset: 2px; }
-.momo-prep {
-  position: fixed; z-index: 19; left: 50%; bottom: 92px; transform: translateX(-50%);
-  min-height: 44px; border: 2px solid var(--line); border-radius: 999px; padding: 9px 18px;
-  color: var(--text); background: rgba(62, 43, 30, .96); font: inherit; font-weight: 700; cursor: pointer;
+.assembly-recipe-picker {
+  position: fixed;
+  z-index: 19;
+  left: 50%;
+  top: 78px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(181, 134, 84, .72);
+  border-radius: 999px;
+  padding: 5px;
+  color: #d9c1a0;
+  background: rgba(20, 13, 9, .92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .38);
 }
-.momo-prep[hidden] { display: none; }
+.assembly-recipe-picker[hidden] { display: none; }
+.assembly-recipe-picker > span { padding: 0 8px; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.assembly-recipe-picker button {
+  min-height: 34px;
+  border: 1px solid rgba(181, 134, 84, .55);
+  border-radius: 999px;
+  padding: 5px 13px;
+  color: #e5cfad;
+  background: rgba(53, 38, 27, .88);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.assembly-recipe-picker button[aria-pressed="true"] {
+  border-color: #f0aa4b;
+  color: #fff1ce;
+  background: linear-gradient(135deg, #9b4d21, #5f311b);
+  box-shadow: inset 0 1px rgba(255, 226, 174, .28);
+}
+.assembly-recipe-picker button:focus-visible { outline: 3px solid #f2c75c; outline-offset: 2px; }
 
 .d3-torch-panel {
   position: fixed; z-index: 23; left: 50%; bottom: 82px; transform: translateX(-50%);

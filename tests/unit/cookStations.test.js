@@ -7,6 +7,7 @@ import {
 } from '../../src/render/cookStations.js';
 
 const NEGIMA = ['chicken', 'leek', 'chicken', 'leek', 'chicken'];
+const MOMO = ['chicken', 'chicken', 'chicken', 'chicken', 'chicken'];
 const assemble = (cook) => NEGIMA.forEach((ing) => cook.clickIngredient(ing));
 
 describe('createCookStations', () => {
@@ -30,6 +31,48 @@ describe('createCookStations', () => {
     expect(cook.waitingCount()).toBe(0);
     assemble(cook); // 굽는 동안 또 조립
     expect(cook.waitingCount()).toBe(1);
+  });
+
+  it('D2 모모는 메뉴를 고른 뒤 닭 다섯 조각을 조립하고 메뉴별 대기 재고를 보존한다', () => {
+    const cook = createD1CookStations();
+    expect(cook.selectRecipe('momo')).toMatchObject({ ok: true, menuId: 'momo', recipe: MOMO });
+    MOMO.forEach((ingredient) => expect(cook.clickIngredient(ingredient).ok).toBe(true));
+    expect(cook.assemblyComplete()).toBe(true);
+    expect(cook.transferAssembly()).toMatchObject({ ok: true, menuId: 'momo' });
+    expect(cook.waitingCount()).toBe(1);
+    expect(cook.waitingCount('momo')).toBe(1);
+    expect(cook.waitingCount('negima')).toBe(0);
+    expect(cook.waitingItems()).toEqual(['momo']);
+  });
+
+  it('네기마와 모모는 메뉴별로 선택 배치되고 슬롯·회수 결과에 메뉴가 따라간다', () => {
+    const cook = createD1CookStations();
+    cook.debugFillAssembly('negima');
+    cook.debugFillAssembly('momo');
+    expect(cook.placeToGrill(0, 'momo')).toEqual({ ok: true, slot: 0, menuId: 'momo' });
+    expect(cook.placeToGrill(1_000, 'negima')).toEqual({ ok: true, slot: 1, menuId: 'negima' });
+    expect(cook.slotViews(9_000)).toEqual([
+      expect.objectContaining({ menuId: 'momo', frontElapsedSec: 9 }),
+      expect.objectContaining({ menuId: 'negima', frontElapsedSec: 8 }),
+    ]);
+    cook.clickSlot(0, 9_000);
+    expect(cook.clickSlot(0, 17_300)).toMatchObject({ ok: true, retrieved: true, menuId: 'momo' });
+  });
+
+  it('진행 중인 조립에서는 레시피를 바꾸지 못하고 저장 복구 뒤에도 메뉴를 보존한다', () => {
+    const source = createD1CookStations();
+    source.selectRecipe('momo');
+    source.clickIngredient('chicken');
+    expect(source.selectRecipe('negima')).toEqual({ ok: false, reason: 'assembly-in-progress' });
+    MOMO.slice(1).forEach((ingredient) => source.clickIngredient(ingredient));
+    source.transferAssembly();
+    source.placeToGrill(1_000, 'momo');
+    const saved = source.snapshot(3_000);
+
+    const restored = createD1CookStations();
+    expect(restored.restore(saved, 10_000)).toEqual({ ok: true });
+    expect(restored.selectedMenuId()).toBe('momo');
+    expect(restored.slotViews(10_000)[0]).toMatchObject({ menuId: 'momo', frontElapsedSec: 2 });
   });
 
   it('대기 꼬치를 빈 칸에 올려 굽고, 앞→뒤→회수로 완성품이 나온다', () => {

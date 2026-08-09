@@ -18,6 +18,9 @@ describe('D2 전체 영업 정의', () => {
     expect(orders.size).toBe(5);
     expect(items).toBe(10);
     expect(customers.filter((customer) => customer.order.id === 'D2-ORDER-002')).toHaveLength(2);
+    expect(customers[0]).toMatchObject({ id: 'REGULAR_TSUKIOKA', typeId: 'regular' });
+    expect(customers.find((customer) => customer.id === 'D2-COMMUTER-A')?.order.lines)
+      .toEqual([{ menuId: 'negima', quantity: 1 }]);
     expect(definition.nextNodeId).toBe('d3');
   });
 });

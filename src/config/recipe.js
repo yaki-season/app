@@ -15,6 +15,21 @@ export const RECIPE = [
   INGREDIENT.CHICKEN,
 ];
 
+// 모모: 같은 닭다리살 모듈 다섯 조각을 빈 꼬치 중심에 차례로 끼운다.
+// D2도 네기마와 동일한 양면 접촉 조리 공정을 쓰며 재료 조합만 다르다.
+export const MOMO_RECIPE = [
+  INGREDIENT.CHICKEN,
+  INGREDIENT.CHICKEN,
+  INGREDIENT.CHICKEN,
+  INGREDIENT.CHICKEN,
+  INGREDIENT.CHICKEN,
+];
+
+export const EARLY_CAMPAIGN_RECIPES = Object.freeze({
+  negima: RECIPE,
+  momo: MOMO_RECIPE,
+});
+
 // 면별 조리 판정 (GPL-001 §상세요구사항 9)
 export const DONENESS = {
   UNDER: 'under',

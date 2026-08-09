@@ -1,0 +1,10 @@
+{
+  "id": "momo",
+  "schemaVersion": 1,
+  "displayKey": "menu.momo",
+  "active": true,
+  "status": "candidate",
+  "category": "skewer",
+  "ingredients": ["chicken", "chicken", "chicken", "chicken", "chicken"],
+  "processId": "grill-negima"
+}

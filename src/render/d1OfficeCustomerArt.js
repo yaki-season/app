@@ -4,8 +4,10 @@ const OFFICE_IDS = Object.freeze(['a', 'b', 'c', 'd', 'e']);
 const ACTION_PHASES = new Set(['eating', 'done']);
 
 export function d1OfficeCustomerVariant(customerId) {
-  const match = /^D1-OFFICE-([A-E])$/.exec(customerId ?? '');
-  return match ? match[1].toLowerCase() : null;
+  const match = /^D[1-3]-OFFICE-([A-E])$/.exec(customerId ?? '');
+  if (match) return match[1].toLowerCase();
+  if (/^D[2-3]-COMMUTER-/.test(customerId ?? '')) return 'c';
+  return null;
 }
 
 function companionFor(bundle, role) {

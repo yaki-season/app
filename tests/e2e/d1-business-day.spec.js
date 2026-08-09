@@ -232,8 +232,26 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   }
   await expect(page).toHaveURL(/\/src\/d1-game\.html\?day=d2$/);
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady?.())).toBe(true);
-  await expect(page.getByTestId('momo-prep')).toBeVisible();
-  await page.getByTestId('momo-prep').click();
+  await D(page, 'requestScreen', 'SCR-SVC-ASSEMBLY');
+  await expect.poll(() => D(page, 'isTransitioning')).toBe(false);
+  await expect(page.getByTestId('assembly-recipe-picker')).toBeVisible();
+  await page.getByTestId('assembly-recipe-picker').getByRole('button', { name: '모모' }).click();
+  for (let index = 0; index < 5; index += 1) {
+    const chicken = await D(page, 'screenPosOf', 'binChicken');
+    await page.mouse.click(chicken.x, chicken.y);
+    await expect.poll(() => D(page, 'cookAssemblyIndex')).toBe(index + 1);
+    await page.waitForTimeout(230);
+  }
+  const jig = await D(page, 'screenPosOf', 'jigSkewer');
+  await page.mouse.click(jig.x, jig.y);
+  await D(page, 'requestScreen', 'SCR-SVC-GRILL');
+  await expect.poll(() => D(page, 'isTransitioning')).toBe(false);
+  await page.getByTestId('grill-waiting-momo').click();
+  await D(page, 'cookElapse', 9);
+  await D(page, 'cookClickSlot', 0);
+  await page.waitForTimeout(350);
+  await D(page, 'cookElapse', 9);
+  await D(page, 'cookClickSlot', 0);
   await expect(page.getByTestId('dock-shelf')).toContainText('모모');
   expect(errors).toEqual([]);
 });

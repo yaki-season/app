@@ -11,7 +11,7 @@
     {
       "id": "d2-open", "atMs": 0, "requiresOrderCompletionIds": [],
       "customers": [{
-        "id": "D2-REGULAR-A", "typeId": "regular", "groupId": null, "patienceMs": 90000,
+        "id": "REGULAR_TSUKIOKA", "typeId": "regular", "groupId": null, "patienceMs": 90000,
         "order": { "id": "D2-ORDER-001", "guided": false, "lines": [{ "menuId": "beer", "quantity": 1 }, { "menuId": "momo", "quantity": 1 }] }
       }]
     },
@@ -32,7 +32,7 @@
       "id": "d2-review-flow", "atMs": 220000, "requiresOrderCompletionIds": ["D2-ORDER-002"],
       "customers": [
         { "id": "D2-SOLO-A", "typeId": "solo", "groupId": null, "patienceMs": 60000, "order": { "id": "D2-ORDER-003", "guided": false, "lines": [{ "menuId": "momo", "quantity": 1 }] } },
-        { "id": "D2-COMMUTER-A", "typeId": "commuter", "groupId": null, "patienceMs": 60000, "order": { "id": "D2-ORDER-004", "guided": false, "lines": [{ "menuId": "momo", "quantity": 1 }] } }
+        { "id": "D2-COMMUTER-A", "typeId": "commuter", "groupId": null, "patienceMs": 60000, "order": { "id": "D2-ORDER-004", "guided": false, "lines": [{ "menuId": "negima", "quantity": 1 }] } }
       ]
     },
     {

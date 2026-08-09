@@ -1,7 +1,7 @@
 {
   "$schema": "https://yaki-season.local/assets/manifest.schema.json",
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-08",
+  "generatedAt": "2026-08-10",
   "specRefs": [
     "ART-002 v3.6.1",
     "ART-003 v5.0.0",
@@ -1848,6 +1848,192 @@
       "dimensions": {
         "width": 1920,
         "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "D2-MOMO-RUNTIME-SET",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY|SCR-SVC-GRILL|SCR-SVC-CUSTOMERS",
+      "profile": "state-raster",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "anchors": [
+        {
+          "id": "skewer-center",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "clips": [
+        "raw",
+        "cooking",
+        "proper",
+        "overcooked",
+        "burnt",
+        "assembly-0-5",
+        "order",
+        "served"
+      ],
+      "companions": [
+        {
+          "role": "grill-cooking",
+          "url": "/assets/campaign/d2/spr-momo-grill-cooking-r1-b1.png",
+          "sha256": "aa4d2a9ffc33f339e4bf038c5f6adf6efd048cb942604577b9fd766721ad455c",
+          "bytes": 75185,
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          },
+          "format": "png"
+        },
+        {
+          "role": "grill-proper",
+          "url": "/assets/campaign/d2/spr-momo-grill-proper-r1-b1.png",
+          "sha256": "33b763c3fdd511ebebfc00eab7865a73b4bc7a827b7a5a2cae2ce7a71edc34e2",
+          "bytes": 77316,
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          },
+          "format": "png"
+        },
+        {
+          "role": "grill-overcooked",
+          "url": "/assets/campaign/d2/spr-momo-grill-overcooked-r1-b1.png",
+          "sha256": "66dd749874a063f835d2311d5ef78de0a3eed316fa39f359c9407842de1d40ae",
+          "bytes": 78854,
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          },
+          "format": "png"
+        },
+        {
+          "role": "grill-burnt",
+          "url": "/assets/campaign/d2/spr-momo-grill-burnt-r1-b1.png",
+          "sha256": "251b9a86380fa5237dbfe22990349a3573ee82fe250d1ce31d2db3495c7ae003",
+          "bytes": 78197,
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          },
+          "format": "png"
+        },
+        {
+          "role": "assembly-progress-0",
+          "url": "/assets/campaign/d2/spr-momo-assembly-progress-0-r1-b1.png",
+          "sha256": "483d5aaf19ecac086b173409b9a7fb1d8f88f4518f68a50057cceb5d7d11ff50",
+          "bytes": 10157,
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          },
+          "format": "png"
+        },
+        {
+          "role": "assembly-progress-1",
+          "url": "/assets/campaign/d2/spr-momo-assembly-progress-1-r1-b1.png",
+          "sha256": "68feb944bca914c249fda225da4fb362ccb9a36c3fa5857d2368b1e201a1480b",
+          "bytes": 23255,
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          },
+          "format": "png"
+        },
+        {
+          "role": "assembly-progress-2",
+          "url": "/assets/campaign/d2/spr-momo-assembly-progress-2-r1-b1.png",
+          "sha256": "811431a616f6e48a211580534bfa8d2726ab1eb1ffff17d93b6d0d2d6c46b8ad",
+          "bytes": 35990,
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          },
+          "format": "png"
+        },
+        {
+          "role": "assembly-progress-3",
+          "url": "/assets/campaign/d2/spr-momo-assembly-progress-3-r1-b1.png",
+          "sha256": "b807961bd571b46a07a575bee63c74fa5d2269f4bacef52090d8191d0eecf0ac",
+          "bytes": 48621,
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          },
+          "format": "png"
+        },
+        {
+          "role": "assembly-progress-4",
+          "url": "/assets/campaign/d2/spr-momo-assembly-progress-4-r1-b1.png",
+          "sha256": "618cc3ef69bae9e7046ea113a118322f508666becfc5121e10240bf7b8ac08c5",
+          "bytes": 61469,
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          },
+          "format": "png"
+        },
+        {
+          "role": "assembly-progress-5",
+          "url": "/assets/campaign/d2/spr-momo-assembly-progress-5-r1-b1.png",
+          "sha256": "91a3d0f8263b98af2394af93f9afc6f39d465b41a2c093e1249e6073c215ddf8",
+          "bytes": 73887,
+          "dimensions": {
+            "width": 109,
+            "height": 494
+          },
+          "format": "png"
+        },
+        {
+          "role": "order-icon",
+          "url": "/assets/campaign/d2/order-icon-momo-r1-b1.png",
+          "sha256": "314918e09238db203f727916d2a8b395d413b216fd806b91ca4706ad24c59ece",
+          "bytes": 17588,
+          "dimensions": {
+            "width": 256,
+            "height": 256
+          },
+          "format": "png"
+        },
+        {
+          "role": "served-plate",
+          "url": "/assets/campaign/d2/pr-served-momo-plate-r1-b1.png",
+          "sha256": "75c5a25f5bc3bfc6303013a02bb3172049f401f04a6f39fd223ad642bb4ac7bd",
+          "bytes": 1004523,
+          "dimensions": {
+            "width": 2048,
+            "height": 1024
+          },
+          "format": "png"
+        }
+      ],
+      "mirrorSafe": true,
+      "source": "ARTSRC:D2-MOMO-RUNTIME-SET:R1",
+      "provenance": "PROV:D2-MOMO-RUNTIME-SET:R1",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "GPL-004 D2 momo independent two-sided cooking",
+        "Artist 1 task 026 D2 momo R1",
+        "User final approval 2026-08-10"
+      ],
+      "reviewedAt": "2026-08-10",
+      "url": "/assets/campaign/d2/spr-momo-grill-raw-r1-b1.png",
+      "sha256": "91a3d0f8263b98af2394af93f9afc6f39d465b41a2c093e1249e6073c215ddf8",
+      "bytes": 73887,
+      "dimensions": {
+        "width": 109,
+        "height": 494
       },
       "format": "png"
     }
