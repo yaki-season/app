@@ -155,10 +155,10 @@ function requestNewGame() {
   shellDialogs.open({
     overlayId: 'OVR-CONFIRM',
     kicker: '새 게임 확인',
-    title: '새 캠페인을 시작할까요?',
+    title: '처음부터 다시 시작할까요?',
     content: [
-      element('p', { text: '현재 저장은 새 캠페인의 첫 정상 체크포인트가 만들어질 때 백업된 뒤 교체됩니다.' }),
-      element('p', { className: 'warning', text: '확인 전에는 기존 저장을 변경하지 않습니다.' }),
+      element('p', { text: '지금까지 걸어온 이야기는 새 이야기가 자리를 잡은 뒤에 고이 남겨 둡니다.' }),
+      element('p', { className: 'warning', text: '마음을 정하기 전까지는 아무것도 달라지지 않습니다.' }),
     ],
     actions: [
       actionButton('취소', shellDialogs.close),
@@ -208,20 +208,20 @@ function renderStart(extraStatus = null) {
   const summary = saveSummary(loadResult);
   const intro = element('div');
   intro.append(
-    element('p', { className: 'eyebrow', text: '아사노 아키의 작은 야키토리 가게' }),
+    element('p', { className: 'eyebrow', text: '아사노 아키, 다시 불을 켜다' }),
     element('h1', { text: 'YAKI SEASON' }),
     element('p', {
       className: 'lead',
-      text: '남겨진 열쇠로 문을 열고, 숯을 피워 하루의 가게를 이어갑니다.',
+      text: '남겨진 열쇠를 손에 쥐었다. 오래 비어 있던 가게에, 오늘은 내 손으로 다시 불을 켜 보려 한다.',
     }),
   );
   if (extraStatus) intro.append(extraStatus);
   else if (valid) {
-    const card = operationStatus('success', '이어할 저장이 있습니다', summary.dayLabel);
+    const card = operationStatus('success', '돌아갈 자리가 남아 있습니다', summary.dayLabel);
     card.append(summaryDefinition(summary));
     intro.append(card);
   } else if (missing) {
-    intro.append(operationStatus('warning', '첫 캠페인을 시작할 수 있습니다', '이 브라우저에는 이어할 저장이 없습니다.'));
+    intro.append(operationStatus('warning', '아직 쓰이지 않은 첫날', '마음을 정했다. 이제 오래 닫힌 문 앞에 서면 된다.'));
   } else {
     intro.append(operationStatus('error', '저장 복구가 필요합니다', loadResult?.error?.message ?? '저장 상태를 읽지 못했습니다.'));
   }

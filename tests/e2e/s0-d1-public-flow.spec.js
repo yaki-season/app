@@ -13,8 +13,8 @@ const D = (page, name, ...args) => page.evaluate(
 );
 
 async function skipStory(page) {
-  await page.getByRole('button', { name: '이야기 건너뛰기' }).click();
-  await expect(page.getByRole('heading', { name: '이야기 요약' })).toBeVisible();
+  await page.getByRole('button', { name: '이 장면 건너뛰기' }).click();
+  await expect(page.getByRole('heading', { name: '잠시 돌아보며' })).toBeVisible();
   await expect(page.locator('.summary li')).toHaveCount(3);
   await page.locator('#actions .primary').click();
 }
@@ -26,7 +26,7 @@ async function readStory(page) {
 }
 
 async function completeS0Interactions(page) {
-  for (const label of ['열쇠 집기', '가게 문 열기']) {
+  for (const label of ['열쇠를 집는다', '문을 연다']) {
     await page.getByRole('button', { name: label }).click();
   }
 }
@@ -177,13 +177,13 @@ test('전체 대사 경로도 S0와 D1 pre-open을 읽은 뒤 실제 D1으로 �
 
 test('키보드 S0 두 입력 뒤 점화 대사와 요약으로 실제 D1을 부팅한다', async ({ page }) => {
   await beginPublicNewGame(page);
-  for (const label of ['열쇠 집기', '가게 문 열기']) {
+  for (const label of ['열쇠를 집는다', '문을 연다']) {
     const action = page.getByRole('button', { name: label });
     await action.focus();
     await page.keyboard.press('Enter');
   }
   await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-S0-001');
-  await expect(page.locator('.dialogue')).toHaveText('화로에 다시 불이 들었다. 숯 냄새가 먼저 기억을 깨우네.');
+  await expect(page.locator('.dialogue')).toHaveText('문을 열자 묵은 나무 냄새 사이로 오래전 숯 향이 희미하게 되살아났다.');
   await skipStory(page);
   await skipStory(page);
   await waitForD1Boot(page);
@@ -223,7 +223,7 @@ test('day-start 저장 실패 시 d1-game으로 이동하지 않고 campaign-err
 
 test('S0 진행 중 새로고침은 저장 전 안전 정책대로 첫 상호작용으로 돌아간다', async ({ page }) => {
   await beginPublicNewGame(page);
-  await page.getByRole('button', { name: '열쇠 집기' }).click();
+  await page.getByRole('button', { name: '열쇠를 집는다' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-state-id', 'S0-STATE-GATE');
   await page.reload();
   await expect(page.locator('body')).toHaveAttribute('data-state-id', 'S0-STATE-KEY');

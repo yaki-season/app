@@ -272,7 +272,9 @@ function renderS0() {
   const exteriorBackgroundBinding = S0_EXTERIOR_BACKGROUND_BINDINGS.find(
     (entry) => entry.stateId === step.stateId,
   );
-  heading.textContent = '남겨진 열쇠';
+  heading.textContent = step.phaseId === 'exterior-key'
+    ? '비 그친 골목에서'
+    : '오래 닫힌 문';
   hideStoryPortrait();
   hideStoryIllustration();
   hideStoryBackground();
@@ -305,8 +307,8 @@ function renderS0() {
   }
   setIds({ screen: step.screenId, state: step.stateId, scene: 'SCN-S0-INTERACTION', dialogue: 'none' });
   const narration = step.phaseId === 'exterior-key'
-    ? '가게 앞에 놓인 낯익은 열쇠가 눈에 들어옵니다.'
-    : '열쇠가 맞았습니다. 오래 닫혀 있던 가게의 문이 열립니다.';
+    ? '비가 막 그친 골목 끝에 가게가 있었다. 문 앞에 서자 발치의 황동 열쇠가 먼저 눈에 들어왔다. 할아버지가 쓰던 열쇠였다.'
+    : '열쇠를 쥔 손이 차가웠다. 한 번 숨을 고르고 돌리자, 오래 닫혀 있던 문이 뻑뻑한 소리를 내며 열렸다.';
   content.innerHTML = `<p class="scene-narration">${narration}</p>`;
   actions.replaceChildren(button(step.actionLabel, () => {
     if (s0Index < S0_INTERACTIONS.length - 1) s0Index += 1;
@@ -324,10 +326,16 @@ function renderStory() {
   const line = story.lines[lineIndex];
   const speaker = speakerById(line.speakerId);
   dayId = story.dayId;
-  const dayName = { D1: '첫째 날', D2: '둘째 날', D3: '셋째 날' }[story.dayId];
-  heading.textContent = story.dayId === 'S0'
-    ? '다시 켠 불'
-    : `${dayName} · ${story.timing === 'pre-open' ? '영업 전' : '영업을 마치고'}`;
+  const storyHeadings = {
+    S0: '다시 불을 켜는 밤',
+    'D1-pre-open': '첫날, 문을 열기 전에',
+    'D1-post-settlement': '첫날의 불을 끄며',
+    'D2-pre-open': '둘째 날, 조금 익숙해진 손',
+    'D2-post-settlement': '둘째 날의 문을 닫으며',
+    'D3-pre-open': '셋째 날, 가게에 밴 온기',
+    'D3-post-settlement': '셋째 날의 불빛',
+  };
+  heading.textContent = storyHeadings[story.dayId === 'S0' ? 'S0' : `${story.dayId}-${story.timing}`];
   for (const name of [
     'componentId',
     'requiredAssetId',
@@ -362,10 +370,10 @@ function renderStory() {
   content.innerHTML = `<p class="speaker">${speaker.displayName}</p><p class="dialogue">${line.text}</p>`;
   const lastLine = lineIndex === story.lines.length - 1;
   const nextLabel = lastLine && story.dayId === 'D1' && story.timing === 'pre-open'
-    ? '영업 시작'
-    : '계속';
+    ? '첫 손님 맞이하기'
+    : '다음 이야기';
   actions.replaceChildren(
-    button('이야기 건너뛰기', () => { mode = 'summary'; returnMode = 'story'; render(); }),
+    button('이 장면 건너뛰기', () => { mode = 'summary'; returnMode = 'story'; render(); }),
     button(nextLabel, async () => {
       if (lineIndex < story.lines.length - 1) lineIndex += 1;
       else await advanceAfterStory(story);
@@ -404,13 +412,13 @@ async function advanceAfterStory(story) {
 
 function renderSummary() {
   const story = S0_D3_STORY_SCENES[storyIndex];
-  heading.textContent = '이야기 요약';
+  heading.textContent = '잠시 돌아보며';
   hideStoryPortrait();
   hideStoryIllustration();
   renderStoryBackground(story.dayId);
   setIds({ screen: story.screenId, state: `${story.dayId}-skip-summary`, scene: story.sceneId, dialogue: 'SUMMARY-3-LINES' });
   content.innerHTML = `<ol class="summary">${story.skipSummary.map((line) => `<li>${line}</li>`).join('')}</ol>`;
-  actions.replaceChildren(button('계속', async () => {
+  actions.replaceChildren(button('이어서', async () => {
     mode = returnMode;
     await advanceAfterStory(story);
     render();
@@ -423,7 +431,7 @@ function renderBusiness() {
   hideStoryIllustration();
   hideStoryBackground();
   setIds({ screen: 'SCR-SVC-CUSTOMERS', state: `${dayId}-business-placeholder`, scene: 'none', dialogue: 'none' });
-  content.innerHTML = '<p class="scene-narration">오늘의 영업 결과를 확인합니다.</p>';
+  content.innerHTML = '<p class="scene-narration">문을 연 동안 있었던 일들을 천천히 되짚어 본다.</p>';
   actions.replaceChildren(button('영업 결과 보기', () => {
     campaignBridge.enterSettlement();
     mode = 'settlement';
@@ -437,7 +445,7 @@ function renderSettlement() {
   renderStoryBackground(dayId);
   renderStoryPortrait(FIXED_CHARACTER.AKI, 'DLG-D1-POST-002');
   setIds({ screen: 'SCR-POST-SETTLEMENT', state: `${dayId}-settlement-placeholder`, scene: 'none', dialogue: 'none' });
-  content.innerHTML = '<p class="scene-narration">가게를 정리하고 오늘을 돌아봅니다.</p>';
+  content.innerHTML = '<p class="scene-narration">불을 낮추고 가게를 정리한다. 숯 향이 밴 하루가 조용히 저물어 간다.</p>';
   actions.replaceChildren(button('정산 후 이야기', () => {
     storyIndex += 1;
     lineIndex = 0;
@@ -447,12 +455,12 @@ function renderSettlement() {
 }
 
 function renderComplete() {
-  heading.textContent = '셋째 날을 마쳤습니다';
+  heading.textContent = '사흘째 밤, 남겨 둔 불빛';
   hideStoryPortrait();
   hideStoryIllustration();
   hideStoryBackground();
   setIds({ screen: 'SCR-POST-NEXT-GOAL', state: 'D3-complete', scene: 'none', dialogue: 'none' });
-  content.innerHTML = '<p class="scene-narration">작은 가게의 불빛이 사흘째 밤에도 꺼지지 않았습니다.</p>';
+  content.innerHTML = '<p class="scene-narration">작은 가게의 불빛은 사흘째 밤에도 꺼지지 않았다. 내일도 이 문을 열 수 있을 것 같다.</p>';
   actions.replaceChildren(button('처음부터 다시 보기', async () => {
     const restarted = await campaignBridge.restartDevelopmentCampaign();
     if (!restarted.ok) throw new Error(restarted.error.message);

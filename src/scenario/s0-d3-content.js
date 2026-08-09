@@ -27,16 +27,16 @@ export const S0_INTERACTIONS = Object.freeze([
     stateId: 'S0-STATE-KEY',
     screenId: 'SCR-STORY-PROLOGUE',
     phaseId: 'exterior-key',
-    actionLabel: '열쇠 집기',
-    resultText: '차가운 황동 열쇠를 집었습니다.',
+    actionLabel: '열쇠를 집는다',
+    resultText: '손바닥에 차가운 황동의 감촉이 남았다.',
   }),
   Object.freeze({
     interactionId: 'S0-GATE-OPEN',
     stateId: 'S0-STATE-GATE',
     screenId: 'SCR-STORY-PROLOGUE',
     phaseId: 'gate-open',
-    actionLabel: '가게 문 열기',
-    resultText: '잠금이 풀리고 오래 닫혀 있던 대문이 열렸습니다.',
+    actionLabel: '문을 연다',
+    resultText: '오래 잠들어 있던 문이 낮은 소리를 내며 열렸다.',
   }),
 ]);
 
@@ -64,11 +64,11 @@ export const S0_D3_STORY_SCENES = Object.freeze([
     timing: 'post-interaction',
     sourceMasterId: 'CM-PROLOGUE-INHERITANCE-R1',
     lines: [
-      { dialogueId: 'DLG-S0-001', speakerId: 'CHAR-AKI', text: '화로에 다시 불이 들었다. 숯 냄새가 먼저 기억을 깨우네.' },
-      { dialogueId: 'DLG-S0-002', speakerId: 'CHAR-AKI', text: '메뉴는 네기마 하나. 손님이 오면 그때 생각하자.' },
-      { dialogueId: 'DLG-S0-003', speakerId: 'CHAR-AKI', text: '하루만. 오늘 저녁만 문을 열어 보자.' },
+      { dialogueId: 'DLG-S0-001', speakerId: 'CHAR-AKI', text: '문을 열자 묵은 나무 냄새 사이로 오래전 숯 향이 희미하게 되살아났다.' },
+      { dialogueId: 'DLG-S0-002', speakerId: 'CHAR-AKI', text: '할아버지가 쓰던 화로 앞에 서니, 이제야 이곳에 돌아왔다는 실감이 난다.' },
+      { dialogueId: 'DLG-S0-003', speakerId: 'CHAR-AKI', text: '잘할 수 있을지는 모르겠다. 그래도 오늘은 도망치지 말자. 내 손으로 다시 불을 켜 보자.' },
     ],
-    summary: ['할아버지의 열쇠로 가게를 다시 열었다.', '화로의 숯불이 다시 붙었다.', 'D1 목표: 네기마와 생맥주로 첫 손님을 맞는다.'],
+    summary: ['남겨진 열쇠로 오래 닫힌 가게의 문을 열었다.', '희미했던 숯 향과 함께 오래된 기억도 다시 살아났다.', '두렵지만, 오늘 하루만큼은 내 손으로 이 가게를 지켜 보기로 했다.'],
   }),
   scene({
     sceneId: 'SCN-D1-PREOPEN',
@@ -76,11 +76,11 @@ export const S0_D3_STORY_SCENES = Object.freeze([
     timing: 'pre-open',
     sourceMasterId: 'CM-PROLOGUE-INHERITANCE-R1',
     lines: [
-      { dialogueId: 'DLG-D1-PRE-001', speakerId: 'CHAR-AKI', text: '간판 불은 켰다. 이제 손님이 오기만 하면 된다.' },
-      { dialogueId: 'DLG-D1-PRE-002', speakerId: 'CHAR-TSUKIOKA', text: '불이 켜졌군. 네기마 둘하고 생맥주 하나 부탁하지.' },
-      { dialogueId: 'DLG-D1-PRE-003', speakerId: 'CHAR-AKI', text: '네. 하나씩 확인하면서 내겠습니다.' },
+      { dialogueId: 'DLG-D1-PRE-001', speakerId: 'CHAR-AKI', text: '간판에 불을 켰다. 불이 들어온 가게를 한참 바라봤다. 이제 정말 시작이구나.' },
+      { dialogueId: 'DLG-D1-PRE-002', speakerId: 'CHAR-TSUKIOKA', text: '불이 켜졌군. 기다린 보람이 있어. 네기마 둘하고 생맥주 하나 주겠나.' },
+      { dialogueId: 'DLG-D1-PRE-003', speakerId: 'CHAR-AKI', text: '네, 정성껏 준비하겠습니다. 오늘의 첫 손님이니까요.' },
     ],
-    summary: ['첫 손님 츠키오카 세이지가 찾아왔다.', '생맥주 부분 제공과 네기마 2개 조리를 배운다.', 'D1 목표: 첫 주문을 끝까지 안전하게 완성한다.'],
+    summary: ['간판에 불을 밝히자 츠키오카 씨가 첫 손님으로 들어왔다.', '네기마 둘과 생맥주 한 잔. 다시 연 가게의 첫 주문이었다.', '서툴러도 서두르지 말자. 한 가지씩 정성을 다해 내어 보자.'],
   }),
   scene({
     sceneId: 'SCN-D1-POST',
@@ -88,11 +88,11 @@ export const S0_D3_STORY_SCENES = Object.freeze([
     timing: 'post-settlement',
     sourceMasterId: 'CM-SETTLEMENT-R1',
     lines: [
-      { dialogueId: 'DLG-D1-POST-001', speakerId: 'CHAR-TSUKIOKA', text: '처음부터 익숙한 사람은 없지. 불을 꺼뜨리지 않은 걸로 충분해.' },
-      { dialogueId: 'DLG-D1-POST-002', speakerId: 'CHAR-AKI', text: '내일도 열 수 있을지는 모르겠지만, 숯은 남겨 둘게요.' },
-      { dialogueId: 'DLG-D1-POST-003', speakerId: 'CHAR-TSUKIOKA', text: '그럼 내일도 불이 켜져 있으면 들르지.' },
+      { dialogueId: 'DLG-D1-POST-001', speakerId: 'CHAR-TSUKIOKA', text: '나쁘지 않았어. 첫날부터 익숙한 사람은 없지. 불을 꺼뜨리지 않은 것만으로도 충분하네.' },
+      { dialogueId: 'DLG-D1-POST-002', speakerId: 'CHAR-AKI', text: '문을 닫고 나니 다리가 풀리네요. 그래도 내일 쓸 숯은 조금 남겨 두고 싶습니다.' },
+      { dialogueId: 'DLG-D1-POST-003', speakerId: 'CHAR-TSUKIOKA', text: '그 마음이면 됐어. 내일도 불이 보이면 다시 들르지.' },
     ],
-    summary: ['첫 영업과 정산을 마쳤다.', '모모 페이지의 일부가 읽히기 시작했다.', 'D2 목표: 도움 없이 기본 조리 흐름을 반복한다.'],
+    summary: ['어설펐지만 첫날의 마지막 손님까지 무사히 배웅했다.', '낡은 조리 노트에서 모모를 굽던 할아버지의 손길을 찾았다.', '내일은 오늘보다 조금 덜 떨리는 손으로 불 앞에 서 보고 싶다.'],
   }),
   scene({
     sceneId: 'SCN-D2-PREOPEN',
@@ -100,11 +100,11 @@ export const S0_D3_STORY_SCENES = Object.freeze([
     timing: 'pre-open',
     sourceMasterId: 'CM-PREOPEN-PLANNING-R1',
     lines: [
-      { dialogueId: 'DLG-D2-PRE-001', speakerId: 'CHAR-AKI', text: '어제보다 손이 덜 떨린다. 오늘은 모모도 준비해 보자.' },
+      { dialogueId: 'DLG-D2-PRE-001', speakerId: 'CHAR-AKI', text: '어제보다 손끝이 덜 떨린다. 오늘은 노트에 남은 모모도 천천히 준비해 보자.' },
       { dialogueId: 'DLG-D2-PRE-002', speakerId: 'CHAR-TSUKIOKA', text: '어제 그 자리 비었나? 오늘은 천천히 먹고 가겠네.' },
       { dialogueId: 'DLG-D2-PRE-003', speakerId: 'EXTRA-COMMUTER', text: '불빛이 보여서 들어왔어요. 혼자 한 잔 괜찮죠?' },
     ],
-    summary: ['D2에 모모와 재방문 손님이 들어온다.', '기본 조리 안내가 줄어든다.', 'D2 목표: 주문과 준비 목록을 스스로 확인한다.'],
+    summary: ['어제 앉았던 자리를 기억한 손님이 다시 문을 열고 들어왔다.', '골목의 불빛을 따라 낯선 손님도 조용히 자리를 잡았다.', '어제 배운 손맛을 믿고, 오늘은 내 눈으로 가게를 살펴보자.'],
   }),
   scene({
     sceneId: 'SCN-D2-POST',
@@ -113,9 +113,9 @@ export const S0_D3_STORY_SCENES = Object.freeze([
     sourceMasterId: 'CM-SETTLEMENT-R1',
     lines: [
       { dialogueId: 'DLG-D2-POST-001', speakerId: 'EXTRA-SOLO', text: '조용해서 좋네요. 다음에도 퇴근길에 들를게요.' },
-      { dialogueId: 'DLG-D2-POST-002', speakerId: 'CHAR-AKI', text: '두 번째 날이 더 길게 느껴질 줄 알았는데, 벌써 마감이네.' },
+      { dialogueId: 'DLG-D2-POST-002', speakerId: 'CHAR-AKI', text: '어제는 하루만 버텨 보자고 했는데, 오늘은 문을 닫는 시간이 조금 아쉽다.' },
     ],
-    summary: ['모모 첫 판매와 기본 조리를 마쳤다.', '이름 없는 손님이 재방문 의사를 남겼다.', 'D3 목표: 타레 마감과 화면 밖 위험을 익힌다.'],
+    summary: ['노트에서 찾아낸 모모를 처음으로 손님상에 올렸다.', '이름도 묻지 못한 손님이 다음에 또 오겠다는 말을 남겼다.', '왜 이 가게 문을 다시 열었는지, 조금은 알 것 같았다.'],
   }),
   scene({
     sceneId: 'SCN-D3-PREOPEN',
@@ -123,11 +123,11 @@ export const S0_D3_STORY_SCENES = Object.freeze([
     timing: 'pre-open',
     sourceMasterId: 'CM-PREOPEN-PLANNING-R1',
     lines: [
-      { dialogueId: 'DLG-D3-PRE-001', speakerId: 'CHAR-AKI', text: '노트 가장자리에 타레 자국이 남아 있다. 오늘은 붓을 써 보자.' },
+      { dialogueId: 'DLG-D3-PRE-001', speakerId: 'CHAR-AKI', text: '노트 가장자리에 밴 타레 자국에서 달고 깊은 냄새가 난다. 오늘은 이 맛도 되살려 보자.' },
       { dialogueId: 'DLG-D3-PRE-002', speakerId: 'EXTRA-OFFICE-PAIR', text: '소금 하나, 타레 하나요. 생맥주도 같이 부탁해요.' },
-      { dialogueId: 'DLG-D3-PRE-003', speakerId: 'CHAR-AKI', text: '화면을 옮겨도 그릴과 잔 상태를 놓치지 말자.' },
+      { dialogueId: 'DLG-D3-PRE-003', speakerId: 'CHAR-AKI', text: '한쪽에 마음을 빼앗기면 다른 쪽을 놓치기 쉽다. 오늘은 불과 잔을 함께 살피자.' },
     ],
-    summary: ['D3에 타레 주문과 붓 마감이 열린다.', '그릴과 생맥주가 동시에 진행된다.', 'D3 목표: 화면 밖 위험을 확인하며 주문을 완성한다.'],
+    summary: ['할아버지의 노트에 밴 타레 향을 따라 새로운 맛을 준비했다.', '손님이 늘어난 만큼 화로와 맥주 사이를 오가는 발걸음도 바빠졌다.', '조급해하지 말자. 눈앞의 한 사람에게 따뜻한 한 상을 내면 된다.'],
   }),
   scene({
     sceneId: 'SCN-D3-POST',
@@ -139,7 +139,7 @@ export const S0_D3_STORY_SCENES = Object.freeze([
       { dialogueId: 'DLG-D3-POST-002', speakerId: 'CHAR-AKI', text: '아직 서툴지만, 다시 찾을 자리는 남겨 두고 싶어요.' },
       { dialogueId: 'DLG-D3-POST-003', speakerId: 'CHAR-TSUKIOKA', text: '가게는 소문보다 불이 오래 켜져 있는 게 먼저지.' },
     ],
-    summary: ['타레와 교차 작업을 안전하게 마쳤다.', '가게를 소개해도 되는지 묻는 손님이 생겼다.', '다음 목표: D4의 즉시 제공 메뉴를 준비한다.'],
+    summary: ['달큰한 타레 냄새가 가게 안에 오래 남았다.', '누군가에게 이곳을 소개하고 싶다는 손님도 생겼다.', '아직 서툴지만, 내일도 돌아올 자리를 정성껏 남겨 두고 싶다.'],
   }),
 ]);
 
