@@ -14,6 +14,9 @@ import { createDrinkPour, DRINK } from './render/drinkStation.js';
 import { drinkLeverZoneForDelta } from './render/drinkLeverDrag.js';
 import { createBeerLiquidMaterial } from './render/beerLiquidMaterial.js';
 import { createBeerCoreVfxMaterial } from './render/beerCoreVfxMaterial.js';
+import { createGrillMaterial } from './render/grillMaterial.js';
+import { elapsedSecToUniform } from './render/grillRenderer.js';
+import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
@@ -203,6 +206,7 @@ async function bootRawNegimaRuntime() {
     rawNegimaRuntime.status = 'ready';
     rawNegimaRuntime.diagnostics = compositor.diagnostics;
     rawNegimaRuntime.grillRawTexture = compositor.grillRawTexture;
+    for (const key of SLOT_KEYS) bindCookingMaterialToApprovedPlane(key);
     rawNegimaReadiness = reportD1RawNegimaExactLoadReadiness(runtimeAssets.manifest);
     publishRawNegimaReadiness(rawNegimaReadiness);
     document.body.dataset.rawNegimaBindingStatus = 'ready';
@@ -1675,20 +1679,48 @@ function grillNegimaStage(view) {
 // 화면·회귀 모두에서 단계가 깜빡인다. 마지막으로 확정된 단계를 들고 있는다.
 const rawNegimaStageBySlot = {};
 
+function bindCookingMaterialToApprovedPlane(key) {
+  const g = grillMats[key];
+  const instance = rawNegimaInstances[key];
+  if (!g || !instance?.applyCookingMaterial) return false;
+  if (!instance.applyCookingMaterial(g.material)) return false;
+  if (rawNegimaRuntime.grillRawTexture) g.setTexture(rawNegimaRuntime.grillRawTexture);
+  // 셰이더 재질은 이제 승인 평면이 소유한다. pgSlot mesh와 공유하면 그쪽에 걸리는
+  // colorWrite=false가 평면까지 꺼버린다. mesh는 raycast 전용 투명 재질로 되돌린다.
+  const mesh = R.objectMesh[key];
+  if (mesh && mesh.material === g.material) {
+    mesh.material = new THREE.MeshBasicMaterial({
+      transparent: true, opacity: 0, colorWrite: false, depthWrite: false,
+      // 뒤집힌 칸(rotation π)에서도 raycast가 닿아야 회수 클릭이 산다. FrontSide면 뒷면이라 놓친다.
+      side: THREE.DoubleSide,
+    });
+  }
+  return true;
+}
+
 function updateGrillVisual(now) {
   const views = cook.slotViews(now);
   for (const key of SLOT_KEYS) {
     const v = views[slotIndexOf(key)];
     const mesh = R.objectMesh[key];
     if (!mesh) continue;
+    const g = grillMats[key];
+    if (g) {
+      g.setTexture(rawNegimaRuntime.grillRawTexture);
+      g.setTime(now / 1000);
+      for (const [param, value] of Object.entries(d1SecondFaceR3Params(v))) g.setParam(param, value);
+      g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
+    }
     const visibleStage = grillNegimaStage(v);
     mesh.userData.grillBaseQuaternion ??= mesh.quaternion.clone();
     mesh.quaternion.copy(mesh.userData.grillBaseQuaternion).multiply(
       grillFlipQuaternion.setFromAxisAngle(GRILL_FLIP_AXIS, v?.visualRotationRad ?? 0),
     );
     const rawInstance = rawNegimaInstances[key];
-    // 굽기 단계마다 승인된 래스터를 그대로 선택한다. 셰이더 색보정을 다시 섞지 않아
-    // 적정·과다·탄 상태에서 승인한 국소 그을음과 살코기 디테일을 보존한다.
+    // 승인 원본(raw) 한 장을 계속 두고 GLSL이 색만 바꾼다. 단계마다 래스터를 갈아끼우면
+    // 실루엣과 디테일이 통째로 바뀌어 사용자에게 "이미지가 교체된다"로 보인다.
+    // 단계별 그을음·살코기 디테일은 셰이더가 재현한다(사용자 확정, 2026-08-10).
+    const shaderOnApprovedPlane = rawInstance?.usesCookingMaterial?.() === true;
     const showApprovedSprite = (
       rawNegimaRuntime.status === 'ready'
       && v != null
@@ -1699,8 +1731,8 @@ function updateGrillVisual(now) {
       rawInstance.holder.visible = showApprovedSprite;
       if (!v?.flipping) {
         rawNegimaStageBySlot[key] = visibleStage;
-        rawInstance.setCooking?.(false);
-        rawInstance.setStage(visibleStage);
+        if (shaderOnApprovedPlane) rawInstance.setCooking?.(v?.cooking === true);
+        else rawInstance.setStage(visibleStage);
       }
       // The approved grill artwork is a front-facing 2D sprite. Rotating its zero-thickness
       // plane around Y makes the skewer collapse into a sheet of paper mid-flip. Keep the
@@ -1715,6 +1747,15 @@ function updateGrillVisual(now) {
     // mesh가 raycast 전용이라 항상 막아둔다.
     if (mesh.material) mesh.material.colorWrite = !showApprovedSprite;
   }
+}
+
+
+// 익힘 셰이더 재질을 칸마다 만들고 승인 원본 평면에 물린다.
+for (const key of SLOT_KEYS) {
+  createGrillMaterial().then((g) => {
+    grillMats[key] = g;
+    bindCookingMaterialToApprovedPlane(key);
+  }).catch((err) => console.error('익힘 재질 로드 실패:', err));
 }
 
 // ── 화면 전환 ────────────────────────────────────────────────

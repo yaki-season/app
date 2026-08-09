@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { elapsedSecToUniform } from '../../src/render/grillRenderer.js';
 import { GRILL_PARAMS, GRILL_PARAM_RANGES } from '../../src/render/grillShaderParams.js';
@@ -33,5 +34,23 @@ describe('grill shader parameters', () => {
     expect(GRILL_PARAMS.charStartDoneness).toBeGreaterThanOrEqual(0.65);
     expect(GRILL_PARAMS.charThreshold[1]).toBeGreaterThanOrEqual(0.4);
     expect(GRILL_PARAMS.tareTintAmount).toBeLessThanOrEqual(0.2);
+  });
+});
+
+// 사용자 확정(2026-08-10): 그릴 네기마는 승인 원본 한 장을 두고 GLSL이 색만 바꾼다.
+// 단계마다 승인 래스터를 갈아끼우면 실루엣·디테일이 통째로 변해 "이미지가 교체된다"로 보인다.
+// 이 계약이 조용히 뒤집히지 않도록 소스에 고정한다.
+describe('그릴 네기마 렌더 계약', () => {
+  const source = readFileSync(new URL('../../src/d1-game.js', import.meta.url), 'utf8');
+
+  it('굽는 동안 단계별 래스터 교체 대신 셰이더 재질로 색만 바꾼다', () => {
+    // 셰이더 재질을 만들어 승인 평면에 물리는 경로가 살아 있어야 한다.
+    expect(source).toContain('createGrillMaterial()');
+    expect(source).toContain('bindCookingMaterialToApprovedPlane');
+    expect(source).toContain('g.setDoneness(');
+
+    // 조리 중에는 setCooking으로 재질만 전환한다. setStage는 셰이더가 없을 때의 폴백이다.
+    expect(source).toMatch(/if \(shaderOnApprovedPlane\) rawInstance\.setCooking\?\.\(v\?\.cooking === true\);/);
+    expect(source).not.toMatch(/rawInstance\.setCooking\?\.\(false\);\s*\n\s*rawInstance\.setStage/);
   });
 });
