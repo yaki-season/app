@@ -5,9 +5,6 @@
 import * as THREE from 'three';
 import { createProductionRenderer } from './render/productionRenderer.js';
 import { createStationDirector } from './render/stationDirector.js';
-import { createGrillMaterial } from './render/grillMaterial.js';
-import { elapsedSecToUniform } from './render/grillRenderer.js';
-import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createD1RawNegimaCompositor } from './render/d1RawNegimaCompositor.js';
 import {
   COOK_SLOT_NEXT_ACTION,
@@ -20,6 +17,10 @@ import { createBeerCoreVfxMaterial } from './render/beerCoreVfxMaterial.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
+import {
+  isD1OfficeBeerFrame,
+  resolveD1OfficeCustomerFrame,
+} from './render/d1OfficeCustomerArt.js';
 import {
   SCREENS,
   SCREEN_IDS,
@@ -57,6 +58,7 @@ import {
 import {
   createD1BusinessDayBrowserSession,
 } from './application/businessDay/d1BusinessDayBrowserSession.js';
+import { D1_TSUKIOKA_DEPARTURE_SCENE } from './scenario/d1BusinessCutscenes.js';
 import {
   D1_BUSINESS_DAY_RELEASE_DEFINITION_URL,
   loadD1BusinessDayReleaseDefinition,
@@ -198,7 +200,6 @@ async function bootRawNegimaRuntime() {
       assemblyNegimaInstances.tray.push(instance);
       R.scene.add(instance.holder);
     }
-    for (const key of SLOT_KEYS) bindCookingMaterialToApprovedPlane(key);
     rawNegimaRuntime.status = 'ready';
     rawNegimaRuntime.diagnostics = compositor.diagnostics;
     rawNegimaRuntime.grillRawTexture = compositor.grillRawTexture;
@@ -473,6 +474,8 @@ let reportedRiskCount = 0;
 let businessRenderDue = true;
 let lastBusinessFrameAt = null;
 let finalizing = false;
+let departureCutsceneActive = false;
+let departureCutsceneSeen = false;
 
 const nextIntentId = (type) => `d1-screen:${type}:${++businessIntentSequence}`;
 const businessView = () => businessPort?.getViewModel() ?? null;
@@ -484,6 +487,57 @@ function dispatchBusiness(type, fields = {}, intentId = nextIntentId(type)) {
   if (!result.ok) showHint(result.error.message);
   return result;
 }
+
+function tsukiokaSeatFrom(view) {
+  return view?.seats.find((seat) => seat.customerId === 'REGULAR_TSUKIOKA') ?? null;
+}
+
+function openTsukiokaDepartureCutscene() {
+  if (ACTIVE_DAY_ID !== 'd1' || departureCutsceneActive || departureCutsceneSeen) return false;
+  departureCutsceneActive = true;
+  departureCutsceneSeen = true;
+  const [line] = D1_TSUKIOKA_DEPARTURE_SCENE.lines;
+  el('departureCutsceneSpeaker').textContent = line.speakerName;
+  el('departureCutsceneLine').textContent = line.text;
+  el('departureCutscene').hidden = false;
+  document.body.dataset.departureCutscene = 'true';
+  director.request(D1_TSUKIOKA_DEPARTURE_SCENE.screenId, performance.now());
+  dispatchBusiness(D1_UI_INTENT.PAUSE);
+  businessDeltaMs = 0;
+  render();
+  el('departureCutsceneContinue').focus();
+  return true;
+}
+
+function closeTsukiokaDepartureCutscene() {
+  if (!departureCutsceneActive) return false;
+  departureCutsceneActive = false;
+  el('departureCutscene').hidden = true;
+  delete document.body.dataset.departureCutscene;
+  dispatchBusiness(D1_UI_INTENT.RESUME);
+  lastBusinessFrameAt = performance.now();
+  render();
+  return true;
+}
+
+function advanceBusinessRuntime(deltaMs, { showDepartureCutscene = true } = {}) {
+  const before = businessView();
+  const beforeTsukioka = tsukiokaSeatFrom(before);
+  const result = businessPort?.advance(deltaMs) ?? { ok: false };
+  const afterTsukioka = tsukiokaSeatFrom(businessView());
+  if (
+    showDepartureCutscene
+    && !departureCutsceneSeen
+    && ['eating', 'done'].includes(beforeTsukioka?.phase)
+    && afterTsukioka?.phase === 'leaving'
+  ) {
+    openTsukiokaDepartureCutscene();
+  }
+  businessRenderDue = true;
+  return result;
+}
+
+el('departureCutsceneContinue').addEventListener('click', closeTsukiokaDepartureCutscene);
 
 function seatView(seatId) {
   return businessView()?.seats.find((seat) => seat.seatId === seatId) ?? null;
@@ -570,14 +624,21 @@ function activateSeat(seatId) {
   }
 }
 
+function beginCleanupHold(seatId) {
+  if (director.controlsLocked() || cleanupSeatId) return false;
+  const seat = seatView(seatId);
+  if (!seat?.cleanupNeeded) return false;
+  const result = dispatchBusiness(D1_UI_INTENT.BEGIN_CLEANUP, { seatId });
+  if (!result.ok) return false;
+  cleanupSeatId = seatId;
+  render();
+  return true;
+}
+
 serveQuantity.querySelector('[data-act="serve-one"]').addEventListener('click', () => confirmServe(false));
 serveQuantity.querySelector('[data-act="serve-all"]').addEventListener('click', () => confirmServe(true));
 serveQuantity.querySelector('[data-act="serve-cancel"]').addEventListener('click', () => { closeServeQuantity(); render(); });
 
-const FACE_COPY = Object.freeze({
-  front: Object.freeze({ label: '앞면', symbol: '○', className: 'front' }),
-  back: Object.freeze({ label: '뒷면', symbol: '◆', className: 'back' }),
-});
 const grillStatusEls = SLOT_KEYS.map((_, index) => {
   const card = document.createElement('article');
   card.className = 'grill-slot-status';
@@ -590,11 +651,6 @@ const grillStatusEls = SLOT_KEYS.map((_, index) => {
       <span class="grill-face-icon front" aria-hidden="true"><span>○</span></span>
       <span class="grill-face-text"></span>
     </div>
-    <div class="grill-times">
-      <span class="grill-front-time"></span>
-      <span class="grill-back-time"></span>
-    </div>
-    <p class="grill-preserved"></p>
     <p class="grill-action"></p>`;
   grillStatusLayer.appendChild(card);
   card.addEventListener('click', () => clickGrillSlot(index, performance.now()));
@@ -608,9 +664,6 @@ const grillStatusEls = SLOT_KEYS.map((_, index) => {
     icon: card.querySelector('.grill-face-icon'),
     iconGlyph: card.querySelector('.grill-face-icon > span'),
     face: card.querySelector('.grill-face-text'),
-    front: card.querySelector('.grill-front-time'),
-    back: card.querySelector('.grill-back-time'),
-    preserved: card.querySelector('.grill-preserved'),
     action: card.querySelector('.grill-action'),
   };
 });
@@ -619,51 +672,42 @@ function elapsedLabel(value) {
   return Number(value ?? 0).toFixed(1);
 }
 
-const GRILL_NEXT_ACTION_COPY = Object.freeze({
-  [COOK_SLOT_NEXT_ACTION.NONE]: '현재 행동 · 대기',
-  [COOK_SLOT_NEXT_ACTION.WAIT]: '현재 행동 · 회전/입력 잠금 대기',
-  [COOK_SLOT_NEXT_ACTION.FLIP]: '현재 행동 · 뒤집기',
-  [COOK_SLOT_NEXT_ACTION.RETRIEVE]: '현재 행동 · 회수',
-});
-
-function grillNextActionCopy(slot) {
-  return GRILL_NEXT_ACTION_COPY[slot.nextAction]
-    ?? GRILL_NEXT_ACTION_COPY[COOK_SLOT_NEXT_ACTION.WAIT];
-}
-
 function grillStatusCopy(slot) {
-  const front = elapsedLabel(slot.frontElapsedSec);
-  const back = elapsedLabel(slot.backElapsedSec);
   if (slot.status === 'staged') {
     return {
-      face: '접촉면 없음',
-      icon: { symbol: 'Ⅱ', className: 'airborne' },
-      preserved: '앞면 0.0초 · 뒷면 0.0초 보존',
-      action: grillNextActionCopy(slot),
+      face: '저장 상태 복구 중',
+      icon: { symbol: '·', className: 'airborne' },
+      action: '앞면 조리를 다시 시작합니다',
     };
   }
   if (slot.flipping) {
     return {
-      face: '공중 회전',
+      face: '뒤집는 중',
       icon: { symbol: '↻', className: 'airborne' },
-      preserved: `앞면 ${front}초 · 뒷면 ${back}초 · 양면 정지`,
-      action: grillNextActionCopy(slot),
+      action: '꼬치가 돌아가는 중입니다',
     };
   }
-  const contact = FACE_COPY[slot.contactFace] ?? {
-    label: '접촉면 없음',
-    symbol: 'Ⅱ',
-    className: 'airborne',
-  };
-  const preservedFace = slot.contactFace === 'back' ? '앞면' : '뒷면';
-  const preservedElapsed = slot.contactFace === 'back' ? front : back;
-  const cookingFace = slot.contactFace === 'back' ? '뒷면' : '앞면';
-  return {
-    face: `현재 접촉면 · ${contact.label}`,
-    icon: contact,
-    preserved: `${preservedFace} ${preservedElapsed}초 보존 · ${cookingFace} 조리 중`,
-    action: grillNextActionCopy(slot),
-  };
+  if (slot.nextAction === COOK_SLOT_NEXT_ACTION.RETRIEVE) {
+    return {
+      face: '양면 굽기 완료',
+      icon: { symbol: '✓', className: 'back' },
+      action: '다 익었어요 · 꼬치를 눌러 꺼내세요',
+    };
+  }
+
+  const flipped = slot.contactFace === 'back';
+  const face = flipped ? '뒤집은 면 굽는 중' : '첫 면 굽는 중';
+  const icon = flipped
+    ? { symbol: 'Ⅱ', className: 'back' }
+    : { symbol: 'Ⅰ', className: 'front' };
+  const action = slot.doneness === 'perfect'
+    ? '노릇해졌어요 · 꼬치를 눌러 뒤집으세요'
+    : slot.doneness === 'over'
+      ? '많이 익었어요 · 지금 바로 뒤집으세요'
+      : slot.doneness === 'burnt'
+        ? '타기 시작했어요 · 바로 뒤집으세요'
+        : '색이 노릇해질 때까지 지켜보세요';
+  return { face, icon, action };
 }
 
 function updateGrillStatus(now) {
@@ -700,14 +744,8 @@ function updateGrillStatus(now) {
     ui.icon.className = `grill-face-icon ${copy.icon.className}`;
     ui.iconGlyph.textContent = copy.icon.symbol;
     ui.face.textContent = copy.face;
-    ui.front.textContent = `앞면 ${elapsedLabel(slot.frontElapsedSec)}초`;
-    ui.back.textContent = `뒷면 ${elapsedLabel(slot.backElapsedSec)}초`;
-    ui.preserved.textContent = copy.preserved;
     ui.action.textContent = copy.action;
-    ui.card.setAttribute(
-      'aria-label',
-      `${index + 1}번 꼬치. ${copy.face}. ${ui.front.textContent}. ${ui.back.textContent}. ${copy.preserved}. ${copy.action}.`,
-    );
+    ui.card.setAttribute('aria-label', `${index + 1}번 꼬치. ${copy.face}. ${copy.action}.`);
   });
 }
 
@@ -717,12 +755,54 @@ const serveTargetButtons = new Map(SEAT_IDS.map((seatId, index) => {
   button.className = 'customer-serve-target';
   button.dataset.testid = `serve-target-${seatId}`;
   button.dataset.seatId = seatId;
-  button.addEventListener('click', () => {
+  const syncFocusVisual = (focused) => {
+    const bubble = document.querySelector(`[data-testid="bubble-${seatId}"]`);
+    if (bubble) bubble.dataset.seatFocus = String(focused);
+    const progress = document.querySelector(`[data-testid="cleanup-progress-${seatId}"]`);
+    if (progress) progress.dataset.seatFocus = String(focused);
+  };
+  button.addEventListener('focus', () => syncFocusVisual(true));
+  button.addEventListener('blur', () => syncFocusVisual(false));
+  button.addEventListener('pointerdown', (event) => {
+    if (!seatView(seatId)?.cleanupNeeded) return;
+    if (beginCleanupHold(seatId)) {
+      button.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    }
+  });
+  button.addEventListener('keydown', (event) => {
+    if (!['Enter', ' '].includes(event.key) || event.repeat || !seatView(seatId)?.cleanupNeeded) return;
+    if (beginCleanupHold(seatId)) event.preventDefault();
+  });
+  button.addEventListener('keyup', (event) => {
+    if (!['Enter', ' '].includes(event.key) || cleanupSeatId !== seatId) return;
+    event.preventDefault();
+    releaseCleanupHold();
+  });
+  button.addEventListener('click', (event) => {
+    // 정리는 click이 아니라 hold로만 진행한다. pointerup 뒤 생성되는 click이
+    // 다시 좌석 안내를 띄우지 않도록 여기서 소비한다.
+    if (seatView(seatId)?.cleanupNeeded) {
+      event.preventDefault();
+      return;
+    }
     activateSeat(seatId);
     render();
   });
+  const cleanupProgress = document.createElement('div');
+  cleanupProgress.className = 'customer-cleanup-progress';
+  cleanupProgress.dataset.testid = `cleanup-progress-${seatId}`;
+  cleanupProgress.dataset.active = 'false';
+  cleanupProgress.hidden = true;
+  cleanupProgress.setAttribute('role', 'progressbar');
+  cleanupProgress.setAttribute('aria-label', `${index + 1}번 좌석 정리 진행`);
+  cleanupProgress.setAttribute('aria-valuemin', '0');
+  cleanupProgress.setAttribute('aria-valuemax', '100');
+  cleanupProgress.setAttribute('aria-valuenow', '0');
+  cleanupProgress.innerHTML = '<span class="customer-cleanup-progress__label">정리</span>';
   customerServeTargets.appendChild(button);
-  return [seatId, { button, index }];
+  customerServeTargets.appendChild(cleanupProgress);
+  return [seatId, { button, cleanupProgress, index }];
 }));
 
 function renderPreparedSelection() {
@@ -748,7 +828,7 @@ function renderServeTargets() {
   const selected = dock.selected();
   for (const seatId of SEAT_IDS) {
     const seat = view.seats.find((item) => item.seatId === seatId);
-    const { button, index } = serveTargetButtons.get(seatId);
+    const { button, cleanupProgress, index } = serveTargetButtons.get(seatId);
     const eligible = seatCanReceiveSelected(seat, selected);
     const cleanupNeeded = Boolean(seat?.cleanupNeeded);
     const canActivate = Boolean(seat?.canOrder || eligible || cleanupNeeded);
@@ -772,18 +852,31 @@ function renderServeTargets() {
         ? `${seatLabel}. 정리 필요. 3초 동안 눌러 정리하세요.`
         : `${seatLabel} ${customerLabel}. ${remaining}.${seat?.canOrder ? ' 주문 접수 가능.' : ''}${eligible ? ` 선택한 ${selected.menu} 제공 가능.` : ''}`,
     );
+    const progress = Math.max(0, Math.min(1, seat?.cleanupProgress ?? 0));
+    const active = cleanupSeatId === seatId;
+    cleanupProgress.hidden = !cleanupNeeded;
+    cleanupProgress.dataset.active = String(active);
+    cleanupProgress.style.setProperty('--cleanup-progress', String(progress));
+    cleanupProgress.setAttribute('aria-valuenow', String(Math.round(progress * 100)));
+    cleanupProgress.querySelector('.customer-cleanup-progress__label').textContent = '정리';
   }
   positionServeTargets();
 }
 
 function positionServeTargets() {
   if (customerServePanel.hidden) return;
-  for (const [seatId, { button }] of serveTargetButtons) {
+  for (const [seatId, { button, cleanupProgress }] of serveTargetButtons) {
     const anchor = R.seatBubbleWorld[seatId];
     if (!anchor) continue;
     const point = R.projectToScreen(anchor);
     button.style.left = `${point.x}px`;
     button.style.top = `${point.y + 24}px`;
+    const cleanupAnchor = R.seatCleanupWorld[seatId];
+    if (cleanupAnchor) {
+      const cleanupPoint = R.projectToScreen(cleanupAnchor);
+      cleanupProgress.style.left = `${cleanupPoint.x}px`;
+      cleanupProgress.style.top = `${cleanupPoint.y}px`;
+    }
   }
 }
 
@@ -935,10 +1028,10 @@ function extraKind(customerId) {
 
 function tsukiokaArtFor(seat, nowMs) {
   if (!seat) return runtimeAssets.TSUKIOKA_WAITING;
-  if (seat.phase === 'eating' || seat.phase === 'done' || seat.phase === 'leaving') {
+  if (seat.phase === 'eating' || seat.phase === 'done') {
     return resolveD1ReceivedEatingFrame(runtimeAssets, nowMs);
   }
-  const order = businessView()?.orders.find((item) => item.seatId === seat.seatId);
+  const order = businessView()?.orders.find((item) => item.orderId === seat.orderId);
   const partiallyServed = order?.lines.some((line) => line.served > 0)
     && order.lines.some((line) => line.remaining > 0);
   return partiallyServed
@@ -946,24 +1039,71 @@ function tsukiokaArtFor(seat, nowMs) {
     : runtimeAssets.TSUKIOKA_WAITING;
 }
 
-function updateTsukiokaArt(nowMs = performance.now()) {
-  const seat = businessView()?.seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');
-  const visible = director.activeScreenId() === 'SCR-SVC-CUSTOMERS' && !!seat?.occupied;
+function seatHasServedMenu(view, seat, menuId) {
+  const order = view?.orders.find((item) => item.orderId === seat?.orderId);
+  return order?.lines.some((line) => line.menuId === menuId && line.served > 0) === true;
+}
+
+function updateTsukiokaArt(nowMs = performance.now(), resolvedArt = null) {
+  const view = businessView();
+  const seat = view?.seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');
+  const visible = director.activeScreenId() === 'SCR-SVC-CUSTOMERS'
+    && (departureCutsceneActive || (
+      !!seat?.occupied
+      && !seat.cleanupNeeded
+      && !['empty', 'leaving', 'cleanup'].includes(seat.phase)
+    ));
   R.setObjectVisible('custTsukioka', visible);
-  if (!visible) return;
-  R.setArtUrl('custTsukioka', tsukiokaArtFor(seat, nowMs).url);
+  if (!visible) return null;
+  const art = resolvedArt ?? tsukiokaArtFor(seat, nowMs);
+  R.setArtUrl('custTsukioka', art.url);
+  const holdingBeer = art.id === runtimeAssets.TSUKIOKA_PARTIAL_BEER.id
+    || art.frameRole === 'drink-frame';
+  // actor 프레임은 매 rAF마다 바뀐다. 같은 프레임에서 테이블 잔도 함께 숨겨
+  // 손과 테이블에 잔이 한 프레임이라도 중복되는 현상을 막는다.
+  R.setSeatBeerVisible(seat.seatId, seatHasServedMenu(view, seat, 'beer') && !holdingBeer);
   const genericActor = R.seatActorMesh[seat.seatId];
   if (genericActor) genericActor.visible = false;
+  return art;
 }
 
 function syncCustomers() {
   const view = businessView();
   const seats = view?.seats ?? [];
+  if (cleanupSeatId && !seats.find((seat) => seat.seatId === cleanupSeatId)?.cleanupNeeded) {
+    cleanupSeatId = null;
+  }
   const onCustomers = director.activeScreenId() === 'SCR-SVC-CUSTOMERS';
+  const nowMs = performance.now();
+  const tsukiokaSeat = seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');
+  R.setSeatLayoutMode(tsukiokaSeat ? 'tsukioka' : 'centered-guests');
+  const tsukiokaArt = tsukiokaSeat ? tsukiokaArtFor(tsukiokaSeat, nowMs) : null;
   for (const seatId of SEAT_IDS) {
     const seat = seats.find((item) => item.seatId === seatId);
-    R.setSeatPlateVisible(seatId, onCustomers && !!seat?.occupied && !seat.cleanupNeeded);
-    R.setSeatEmptyDishesVisible(seatId, onCustomers && !!seat?.cleanupNeeded);
+    const servedNegima = seatHasServedMenu(view, seat, 'negima');
+    const servedBeer = seatHasServedMenu(view, seat, 'beer');
+    const kind = extraKind(seat?.customerId);
+    const officeArt = kind === 'office'
+      ? resolveD1OfficeCustomerFrame(runtimeAssets.COMMUTER_CUSTOMER, {
+        customerId: seat.customerId,
+        phase: seat.phase,
+        servedNegima,
+        servedBeer,
+        nowMs,
+      })
+      : null;
+    const tsukiokaHoldingBeer = seat?.customerId === 'REGULAR_TSUKIOKA'
+      && (tsukiokaArt?.id === runtimeAssets.TSUKIOKA_PARTIAL_BEER.id
+        || tsukiokaArt?.frameRole === 'drink-frame');
+    const officeHoldingBeer = isD1OfficeBeerFrame(officeArt);
+    const customerPresent = !!seat?.occupied
+      && !seat.cleanupNeeded
+      && !['empty', 'leaving', 'cleanup'].includes(seat.phase);
+    const dirtyTable = Boolean(seat?.cleanupNeeded || seat?.phase === 'leaving');
+    R.setSeatPlateVisible(seatId, onCustomers && customerPresent && servedNegima);
+    R.setSeatBeerVisible(seatId, onCustomers && customerPresent
+      && servedBeer && !tsukiokaHoldingBeer && !officeHoldingBeer);
+    R.setSeatEmptyDishesVisible(seatId, onCustomers && dirtyTable);
     R.setSeatCleanupOverlayVisible(seatId, onCustomers && cleanupSeatId === seatId);
     const target = R.objectMesh[`seatServe:${seatId}`];
     if (target) {
@@ -971,16 +1111,16 @@ function syncCustomers() {
         && (seat.canOrder || seatCanReceiveSelected(seat) || seat.cleanupNeeded);
     }
     const actor = R.seatActorMesh[seatId];
-    const kind = extraKind(seat?.customerId);
     if (actor) {
       if (kind === 'office') {
-        R.setSeatActorTexture(seatId, runtimeAssets.COMMUTER_CUSTOMER.url);
+        R.setSeatActorTexture(seatId, officeArt?.url ?? runtimeAssets.COMMUTER_CUSTOMER.url);
       } else if (kind === 'solo') {
         R.setSeatActorTexture(seatId, runtimeAssets.SOLO_CUSTOMER.url);
       } else if (actor.material.map) {
         actor.material.map = null;
         actor.material.needsUpdate = true;
       }
+      actor.scale.x = 1;
     }
     const bubble = document.querySelector(`[data-testid="bubble-${seatId}"]`);
     if (bubble) {
@@ -999,7 +1139,7 @@ function syncCustomers() {
     }
   }
   customers.apply(seats, { actorsVisible: onCustomers });
-  updateTsukiokaArt();
+  updateTsukiokaArt(nowMs, tsukiokaArt);
 }
 
 function render() {
@@ -1113,7 +1253,7 @@ function renderGrillFinishedInventory() {
   if (negimaItems.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'grill-inventory-empty';
-    empty.innerHTML = '<strong>완성된 꼬치가 없습니다</strong><span>다 구운 네기마를 회수하면 여기에 품질별로 표시됩니다.</span>';
+    empty.innerHTML = '<strong>완성된 꼬치가 없습니다</strong><span>다 구운 네기마를 그릴에서 꺼내면 여기에 품질별로 표시됩니다.</span>';
     grillFinishedQualityList.appendChild(empty);
     return;
   }
@@ -1253,8 +1393,10 @@ function renderFirstOrderGuide() {
     if (!grillWaitingNegima.hidden) grillWaitingNegima.dataset.guideTarget = 'true';
   } else if (current.targetControlId === 'serve-target-seat-01') {
     const seat = businessView()?.seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');
-    const target = seat ? serveTargetButtons.get(seat.seatId)?.button : null;
-    if (target) target.dataset.guideTarget = 'true';
+    const orderLabel = seat
+      ? document.querySelector(`[data-testid="bubble-${seat.seatId}"] .order-label`)
+      : null;
+    if (orderLabel) orderLabel.dataset.guideTarget = 'true';
   } else if (current.targetControlId === 'serve-quantity') {
     for (const button of serveQuantity.querySelectorAll('button:not([data-act="serve-cancel"])')) {
       button.dataset.guideTarget = 'true';
@@ -1382,15 +1524,24 @@ canvas.addEventListener('pointerdown', (e) => {
     const seatId = key.slice('seatServe:'.length);
     const seat = seatView(seatId);
     if (seat?.cleanupNeeded) {
-      const result = dispatchBusiness(D1_UI_INTENT.BEGIN_CLEANUP, { seatId });
-      if (result.ok) cleanupSeatId = seatId;
-      render();
+      beginCleanupHold(seatId);
       return;
     }
   }
   invokeLockedControl(key, now);
 });
 canvas.addEventListener('pointermove', updateDrinkLeverDrag);
+function releaseCleanupHold() {
+  if (!cleanupSeatId) return;
+  const seatId = cleanupSeatId;
+  cleanupSeatId = null;
+  if (seatView(seatId)?.cleanupNeeded) {
+    dispatchBusiness(D1_UI_INTENT.CANCEL_CLEANUP, { seatId });
+    showHint('좌석 정리를 멈췄어요');
+  }
+  render();
+}
+
 function releasePointers(e) {
   const now = performance.now();
   if (activeDrinkLeverDrag && (!e || e.pointerId === activeDrinkLeverDrag.pointerId)) {
@@ -1408,14 +1559,7 @@ function releasePointers(e) {
     firstOrderGuide.complete('beer.pour');
     persistFirstOrderRuntime();
   }
-  if (!cleanupSeatId) return;
-  const seatId = cleanupSeatId;
-  cleanupSeatId = null;
-  if (seatView(seatId)?.cleanupNeeded) {
-    dispatchBusiness(D1_UI_INTENT.CANCEL_CLEANUP, { seatId });
-    showHint('좌석 정리를 멈췄어요');
-    render();
-  }
+  releaseCleanupHold();
 }
 window.addEventListener('pointerup', releasePointers);
 window.addEventListener('pointercancel', releasePointers);
@@ -1461,14 +1605,10 @@ function handle(key, now) {
       if (!r.ok) {
         reportGuideInvalid(r.reason === 'no-waiting' ? '전달 트레이에 네기마가 없습니다.' : '빈 그릴 칸이 없습니다.');
         showHint(r.reason === 'no-waiting' ? '대기 중인 꼬치가 없어요' : '빈 그릴 칸이 없어요');
-      } else if (r.staged) {
-        firstOrderGuide.complete('grill.place.1');
-        showHint(`첫 2개 동시 시작 · 꼬치 ${r.remainingForBatch}개를 더 올리세요`);
-      } else if (r.batchStarted) {
-        firstOrderGuide.complete('grill.place.2');
-        showHint('2개 동시 조리 시작 · 각 꼬치에서 앞면 누적과 뒤집기를 확인하세요');
+      } else {
+        firstOrderGuide.complete(r.slot === 0 ? 'grill.place.1' : 'grill.place.2');
+        showHint(`${r.slot + 1}번 꼬치 앞면 조리 시작 · 다른 꼬치와 독립적으로 익습니다`);
       }
-      else showHint('앞면 조리 시작 · 꼬치를 눌러 뒤집을 수 있어요');
       persistFirstOrderRuntime();
       syncRiskCount(now);
       break;
@@ -1505,12 +1645,18 @@ function clickGrillSlot(i, now) {
       firstOrderGuide.complete(`grill.flip.${guideFlipCount}`);
     }
     persistFirstOrderRuntime();
-    showHint('꼬치를 뒤집는 중 · 0.3초 동안 양면 시간이 멈춥니다');
+    showHint('꼬치를 뒤집는 중입니다');
   }
   else if (!r.ok && r.reason === 'not-ready') {
     const view = cook.slotViews(now)[i];
-    const face = view.contactFace === 'front' ? '앞면' : '뒷면';
-    showHint(`${face} ${view.faceElapsedSec.toFixed(1)}초 누적 · 반대 면 시간은 보존됩니다`);
+    const feel = view.doneness === 'perfect'
+      ? '노릇하게 익었습니다'
+      : view.doneness === 'over'
+        ? '많이 익었습니다'
+        : view.doneness === 'burnt'
+          ? '타기 시작했습니다'
+          : '아직 익는 중입니다';
+    showHint(`${feel} · 꼬치의 색을 보고 판단하세요`);
   }
   syncRiskCount(now);
   render();
@@ -1529,80 +1675,46 @@ function grillNegimaStage(view) {
 // 화면·회귀 모두에서 단계가 깜빡인다. 마지막으로 확정된 단계를 들고 있는다.
 const rawNegimaStageBySlot = {};
 
-// 승인 원본 평면에 굽는 셰이더를 입힌다. 셰이더 재질과 승인 번들은 각각 비동기로 준비되므로
-// 양쪽이 다 준비된 시점에 호출한다(재질 로드 완료 시, 그리고 번들 부팅 완료 시).
-function bindCookingMaterialToApprovedPlane(key) {
-  const g = grillMats[key];
-  const instance = rawNegimaInstances[key];
-  if (!g || !instance?.applyCookingMaterial) return false;
-  if (!instance.applyCookingMaterial(g.material)) return false;
-  if (rawNegimaRuntime.grillRawTexture) g.setTexture(rawNegimaRuntime.grillRawTexture);
-  // 셰이더 재질은 이제 승인 평면이 소유한다. pgSlot mesh와 공유하면 그쪽에 걸리는
-  // colorWrite=false가 평면까지 꺼버린다. mesh는 raycast 전용 투명 재질로 되돌린다.
-  const mesh = R.objectMesh[key];
-  if (mesh && mesh.material === g.material) {
-    mesh.material = new THREE.MeshBasicMaterial({
-      transparent: true, opacity: 0, colorWrite: false, depthWrite: false,
-      // 뒤집힌 칸(rotation π)에서도 raycast가 닿아야 회수 클릭이 산다. FrontSide면 뒷면이라 놓친다.
-      side: THREE.DoubleSide,
-    });
-  }
-  return true;
-}
-
 function updateGrillVisual(now) {
   const views = cook.slotViews(now);
   for (const key of SLOT_KEYS) {
     const v = views[slotIndexOf(key)];
     const mesh = R.objectMesh[key];
     if (!mesh) continue;
-    const g = grillMats[key];
-    if (g) {
-      g.setTexture(rawNegimaRuntime.grillRawTexture);
-      g.setTime(now / 1000);
-      for (const [param, value] of Object.entries(d1SecondFaceR3Params(v))) g.setParam(param, value);
-      g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
-    }
+    const visibleStage = grillNegimaStage(v);
     mesh.userData.grillBaseQuaternion ??= mesh.quaternion.clone();
     mesh.quaternion.copy(mesh.userData.grillBaseQuaternion).multiply(
       grillFlipQuaternion.setFromAxisAngle(GRILL_FLIP_AXIS, v?.visualRotationRad ?? 0),
     );
     const rawInstance = rawNegimaInstances[key];
-    // 승인 원본 평면에 굽는 셰이더가 올라가 있으면 단계마다 그림을 갈아끼우지 않는다.
-    // 평면 하나를 계속 두고 uDoneness만 움직여 같은 이미지의 색을 바꾼다.
-    const shaderOnApprovedPlane = rawInstance?.usesCookingMaterial?.() === true;
-    const showApprovedRaw = (
+    // 굽기 단계마다 승인된 래스터를 그대로 선택한다. 셰이더 색보정을 다시 섞지 않아
+    // 적정·과다·탄 상태에서 승인한 국소 그을음과 살코기 디테일을 보존한다.
+    const showApprovedSprite = (
       rawNegimaRuntime.status === 'ready'
       && v != null
       && v.status !== 'empty'
-      && (shaderOnApprovedPlane || grillNegimaStage(v) === 'raw')
       && director.activeScreenId() === 'SCR-SVC-GRILL'
     );
     if (rawInstance) {
-      rawInstance.holder.visible = showApprovedRaw;
-      if (!v?.flipping) rawNegimaStageBySlot[key] = grillNegimaStage(v);
-      if (shaderOnApprovedPlane) rawInstance.setCooking?.(v?.cooking === true);
-      else if (!v?.flipping) rawInstance.setStage(rawNegimaStageBySlot[key]);
+      rawInstance.holder.visible = showApprovedSprite;
+      if (!v?.flipping) {
+        rawNegimaStageBySlot[key] = visibleStage;
+        rawInstance.setCooking?.(false);
+        rawInstance.setStage(visibleStage);
+      }
       // The approved grill artwork is a front-facing 2D sprite. Rotating its zero-thickness
       // plane around Y makes the skewer collapse into a sheet of paper mid-flip. Keep the
       // artwork facing the camera; the cook state still switches contact faces normally.
       rawInstance.flipPivot.rotation.y = 0;
+      if (!v?.flipping) {
+        rawInstance.flipPivot.scale.x = v?.orientationFaceDown === 'back' ? -1 : 1;
+      }
     }
     // public pgSlot은 visual과 raycast를 한 mesh가 맡으므로 visible=false로 숨기면 입력도 끊긴다.
     // mesh/raycast는 유지하고 color write만 막는다. 승인 평면이 셰이더를 소유한 뒤에는
     // mesh가 raycast 전용이라 항상 막아둔다.
-    if (mesh.material) mesh.material.colorWrite = shaderOnApprovedPlane ? false : !showApprovedRaw;
+    if (mesh.material) mesh.material.colorWrite = !showApprovedSprite;
   }
-}
-for (const key of SLOT_KEYS) {
-  createGrillMaterial().then((g) => {
-    grillMats[key] = g;
-    const mesh = R.objectMesh[key];
-    if (!mesh) return;
-    mesh.material.dispose();
-    mesh.material = g.material;
-    bindCookingMaterialToApprovedPlane(key);
-  }).catch((err) => console.error('익힘 재질 로드 실패:', err));
 }
 
 // ── 화면 전환 ────────────────────────────────────────────────
@@ -1702,7 +1814,7 @@ document.addEventListener('visibilitychange', () => {
   if (!businessPort) return;
   if (document.hidden) {
     dispatchBusiness(D1_UI_INTENT.PAUSE);
-  } else {
+  } else if (!departureCutsceneActive) {
     dispatchBusiness(D1_UI_INTENT.RESUME);
     lastBusinessFrameAt = performance.now();
   }
@@ -1727,9 +1839,8 @@ function loop(now) {
   if (businessPort && lastBusinessFrameAt !== null) {
     businessDeltaMs += Math.max(0, Math.min(1_000, now - lastBusinessFrameAt));
     if (businessDeltaMs >= 100) {
-      businessPort.advance(businessDeltaMs);
+      advanceBusinessRuntime(businessDeltaMs);
       businessDeltaMs = 0;
-      businessRenderDue = true;
     }
   }
   lastBusinessFrameAt = now;
@@ -1794,11 +1905,22 @@ Object.assign(d1GameDebug, {
   }),
   businessView: () => businessView(),
   businessAdvance: (deltaMs) => {
-    const result = businessPort?.advance(deltaMs) ?? { ok: false };
+    const result = advanceBusinessRuntime(deltaMs, { showDepartureCutscene: false });
     businessRenderDue = true;
     render();
     return result;
   },
+  businessAdvanceWithCutscene: (deltaMs) => {
+    const result = advanceBusinessRuntime(deltaMs, { showDepartureCutscene: true });
+    render();
+    return result;
+  },
+  departureCutscene: () => ({
+    active: departureCutsceneActive,
+    seen: departureCutsceneSeen,
+    sceneId: D1_TSUKIOKA_DEPARTURE_SCENE.sceneId,
+  }),
+  dismissDepartureCutscene: () => closeTsukiokaDepartureCutscene(),
   businessAdvanceTo: (elapsedMs) => {
     const current = businessView()?.clock.elapsedMs ?? 0;
     const result = businessPort?.advance(Math.max(0, elapsedMs - current)) ?? { ok: false };
@@ -1814,10 +1936,8 @@ Object.assign(d1GameDebug, {
   },
   businessClickSeat: (seatId) => { activateSeat(seatId); render(); },
   businessBeginCleanup: (seatId) => {
-    const result = dispatchBusiness(D1_UI_INTENT.BEGIN_CLEANUP, { seatId });
-    if (result.ok) cleanupSeatId = seatId;
-    render();
-    return result;
+    const started = beginCleanupHold(seatId);
+    return { ok: started, applied: started };
   },
   businessPostAction: () => handlePostBusinessAction(),
   businessFinalize: () => businessPort?.finalize(),
@@ -1842,8 +1962,11 @@ Object.assign(d1GameDebug, {
       // 승인 평면은 계속 떠 있고 재질만 바뀌므로, 단계는 평면 상태가 아니라 조리 판정에서 읽는다.
       approvedStage: rawNegimaStageBySlot[key]
         ?? grillNegimaStage(cook.slotViews(performance.now())[slotIndexOf(key)]),
+      visibleSpriteStage: rawNegimaInstances[key]?.stage?.() ?? null,
       shaderCookingActive: rawNegimaInstances[key]?.cookingActive?.() === true,
       visualFlipRadians: rawNegimaInstances[key]?.flipPivot?.rotation?.y ?? null,
+      visualMirrorX: rawNegimaInstances[key]?.flipPivot?.scale?.x ?? null,
+      visualDoneness: grillMats[key]?.uniforms?.uDoneness?.value ?? null,
       proceduralFallbackVisible: (
         R.objectMesh[key]?.visible === true
         && R.objectMesh[key]?.material?.colorWrite !== false

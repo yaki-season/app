@@ -19,12 +19,12 @@
   <!-- D1BusinessDayUiPort의 6석 상태를 투영하는 말풍선·대기 게이지 -->
   <div id="bubbleLayer" class="bubble-layer" data-testid="bubble-layer"></div>
 
-  <!-- 현재 해금된 그릴 칸의 접촉면·양면 누적·현재 행동을 읽는 semantic DOM -->
+  <!-- 현재 해금된 그릴 칸의 감각적 굽기 상태와 다음 행동을 읽는 semantic DOM -->
   <section
     id="grillStatusLayer"
     class="grill-status-layer"
     data-testid="grill-status-layer"
-    aria-label="그릴 꼬치 면별 누적 상태"
+    aria-label="그릴 꼬치 굽기 상태"
     aria-live="polite"
     hidden
   ></section>
@@ -174,6 +174,26 @@
       <button type="button" data-act="serve-one" data-testid="serve-one">1개만 제공</button>
       <button type="button" data-act="serve-all" data-testid="serve-all">다 주기</button>
       <button type="button" data-act="serve-cancel" data-testid="serve-cancel">취소</button>
+    </div>
+  </section>
+
+  <!-- 첫 손님 퇴장 직전 영업을 멈추고 보여 주는 짧은 인게임 장면. -->
+  <section
+    id="departureCutscene"
+    class="departure-cutscene"
+    data-testid="departure-cutscene"
+    data-scene-id="SCN-D1-TSUKIOKA-DEPARTURE"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="departureCutsceneSpeaker"
+    aria-describedby="departureCutsceneLine"
+    hidden
+  >
+    <div class="departure-cutscene__dialogue">
+      <p class="departure-cutscene__eyebrow">첫 손님의 한마디</p>
+      <strong id="departureCutsceneSpeaker">츠키오카 세이지</strong>
+      <p id="departureCutsceneLine"></p>
+      <button id="departureCutsceneContinue" type="button" data-testid="departure-cutscene-continue">계속</button>
     </div>
   </section>
 

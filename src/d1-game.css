@@ -107,6 +107,12 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide li {
   white-space: nowrap;
 }
 
+/* 조립 순서표는 조립대에서만 의미가 있다. 그릴에서는 첫 주문 튜토리얼도
+   가리고 꼬치 자체와 짧은 상태 문구에만 집중시킨다. */
+.receipts { display: none; }
+body:has(.quick-nav button[data-screen="SCR-SVC-ASSEMBLY"].active) .receipts { display: flex; }
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide { display: none; }
+
 .grill-inventory {
   position: fixed;
   inset: 0;
@@ -268,10 +274,10 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide li {
   min-width: 0;
   border: 1px solid rgba(181, 134, 84, 0.76);
   border-radius: 9px;
-  padding: 5px 6px;
+  padding: 7px 9px;
   background: rgba(16, 11, 8, 0.9);
   color: var(--text);
-  font-size: clamp(8px, 0.54vw, 10px);
+  font-size: clamp(9px, 0.6vw, 11px);
   line-height: 1.22;
   text-align: center;
 }
@@ -298,21 +304,17 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide li {
 .grill-face-icon.back { border-radius: 2px; transform: rotate(45deg); }
 .grill-face-icon.back > span { transform: rotate(-45deg); }
 .grill-face-icon.airborne { border-style: dashed; border-radius: 50%; }
-.grill-times {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1px;
-  font-variant-numeric: tabular-nums;
-}
-.grill-preserved {
-  display: none;
-}
 .grill-action {
   margin: 4px 0 0;
   border-top: 1px solid rgba(181, 134, 84, 0.38);
   padding-top: 3px;
   font-weight: 700;
 }
+.grill-slot-status[data-next-action="retrieve"] {
+  border-color: var(--good);
+  box-shadow: 0 0 0 2px rgba(127, 196, 122, .16), 0 8px 20px rgba(0, 0, 0, .32);
+}
+.grill-slot-status[data-next-action="retrieve"] .grill-action { color: #aee6a9; }
 .grill-slot-status[data-flipping="true"] {
   border-style: dashed;
 }
@@ -414,12 +416,119 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide li {
 .customer-serve-target::after { display: none !important; }
 .customer-serve-target:disabled { pointer-events: none; opacity: 1; }
 .customer-serve-target:focus-visible {
-  outline: 3px solid #fff0ca;
-  outline-offset: -4px;
-  background: rgba(255, 240, 202, .06);
+  outline: none;
+  background: transparent;
 }
-.customer-serve-target[data-eligible="true"]:focus-visible { outline-color: var(--good); }
-.customer-serve-target[data-cleanup="true"]:focus-visible { outline-color: #6fb8ff; }
+.customer-serve-target[data-guide-target="true"] {
+  outline: none !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+.order-bubble[data-seat-focus="true"] .order-label {
+  box-shadow: 0 0 0 2px #f2c75c, 0 0 14px rgba(242, 199, 92, .38);
+}
+
+.customer-cleanup-progress {
+  --cleanup-progress: 0;
+  position: absolute;
+  width: clamp(58px, 4.2vw, 76px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -100%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(20, 15, 11, 0.94) 0 57%, transparent 59%),
+    conic-gradient(#e5b94f calc(var(--cleanup-progress) * 1turn), rgba(71, 52, 22, 0.84) 0);
+  box-shadow: 0 0 0 2px rgba(229, 185, 79, 0.34), 0 4px 14px rgba(0, 0, 0, 0.55);
+  color: #ffe5a0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.customer-cleanup-progress[hidden] { display: none; }
+.customer-cleanup-progress[data-active="true"] {
+  box-shadow: 0 0 0 2px #efc65f, 0 0 18px rgba(229, 185, 79, 0.58);
+}
+.customer-cleanup-progress[data-seat-focus="true"] {
+  box-shadow: 0 0 0 3px #f2c75c, 0 0 18px rgba(242, 199, 92, .48);
+}
+.customer-cleanup-progress__label {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(10px, 0.72vw, 13px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 2px #000;
+}
+
+.departure-cutscene {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 5vw 8vh;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, .92) 0 10vh, transparent 10vh 72vh, rgba(0, 0, 0, .94) 72vh 100%),
+    rgba(0, 0, 0, .22);
+}
+.departure-cutscene[hidden] { display: none; }
+.departure-cutscene__dialogue {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px 20px;
+  width: min(880px, 90vw);
+  border-top: 2px solid rgba(231, 170, 81, .78);
+  padding: 16px 20px 12px;
+  color: #fff0ca;
+  background: linear-gradient(90deg, rgba(18, 12, 8, .96), rgba(35, 23, 14, .90));
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .52);
+}
+.departure-cutscene__eyebrow {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #d19a4c;
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+.departure-cutscene__dialogue strong { color: #f0b15b; }
+.departure-cutscene__dialogue > p:not(.departure-cutscene__eyebrow) {
+  grid-column: 1;
+  margin: 0;
+  font-size: clamp(17px, 1.25vw, 24px);
+  line-height: 1.55;
+}
+.departure-cutscene__dialogue button {
+  grid-column: 2;
+  grid-row: 2 / 4;
+  align-self: end;
+  min-width: 84px;
+  min-height: 42px;
+  border: 1px solid #d89a49;
+  border-radius: 999px;
+  color: #fff0ca;
+  background: rgba(91, 52, 24, .92);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.departure-cutscene__dialogue button:focus-visible {
+  outline: 3px solid #f2c75c;
+  outline-offset: 3px;
+}
+body[data-departure-cutscene="true"] :is(
+  #svcBar,
+  #guide,
+  #navLeft,
+  #navRight,
+  #quickNav,
+  #dockShelf,
+  #bubbleLayer,
+  #customerServePanel,
+  #hint
+) {
+  visibility: hidden !important;
+}
 
 /* 손님 화면의 주문과 상태는 좌석 머리 위 말풍선으로만 보여준다. */
 body:has(.quick-nav button[data-screen="SCR-SVC-CUSTOMERS"].active) .receipts,

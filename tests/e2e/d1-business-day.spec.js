@@ -116,7 +116,10 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   await D(page, 'businessAdvance', 6000);
   const officeA = await accept(page, 'D1-OFFICE-A');
   const officeB = await accept(page, 'D1-OFFICE-B');
-  for (const seatId of [officeA, officeB]) {
+  for (const [seatId, expectedWaitingArt] of [
+    [officeA, 'ch-extra-office-a-waiting-r5-b1.png'],
+    [officeB, 'ch-extra-office-b-waiting-r5-b1.png'],
+  ]) {
     const bubble = page.getByTestId(`bubble-${seatId}`);
     await expect(bubble).not.toHaveAttribute('data-placeholder');
     await expect(bubble).toHaveAttribute('data-required-asset-id', 'CH-EXTRA-COMMUTER-SERVICE');
@@ -128,7 +131,7 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
       };
     }, seatId)).toMatchObject({
       visible: true,
-      src: expect.stringContaining('ch-extra-commuter-service-r4-b1.png'),
+      src: expect.stringContaining(expectedWaitingArt),
     });
     await serve(page, seatId, '생맥주', 1);
     await serve(page, seatId, '네기마', 1);

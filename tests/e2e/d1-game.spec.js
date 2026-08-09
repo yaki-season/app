@@ -83,7 +83,7 @@ test('스테이션을 좌·우/퀵/키보드로 전환한다', async ({ page }) 
   await expect.poll(() => active(page)).toBe('SCR-SVC-GRILL');
 });
 
-test('츠키오카 접수→시작 2칸 첫 2개 동시 시작→가이드 제공', async ({ page }) => {
+test('츠키오카 접수→시작 2칸에서 두 꼬치를 독립적으로 조리·회수한다', async ({ page }) => {
   const errs = await boot(page);
 
   // 4~6초 주문 고민 뒤 츠키오카 좌석 hit target으로 접수한다.
@@ -127,28 +127,21 @@ test('츠키오카 접수→시작 2칸 첫 2개 동시 시작→가이드 제�
   }
   await expect.poll(() => D(page, 'cookWaiting')).toBe(2);
 
-  // 첫 꼬치는 접촉하지 않아 시간이 0이고, 두 번째 배치 순간 같은 now로 둘이 시작한다.
+  // 첫 꼬치는 놓는 즉시 굽기 시작하고, 두 번째 꼬치는 나중에 놓인 시각부터 별도로 시작한다.
   await goScreen(page, 'SCR-SVC-GRILL');
-  await clickObj(page, 'grillWaitTray');
-  await expect.poll(async () => {
-    const slots = await D(page, 'cookSlots');
-    if (slots[0].status !== 'staged') await clickObj(page, 'grillWaitTray');
-    return D(page, 'cookSlots').then((current) => current[0].status);
-  }).toBe('staged');
+  const waitingNegima = page.getByTestId('grill-waiting-negima');
+  await waitingNegima.click();
+  await expect.poll(() => D(page, 'cookSlots').then((current) => current[0].status)).toBe('front');
   expect((await D(page, 'cookSlots')).slice(0, 2)).toEqual([
-    expect.objectContaining({ status: 'staged', contactFace: null, frontElapsedSec: 0, backElapsedSec: 0 }),
+    expect.objectContaining({ status: 'front', contactFace: 'front', backElapsedSec: 0 }),
     expect.objectContaining({ status: 'empty', contactFace: null, frontElapsedSec: 0, backElapsedSec: 0 }),
   ]);
   await page.waitForTimeout(350);
-  await clickObj(page, 'grillWaitTray');
-  await expect.poll(async () => {
-    const slots = await D(page, 'cookSlots');
-    if (!slots.every((slot) => slot.status === 'front')) await clickObj(page, 'grillWaitTray');
-    return D(page, 'cookSlots').then((current) => current.every((slot) => slot.status === 'front'));
-  }).toBe(true);
+  await waitingNegima.click();
+  await expect.poll(() => D(page, 'cookSlots').then((current) => current.every((slot) => slot.status === 'front'))).toBe(true);
   const started = (await D(page, 'cookSlots')).slice(0, 2);
   expect(started.every((slot) => slot.status === 'front' && slot.contactFace === 'front')).toBe(true);
-  expect(new Set(started.map((slot) => slot.frontElapsedSec)).size).toBe(1);
+  expect(started[0].frontElapsedSec).toBeGreaterThan(started[1].frontElapsedSec);
 
   // 시작 두 slot rect/hit target과 finished tray 계약은 FHD/720 두 Playwright project에서 같다.
   const contract = await D(page, 'grillContract');
@@ -183,24 +176,15 @@ test('츠키오카 접수→시작 2칸 첫 2개 동시 시작→가이드 제�
   expect(contract.finishedTray.hitRect).toEqual(contract.finishedTray.visualRect);
   expect(contract.finishedTray.anchor.x * viewport.width).toBeCloseTo(1643 * scale, 6);
   expect(contract.finishedTray.anchor.y * viewport.height).toBeCloseTo(301 * scale, 6);
-  const trayMeshes = await page.evaluate(() => ({
-    visualUuid: window.__d1GameDebug.renderer.artMesh.grillFinishedTray.uuid,
-    hitUuid: window.__d1GameDebug.renderer.interactionMesh.grillFinishedTray.uuid,
-  }));
-  expect(trayMeshes).toEqual(expect.objectContaining({
-    visualUuid: expect.any(String),
-    hitUuid: expect.any(String),
-  }));
-  expect(trayMeshes.hitUuid).not.toBe(trayMeshes.visualUuid);
-
-  // 두 꼬치를 같은 타이밍으로 앞·뒤 굽고 준비 시각 우선으로 모두 회수한다.
+  // 각 꼬치를 따로 뒤집고 회수해도 다른 슬롯 상태가 바뀌지 않는다.
   await D(page, 'cookElapse', 8);
   const frontQuaternion = await page.evaluate(() => (
     window.__d1GameDebug.renderer.objectMesh.pgSlot0.quaternion.toArray()
   ));
-  for (let index = 0; index < 2; index += 1) await clickObj(page, `pgSlot${index}`);
+  await clickObj(page, 'pgSlot0');
   await expect(page.locator('#hint')).toContainText('꼬치를 뒤집는 중');
-  await expect.poll(() => D(page, 'cookSlots').then((s) => s.every((slot) => slot.status === 'back'))).toBe(true);
+  await expect.poll(() => D(page, 'cookSlots').then((slots) => slots.map(({ status }) => status)))
+    .toEqual(['back', 'front']);
   await page.waitForTimeout(350);
   const backQuaternion = await page.evaluate(() => (
     window.__d1GameDebug.renderer.objectMesh.pgSlot0.quaternion.toArray()
@@ -210,11 +194,24 @@ test('츠키오카 접수→시작 2칸 첫 2개 동시 시작→가이드 제�
     0,
   ));
   expect(quaternionDot).toBeLessThan(0.05);
+  await clickObj(page, 'pgSlot1');
+  await expect.poll(() => D(page, 'cookSlots').then((slots) => slots.map(({ status }) => status)))
+    .toEqual(['back', 'back']);
   await D(page, 'cookElapse', 8);
-  for (let index = 0; index < 2; index += 1) await clickObj(page, `pgSlot${index}`);
+  await expect.poll(async () => {
+    const actions = (await D(page, 'cookSlots')).map(({ nextAction }) => nextAction);
+    if (actions.some((action) => action !== 'retrieve')) await D(page, 'cookElapse', 1);
+    return D(page, 'cookSlots').then((slots) => slots.map(({ nextAction }) => nextAction));
+  }).toEqual(['retrieve', 'retrieve']);
+  await clickObj(page, 'pgSlot0');
+  await expect.poll(() => D(page, 'cookSlots').then((slots) => slots.map(({ status }) => status)))
+    .toEqual(['empty', 'back']);
+  await expect.poll(() => D(page, 'dockItems').then((d) => d.filter((x) => x.menu === '네기마').length)).toBe(1);
+  await clickObj(page, 'pgSlot1');
+  await expect.poll(() => D(page, 'cookSlots').then((slots) => slots.map(({ status }) => status)))
+    .toEqual(['empty', 'empty']);
   await expect.poll(() => D(page, 'dockItems').then((d) => d.filter((x) => x.menu === '네기마').length)).toBe(2);
-  await clickObj(page, 'grillFinishedTray');
-  await expect(page.locator('#hint')).toContainText('완료 트레이');
+  await expect(page.getByTestId('grill-finished-quality-list')).toContainText('2');
 
   // 생맥주는 실제 잔 놓기와 결정론적 따르기 훅을 거쳐 선반에 적재한다.
   await goScreen(page, 'SCR-SVC-DRINK');

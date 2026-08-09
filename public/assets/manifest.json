@@ -171,9 +171,10 @@
       "license": "YAKI SEASON internal approved artwork",
       "specRefs": [
         "ART-003 v5.8.0",
-        "Artist 3 task 025 PR-SERVING-PLATE R2"
+        "Artist 3 task 025 PR-SERVING-PLATE R2",
+        "Customer serving motion review R3"
       ],
-      "reviewedAt": "2026-08-06",
+      "reviewedAt": "2026-08-09",
       "url": "/assets/core/customer/pr-serving-plate-r2-b1.png",
       "sha256": "27135460b14d4f31ac8083ab908e74214697fb0350cb7672a74975243066edf7",
       "bytes": 744150,
@@ -181,11 +182,35 @@
         "width": 1672,
         "height": 941
       },
-      "format": "png"
+      "format": "png",
+      "companions": [
+        {
+          "role": "served-negima",
+          "url": "/assets/core/customer/pr-served-negima-plate-r2-b1.png",
+          "sha256": "3add81eaf610e58565448eb907c442b4e5e64879376d4bb26573c7283882f2e5",
+          "bytes": 178365,
+          "format": "png",
+          "dimensions": {
+            "width": 1000,
+            "height": 600
+          }
+        },
+        {
+          "role": "served-beer",
+          "url": "/assets/core/customer/pr-served-beer-glass-full-r2-b1.png",
+          "sha256": "87731691b4018e452a45efada1b1e1ef846ceaf839bedd294c2b6badadfbec35",
+          "bytes": 125556,
+          "format": "png",
+          "dimensions": {
+            "width": 500,
+            "height": 500
+          }
+        }
+      ]
     },
     {
       "id": "PR-EMPTY-DISH-SET",
-      "sourceRevision": 1,
+      "sourceRevision": 2,
       "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-SVC-CUSTOMERS",
@@ -210,20 +235,21 @@
         "cleanup-needed"
       ],
       "mirrorSafe": true,
-      "source": "ARTSRC:PR-EMPTY-DISH-SET:R1",
-      "provenance": "PROV:PR-EMPTY-DISH-SET:R1",
+      "source": "ARTSRC:PR-EMPTY-DISH-SET:R2",
+      "provenance": "PROV:PR-EMPTY-DISH-SET:R2",
       "license": "YAKI SEASON internal approved artwork",
       "specRefs": [
         "ART-003 v5.8.0",
-        "Artist 3 task 025 PR-EMPTY-DISH-SET R1"
+        "Artist 3 task 025 PR-EMPTY-DISH-SET R1",
+        "Customer serving motion review R2"
       ],
-      "reviewedAt": "2026-08-07",
-      "url": "/assets/core/customer/pr-empty-dish-set-r1-b1.png",
-      "sha256": "c9783d32963ca7f182b100b33418660133eedc4d67b65bbc31e25ffd1d747ee3",
-      "bytes": 1120225,
+      "reviewedAt": "2026-08-09",
+      "url": "/assets/core/customer/pr-empty-dish-set-r2-b1.png",
+      "sha256": "11e1b223318edb7054a52b147899255498dffd3771a09567209d4684b04a1f38",
+      "bytes": 433483,
       "dimensions": {
-        "width": 1536,
-        "height": 1024
+        "width": 1000,
+        "height": 600
       },
       "format": "png"
     },
@@ -1000,8 +1026,8 @@
         {
           "role": "grill-proper-sprite",
           "url": "/assets/core/cooking/spr-negima-grill-proper-r1-b1.png",
-          "sha256": "65d0e532c340c9deaa228d8724a5e8bca7e67cafef88d30b471121365656bc6e",
-          "bytes": 68114,
+          "sha256": "b351a01e71652c7210c06c2f5949f70d015429935e00b8076cd383c1a3892ea6",
+          "bytes": 62060,
           "format": "png",
           "dimensions": {
             "width": 109,
@@ -1011,8 +1037,8 @@
         {
           "role": "grill-overcooked-sprite",
           "url": "/assets/core/cooking/spr-negima-grill-overcooked-r1-b1.png",
-          "sha256": "f3b7b29453291b9e55961af08ad401ded36e69b11f0c6e6e4699aef35a4182c6",
-          "bytes": 64724,
+          "sha256": "603a92508726f1c12e10065faae173cb35da6bbfb4d1328d429e2c805be4d197",
+          "bytes": 61045,
           "format": "png",
           "dimensions": {
             "width": 109,
@@ -1022,8 +1048,8 @@
         {
           "role": "grill-burnt-sprite",
           "url": "/assets/core/cooking/spr-negima-grill-burnt-r1-b1.png",
-          "sha256": "c015f617f5d1e0d12ebe321da1ab11cb5bfaf14bbbc62a019c51d55974e29863",
-          "bytes": 45466,
+          "sha256": "6814d780060f2e8b5cdaff76ff890417c23519108c470650da24db934116b7aa",
+          "bytes": 58548,
           "format": "png",
           "dimensions": {
             "width": 109,
@@ -1476,7 +1502,7 @@
     },
     {
       "id": "CH-EXTRA-COMMUTER-SERVICE",
-      "sourceRevision": 4,
+      "sourceRevision": 5,
       "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-SVC-CUSTOMERS",
@@ -1497,26 +1523,142 @@
         }
       ],
       "clips": [
-        "waiting"
+        "waiting",
+        "eating-negima",
+        "drinking-beer"
       ],
       "mirrorSafe": false,
-      "source": "ARTSRC:CH-EXTRA-COMMUTER-SERVICE:R4",
-      "provenance": "PROV:CH-EXTRA-COMMUTER-SERVICE:R4",
-      "license": "YAKI SEASON internal approved artwork",
+      "source": "ARTSRC:CH-EXTRA-COMMUTER-SERVICE:R5",
+      "provenance": "PROV:CH-EXTRA-COMMUTER-SERVICE:R5",
+      "license": "YAKI SEASON internal user-approved artwork",
       "specRefs": [
         "ART-003 v5.0.0",
         "GPL-005 v2.23.0",
-        "Artist 3 task 025 CH-EXTRA-COMMUTER-SERVICE R4"
+        "User approval 2026-08-09: five front-facing office customer variants with lowered resting hands"
       ],
-      "reviewedAt": "2026-08-05",
-      "url": "/assets/core/customer/ch-extra-commuter-service-r4-b1.png",
-      "sha256": "680b1d24287d412587f3febb7bdacccf2168188baca9f641bd202c064f91b51b",
-      "bytes": 1254099,
+      "reviewedAt": "2026-08-09",
+      "url": "/assets/core/customer/ch-extra-office-a-waiting-r5-b1.png",
+      "sha256": "bb7389707cc95f033eab641e115a1b410b2098dc56a182f450835a37aacbc9f0",
+      "bytes": 1712501,
       "dimensions": {
-        "width": 1121,
-        "height": 1403
+        "width": 1086,
+        "height": 1448
       },
-      "format": "png"
+      "format": "png",
+      "companions": [
+        {
+          "role": "office-a-eating-negima",
+          "url": "/assets/core/customer/ch-extra-office-a-eating-negima-r5-b1.png",
+          "sha256": "a201ca49bdbbdbd40979eea1cf4ef31fe334fdd628bb8024673af636118a014b",
+          "bytes": 1726094,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-a-drinking-beer",
+          "url": "/assets/core/customer/ch-extra-office-a-drinking-beer-r5-b1.png",
+          "sha256": "7383eef02898ae0ed23849a5de8af5c2c26212f867a0386e8b0d928299907467",
+          "bytes": 1654712,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-b-waiting",
+          "url": "/assets/core/customer/ch-extra-office-b-waiting-r5-b1.png",
+          "sha256": "31a2d8452e4407710652887b9d966cfcd11ea2087be913d3d40c64d66d10cf2f",
+          "bytes": 1648049,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-b-eating-negima",
+          "url": "/assets/core/customer/ch-extra-office-b-eating-negima-r5-b1.png",
+          "sha256": "7e0cb1c37c860545153daa83f1f646bbc29f78aa7ea21950c14377069b379800",
+          "bytes": 1621037,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-b-drinking-beer",
+          "url": "/assets/core/customer/ch-extra-office-b-drinking-beer-r5-b1.png",
+          "sha256": "7948a84d26c8102b2d773a69223e0c1416162b00401c02555db61cf1727b1baa",
+          "bytes": 1624126,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-c-waiting",
+          "url": "/assets/core/customer/ch-extra-office-c-waiting-r5-b1.png",
+          "sha256": "676c7d7f708babc3b2fae26bdd603a4a435d9fb85bc93f53d80126613f949dc2",
+          "bytes": 1793667,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-c-eating-negima",
+          "url": "/assets/core/customer/ch-extra-office-c-eating-negima-r5-b1.png",
+          "sha256": "1b873248ec4dca6e27a929d2480a0a0c2496df7a0770ecc0b66ce098310751d9",
+          "bytes": 1787857,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-c-drinking-beer",
+          "url": "/assets/core/customer/ch-extra-office-c-drinking-beer-r5-b1.png",
+          "sha256": "fa31481ef527040cadcb02af6e1df90d4292879cf5cac304568de8447c5f927e",
+          "bytes": 1868596,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-d-waiting",
+          "url": "/assets/core/customer/ch-extra-office-d-waiting-r5-b1.png",
+          "sha256": "e732afdf24b67fb401de331e17f6e90bf0d0d0d819ce45a8afeed9ea112431b7",
+          "bytes": 1790495,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-d-eating-negima",
+          "url": "/assets/core/customer/ch-extra-office-d-eating-negima-r5-b1.png",
+          "sha256": "33c9d5fb5e52d9c7ffed625e5313ff005f847694fffc687349b85fa23ef28756",
+          "bytes": 1753364,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-d-drinking-beer",
+          "url": "/assets/core/customer/ch-extra-office-d-drinking-beer-r5-b1.png",
+          "sha256": "03bf52c6ba4243fe7c578304e55c047c41bae870db2dba81fce14593606e0a4d",
+          "bytes": 1814957,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-e-waiting",
+          "url": "/assets/core/customer/ch-extra-office-e-waiting-r5-b1.png",
+          "sha256": "fa75dc7e9d207e4f67cc3011d38058e088de69343b052edbb499f3ed635af374",
+          "bytes": 1460015,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-e-eating-negima",
+          "url": "/assets/core/customer/ch-extra-office-e-eating-negima-r5-b1.png",
+          "sha256": "27b3f1f2fa6491626fbc75989a71f910e3ca2c870d23d00861d4fda5566656e5",
+          "bytes": 1454049,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        },
+        {
+          "role": "office-e-drinking-beer",
+          "url": "/assets/core/customer/ch-extra-office-e-drinking-beer-r5-b1.png",
+          "sha256": "d9ea1718ad923fdb8560a6596ef9a035850d080d892eda607fd71889775606d2",
+          "bytes": 1458201,
+          "dimensions": { "width": 1086, "height": 1448 },
+          "format": "png"
+        }
+      ]
     },
     {
       "id": "CH-AKI-STORY",

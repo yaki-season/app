@@ -32,8 +32,8 @@ describe('손님 화면 원경 배치', () => {
 
   it('손님 하단을 새 카운터 상판 높이에 맞춘다', () => {
     const seat = computeSeats(6)[0];
-    expect(seat.actor.y + seat.actor.height).toBeCloseTo(0.755);
-    expect(seat.actor.width).toBe(0.16);
+    expect(seat.actor.y + seat.actor.height).toBeCloseTo(0.81);
+    expect(seat.actor.width).toBe(0.16875);
     expect(seat.bubble.y).toBeLessThan(seat.actor.y);
     // 첫 논리 손님은 승인 seating/츠키오카 합성 계약의 물리 4번 좌석에 놓인다.
     expect(seat.actor.x + seat.actor.width / 2).toBeCloseTo(1108.7 / 1920);

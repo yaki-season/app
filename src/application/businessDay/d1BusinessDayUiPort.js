@@ -218,7 +218,9 @@ function seatView(state, definition, seat) {
   return {
     seatId: seat.id,
     customerId: customer.id,
-    occupied: phase !== 'empty',
+    // leaving부터는 손님 액터가 좌석에 남아 있지 않는다. 좌석의 dirty/cleanup 상태는
+    // cleanupNeeded로 따로 유지해 빈 식기와 정리 입력을 계속 노출한다.
+    occupied: !['empty', 'leaving', 'cleanup'].includes(phase),
     phase,
     mood,
     orderId: order?.id ?? null,

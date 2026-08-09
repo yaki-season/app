@@ -34,7 +34,7 @@ export const D1_RUNTIME_COMPONENT_INVENTORY = Object.freeze([
   row('SCR-SVC-CUSTOMERS', 'D1-service-environment', 'customers.scene.interior', 'BG-INTERIOR-BASE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound'),
   row('SCR-SVC-CUSTOMERS', 'D1-service-counter', 'customers.table', 'BG-BAR-COUNTER-BASE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE),
   row('SCR-SVC-CUSTOMERS', 'D1-service-module', 'customers.preparedDock', 'ST-SERVICE-COUNTER', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound', ['empty', 'occupied']),
-  row('SCR-SVC-CUSTOMERS', 'D1-extra-commuter', 'customers.actor.commuter', 'CH-EXTRA-COMMUTER-SERVICE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound', ['waiting']),
+  row('SCR-SVC-CUSTOMERS', 'D1-extra-commuter', 'customers.actor.commuter', 'CH-EXTRA-COMMUTER-SERVICE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound', ['office-a', 'office-b', 'office-c', 'office-d', 'office-e', 'waiting', 'eating-negima', 'drinking-beer']),
   row('SCR-SVC-CUSTOMERS', 'D1-extra-solo', 'customers.actor.solo', 'CH-EXTRA-SOLO-SERVICE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound', ['waiting']),
   row('SCR-SVC-CUSTOMERS', 'D1-table-serving', 'customers.table.serving', 'PR-SERVING-PLATE', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound', ['occupied']),
   row('SCR-SVC-CUSTOMERS', 'D1-table-empty-dishes', 'customers.table.empty', 'PR-EMPTY-DISH-SET', ART_SEMANTIC_OWNER_ID.ARTIST_3_D1_SERVICE, 'bound', ['cleanup-needed']),

@@ -179,8 +179,11 @@ export const DEFAULT_SEAT_CAP = 6;
 const D1_APPROVED_SEAT_CENTERS_FHD = Object.freeze([210.1, 512.5, 809.2, 1108.7, 1404.8, 1710.1]);
 // 첫 domain 좌석(seat-01)의 츠키오카를 승인 소비 화면의 물리 4번 좌석에 놓는다.
 const D1_LOGICAL_TO_VISUAL_SEAT = Object.freeze([3, 0, 1, 2, 4, 5]);
+// 첫 손님 퇴장 뒤에는 다음 파동의 첫 두 좌석을 중앙의 인접한 의자에 놓는다.
+// domain의 인접 좌석 관계는 유지하면서 첫 손님 전용 구도만 다음 손님에게 새지 않게 한다.
+const D1_LOGICAL_TO_VISUAL_SEAT_CENTERED = Object.freeze([2, 3, 1, 4, 0, 5]);
 // cap개의 좌석을 카운터 폭에 균등 배치한다. cap=6은 기존 좌표(0.12~0.86)와 동일해 무회귀.
-export function computeSeats(cap) {
+export function computeSeats(cap, { layoutMode = 'tsukioka' } = {}) {
   const n = Math.max(1, Math.min(MAX_SEATS, cap));
   const left = n <= 6 ? 0.25 : 0.12;
   const right = n <= 6 ? 0.75 : 0.88;
@@ -188,14 +191,18 @@ export function computeSeats(cap) {
   const halfW = Math.min(0.055, step > 0 ? step * 0.42 : 0.055); // 액터 반폭(밀집 시 축소)
   // 초상 원본은 세로로 긴 0.8 안팎 비율이다. 좌석 hit 폭을 액터 폭으로 재사용하면 6석에서도
   // 지나치게 홀쭉해지므로 표시 폭을 분리한다. 확장 좌석에서만 겹침 방지를 위해 축소한다.
-  const actorWidth = n <= 6 ? 0.16 : Math.min(0.11, step * 0.9);
+  // FHD에서 높이 0.40(432px)에 3:4 승인 캐릭터를 무왜곡 표시하는 정확한 폭.
+  const actorWidth = n <= 6 ? 0.16875 : Math.min(0.11, step * 0.9);
+  const logicalToVisual = layoutMode === 'centered-guests'
+    ? D1_LOGICAL_TO_VISUAL_SEAT_CENTERED
+    : D1_LOGICAL_TO_VISUAL_SEAT;
   return Array.from({ length: n }, (_, i) => {
     const cx = n === 6
-      ? D1_APPROVED_SEAT_CENTERS_FHD[D1_LOGICAL_TO_VISUAL_SEAT[i]] / 1920
+      ? D1_APPROVED_SEAT_CENTERS_FHD[logicalToVisual[i]] / 1920
       : n === 1 ? 0.5 : left + step * i;
     return {
       id: `seat-${String(i + 1).padStart(2, '0')}`,
-      actor: { x: cx - actorWidth / 2, y: 0.355, width: actorWidth, height: 0.40 }, // 원본 비율 복원 + 상판 하단 정렬
+      actor: { x: cx - actorWidth / 2, y: 0.41, width: actorWidth, height: 0.40 }, // 츠키오카와 같은 머리 높이 + 하체는 카운터 뒤로 가림
       bubble: { x: cx, y: 0.305 }, // 내려간 손님 머리 위 말풍선·게이지 DOM 앵커
       serve: { x: cx - halfW * 0.82, y: 0.55, width: halfW * 1.64, height: 0.10 }, // 카운터 위 serve 대상
       hit: { x: cx - halfW, y: 0.295, width: halfW * 2, height: 0.52 }, // 하강한 액터 중심과 정렬한 투명 조작 영역

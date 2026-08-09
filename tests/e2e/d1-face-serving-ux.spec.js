@@ -52,7 +52,11 @@ test('prepared dock stays hidden at work stations and appears only at customers'
     await goScreen(page, screenId);
     await expect(dock).toBeHidden();
     await expect(dock).toHaveAttribute('aria-hidden', 'true');
-    await expect(page.getByTestId('svc-receipts')).toBeVisible();
+    if (screenId === 'SCR-SVC-ASSEMBLY') {
+      await expect(page.getByTestId('svc-receipts')).toBeVisible();
+    } else {
+      await expect(page.getByTestId('svc-receipts')).toBeHidden();
+    }
   }
 
   await goScreen(page, 'SCR-SVC-CUSTOMERS');
@@ -80,7 +84,7 @@ test('ultrawide customer view preserves the 16:9 scene instead of stretching it'
   expect(errors).toEqual([]);
 });
 
-test('그릴 시작 2칸은 접촉면·양면 누적·현재 행동을 FHD/720 compact DOM으로 겹침 없이 표시한다', async ({
+test('그릴 시작 2칸은 감각적 굽기 상태와 다음 행동을 FHD/720 compact DOM으로 겹침 없이 표시한다', async ({
   page,
 }) => {
   const errors = await boot(page);
@@ -88,6 +92,8 @@ test('그릴 시작 2칸은 접촉면·양면 누적·현재 행동을 FHD/720 c
   await prepareInitialBatch(page);
 
   await expect(page.getByTestId('grill-status-layer')).toBeVisible();
+  await expect(page.getByTestId('d1-guide')).toBeHidden();
+  await expect(page.getByTestId('svc-receipts')).toBeHidden();
   await expect(page.locator('.grill-slot-status:not([hidden])')).toHaveCount(2);
   await expect(page.locator('.grill-face-icon.front')).toHaveCount(2);
   await expect(page.getByText(/더 굽고.*뒤집/)).toHaveCount(0);
@@ -97,12 +103,10 @@ test('그릴 시작 2칸은 접촉면·양면 누적·현재 행동을 FHD/720 c
   expect(visible).toHaveLength(2);
   for (const slot of visible) {
     expect(slot.contactFace).toBe('front');
-    expect(slot.text).toContain('현재 접촉면 · 앞면');
-    expect(slot.text).toContain('앞면');
-    expect(slot.text).toContain('뒷면');
-    expect(slot.text).toContain('현재 행동 · 뒤집기');
-    expect(slot.ariaLabel).toContain('앞면');
-    expect(slot.ariaLabel).toContain('뒷면');
+    expect(slot.text).toContain('첫 면 굽는 중');
+    expect(slot.text).toContain('색이 노릇해질 때까지 지켜보세요');
+    expect(slot.text).not.toMatch(/\d+\.\d초/);
+    expect(slot.ariaLabel).not.toContain('초');
   }
   for (let left = 0; left < visible.length; left += 1) {
     for (let right = left + 1; right < visible.length; right += 1) {
@@ -116,7 +120,7 @@ test('그릴 시작 2칸은 접촉면·양면 누적·현재 행동을 FHD/720 c
   expect(errors).toEqual([]);
 });
 
-test('조기 뒤집기 누적을 보존하고 0.3초 공중 회전에는 양면 정지를 텍스트로 알린다', async ({
+test('뒤집는 동안 입력을 잠그고 착지 후 뒤집은 면 상태를 표시한다', async ({
   page,
 }) => {
   const errors = await boot(page);
@@ -131,9 +135,9 @@ test('조기 뒤집기 누적을 보존하고 0.3초 공중 회전에는 양면 
   )).toBe('true');
   const airborneStart = (await D(page, 'grillStatusSnapshot'))[0];
   expect(airborneStart.nextAction).toBe('wait');
-  expect(airborneStart.text).toContain('공중 회전');
-  expect(airborneStart.text).toContain('양면 정지');
-  expect(airborneStart.text).toContain('회전/입력 잠금 대기');
+  expect(airborneStart.text).toContain('뒤집는 중');
+  expect(airborneStart.text).toContain('꼬치가 돌아가는 중입니다');
+  expect(airborneStart.text).not.toMatch(/\d+\.\d초/);
   await page.waitForTimeout(100);
   const airborneLater = (await D(page, 'cookSlots'))[0];
   expect(airborneLater.frontElapsedSec).toBeCloseTo(before.frontElapsedSec, 1);
@@ -144,8 +148,8 @@ test('조기 뒤집기 누적을 보존하고 0.3초 공중 회전에는 양면 
   )).toBe('back');
   const after = (await D(page, 'grillStatusSnapshot'))[0];
   expect(after.nextAction).toBe('flip');
-  expect(after.text).toMatch(/앞면 \d+\.\d초 보존 · 뒷면 조리 중/);
-  expect(after.text).toContain('현재 행동 · 뒤집기');
+  expect(after.text).toContain('뒤집은 면 굽는 중');
+  expect(after.text).not.toMatch(/\d+\.\d초/);
 
   await D(page, 'cookElapse', 8);
   await D(page, 'cookClickSlot', 0);
@@ -157,7 +161,7 @@ test('조기 뒤집기 누적을 보존하고 0.3초 공중 회전에는 양면 
     (slots) => slots[0].nextAction,
   )).toBe('retrieve');
   const ready = (await D(page, 'grillStatusSnapshot'))[0];
-  expect(ready.text).toContain('현재 행동 · 회수');
+  expect(ready.text).toContain('다 익었어요 · 꼬치를 눌러 꺼내세요');
   expect(errors).toEqual([]);
 });
 

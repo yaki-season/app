@@ -54,7 +54,20 @@ describe('D1 공개 상태 runtime inventory', () => {
     ])
       .not.toContain('CH-EXTRA-COMMUTER-SERVICE');
     expect(report.entries.find((entry) => entry.requiredAssetId === 'CH-EXTRA-COMMUTER-SERVICE'))
-      .toMatchObject({ bindingState: 'bound', placeholder: false, stateVariants: ['waiting'] });
+      .toMatchObject({
+        bindingState: 'bound',
+        placeholder: false,
+        stateVariants: [
+          'office-a',
+          'office-b',
+          'office-c',
+          'office-d',
+          'office-e',
+          'waiting',
+          'eating-negima',
+          'drinking-beer',
+        ],
+      });
   });
 
   it('manifest 승인 binding과 code-native 구현은 placeholder가 아니다', () => {
