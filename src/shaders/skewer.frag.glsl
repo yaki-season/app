@@ -195,7 +195,9 @@ void main() {
 
     // 타레는 굽는 동안 발린다. 날것에 광택·틴트를 얹으면 승인 아트의 생고기·생파 색이
     // 왜곡된다. doneness가 올라가야 나타나게 한다.
-    float tareApplied = smoothstep(0.06, 0.34, uDoneness);
+    // 타레는 적정 구간에 가까워질수록 발린다. 0.06부터 올리면 올린 지 1~2초 만에 광택·틴트가
+    // 최대로 들어와 생파의 녹색이 초반에 사라지고 '올리자마자 바뀐다'로 보인다.
+    float tareApplied = smoothstep(0.22, 0.55, uDoneness);
     // 탄 부분은 광택이 죽는다
     float gloss = uTareAmount * (1.0 - char * 0.75) * tareApplied;
     col += uTareSheen * spec * gloss * uTareGloss;
