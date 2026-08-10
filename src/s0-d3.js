@@ -269,7 +269,7 @@ function renderS0ExteriorBackground(backgroundBinding, interactionBinding) {
 }
 
 function navigateToBusinessDay(dayId) {
-  const url = new URL('./d1-game.html', import.meta.url);
+  const url = new URL('./d1-game.html', window.location.href);
   if (dayId !== 'D1') url.searchParams.set('day', dayId.toLowerCase());
   window.location.assign(url);
 }

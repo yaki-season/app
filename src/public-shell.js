@@ -142,7 +142,7 @@ function diagnosticText() {
 }
 
 function navigateToScenario({ forceNew = false } = {}) {
-  const target = new URL('./s0-d3.html', import.meta.url);
+  const target = new URL('./s0-d3.html', window.location.href);
   if (forceNew) target.searchParams.set('new', '1');
   window.location.assign(target);
 }
