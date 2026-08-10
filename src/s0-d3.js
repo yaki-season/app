@@ -429,28 +429,20 @@ async function advanceAfterStory(story) {
   if (story.timing === 'pre-open') {
     const started = await campaignBridge.startDay();
     if (!started.ok) throw new Error(started.error.message);
-    if (story.dayId === 'D1' || story.dayId === 'D2') {
-      navigateToBusinessDay(story.dayId);
-      return;
-    }
-    mode = 'business';
-    return;
-  }
-  if (story.dayId === 'D3') {
-    const completed = await campaignBridge.completeDay(story.dayId);
-    if (!completed.ok) throw new Error(completed.error.message);
-    mode = 'complete';
+    navigateToBusinessDay(story.dayId);
     return;
   }
   const alreadyCompleted = campaignBridge.getState()?.campaign?.completedDayIds
     ?.includes(story.dayId.toLowerCase());
   if (story.timing === 'post-settlement' && alreadyCompleted) {
-    storyIndex += 1;
+    if (story.dayId === 'D3') mode = 'complete';
+    else storyIndex += 1;
     return;
   }
   const completed = await campaignBridge.completeDay(story.dayId);
   if (!completed.ok) throw new Error(completed.error.message);
-  storyIndex += 1;
+  if (story.dayId === 'D3') mode = 'complete';
+  else storyIndex += 1;
 }
 
 function renderSummary() {

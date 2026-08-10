@@ -1647,7 +1647,7 @@ function renderBusiness() {
     const campaign = businessSession?.bridge?.getState?.();
     el('resultMessage').textContent = `${ACTIVE_DAY.label} 완료 · 보상 ${campaign?.economy?.balance ?? 44} · 명성 ${campaign?.economy?.reputation ?? 12} · ${ACTIVE_DAY.nextLabel} 저장 완료`;
     el('continueButton').textContent = `${ACTIVE_DAY.nextLabel}로 계속`;
-    el('continueButton').href = ACTIVE_DAY_ID === 'd2' ? './s0-d3.html?post=d2' : './s0-d3.html';
+    el('continueButton').href = `./s0-d3.html?post=${ACTIVE_DAY_ID}`;
   }
 }
 
