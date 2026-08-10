@@ -1502,7 +1502,7 @@
     },
     {
       "id": "CH-EXTRA-COMMUTER-SERVICE",
-      "sourceRevision": 5,
+      "sourceRevision": 6,
       "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-SVC-CUSTOMERS",
@@ -1528,67 +1528,68 @@
         "drinking-beer"
       ],
       "mirrorSafe": false,
-      "source": "ARTSRC:CH-EXTRA-COMMUTER-SERVICE:R5",
-      "provenance": "PROV:CH-EXTRA-COMMUTER-SERVICE:R5",
+      "source": "ARTSRC:CH-EXTRA-COMMUTER-SERVICE:R6",
+      "provenance": "PROV:CH-EXTRA-COMMUTER-SERVICE:R6",
       "license": "YAKI SEASON internal user-approved artwork",
       "specRefs": [
         "ART-003 v5.0.0",
         "GPL-005 v2.23.0",
-        "User approval 2026-08-09: five front-facing office customer variants with lowered resting hands"
+        "User approval 2026-08-09: five front-facing office customer variants with lowered resting hands",
+        "User approval 2026-08-10: office A/B replaced by early-30s male developer pixel-art variants with backpacks"
       ],
-      "reviewedAt": "2026-08-09",
-      "url": "/assets/core/customer/ch-extra-office-a-waiting-r5-b1.png",
-      "sha256": "bb7389707cc95f033eab641e115a1b410b2098dc56a182f450835a37aacbc9f0",
-      "bytes": 1712501,
+      "reviewedAt": "2026-08-10",
+      "url": "/assets/core/customer/ch-extra-office-a-waiting-r6-b1.png",
+      "sha256": "cf1fb5a79d16813c895ed3c1b3e054a65088401caeba80066b28afcb4bc0f5d6",
+      "bytes": 668406,
       "dimensions": {
-        "width": 1086,
-        "height": 1448
+        "width": 1182,
+        "height": 1330
       },
       "format": "png",
       "companions": [
         {
           "role": "office-a-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-a-eating-negima-r5-b1.png",
-          "sha256": "a201ca49bdbbdbd40979eea1cf4ef31fe334fdd628bb8024673af636118a014b",
-          "bytes": 1726094,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/ch-extra-office-a-eating-negima-r6-b1.png",
+          "sha256": "88a628440a7f711a12e73a2c749be04d00089c7c97c8022e51fb24e6e04e12e8",
+          "bytes": 643353,
+          "dimensions": { "width": 1182, "height": 1330 },
           "format": "png"
         },
         {
           "role": "office-a-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-a-drinking-beer-r5-b1.png",
-          "sha256": "7383eef02898ae0ed23849a5de8af5c2c26212f867a0386e8b0d928299907467",
-          "bytes": 1654712,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/ch-extra-office-a-drinking-beer-r6-b1.png",
+          "sha256": "88ca90f12f32feaa814d847142921b61d395d4789d7481b5702dd5855b89479f",
+          "bytes": 650250,
+          "dimensions": { "width": 1182, "height": 1330 },
           "format": "png"
         },
         {
           "role": "office-b-waiting",
-          "url": "/assets/core/customer/ch-extra-office-b-waiting-r5-b1.png",
-          "sha256": "31a2d8452e4407710652887b9d966cfcd11ea2087be913d3d40c64d66d10cf2f",
-          "bytes": 1648049,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/ch-extra-office-b-waiting-r6-b1.png",
+          "sha256": "1882832a9318f0388c7ce6dcebdeb143f13ee66eead6f4a969cfe3a7f898ce16",
+          "bytes": 584200,
+          "dimensions": { "width": 1024, "height": 1536 },
           "format": "png"
         },
         {
           "role": "office-b-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-b-eating-negima-r5-b1.png",
-          "sha256": "7e0cb1c37c860545153daa83f1f646bbc29f78aa7ea21950c14377069b379800",
-          "bytes": 1621037,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/ch-extra-office-b-eating-negima-r6-b1.png",
+          "sha256": "3ef87daf316740ceb0c8b8022ce1fb74c057fce2ce599d3c74b1ae480cfceed6",
+          "bytes": 596941,
+          "dimensions": { "width": 1024, "height": 1536 },
           "format": "png"
         },
         {
           "role": "office-b-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-b-drinking-beer-r5-b1.png",
-          "sha256": "7948a84d26c8102b2d773a69223e0c1416162b00401c02555db61cf1727b1baa",
-          "bytes": 1624126,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/ch-extra-office-b-drinking-beer-r6-b1.png",
+          "sha256": "76206895ff41eff8da7a2bb031a79bdcf5a6f5fe8e138bbc0140bb461f10c952",
+          "bytes": 618419,
+          "dimensions": { "width": 1024, "height": 1536 },
           "format": "png"
         },
         {
           "role": "office-c-waiting",
-          "url": "/assets/core/customer/ch-extra-office-c-waiting-r5-b1.png",
+          "url": "/assets/core/customer/ch-extra-office-c-waiting-r6-b1.png",
           "sha256": "676c7d7f708babc3b2fae26bdd603a4a435d9fb85bc93f53d80126613f949dc2",
           "bytes": 1793667,
           "dimensions": { "width": 1086, "height": 1448 },
@@ -1596,7 +1597,7 @@
         },
         {
           "role": "office-c-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-c-eating-negima-r5-b1.png",
+          "url": "/assets/core/customer/ch-extra-office-c-eating-negima-r6-b1.png",
           "sha256": "1b873248ec4dca6e27a929d2480a0a0c2496df7a0770ecc0b66ce098310751d9",
           "bytes": 1787857,
           "dimensions": { "width": 1086, "height": 1448 },
@@ -1604,7 +1605,7 @@
         },
         {
           "role": "office-c-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-c-drinking-beer-r5-b1.png",
+          "url": "/assets/core/customer/ch-extra-office-c-drinking-beer-r6-b1.png",
           "sha256": "fa31481ef527040cadcb02af6e1df90d4292879cf5cac304568de8447c5f927e",
           "bytes": 1868596,
           "dimensions": { "width": 1086, "height": 1448 },
@@ -1612,7 +1613,7 @@
         },
         {
           "role": "office-d-waiting",
-          "url": "/assets/core/customer/ch-extra-office-d-waiting-r5-b1.png",
+          "url": "/assets/core/customer/ch-extra-office-d-waiting-r6-b1.png",
           "sha256": "e732afdf24b67fb401de331e17f6e90bf0d0d0d819ce45a8afeed9ea112431b7",
           "bytes": 1790495,
           "dimensions": { "width": 1086, "height": 1448 },
@@ -1620,7 +1621,7 @@
         },
         {
           "role": "office-d-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-d-eating-negima-r5-b1.png",
+          "url": "/assets/core/customer/ch-extra-office-d-eating-negima-r6-b1.png",
           "sha256": "33c9d5fb5e52d9c7ffed625e5313ff005f847694fffc687349b85fa23ef28756",
           "bytes": 1753364,
           "dimensions": { "width": 1086, "height": 1448 },
@@ -1628,7 +1629,7 @@
         },
         {
           "role": "office-d-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-d-drinking-beer-r5-b1.png",
+          "url": "/assets/core/customer/ch-extra-office-d-drinking-beer-r6-b1.png",
           "sha256": "03bf52c6ba4243fe7c578304e55c047c41bae870db2dba81fce14593606e0a4d",
           "bytes": 1814957,
           "dimensions": { "width": 1086, "height": 1448 },
@@ -1636,7 +1637,7 @@
         },
         {
           "role": "office-e-waiting",
-          "url": "/assets/core/customer/ch-extra-office-e-waiting-r5-b1.png",
+          "url": "/assets/core/customer/ch-extra-office-e-waiting-r6-b1.png",
           "sha256": "fa75dc7e9d207e4f67cc3011d38058e088de69343b052edbb499f3ed635af374",
           "bytes": 1460015,
           "dimensions": { "width": 1086, "height": 1448 },
@@ -1644,7 +1645,7 @@
         },
         {
           "role": "office-e-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-e-eating-negima-r5-b1.png",
+          "url": "/assets/core/customer/ch-extra-office-e-eating-negima-r6-b1.png",
           "sha256": "27b3f1f2fa6491626fbc75989a71f910e3ca2c870d23d00861d4fda5566656e5",
           "bytes": 1454049,
           "dimensions": { "width": 1086, "height": 1448 },
@@ -1652,7 +1653,7 @@
         },
         {
           "role": "office-e-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-e-drinking-beer-r5-b1.png",
+          "url": "/assets/core/customer/ch-extra-office-e-drinking-beer-r6-b1.png",
           "sha256": "d9ea1718ad923fdb8560a6596ef9a035850d080d892eda607fd71889775606d2",
           "bytes": 1458201,
           "dimensions": { "width": 1086, "height": 1448 },

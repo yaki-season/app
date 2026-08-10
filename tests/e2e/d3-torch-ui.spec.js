@@ -42,14 +42,23 @@ test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다',
 
   await page.evaluate(() => window.__d1GameDebug.d3TorchStage());
   await expect(page.getByTestId('d3-torch-panel')).toBeVisible();
+  await expect(page.getByTestId('d3-torch-cursor')).toBeHidden();
   await page.getByTestId('d3-apply-tare').click();
   await expect(page.getByTestId('d3-torch-state')).toContainText('토치 대기');
 
-  await page.evaluate(() => {
-    const debug = window.__d1GameDebug;
-    debug.d3TorchBegin();
-    [0.05, 0.25, 0.45, 0.65, 0.85].forEach((position) => debug.d3TorchSweep(position, 200));
-  });
+  await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-GRILL'));
+  await page.waitForTimeout(350);
+  await expect(page.getByTestId('d3-torch-cursor')).toBeVisible();
+  const viewport = page.viewportSize();
+  await page.mouse.move(viewport.width * 0.29, viewport.height * 0.52);
+  await page.mouse.down({ button: 'left' });
+  await page.waitForTimeout(210);
+  for (const x of [0.38, 0.47, 0.56, 0.65, 0.71]) {
+    await page.waitForTimeout(210);
+    await page.mouse.move(viewport.width * x, viewport.height * 0.52);
+  }
+  await page.mouse.up({ button: 'left' });
+  await expect(page.getByTestId('d3-torch-state')).toContainText('Perfect');
   const stationPreservation = await page.evaluate(async () => {
     const debug = window.__d1GameDebug;
     const torchBefore = debug.d3TorchView().finish.torchCoverage;
@@ -75,7 +84,6 @@ test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다',
   await expect(page.getByTestId('d3-torch-panel')).toBeVisible();
   expect(await page.evaluate(() => window.__d1GameDebug.d3TorchView().finish.torchCoverage)).toBe(1);
 
-  await page.evaluate(() => window.__d1GameDebug.d3TorchFinish());
   await expect(page.getByTestId('d3-torch-state')).toContainText('Perfect');
   await page.getByTestId('d3-retrieve-momo').click();
   await expect(page.getByTestId('dock-shelf')).toContainText('모모');

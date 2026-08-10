@@ -23,6 +23,7 @@ import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
+import { gameAudio, installGameAudio, sfx, sfxOnce, loopOn, loopOff, loopRate } from './audio/gameAudio.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
 import {
   isD1OfficeBeerFrame,
@@ -87,6 +88,9 @@ const d1GameDebug = {
   texturesReady: () => false,
 };
 window.__d1GameDebug = d1GameDebug;
+
+// 오디오는 파일이 없으면 조용히 무음으로 돈다. 결선이 게임 부팅을 막지 않는다.
+installGameAudio(window);
 
 const requestedDayId = new URLSearchParams(window.location.search).get('day');
 const ACTIVE_DAY_ID = ['d2', 'd3'].includes(requestedDayId) ? requestedDayId : 'd1';
@@ -343,9 +347,15 @@ for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
 const D3_TORCH_JOB_ID = 'D3-MOMO-TARE-ACTIVE';
 const d3TorchPanel = el('d3TorchPanel');
 const d3TorchTrack = el('d3TorchTrack');
+const d3TorchCursor = el('d3TorchCursor');
 let d3TorchPointerActive = false;
 let d3TorchLastAt = 0;
+let d3TorchPointerPosition = 0.5;
+let d3TorchFrame = 0;
 let d3KeyboardPosition = 0.5;
+const d3TorchPositionFromClientX = (clientX) => Math.max(0, Math.min(1,
+  ((clientX / Math.max(1, window.innerWidth)) - 0.28) / 0.44,
+));
 
 function renderD3Torch() {
   const job = d3Grill.job(D3_TORCH_JOB_ID);
@@ -353,7 +363,11 @@ function renderD3Torch() {
     && businessSession.completed !== true
     && businessView()?.dayId === 'D3';
   d3TorchPanel.hidden = !d3FeatureOpen || !job;
-  if (!job) return;
+  if (!job) {
+    d3TorchCursor.hidden = true;
+    document.body.classList.remove('d3-torch-cursor-ready');
+    return;
+  }
   const finish = job.finish;
   const percent = Math.round(finish.torchCoverage * 100);
   const stateLabel = {
@@ -375,6 +389,12 @@ function renderD3Torch() {
   el('d3TorchState').textContent = stateLabel;
   el('d3ApplyTare').disabled = finish.tareApplied || finish.torchState === 'active';
   d3TorchTrack.disabled = !finish.tareApplied || finish.torchCompleted;
+  const cursorReady = d3FeatureOpen
+    && finish.tareApplied
+    && !finish.torchCompleted
+    && director.activeScreenId() === 'SCR-SVC-GRILL';
+  d3TorchCursor.hidden = !cursorReady;
+  document.body.classList.toggle('d3-torch-cursor-ready', cursorReady);
   el('d3RetrieveMomo').disabled = !finish.torchCompleted;
   el('d3TorchFill').style.width = `${percent}%`;
   el('d3TorchCoverage').style.width = `${percent}%`;
@@ -391,6 +411,9 @@ function ensureD3TorchActive() {
   if (job.finish.torchState !== 'active') {
     const started = d3Grill.beginTorch(D3_TORCH_JOB_ID);
     if (!started.ok) return false;
+    sfx('SFX-TORCH-IGNITE');
+    loopOn('SFX-TORCH-LOOP');
+    loopOn('SFX-TORCH-SWEEP');
   }
   return true;
 }
@@ -398,6 +421,12 @@ function ensureD3TorchActive() {
 function sweepD3Torch(position, deltaMs) {
   if (!ensureD3TorchActive()) return;
   d3Grill.sweepTorch(D3_TORCH_JOB_ID, { position, deltaMs: Math.max(16, Math.min(250, deltaMs)) });
+  // 훑기 소리는 파일이 아니라 위치로 변조한다. 가장자리로 갈수록 살짝 높아진다.
+  loopRate('SFX-TORCH-SWEEP', 0.9 + Math.abs(position - 0.5) * 0.4);
+  const focusMs = d3Grill.job(D3_TORCH_JOB_ID)?.finish.torchFocusMs ?? 0;
+  // 과열은 한 번의 경고로 끝낸다. 화면 문구가 사라지면 다음 과열에서 다시 운다.
+  if (focusMs >= 800) sfxOnce('SFX-TORCH-OVERHEAT', 'focus');
+  else gameAudio()?.resetOnce('SFX-TORCH-OVERHEAT:focus');
   persistFirstOrderRuntime();
   renderD3Torch();
 }
@@ -405,14 +434,24 @@ function sweepD3Torch(position, deltaMs) {
 function finishD3TorchInput() {
   const job = d3Grill.job(D3_TORCH_JOB_ID);
   if (job?.finish.torchState === 'active') d3Grill.finishTorch(D3_TORCH_JOB_ID);
+  loopOff('SFX-TORCH-SWEEP');
+  loopOff('SFX-TORCH-LOOP');
+  sfx('SFX-TORCH-EXTINGUISH');
   d3TorchPointerActive = false;
+  cancelAnimationFrame(d3TorchFrame);
+  d3TorchFrame = 0;
+  d3TorchCursor.classList.remove('is-firing');
   persistFirstOrderRuntime();
   renderD3Torch();
 }
 
 el('d3ApplyTare').addEventListener('click', () => {
   const result = d3Grill.applyTare(D3_TORCH_JOB_ID);
-  if (result.ok) showHint('타레 적용 완료 · 토치를 누른 채 좌우로 훑으세요');
+  if (result.ok) {
+    sfx('SFX-TARE-BRUSH');
+    sfx('SFX-TARE-SIZZLE');
+    showHint('타레 적용 완료 · 토치를 누른 채 좌우로 훑으세요');
+  }
   persistFirstOrderRuntime();
   renderD3Torch();
 });
@@ -431,6 +470,38 @@ d3TorchTrack.addEventListener('pointermove', (event) => {
 });
 d3TorchTrack.addEventListener('pointerup', finishD3TorchInput);
 d3TorchTrack.addEventListener('pointercancel', finishD3TorchInput);
+document.addEventListener('pointermove', (event) => {
+  if (d3TorchCursor.hidden) return;
+  d3TorchCursor.style.left = `${event.clientX}px`;
+  d3TorchCursor.style.top = `${event.clientY}px`;
+  d3TorchPointerPosition = d3TorchPositionFromClientX(event.clientX);
+});
+function tickD3CursorTorch(now) {
+  if (!d3TorchPointerActive) return;
+  sweepD3Torch(d3TorchPointerPosition, now - d3TorchLastAt);
+  d3TorchLastAt = now;
+  d3TorchFrame = requestAnimationFrame(tickD3CursorTorch);
+}
+document.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0 || d3TorchCursor.hidden) return;
+  if (event.target.closest?.('button, [role="button"], .d3-torch-panel, #svcBar, .quick-nav')) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  if (!ensureD3TorchActive()) return;
+  d3TorchPointerActive = true;
+  d3TorchLastAt = performance.now();
+  d3TorchPointerPosition = d3TorchPositionFromClientX(event.clientX);
+  d3TorchCursor.classList.add('is-firing');
+  sweepD3Torch(d3TorchPointerPosition, 16);
+  d3TorchFrame = requestAnimationFrame(tickD3CursorTorch);
+}, true);
+document.addEventListener('pointerup', (event) => {
+  if (!d3TorchPointerActive) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  finishD3TorchInput();
+}, true);
+document.addEventListener('pointercancel', finishD3TorchInput, true);
 d3TorchTrack.addEventListener('keydown', (event) => {
   if (event.code === 'Space') {
     event.preventDefault();
@@ -1209,13 +1280,15 @@ function syncCustomers() {
     if (actor) {
       if (kind === 'office') {
         R.setSeatActorTexture(seatId, officeArt?.url ?? runtimeAssets.COMMUTER_CUSTOMER.url);
+        actor.scale.set(1.22, 1.22, 1);
       } else if (kind === 'solo') {
         R.setSeatActorTexture(seatId, runtimeAssets.SOLO_CUSTOMER.url);
+        actor.scale.set(1, 1, 1);
       } else if (actor.material.map) {
         actor.material.map = null;
         actor.material.needsUpdate = true;
+        actor.scale.set(1, 1, 1);
       }
-      actor.scale.x = 1;
     }
     const bubble = document.querySelector(`[data-testid="bubble-${seatId}"]`);
     if (bubble) {
@@ -1778,6 +1851,8 @@ function clickGrillSlot(i, now) {
   if (r.retrieved) {
     const menuId = r.menuId ?? 'negima';
     const label = skewerLabel(menuId);
+    sfx('SFX-GRILL-RETRIEVE');
+    sfx(r.quality?.good ? 'SFX-JUDGE-PERFECT' : 'SFX-JUDGE-FAIL');
     if (ACTIVE_DAY_ID === 'd3' && menuId === 'momo' && !d3Grill.job(D3_TORCH_JOB_ID)) {
       d3Grill.stageCookedItem({ id: D3_TORCH_JOB_ID, menuId: 'momo', seasoning: 'tare', bothFacesCooked: true });
     } else {
@@ -1852,8 +1927,29 @@ function bindCookingMaterialToApprovedPlane(key) {
   return true;
 }
 
+const GRILL_COOK_LOOPS = ['SFX-GRILL-COOK-LOOP-LOW', 'SFX-GRILL-COOK-LOOP-MID', 'SFX-GRILL-COOK-LOOP-HIGH'];
+let grillCookLoopActive = null;
+
+// 가장 많이 익은 칸이 숯불 소리를 대표한다. 칸마다 루프를 겹치면 지글거림이 뭉개진다.
+function updateGrillCookAudio(views) {
+  let peak = -1;
+  for (const v of views) {
+    if (!v?.cooking) continue;
+    peak = Math.max(peak, elapsedSecToUniform(v.faceElapsedSec));
+  }
+  const next = peak < 0 ? null
+    : peak < 0.34 ? GRILL_COOK_LOOPS[0]
+      : peak < 0.7 ? GRILL_COOK_LOOPS[1]
+        : GRILL_COOK_LOOPS[2];
+  if (next === grillCookLoopActive) return;
+  if (grillCookLoopActive) loopOff(grillCookLoopActive);
+  if (next) loopOn(next);
+  grillCookLoopActive = next;
+}
+
 function updateGrillVisual(now) {
   const views = cook.slotViews(now);
+  updateGrillCookAudio(views);
   for (const key of SLOT_KEYS) {
     const v = views[slotIndexOf(key)];
     const mesh = R.objectMesh[key];
@@ -2297,6 +2393,7 @@ Object.assign(d1GameDebug, {
     text: button.textContent.replace(/\s+/g, ' ').trim(),
     ariaLabel: button.getAttribute('aria-label'),
   })),
+  audioState: () => gameAudio()?.state() ?? null,
   cookPlace: (menuId = null) => {
     const now = performance.now();
     const result = cook.placeToGrill(now, menuId);

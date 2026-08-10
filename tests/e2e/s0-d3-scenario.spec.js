@@ -106,7 +106,7 @@ test('키보드만으로 S0 첫 상호작용을 진행한다', async ({ page }) 
   await expect(page.getByRole('button', { name: '문을 연다' })).toBeVisible();
 });
 
-test('D1 영업 전 첫 두 대사에서 인물별 전체 장면을 표시한다', async ({ page }) => {
+test('D1 영업 전 세 대사에서 인물별 전체 장면을 표시한다', async ({ page }) => {
   await page.goto('/src/s0-d3.html?new=1');
   await page.getByRole('button', { name: '열쇠를 집는다' }).click();
   await page.getByRole('button', { name: '문을 연다' }).click();
@@ -136,6 +136,18 @@ test('D1 영업 전 첫 두 대사에서 인물별 전체 장면을 표시한다
   await expect(page.locator('#story-portrait')).toBeHidden();
   await expect(page.locator('#story-background')).toBeHidden();
   await expect(page.locator('#portrait-placeholder')).toHaveCount(0);
+  await page.getByRole('button', { name: '다음 이야기', exact: true }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-D1-PRE-003');
+  await expect(page.locator('#story-illustration')).toHaveAttribute(
+    'src',
+    '/public/assets/core/s0/story/d1-preopen-aki-full-scene-r1-b1.png',
+  );
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-story-illustration-asset-id',
+    'IL-D1-PREOPEN-AKI',
+  );
+  await expect(page.locator('#story-portrait')).toBeHidden();
+  await expect(page.locator('#story-background')).toBeHidden();
 });
 
 test('KEY exact PR-SHOP-KEY가 없으면 승인 closed 배경 위에서도 placeholder를 유지한다', async ({

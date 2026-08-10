@@ -8,6 +8,7 @@ describe('D3 토치 UI 계약', () => {
     const html = read('src/d1-game.html');
     const js = read('src/d1-game.js');
     expect(html).toContain('data-testid="d3-torch-panel"');
+    expect(html).toContain('data-testid="d3-torch-cursor"');
     expect(html).toContain('role="progressbar"');
     expect(html).toContain('키보드: Space로 토치를 켠 채 ← →로 이동');
     expect(html).toContain('id="d3TorchWarning"');
@@ -16,6 +17,8 @@ describe('D3 토치 UI 계약', () => {
     expect(html).toContain('data-required-asset-id="PROP-TARE-BRUSH-D3"');
     expect(js).toContain("proper: 'D3-MOMO-TORCH-PROPER'");
     expect(js).toContain("d3TorchTrack.addEventListener('pointermove'");
+    expect(js).toContain("document.addEventListener('pointerdown'");
+    expect(js).toContain('requestAnimationFrame(tickD3CursorTorch)');
     expect(js).toContain("d3TorchTrack.addEventListener('keydown'");
     expect(js).toContain('d3Grill: d3Grill.snapshot()');
   });
