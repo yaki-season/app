@@ -9,6 +9,18 @@ import { AUDIO_BUS, audioEntry } from './audioCatalog.js';
 
 const BUSES = [AUDIO_BUS.BGM, AUDIO_BUS.AMBIENCE, AUDIO_BUS.SFX, AUDIO_BUS.WARNING];
 
+// decodeAudioData는 확장자가 아니라 내용으로 포맷을 판별한다. 그래서 납품 포맷을 하나로 강제하지
+// 않고 순서대로 찾는다. 먼저 찾은 것을 쓴다.
+//
+// mp3를 뒤로 미룬 이유: 인코더 패딩 때문에 루프 경계에 틈이 생긴다. 같은 소리를 ogg와 mp3로 둘 다
+// 넣으면 루프가 매끄러운 쪽이 선택된다.
+export const AUDIO_EXTENSIONS = Object.freeze(['.ogg', '.m4a', '.mp3', '.wav']);
+
+function urlCandidates(url) {
+  const base = url.replace(/\.[a-z0-9]+$/i, '');
+  return AUDIO_EXTENSIONS.map((ext) => `${base}${ext}`);
+}
+
 export const DEFAULT_VOLUMES = Object.freeze({
   master: 0.8,
   [AUDIO_BUS.BGM]: 0.55,
@@ -76,16 +88,18 @@ export function createAudioEngine(options = {}) {
     if (!entry || !ensureContext() || typeof fetchImpl !== 'function') return null;
 
     const promise = (async () => {
-      try {
-        const response = await fetchImpl(resolveUrl(entry.url));
-        if (!response?.ok) { missing.add(id); return null; }
-        const bytes = await response.arrayBuffer();
-        return await context.decodeAudioData(bytes);
-      } catch {
-        // 없는 파일과 깨진 파일을 구분하지 않는다. 둘 다 무음으로 간다.
-        missing.add(id);
-        return null;
+      for (const url of urlCandidates(entry.url)) {
+        try {
+          const response = await fetchImpl(resolveUrl(url));
+          if (!response?.ok) continue;
+          const bytes = await response.arrayBuffer();
+          return await context.decodeAudioData(bytes);
+        } catch {
+          // 없는 파일과 깨진 파일을 구분하지 않는다. 다음 후보로 넘어간다.
+        }
       }
+      missing.add(id);
+      return null;
     })();
     buffers.set(id, promise);
     return promise;

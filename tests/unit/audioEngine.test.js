@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { AUDIO_BUS, AUDIO_CATALOG, audioEntry, audioIdsByBus } from '../../src/audio/audioCatalog.js';
-import { createAudioEngine } from '../../src/audio/audioEngine.js';
+import { AUDIO_EXTENSIONS, createAudioEngine } from '../../src/audio/audioEngine.js';
 
 function fakeContext() {
   const sources = [];
@@ -92,7 +92,8 @@ describe('오디오 엔진', () => {
     const { engine, requested } = engineWith({ present: () => false });
     expect(await engine.play('SFX-UI-SELECT')).toBeNull();
     expect(await engine.play('SFX-UI-SELECT')).toBeNull();
-    expect(requested).toHaveLength(1);
+    // 후보 확장자를 한 바퀴 돌고 포기한다. 두 번째 호출은 아예 나가지 않는다.
+    expect(requested).toHaveLength(AUDIO_EXTENSIONS.length);
     expect(engine.state().missing).toContain('SFX-UI-SELECT');
   });
 
@@ -102,6 +103,20 @@ describe('오디오 엔진', () => {
     await engine.play('SFX-UI-SELECT');
     expect(context.sources).toHaveLength(2);
     expect(requested).toHaveLength(1);
+  });
+
+  it('ogg가 없으면 다른 확장자를 찾아 쓴다', async () => {
+    // 님이 mp3나 wav를 넣어도 이름만 맞으면 울려야 한다.
+    const { engine, requested } = engineWith({ present: (url) => url.endsWith('.wav') });
+    expect(await engine.play('SFX-UI-SELECT')).not.toBeNull();
+    expect(requested.at(-1)).toMatch(/select-r1-b1\.wav$/);
+    expect(engine.state().missing).toHaveLength(0);
+  });
+
+  it('루프 자산은 mp3보다 갭 없는 포맷을 먼저 고른다', () => {
+    // mp3는 인코더 패딩 때문에 루프 경계에 틈이 생긴다. 둘 다 있으면 ogg/m4a가 이겨야 한다.
+    expect(AUDIO_EXTENSIONS.indexOf('.ogg')).toBeLessThan(AUDIO_EXTENSIONS.indexOf('.mp3'));
+    expect(AUDIO_EXTENSIONS.indexOf('.m4a')).toBeLessThan(AUDIO_EXTENSIONS.indexOf('.mp3'));
   });
 
   it('더 급한 경고가 우는 동안 덜 급한 경고를 얹지 않는다', async () => {
