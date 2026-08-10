@@ -1,71 +1,133 @@
 # YAKI SEASON
 
-공개 실행 흐름은 시작 화면에서 새 게임 또는 이어하기를 선택하고, S0 프롤로그를 거쳐 D1 영업으로 이어진다.
+> 작은 야키토리 가게의 하루를 운영하며 꼬치를 굽고, 술을 따르고, 손님을 맞이하는 웹 기반 조리 시뮬레이션입니다.
 
-## 프로덕션 아트 계약
+![YAKI SEASON](public/assets/core/s0/story/s0-aki-reopened-shop-full-scene-r1-b1.png)
 
-프로덕션 아트는 `ART-002 v3.6.1`, `ART-003 v5.0.0`의 순서를 따른다.
+YAKI SEASON은 가게를 다시 여는 프롤로그에서 시작해 날짜별 영업을 이어가는 게임입니다. 플레이어는 주문을 확인하고 재료 조립, 숯불 조리, 음료 준비, 서빙과 정리를 직접 수행합니다. 날짜가 지날수록 손님과 메뉴가 늘어나며 새로운 조리 공정이 해금됩니다.
 
-1. 최신 손님·스테이션 콘셉트 기준 세트로 화면별 승인 통합 콘셉트를 제작한다.
-2. 승인 원본에서 배경·상판·작업면·캐릭터·음식·도구를 분리한다.
-3. 분리본에 `sourceMasterId`, `styleRefs`, `finishPass`, FHD 재합성 결과를 기록한다.
-4. 모든 증빙을 통과한 파일만 runtime manifest에 `approved`로 등록한다.
+현재 저장소에는 S0 프롤로그부터 D3 영업까지의 플레이 흐름이 구현되어 있습니다.
 
-구형 생성 에셋·아트 검수판·자동 생성 스크립트와 runtime 복사본은 삭제했다. 현재 runtime manifest는
-비어 있으며, 테스트 화면은 외부 아트 파일 없이 절차적 더미만 사용한다. 기존 구현을 직접 검증한
-화면 기록 36장은 프로덕션 아트와 분리해 `tests/reference-images/`에 보존한다.
+## 주요 기능
 
-## 저장소 경계
+- 닭고기와 대파를 순서대로 끼우는 네기마 조립
+- 앞면과 뒷면의 익힘 상태를 따로 관리하는 숯불 조리
+- 모모 조립 및 조리
+- 타레 도포 후 토치를 좌우로 움직이는 마감 공정
+- 맥주와 거품 비율을 조절하는 생맥주 따르기
+- 여러 손님의 주문, 착석, 서빙, 식사와 자리 정리
+- 영업 종료 후 정산 및 다음 영업일 전환
+- 브라우저 저장소를 이용한 캠페인과 진행 상태 복구
+- 키보드와 포인터 입력, 주요 UI의 접근성 상태 제공
 
-`app`에는 실제 구현·테스트와 최종 런타임 전달물만 둔다.
+## 게임 진행
 
-| 위치 | 역할 | Git 추적 |
-|---|---|---|
-| `src/`, `content/`, `tests/`, `tools/` | 구현·데이터·검증 도구와 고정 검증 이미지 | 추적 |
-| `public/assets/` | manifest와 승인·검증을 통과한 런타임 에셋 | 추적 |
-| `../docs/` | 요구사항과 작업 상태 | 별도 저장소 |
-| `../art-workspace/` | 콘셉트·원본·검수판·provenance·캡처 | 로컬 작업공간, `app`에서 추적하지 않음 |
-
-아트 파일은 개별 승인만으로 런타임에 들어가지 않는다. 프로필별 개별 승인, 소비 화면
-FHD/720p 재조립, 최적화, 소비 화면 최종 승인을 모두 확인한 finalizer가 만든 handoff만
-승격할 수 있다. provenance의 `runtimeRegistrationAllowed`는 계속 `false`이며 사람이
-허용 상태로 편집하지 않는다.
-
-```bash
-npm run assets:validate
-npm run assets:promote -- \
-  --handoff ../art-workspace/review/.../metadata/runtime-handoff.json
-# 출력된 30분 유효 일회성 영수증을 사용해:
-npm run assets:promote -- \
-  --handoff ../art-workspace/review/.../metadata/runtime-handoff.json \
-  --write \
-  --receipt .asset-promotion-receipts/<receipt>.json
+```text
+프롤로그
+   ↓
+영업 시작
+   ↓
+주문 확인 → 조립 → 굽기/음료 준비 → 서빙
+   ↑                                  ↓
+   └──────── 다음 주문과 자리 정리 ────┘
+   ↓
+마감 → 정산 → 다음 날
 ```
 
-## 실행
+날짜별 핵심 변화는 다음과 같습니다.
+
+| 구간 | 주요 내용 |
+|---|---|
+| S0 | 폐점 상태의 가게를 다시 열고 첫 영업을 준비합니다. |
+| D1 | 네기마와 생맥주를 중심으로 기본 영업 흐름을 익힙니다. |
+| D2 | 모모 메뉴와 늘어난 손님을 운영합니다. |
+| D3 | 타레와 토치 마감 공정이 추가됩니다. |
+
+## 기술 구성
+
+- JavaScript ES Modules
+- Three.js 기반 2.5D 스테이션 렌더링
+- Vite 개발 서버 및 프로덕션 빌드
+- Vitest 단위·통합 테스트
+- Playwright 브라우저 E2E 테스트
+- JSON 기반 콘텐츠 정의와 런타임 에셋 manifest
+
+게임 규칙과 화면 렌더링은 가능한 한 분리되어 있습니다. 조리 및 캠페인 규칙은 순수 도메인 모듈에서 판정하고, 브라우저 진입점이 입력·오디오·Three.js 화면과 연결합니다.
+
+## 로컬 실행
+
+Node.js와 npm이 필요합니다.
 
 ```bash
 npm install
 npm run dev
 ```
 
-브라우저에서 `http://127.0.0.1:8777/src/public-shell.html`을 연다.
+개발 서버가 실행되면 다음 주소를 엽니다.
 
-## 검증
+- 게임 시작: <http://127.0.0.1:8777/src/public-shell.html>
+- D3 토치 개발 확인: <http://127.0.0.1:8777/src/d1-game.html?day=d3&devUnlock=1&reset=1>
+
+`reset=1` 주소는 기존 로컬 진행 상태를 초기화하므로 개발 확인에만 사용하세요.
+
+## 테스트
+
+전체 단위·통합 테스트:
 
 ```bash
 npm test
-npm run test:e2e -- tests/e2e/scene.spec.js --workers=1
+```
+
+브라우저 E2E 테스트:
+
+```bash
+npm run test:e2e
+```
+
+D1 핵심 흐름 검증:
+
+```bash
+npm run verify:d1-core
+```
+
+런타임 에셋과 시각 기준 검증:
+
+```bash
 npm run assets:validate
 npm run visual:references:validate
 ```
 
-`grill-shader.spec.js`는 제작 아트가 아닌 인라인 절차적 texture로 WebGL2 셰이더만 검증한다.
-`tests/reference-images`는 기존 구현의 사람이 보는 고정 비교 자료이며 runtime asset이나
-새 아트 생성 기준이 아니다.
+전체 진단은 아래 명령으로 실행할 수 있습니다.
 
-## 경계
+```bash
+npm run verify:full-diagnostic
+```
 
-- 테스트 화면은 `CUSTOMER_SYSTEM_ENABLED=false`를 유지한다.
-- 최신 프로덕션은 독립 손님 정보·조립·그릴·드링크·서빙 화면, 다중 손님/주문, 공용 준비 목록을 사용한다.
-- 새 아트가 승인될 때까지 사용자 노출 아트 placeholder를 추가하지 않는다.
+## 프로젝트 구조
+
+| 위치 | 역할 |
+|---|---|
+| `src/` | 게임 진입점, 도메인 로직, 렌더링, 오디오와 콘텐츠 소비 코드 |
+| `content/` | 캠페인과 영업일 콘텐츠 데이터 |
+| `public/assets/` | 런타임에서 사용하는 승인 에셋과 manifest |
+| `tests/unit/` | 순수 규칙과 UI 계약 단위 테스트 |
+| `tests/integration/` | 캠페인·영업일 모듈 통합 테스트 |
+| `tests/e2e/` | 실제 브라우저 플레이 흐름 검증 |
+| `tools/` | 콘텐츠 빌드, 에셋 검증·승격, 개발 지원 도구 |
+
+요구사항, 게임 기획, UI·아트·오디오 명세와 작업 기록은 별도 [YAKI SEASON 문서 저장소](https://github.com/yaki-season/docs)에서 관리합니다.
+
+## 에셋 관리
+
+런타임 에셋은 제작 파일을 바로 복사하지 않고 검수와 승격 절차를 거칩니다. 승인된 handoff만 `public/assets/`와 runtime manifest에 등록할 수 있습니다.
+
+```bash
+npm run assets:validate
+npm run assets:promote -- --handoff <runtime-handoff.json>
+```
+
+원본·후보 이미지와 제작 중간 결과는 앱 저장소 밖의 아트 작업 공간에서 관리하며, 이 저장소에는 실제 게임 실행에 필요한 최종 전달물만 포함합니다.
+
+## 개발 상태
+
+현재는 웹 프로토타입을 지속적으로 개발하는 단계입니다. 기능과 에셋 경로, 밸런스 값은 변경될 수 있으며 회귀 방지를 위해 주요 플레이 흐름을 자동 테스트로 관리합니다.
