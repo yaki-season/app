@@ -25,6 +25,7 @@ import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
 import { gameAudio, installGameAudio, setBgm, sfx, sfxOnce, loopOn, loopOff, loopRate } from './audio/gameAudio.js';
+import { crowdAmbienceId } from './audio/audioCatalog.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
 import {
   isD1OfficeBeerFrame,
@@ -94,6 +95,8 @@ installGameAudio(window);
 // 현재 BGM은 상태별 곡이 따로 없어 한 곡을 계속 흘린다. 상태마다 다시 걸면 같은 파일이
 // 매번 처음으로 되감겨 오히려 끊겨 들린다.
 setBgm('BGM-SERVICE-QUIET');
+loopOn('AMB-SHOP-INTERIOR');
+loopOn('AMB-CHARCOAL-BED');
 
 const requestedDayId = new URLSearchParams(window.location.search).get('day');
 const ACTIVE_DAY_ID = ['d2', 'd3'].includes(requestedDayId) ? requestedDayId : 'd1';
@@ -1477,8 +1480,26 @@ function renderOrderHud() {
     .join('');
 }
 
+let activeCrowdAmbience = null;
+let previousOccupiedSeatCount = null;
+
+function syncCustomerAmbience(view) {
+  const occupied = view?.seats?.filter((seat) => seat.occupied).length ?? 0;
+  const nextCrowd = crowdAmbienceId(occupied);
+  if (nextCrowd !== activeCrowdAmbience) {
+    if (activeCrowdAmbience) loopOff(activeCrowdAmbience);
+    if (nextCrowd) loopOn(nextCrowd);
+    activeCrowdAmbience = nextCrowd;
+  }
+  if (previousOccupiedSeatCount !== null && occupied !== previousOccupiedSeatCount) {
+    sfx(occupied > previousOccupiedSeatCount ? 'AMB-DOOR-OPEN' : 'AMB-DOOR-CLOSE');
+  }
+  previousOccupiedSeatCount = occupied;
+}
+
 function renderBusiness() {
   const view = businessView();
+  syncCustomerAmbience(view);
   const activeDayFeatureOpen = businessSession?.ok === true
     && businessSession.completed !== true
     && view?.dayId?.toLowerCase() === ACTIVE_DAY_ID;
@@ -1728,10 +1749,16 @@ function handle(key, now) {
     case 'binLeek': {
       const r = cook.clickIngredient(key === 'binChicken' ? 'chicken' : 'leek');
       if (!r.ok) {
+        sfx('SFX-ASM-REJECT');
         showHint(r.reason === 'transfer-required' ? '완성 꼬치를 먼저 옮기세요' : '순서가 달라요');
-      } else if (r.completed) {
-        persistFirstOrderRuntime();
-        showHint(`${skewerLabel(r.menuId)} 완성 · 꼬치를 눌러 오른쪽 트레이로 옮기세요`);
+      } else {
+        sfx('SFX-ASM-PIERCE');
+        sfx('SFX-ASM-SKEWER-REBOUND');
+        if (r.completed) {
+          sfx('SFX-ASM-COMPLETE');
+          persistFirstOrderRuntime();
+          showHint(`${skewerLabel(r.menuId)} 완성 · 꼬치를 눌러 오른쪽 트레이로 옮기세요`);
+        }
       }
       break;
     }
@@ -1755,6 +1782,7 @@ function handle(key, now) {
       } else {
         sfx('SFX-GRILL-PLACE-METAL');
         sfx('SFX-GRILL-PLACE-SIZZLE');
+        sfxOnce('SFX-PREP-FIRST-SIZZLE', 'first-grill-placement');
         showHint(`${r.slot + 1}번 ${skewerLabel(menuId)} 앞면 조리 시작 · 다른 꼬치와 독립적으로 익습니다`);
       }
       persistFirstOrderRuntime();
@@ -1880,28 +1908,47 @@ function updateDrinkAudio(state) {
   if (state.phase === 'done') sfxOnce('SFX-DRINK-COMPLETE', 'done');
 }
 
-const GRILL_COOK_LOOPS = ['SFX-GRILL-COOK-LOOP-LOW', 'SFX-GRILL-COOK-LOOP-MID', 'SFX-GRILL-COOK-LOOP-HIGH'];
-let grillCookLoopActive = null;
+const GRILL_COOK_LOOP = 'SFX-GRILL-COOK-LOOP';
+const GRILL_CRACKLES = ['SFX-GRILL-CRACKLE-A', 'SFX-GRILL-CRACKLE-B', 'SFX-GRILL-CRACKLE-C'];
+let grillCookLoopActive = false;
+let nextGrillCrackleAt = null;
 
-// 가장 많이 익은 칸이 숯불 소리를 대표한다. 칸마다 루프를 겹치면 지글거림이 뭉개진다.
-function updateGrillCookAudio(views) {
+// 기본 지글거림은 하나만 유지한다. 가장 많이 익은 칸을 기준으로 타닥 단발음의
+// 간격을 줄여, 여러 슬롯이 있어도 루프가 뭉개지지 않으면서 익힘 진행을 들려준다.
+function updateGrillCookAudio(views, now) {
   let peak = -1;
   for (const v of views) {
     if (!v?.cooking) continue;
     peak = Math.max(peak, elapsedSecToUniform(v.faceElapsedSec));
   }
-  const next = peak < 0 ? null
-    : peak < 0.34 ? GRILL_COOK_LOOPS[0]
-      : peak < 0.7 ? GRILL_COOK_LOOPS[1]
-        : GRILL_COOK_LOOPS[2];
-  if (next === grillCookLoopActive) return;
-  if (grillCookLoopActive) loopOff(grillCookLoopActive);
-  if (next) loopOn(next);
-  grillCookLoopActive = next;
+  if (peak < 0) {
+    if (grillCookLoopActive) loopOff(GRILL_COOK_LOOP);
+    grillCookLoopActive = false;
+    nextGrillCrackleAt = null;
+    return;
+  }
+  if (!grillCookLoopActive) {
+    loopOn(GRILL_COOK_LOOP);
+    grillCookLoopActive = true;
+  }
+  const progress = Math.max(0, Math.min(1, peak));
+  const minInterval = 3000 - progress * 2500;
+  const maxInterval = 6000 - progress * 4500;
+  if (nextGrillCrackleAt === null) {
+    nextGrillCrackleAt = now + minInterval + Math.random() * (maxInterval - minInterval);
+    return;
+  }
+  if (now < nextGrillCrackleAt) return;
+  const id = GRILL_CRACKLES[Math.floor(Math.random() * GRILL_CRACKLES.length)];
+  sfx(id, {
+    gain: 0.65 + progress * 0.3 + Math.random() * 0.05,
+    rate: 0.94 + Math.random() * 0.12,
+  });
+  nextGrillCrackleAt = now + minInterval + Math.random() * (maxInterval - minInterval);
 }
 
 function updateGrillVisual(now, views = cook.slotViews(now)) {
-  updateGrillCookAudio(views);
+  updateGrillCookAudio(views, now);
   for (const key of SLOT_KEYS) {
     const v = views[slotIndexOf(key)];
     const mesh = R.objectMesh[key];

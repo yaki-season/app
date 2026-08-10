@@ -1,6 +1,6 @@
 # 오디오 납품 위치
 
-`AUD-002 S0~S2 사운드 제작 목록과 파일 계약`의 83개 자산을 여기에 넣는다.
+`AUD-002 S0~S2 사운드 제작 목록과 파일 계약`의 81개 자산을 여기에 넣는다.
 길이·루프·재생 조건·무음 대체는 `AUD-002`가 단일 출처이며 이 문서는 경로 체크리스트다.
 
 ## 규칙 요약
@@ -53,24 +53,22 @@ ID는 그대로라 게임 코드는 손대지 않는다.
 - [ ] `fan-r1-b1.ogg`
 - [ ] `first-sizzle-r1-b1.ogg`
 
-## sfx/assembly/ (8)
+## sfx/assembly/ (5)
 
-- [ ] `pick-chicken-r1-b1.ogg`
-- [ ] `pick-leek-r1-b1.ogg`
-- [ ] `pierce-chicken-r1-b1.ogg`
-- [ ] `pierce-leek-r1-b1.ogg`
+- [ ] `pierce-r1-b1.ogg`
 - [ ] `skewer-rebound-r1-b1.ogg`
 - [ ] `reject-r1-b1.ogg`
 - [ ] `remove-r1-b1.ogg`
 - [ ] `complete-r1-b1.ogg`
 
-## sfx/grill/ (11)
+## sfx/grill/ (12)
 
 - [ ] `place-metal-r1-b1.ogg`
 - [ ] `place-sizzle-r1-b1.ogg`
-- [ ] `cook-loop-low-r1-b1.ogg` — 아래 3종 동일 길이·동일 위상
-- [ ] `cook-loop-mid-r1-b1.ogg`
-- [ ] `cook-loop-high-r1-b1.ogg`
+- [ ] `cook-loop-r1-b1.ogg`
+- [ ] `crackle-a-r1-b1.ogg`
+- [ ] `crackle-b-r1-b1.ogg`
+- [ ] `crackle-c-r1-b1.ogg`
 - [ ] `proper-enter-r1-b1.ogg`
 - [ ] `flip-tong-r1-b1.ogg`
 - [ ] `flip-turn-r1-b1.ogg`
@@ -116,9 +114,10 @@ ID는 그대로라 게임 코드는 손대지 않는다.
 - [ ] `cust-react-neutral-r1-b1.ogg`
 - [ ] `cust-react-bad-r1-b1.ogg`
 
-## sfx/ui/ (12)
+## sfx/ui/ (13)
 
 - [ ] `select-r1-b1.ogg`
+- [ ] `ingame-select-r1-b1.ogg`
 - [ ] `disabled-r1-b1.ogg`
 - [ ] `error-r1-b1.ogg`
 - [ ] `confirm-r1-b1.ogg`

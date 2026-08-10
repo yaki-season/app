@@ -44,9 +44,9 @@ function engineWith({ present = () => true } = {}) {
 }
 
 describe('오디오 카탈로그', () => {
-  it('AUD-002의 82개 자산을 중복 없는 ID로 담는다', () => {
-    expect(AUDIO_CATALOG).toHaveLength(82);
-    expect(new Set(AUDIO_CATALOG.map((entry) => entry.id)).size).toBe(82);
+  it('AUD-002의 81개 자산을 중복 없는 ID로 담는다', () => {
+    expect(AUDIO_CATALOG).toHaveLength(81);
+    expect(new Set(AUDIO_CATALOG.map((entry) => entry.id)).size).toBe(81);
   });
 
   it('손님이 한 명이면 군중음을 재생하지 않는다', () => {
@@ -73,9 +73,9 @@ describe('오디오 카탈로그', () => {
     const readme = readFileSync(new URL('../../public/assets/audio/README.md', import.meta.url), 'utf8');
     const listed = new Set([...readme.matchAll(/`([a-z0-9-]+-r\d+-b\d+\.ogg)`/g)].map((m) => m[1]));
     const catalogFiles = new Set(AUDIO_CATALOG.map((entry) => entry.url.split('/').pop()));
-    // 82개 자산이지만 파일은 76개다. BGM 6종이 main 한 곡을 공유하고, complete-r1-b1.ogg가
+    // 81개 자산이지만 파일은 75개다. BGM 6종이 main 한 곡을 공유하고, complete-r1-b1.ogg가
     // 조립과 생맥주에 각각 있으나 폴더가 달라 충돌하지 않는다.
-    expect(catalogFiles.size).toBe(76);
+    expect(catalogFiles.size).toBe(75);
     for (const file of catalogFiles) expect(listed, file).toContain(file);
     for (const file of listed) expect(catalogFiles, file).toContain(file);
   });
@@ -98,10 +98,17 @@ describe('오디오 카탈로그', () => {
   });
 
   it('굽기 루프와 흐름음은 루프로 선언한다', () => {
-    for (const id of ['SFX-GRILL-COOK-LOOP-LOW', 'SFX-DRINK-BEER-FLOW', 'SFX-TORCH-LOOP']) {
+    for (const id of ['SFX-GRILL-COOK-LOOP', 'SFX-DRINK-BEER-FLOW', 'SFX-TORCH-LOOP']) {
       expect(audioEntry(id).loop, id).toBe(true);
     }
     expect(audioEntry('SFX-UI-SELECT').loop).toBe(false);
+    expect(audioEntry('SFX-INGAME-SELECT').loop).toBe(false);
+    expect(audioEntry('SFX-ASM-PICK-CHICKEN')).toBeNull();
+    expect(audioEntry('SFX-ASM-PICK-LEEK')).toBeNull();
+    expect(audioEntry('SFX-ASM-PIERCE')?.url).toContain('/sfx/assembly/pierce-r1-b1.ogg');
+    expect(audioEntry('SFX-ASM-PIERCE-CHICKEN')).toBeNull();
+    expect(audioEntry('SFX-ASM-PIERCE-LEEK')).toBeNull();
+    expect(audioEntry('SFX-S0-KEY-PICK')?.url).toContain('/sfx/s0/key-pick-r1-b1.ogg');
   });
 });
 
@@ -164,8 +171,8 @@ describe('오디오 엔진', () => {
 
   it('일시정지는 반복음을 즉시 멈추고 예정된 소리를 쌓아두지 않는다', async () => {
     const { engine, context } = engineWith();
-    await engine.startLoop('SFX-GRILL-COOK-LOOP-LOW');
-    expect(engine.state().loops).toContain('SFX-GRILL-COOK-LOOP-LOW');
+    await engine.startLoop('SFX-GRILL-COOK-LOOP');
+    expect(engine.state().loops).toContain('SFX-GRILL-COOK-LOOP');
 
     engine.suspend();
     expect(context.sources[0].stopped).toBe(true);

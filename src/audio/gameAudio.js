@@ -5,6 +5,7 @@ import { createAudioEngine } from './audioEngine.js';
 
 let engine = null;
 let desiredBgm = null;
+const desiredLoops = new Set();
 
 export function gameAudio() {
   return engine;
@@ -21,6 +22,7 @@ export function setBgm(id) {
 
 function reapplyBgm() {
   if (desiredBgm) void engine?.startLoop(desiredBgm);
+  for (const id of desiredLoops) void engine?.startLoop(id);
 }
 
 export function installGameAudio(win = globalThis) {
@@ -59,10 +61,12 @@ export function sfxOnce(id, key, opts) {
 }
 
 export function loopOn(id, opts) {
+  desiredLoops.add(id);
   void engine?.startLoop(id, opts);
 }
 
 export function loopOff(id) {
+  desiredLoops.delete(id);
   engine?.stopLoop(id);
 }
 

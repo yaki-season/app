@@ -24,6 +24,12 @@ import {
   S0_TSUKIOKA_STORY_PORTRAIT_BINDING,
 } from './assets/s0TsukiokaStoryPortraitBindingContract.js';
 import { clearFirstOrderRuntime } from './d1/firstOrderRuntimeStorage.js';
+import { installGameAudio, loopOn, setBgm, sfx } from './audio/gameAudio.js';
+
+installGameAudio(window);
+setBgm('BGM-S0-ALLEY');
+loopOn('AMB-ALLEY-NIGHT');
+loopOn('SFX-S0-DISTANT-SHOP');
 
 const errors = validateS0D3Content();
 errors.push(...validateS0ExteriorBackgroundBindingContract());
@@ -315,6 +321,7 @@ function renderS0() {
     : '열쇠를 쥔 손이 차가웠다. 한 번 숨을 고르고 돌리자, 오래 닫혀 있던 문이 뻑뻑한 소리를 내며 열렸다.';
   content.innerHTML = `<p class="scene-narration">${narration}</p>`;
   actions.replaceChildren(button(step.actionLabel, () => {
+    sfx(s0Index === 0 ? 'SFX-S0-KEY-PICK' : 'SFX-S0-GATE-OPEN');
     if (s0Index < S0_INTERACTIONS.length - 1) s0Index += 1;
     else {
       mode = 'story';
@@ -379,6 +386,7 @@ function renderStory() {
   actions.replaceChildren(
     button('이 장면 건너뛰기', () => { mode = 'summary'; returnMode = 'story'; render(); }),
     button(nextLabel, async () => {
+      sfx('SFX-S0-STORY-PAGE');
       if (lineIndex < story.lines.length - 1) lineIndex += 1;
       else await advanceAfterStory(story);
       render();
