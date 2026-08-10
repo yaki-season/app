@@ -21,12 +21,11 @@ const fixture = JSON.parse(readFileSync(fileURLToPath(
 ), 'utf8'));
 const definition = createD1BusinessDayDefinition(fixture);
 
-it('날짜 공통 정의 검증은 D2 id와 비가이드 첫 주문을 허용한다', () => {
+it('날짜 공통 정의 검증은 D2 id와 다른 첫 주문을 허용한다', () => {
   const d2 = structuredClone(fixture);
   d2.id = 'd2';
   d2.waves[0].customers[0].id = 'D2-CUSTOMER-001';
   d2.waves[0].customers[0].order.id = 'D2-ORDER-001';
-  d2.waves[0].customers[0].order.guided = false;
   d2.waves.slice(1).forEach((wave) => {
     wave.requiresOrderCompletionIds = [];
   });
@@ -118,6 +117,16 @@ function advanceTo(state, elapsedMs) {
 }
 
 describe('D1 전체 영업일 도메인', () => {
+  it('17:30~02:30·13초·마지막 손님 자동 마감 정책 변조를 기동 전에 거부한다', () => {
+    const wrongWindow = structuredClone(fixture);
+    wrongWindow.businessWindow.endMinute = 1410;
+    expect(() => createD1BusinessDayDefinition(wrongWindow)).toThrow(/17:30~02:30/);
+
+    const wrongArrival = structuredClone(fixture);
+    wrongArrival.arrivalPolicy.maxAllSeatsEmptyWaitSec = 14;
+    expect(() => createD1BusinessDayDefinition(wrongArrival)).toThrow(/13초/);
+  });
+
   it('D1 4명·4주문·8항목을 7분 목표 안에서 마감하고 정산 5단계를 만든다', () => {
     let state = completeTsukioka(initialState());
     state = advance(state, 16_000);
@@ -139,7 +148,7 @@ describe('D1 전체 영업일 도메인', () => {
     expect(state.phase).toBe(D1_DAY_PHASE.CHARCOAL_DOWN);
     expect(state.clock).toMatchObject({
       elapsedMs: 245_000,
-      gameMinute: 1260,
+      gameMinute: 1365,
       arrivalsClosed: true,
     });
 
@@ -170,15 +179,28 @@ describe('D1 전체 영업일 도메인', () => {
     expect(validateD1BusinessDayState(state, definition)).toEqual({ valid: true, errors: [] });
   });
 
-  it('D1 가이드 주문도 네기마 선제공을 허용하고 중복·수량 초과만 차단한다', () => {
+  it('마지막 착석 손님이 나가면 정리 완료를 기다리지 않고 13초 안에 다음 손님을 입장시킨다', () => {
+    let state = completeTsukioka(initialState());
+    state = advance(state, 16_000);
+    const emptySinceMs = state.clock.elapsedMs;
+    expect(state.clock.allSeatsEmptySinceMs).toBe(emptySinceMs);
+
+    state = advance(state, 12_999);
+    expect(state.waves[1].status).toBe('pending');
+    state = advance(state, 1);
+    expect(state.waves[1].status).toBe('spawned');
+    expect(state.clock.elapsedMs - emptySinceMs).toBe(13_000);
+  });
+
+  it('D1 첫 주문은 네기마 선제공을 허용하고 중복·수량 초과만 차단한다', () => {
     let state = advance(initialState(), 6_000);
     state = accept(state, 'D1-ORDER-001');
-    const first = command(state, 'serve:guided-negima-first', 'serve-item', {
+    const first = command(state, 'serve:first-negima-first', 'serve-item', {
       customerId: 'REGULAR_TSUKIOKA',
       menuId: 'negima',
       quality: D1_QUALITY.PERFECT,
     });
-    const duplicate = command(first.state, 'serve:guided-negima-first', 'serve-item', {
+    const duplicate = command(first.state, 'serve:first-negima-first', 'serve-item', {
       customerId: 'REGULAR_TSUKIOKA',
       menuId: 'negima',
       quality: D1_QUALITY.PERFECT,

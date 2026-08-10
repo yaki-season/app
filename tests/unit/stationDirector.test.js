@@ -8,6 +8,19 @@ const make = (initial = SCREENS[0]) =>
   createStationDirector({ screens: SCREENS, initial, transitionMs: 300 });
 
 describe('createStationDirector', () => {
+  it('정지 경과를 화면 전환 시간에 포함하지 않는다', () => {
+    const d = make();
+    d.request('SCR-SVC-GRILL', 1_000);
+    d.pause(1_100);
+    expect(d.progress(51_100)).toBeCloseTo(1 / 3, 4);
+    expect(d.request('SCR-SVC-DRINK', 51_100)).toBe(false);
+    d.resume(51_100);
+    d.tick(51_299);
+    expect(d.isTransitioning()).toBe(true);
+    d.tick(51_300);
+    expect(d.isTransitioning()).toBe(false);
+  });
+
   it('초기 화면에서 시작하고 전환 중이 아니다', () => {
     const d = make('SCR-SVC-ASSEMBLY');
     expect(d.activeScreenId()).toBe('SCR-SVC-ASSEMBLY');

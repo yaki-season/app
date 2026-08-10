@@ -18,100 +18,49 @@
   text-align: center;
   font-size: 12px;
   background: rgba(32,26,21,0.78);
+  cursor: pointer;
 }
-.d1-guide {
-  position: fixed; top: 92px; right: 18px; z-index: 18;
-  width: min(350px, 29vw); max-height: calc(100vh - 182px); overflow: auto;
-  pointer-events: none;
-  color: #fff0ca; font-size: 12px;
-  border: 1px solid var(--line); border-left: 4px solid var(--ember);
-  border-radius: 10px; padding: 10px 12px; background: rgba(20,13,9,0.94);
+.business-phase:focus-visible {
+  outline: 2px solid #f2c75c;
+  outline-offset: 2px;
 }
-.d1-guide[data-expanded="false"] { width: min(320px, 26vw); overflow: hidden; }
-.d1-guide[data-expanded="false"] ol { display: none; }
-.d1-guide[data-expanded="true"] { pointer-events: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
-.d1-guide-head { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px 8px; }
-.d1-guide-head strong { min-width: 0; }
-.d1-guide-head span { color: var(--ember); }
-.d1-guide-toggle {
-  grid-column: 1 / -1; justify-self: end; pointer-events: auto;
-  border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px;
-  color: var(--text); background: rgba(62, 43, 30, .96); font: inherit; cursor: pointer;
-}
-.d1-guide p { margin: 7px 0; font-weight: 700; }
-.d1-guide ol { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; }
-.d1-guide li { border-left: 3px solid var(--line); padding: 3px 6px; color: var(--dim); }
-.d1-guide li[data-status="complete"] { border-color: var(--good); color: var(--good); }
-.d1-guide li[data-status="complete"]::before { content: "✓ "; }
-.d1-guide li[data-status="current"] { border-color: var(--ember); color: var(--text); background: rgba(255,131,64,.12); }
-.d1-guide li[data-status="current"]::before { content: "▶ "; }
-.d1-guide li[data-status="pending"]::before { content: "○ "; }
-
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide {
-  top: max(12px, 2.962963vh);
-  right: auto;
-  left: 9.166667vw;
-  box-sizing: border-box;
-  width: min(54vw, 1036px);
-  height: max(44px, 5.925926vh);
-  max-height: max(44px, 5.925926vh);
+.runtime-pause {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
   display: grid;
-  grid-template-columns: minmax(250px, auto) minmax(0, 1fr);
-  align-items: center;
-  gap: 4px 10px;
-  overflow: hidden;
-  padding: 4px 8px;
-  font-size: clamp(10px, .625vw, 12px);
+  place-items: center;
+  padding: 24px;
+  background: rgba(8, 7, 6, .72);
+  backdrop-filter: blur(5px);
 }
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide[data-expanded="true"] {
-  width: min(62vw, 1190px);
-  grid-template-columns: minmax(250px, auto) minmax(150px, .8fr) minmax(0, 1.4fr);
+.runtime-pause[hidden] { display: none; }
+.runtime-pause__card {
+  width: min(420px, calc(100vw - 48px));
+  padding: 28px;
+  border: 1px solid #d89a49;
+  border-radius: 18px;
+  color: #fff0ca;
+  text-align: center;
+  background: rgba(34, 24, 17, .98);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, .65);
 }
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide-head {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 4px 8px;
-  min-width: 0;
+.runtime-pause__card p { margin: 0 0 8px; color: #d9bf98; }
+.runtime-pause__card h2 { margin: 0 0 22px; }
+.runtime-pause__card button {
+  min-width: 136px;
+  min-height: 44px;
+  border: 1px solid #d89a49;
+  border-radius: 999px;
+  color: #fff0ca;
+  background: #5b3418;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide-head strong,
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide-head span,
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide p {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide-toggle {
-  grid-column: auto;
-  justify-self: auto;
-  white-space: nowrap;
-}
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide p {
-  margin: 0;
-}
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide ol {
-  display: flex;
-  min-width: 0;
-  margin: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-}
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide[data-expanded="false"] ol {
-  display: none;
-}
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide li {
-  flex: 0 0 auto;
-  max-width: 190px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 조립 순서표는 조립대에서만 의미가 있다. 그릴에서는 첫 주문 튜토리얼도
-   가리고 꼬치 자체와 짧은 상태 문구에만 집중시킨다. */
+/* 조립 순서표는 조립대에서만 의미가 있다. */
 .receipts { display: none; }
 body:has(.quick-nav button[data-screen="SCR-SVC-ASSEMBLY"].active) .receipts { display: flex; }
-body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide { display: none; }
 
 .grill-inventory {
   position: fixed;
@@ -256,15 +205,6 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide { disp
 .grill-finished-quality--ok .grill-finished-quality-marker { background: #d18a53; }
 .grill-finished-quality--fail .grill-finished-quality-marker { background: #b85243; }
 .dock-shelf.station-context-hidden { display: none !important; }
-
-[data-guide-target="true"] {
-  outline: 3px solid #fff0ca !important;
-  outline-offset: 3px;
-  box-shadow: 0 0 0 6px rgba(255, 131, 64, .45) !important;
-  animation: guide-pulse 1.15s ease-in-out infinite alternate;
-}
-[data-guide-target="true"]::after { font-weight: 800; }
-@keyframes guide-pulse { to { box-shadow: 0 0 0 10px rgba(255, 131, 64, .12); } }
 
 .grill-status-layer {
   position: fixed;
@@ -427,11 +367,6 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide { disp
   outline: none;
   background: transparent;
 }
-.customer-serve-target[data-guide-target="true"] {
-  outline: none !important;
-  box-shadow: none !important;
-  animation: none !important;
-}
 .order-bubble[data-seat-focus="true"] .order-label {
   box-shadow: 0 0 0 2px #f2c75c, 0 0 14px rgba(242, 199, 92, .38);
 }
@@ -526,7 +461,6 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide { disp
 }
 body[data-departure-cutscene="true"] :is(
   #svcBar,
-  #guide,
   #navLeft,
   #navRight,
   #quickNav,
@@ -716,8 +650,6 @@ body.d3-torch-cursor-ready #scene { cursor: none; }
   .order-hud .oi img { width: 16px; height: 16px; }
   .business-clock { font-size: 12px; }
   .business-phase { min-width: 58px; padding-inline: 7px; font-size: 10px; }
-  .d1-guide { top: 64px; right: 8px; width: min(300px, 32vw); max-height: calc(100vh - 132px); padding: 7px 8px; font-size: 10px; }
-  body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .d1-guide { right: auto; }
   .post-business-panel { max-height: calc(100vh - 96px); overflow-y: auto; padding: 16px; }
   .grill-status-layer {
     gap: 4px;

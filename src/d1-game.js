@@ -52,7 +52,6 @@ import {
   D1_ASSEMBLY_BUILD_SLOT,
   D1_ASSEMBLY_TRAY_SLOTS,
 } from './config/d1AssemblyLayout.js';
-import { createFirstOrderGuide } from './d1/firstOrderGuide.js';
 import { FIRST_ORDER_RUNTIME_STORAGE_KEY, clearFirstOrderRuntime } from './d1/firstOrderRuntimeStorage.js';
 import {
   loadD1RuntimeAssets,
@@ -102,11 +101,6 @@ const DAY_META = Object.freeze({
 });
 const ACTIVE_DAY = DAY_META[ACTIVE_DAY_ID];
 document.title = `YAKI SEASON — ${ACTIVE_DAY.label} 영업`;
-const DAY_GUIDE_POLICY = Object.freeze({
-  d1: { title: '첫 주문 · 총 3항목', mode: 'sequential' },
-  d2: { title: 'D2 · 복습 도움', mode: 'review', steps: ['주문을 직접 확인하세요', '조립·그릴·드링크를 병행하세요', '필요하면 전체 보기를 다시 여세요'] },
-  d3: { title: 'D3 · 타레와 토치', mode: 'new-action', steps: ['타레 모모를 양면 조리하세요', '타레를 바른 뒤 토치를 좌우로 훑으세요', '게이지와 과열 경고를 확인하세요'] },
-});
 const MENU_ID_BY_LABEL = Object.freeze({ '생맥주': 'beer', '네기마': 'negima', '모모': 'momo' });
 const menuIdForLabel = (label) => MENU_ID_BY_LABEL[label] ?? null;
 const MENU_META = Object.freeze({
@@ -116,14 +110,6 @@ const MENU_META = Object.freeze({
 const skewerLabel = (menuId) => MENU_META[menuId]?.label ?? '꼬치';
 
 const el = (id) => document.getElementById(id);
-const guide = el('guide');
-const guideToggle = el('guideToggle');
-guideToggle.addEventListener('click', () => {
-  const expanded = guide.dataset.expanded !== 'true';
-  guide.dataset.expanded = String(expanded);
-  guideToggle.setAttribute('aria-expanded', String(expanded));
-  guideToggle.textContent = expanded ? '접기' : '전체 보기';
-});
 const canvas = el('scene');
 const runtimeAssets = await loadD1RuntimeAssets();
 document.getElementById('dockShelf')?.style.setProperty(
@@ -170,12 +156,7 @@ const grillSmoke = createGrillSmokeVfx({
   scene: R.scene,
   slotMeshes: SLOT_KEYS.map((key) => R.objectMesh[key]),
 });
-let firstOrderGuide = createFirstOrderGuide(restoredFirstOrderRuntime?.guide);
 let glassPlaced = restoredFirstOrderRuntime?.glassPlaced === true;
-let guideFlipCount = Number(restoredFirstOrderRuntime?.guideFlipCount ?? 0);
-let guideRetrieveCount = Number(restoredFirstOrderRuntime?.guideRetrieveCount ?? 0);
-const guideFlippedSlots = new Set(restoredFirstOrderRuntime?.guideFlippedSlots ?? []);
-const guideRetrievedSlots = new Set(restoredFirstOrderRuntime?.guideRetrievedSlots ?? []);
 const grillMats = {};
 const rawNegimaInstances = {};
 const assemblyNegimaInstances = {
@@ -557,25 +538,14 @@ function persistFirstOrderRuntime() {
     window.localStorage.setItem(FIRST_ORDER_RUNTIME_STORAGE_KEY, JSON.stringify({
       stateVersion: 1,
       dayId: ACTIVE_DAY_ID,
-      guide: firstOrderGuide.snapshot(),
       cook: cook.snapshot(performance.now()),
       d3Grill: d3Grill.snapshot(),
       dock: dock.snapshot(),
       glassPlaced,
-      guideFlipCount,
-      guideRetrieveCount,
-      guideFlippedSlots: [...guideFlippedSlots],
-      guideRetrievedSlots: [...guideRetrievedSlots],
     }));
   } catch {
     // 저장 공간 실패는 campaign 저장을 덮어쓰지 않으며 현재 세션 진행은 유지한다.
   }
-}
-
-function reportGuideInvalid(reason) {
-  const result = firstOrderGuide.invalid(reason);
-  persistFirstOrderRuntime();
-  return result;
 }
 
 // 각 조작 대상이 속한 화면 + 레이캐스트로 클릭 가능한 키(이미지 레이어는 제외).
@@ -633,6 +603,10 @@ let lastBusinessFrameAt = null;
 let finalizing = false;
 let departureCutsceneActive = false;
 let departureCutsceneSeen = false;
+const runtimeSuspensionReasons = new Set();
+let animationFrameId = null;
+let suspensionStartedAt = null;
+let suspendedVisualOffsetMs = 0;
 
 const nextIntentId = (type) => `d1-screen:${type}:${++businessIntentSequence}`;
 const businessView = () => businessPort?.getViewModel() ?? null;
@@ -659,8 +633,7 @@ function openTsukiokaDepartureCutscene() {
   el('departureCutscene').hidden = false;
   document.body.dataset.departureCutscene = 'true';
   director.request(D1_TSUKIOKA_DEPARTURE_SCENE.screenId, performance.now());
-  dispatchBusiness(D1_UI_INTENT.PAUSE);
-  businessDeltaMs = 0;
+  setRuntimeSuspended('story-cutscene', true);
   render();
   el('departureCutsceneContinue').focus();
   return true;
@@ -671,8 +644,7 @@ function closeTsukiokaDepartureCutscene() {
   departureCutsceneActive = false;
   el('departureCutscene').hidden = true;
   delete document.body.dataset.departureCutscene;
-  dispatchBusiness(D1_UI_INTENT.RESUME);
-  lastBusinessFrameAt = performance.now();
+  setRuntimeSuspended('story-cutscene', false);
   render();
   return true;
 }
@@ -707,18 +679,15 @@ function seatCanReceiveSelected(seat, selected = dock.selected()) {
 function openServeQuantity(seatId) {
   const selected = dock.selected();
   if (!selected) {
-    firstOrderGuide.invalid('완성품 카드가 선택되지 않았습니다.');
     showHint('요리 서빙대나 음료 픽업대에서 낼 완성품을 고르세요');
     return;
   }
   const seat = seatView(seatId);
   if (!seatCanReceiveSelected(seat, selected)) {
-    firstOrderGuide.invalid('선택한 완성품과 손님의 남은 주문이 다릅니다.');
     showHint(`선택한 ${selected.menu} 주문이 남은 손님을 고르세요`);
     return;
   }
   pendingServeSeatId = seatId;
-  firstOrderGuide.selectedCustomer(menuIdForLabel(selected.menu));
   persistFirstOrderRuntime();
   serveQuantitySummary.textContent = `${selected.menu} → ${seat.customerId === 'REGULAR_TSUKIOKA' ? '츠키오카' : seatId}`;
   serveQuantity.hidden = false;
@@ -735,7 +704,6 @@ function confirmServe(all) {
   const seat = pendingServeSeatId ? seatView(pendingServeSeatId) : null;
   if (!selected || !seatCanReceiveSelected(seat, selected)) {
     closeServeQuantity();
-    firstOrderGuide.invalid('제공 대상 또는 완성품이 더 이상 유효하지 않습니다.');
     render();
     return;
   }
@@ -757,7 +725,6 @@ function confirmServe(all) {
     dock.consumeMenu(item.menu, 1);
     applied += 1;
   }
-  if (applied > 0) firstOrderGuide.served(menuId, applied);
   persistFirstOrderRuntime();
   closeServeQuantity();
   showHint(lastResult?.completedOrder ? '최종 제공 완료 · 총 3항목' : `부분 제공 · ${applied}개 전달`);
@@ -770,7 +737,6 @@ function activateSeat(seatId) {
   if (seat.canOrder) {
     const result = dispatchBusiness(D1_UI_INTENT.ACCEPT_ORDER, { seatId });
     if (result.ok) {
-      if (seat.customerId === 'REGULAR_TSUKIOKA') firstOrderGuide.complete('order.accept');
       persistFirstOrderRuntime();
       showHint(`${seat.customerId === 'REGULAR_TSUKIOKA' ? '츠키오카' : '엑스트라'} 주문 접수`);
     }
@@ -872,20 +838,6 @@ function updateGrillStatus(now) {
   grillStatusLayer.hidden = !onGrill;
   if (!onGrill) return;
   const views = cook.slotViews(now);
-  const currentStepId = firstOrderGuide.view().currentStepId ?? '';
-  const wantedAction = currentStepId.startsWith('grill.flip')
-    ? COOK_SLOT_NEXT_ACTION.FLIP
-    : currentStepId.startsWith('grill.retrieve')
-      ? COOK_SLOT_NEXT_ACTION.RETRIEVE
-      : null;
-  const excluded = wantedAction === COOK_SLOT_NEXT_ACTION.FLIP ? guideFlippedSlots : guideRetrievedSlots;
-  const priorityIndex = views
-    .filter((slot) => slot.nextAction === wantedAction && !excluded.has(slot.index))
-    .sort((a, b) => {
-      const aReadyAt = Number.isFinite(a.actionReadyAtMs) ? a.actionReadyAtMs : Number.MAX_SAFE_INTEGER;
-      const bReadyAt = Number.isFinite(b.actionReadyAtMs) ? b.actionReadyAtMs : Number.MAX_SAFE_INTEGER;
-      return (aReadyAt - bReadyAt) || (a.index - b.index);
-    })[0]?.index ?? -1;
   views.forEach((slot, index) => {
     const ui = grillStatusEls[index];
     const active = slot.status !== 'empty';
@@ -895,7 +847,6 @@ function updateGrillStatus(now) {
     ui.card.dataset.contactFace = slot.contactFace ?? 'none';
     ui.card.dataset.flipping = String(slot.flipping);
     ui.card.dataset.nextAction = slot.nextAction;
-    ui.card.dataset.guideTarget = String(index === priorityIndex);
     ui.card.dataset.frontElapsedSec = elapsedLabel(slot.frontElapsedSec);
     ui.card.dataset.backElapsedSec = elapsedLabel(slot.backElapsedSec);
     ui.icon.className = `grill-face-icon ${copy.icon.className}`;
@@ -1048,7 +999,6 @@ el('dockShelf').addEventListener('click', (event) => {
   if (!card) return;
   const selected = dock.selected();
   if (!selected) return;
-  firstOrderGuide.selectedCard(menuIdForLabel(selected.menu));
   persistFirstOrderRuntime();
   render();
 });
@@ -1139,9 +1089,6 @@ function finishDrink() {
   const q = pour.finish();
   if (q) {
     dock.add({ menu: '생맥주', label: q, good: q === 'Perfect' || q === 'Good' });
-    firstOrderGuide.complete('beer.pour');
-    firstOrderGuide.complete('beer.finish');
-    firstOrderGuide.preparedItem('beer', performance.now());
     glassPlaced = false;
     persistFirstOrderRuntime();
     showHint('생맥주를 음료 픽업대에 올렸어요');
@@ -1153,9 +1100,6 @@ function serveOverflowLow() {
   const q = pour.serveOverflow();
   if (q) {
     dock.add({ menu: '생맥주', label: q, good: false });
-    firstOrderGuide.complete('beer.pour');
-    firstOrderGuide.complete('beer.finish');
-    firstOrderGuide.preparedItem('beer', performance.now());
     glassPlaced = false;
     persistFirstOrderRuntime();
   }
@@ -1530,94 +1474,8 @@ function renderOrderHud() {
     .join('');
 }
 
-function guideText(view) {
-  if (businessBootError) return `${ACTIVE_DAY.label} 시작 실패 · ${businessBootError.message ?? businessBootError.code}`;
-  if (!view) return `${ACTIVE_DAY.label} 영업을 준비하는 중입니다.`;
-  if (view.phase === 'closing-drain') {
-    const risk = view.limits.riskProcessCount;
-    return `23:30 마감. 남은 주문 ${view.closing.unfinishedOrderCount}건·좌석 정리 ${view.closing.cleanupSeatCount}건${risk ? `·그릴 위험 공정 ${risk}건` : ''}을 끝내세요.`;
-  }
-  if (view.phase === 'charcoal-down') return '모든 주문을 drain했습니다. 남은 숯불을 낮추세요.';
-  if (view.phase === 'settlement') return '영업 결과를 다섯 단계로 확인한 뒤 한 번만 저장합니다.';
-  if (view.phase === 'complete') return `${ACTIVE_DAY.label} 영업을 마쳤습니다. ${ACTIVE_DAY.nextLabel} 준비를 저장했습니다.`;
-  const cleanup = view.seats.find((seat) => seat.cleanupNeeded);
-  if (cleanup) return `${cleanup.seatId} 좌석을 3초 동안 눌러 정리하세요.`;
-  const ordering = view.seats.find((seat) => seat.canOrder);
-  if (ordering) return `${ordering.customerId === 'REGULAR_TSUKIOKA' ? '츠키오카' : '엑스트라'} 좌석을 눌러 주문을 받으세요.`;
-  const waiting = view.seats.find((seat) => seat.canServe);
-  const selected = dock.selected();
-  if (waiting && selected) {
-    const eligibleCount = view.seats.filter((seat) => seatCanReceiveSelected(seat, selected)).length;
-    return `선택한 ${selected.menu} · 제공 가능한 손님 ${eligibleCount}명을 직접 고르세요.`;
-  }
-  if (waiting) return '요리 서빙대나 음료 픽업대에서 완성품을 고른 뒤 일치하는 남은 주문이 있는 손님을 선택하세요.';
-  const remainingSec = Math.max(0, Math.ceil((view.clock.targetMs - view.clock.elapsedMs) / 1000));
-  const remaining = `${Math.floor(remainingSec / 60)}:${String(remainingSec % 60).padStart(2, '0')}`;
-  return `23:30 자동 마감까지 ${remaining} · 다음 손님을 기다리며 조립·그릴·드링크를 준비할 수 있습니다.`;
-}
-
-function renderFirstOrderGuide() {
-  for (const target of document.querySelectorAll('[data-guide-target="true"]')) {
-    target.dataset.guideTarget = 'false';
-  }
-  const policy = DAY_GUIDE_POLICY[ACTIVE_DAY_ID];
-  el('guideTitle').textContent = policy.title;
-  if (policy.mode !== 'sequential') {
-    el('guideCurrent').textContent = policy.mode === 'review' ? '복습형 · 선택 도움' : '신규 행동';
-    el('guideNextAction').textContent = policy.mode === 'review'
-      ? guideText(businessView())
-      : (d3Grill.job(D3_TORCH_JOB_ID) ? '타레·토치 패널의 상태를 따라 마감하세요.' : '조립대에서 모모를 만들고 양면을 구워 회수하세요.');
-    el('guideSteps').replaceChildren(...policy.steps.map((label) => {
-      const row = document.createElement('li');
-      row.dataset.status = 'review';
-      row.textContent = label;
-      return row;
-    }));
-    return;
-  }
-  const model = firstOrderGuide.view();
-  const current = model.steps.find((step) => step.status === 'current');
-  el('guideCurrent').textContent = current ? `현재 · ${current.label}` : '완료';
-  el('guideNextAction').textContent = model.complete
-    ? guideText(businessView())
-    : model.feedback ?? model.nextAction;
-  el('guideSteps').replaceChildren(...model.steps.map((step) => {
-    const row = document.createElement('li');
-    row.dataset.stepId = step.id;
-    row.dataset.status = step.status;
-    row.textContent = step.label;
-    return row;
-  }));
-
-  if (!current) return;
-  if (director.activeScreenId() !== current.targetScreenId) {
-    const nav = document.querySelector(`.quick-nav button[data-screen="${current.targetScreenId}"]`);
-    if (nav) nav.dataset.guideTarget = 'true';
-    return;
-  }
-  if (current.targetControlId === 'grillWaitTray') {
-    if (!grillWaitingNegima.hidden) grillWaitingNegima.dataset.guideTarget = 'true';
-  } else if (current.targetControlId === 'serve-target-seat-01') {
-    const seat = businessView()?.seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');
-    const orderLabel = seat
-      ? document.querySelector(`[data-testid="bubble-${seat.seatId}"] .order-label`)
-      : null;
-    if (orderLabel) orderLabel.dataset.guideTarget = 'true';
-  } else if (current.targetControlId === 'serve-quantity') {
-    for (const button of serveQuantity.querySelectorAll('button:not([data-act="serve-cancel"])')) {
-      button.dataset.guideTarget = 'true';
-    }
-  } else if (current.targetControlId.startsWith('dock-card-')) {
-    const menu = current.targetControlId.endsWith('beer') ? '생맥주' : '네기마';
-    const card = [...el('dockShelf').querySelectorAll('.dock-card')]
-      .find((candidate) => candidate.querySelector('.dock-menu')?.textContent === menu);
-    if (card) card.dataset.guideTarget = 'true';
-  }
-}
-
 function renderBusiness() {
   const view = businessView();
-  guide.hidden = ACTIVE_DAY_ID !== 'd1';
   const activeDayFeatureOpen = businessSession?.ok === true
     && businessSession.completed !== true
     && view?.dayId?.toLowerCase() === ACTIVE_DAY_ID;
@@ -1631,9 +1489,12 @@ function renderBusiness() {
     button.disabled = !selected && (cook.assemblyIndex() > 0 || cook.assemblyComplete());
   }
   el('businessClock').textContent = view?.clock?.label ?? '--:--';
-  el('businessPhase').textContent = PHASE_LABEL[view?.phase] ?? (businessBootError ? '오류' : '준비');
-  renderFirstOrderGuide();
-
+  const manuallyPaused = runtimeSuspensionReasons.has('manual-pause');
+  el('businessPhase').textContent = manuallyPaused
+    ? '일시정지'
+    : (PHASE_LABEL[view?.phase] ?? (businessBootError ? '오류' : '준비'));
+  el('businessPhase').setAttribute('aria-pressed', String(manuallyPaused));
+  el('runtimePausePanel').hidden = !manuallyPaused;
   const panel = el('postBusinessPanel');
   const action = el('postBusinessAction');
   const steps = el('settlementSteps');
@@ -1727,7 +1588,6 @@ canvas.addEventListener('pointerdown', (e) => {
   const now = performance.now();
   if (key === 'drinkLeverDrag') {
     if (!glassPlaced) {
-      reportGuideInvalid('빈 잔을 먼저 놓아야 레버를 사용할 수 있습니다.');
       showHint('빈 잔을 먼저 놓으세요');
       render();
       return;
@@ -1771,15 +1631,80 @@ function releasePointers(e) {
     pour.release(now);
   }
   R.setObjectTexture?.('drinkStation', COOKING_ART.drinkStation, DRINK_ART_STATE.leverNeutral);
-  const drink = pour.state();
-  if (drink.beerSec > 0 && drink.foamSec > 0) {
-    firstOrderGuide.complete('beer.pour');
-    persistFirstOrderRuntime();
-  }
+  persistFirstOrderRuntime();
   releaseCleanupHold();
 }
 window.addEventListener('pointerup', releasePointers);
 window.addEventListener('pointercancel', releasePointers);
+
+function runtimeIsSuspended() {
+  return runtimeSuspensionReasons.size > 0;
+}
+
+function scheduleLoop() {
+  if (runtimeIsSuspended() || animationFrameId !== null) return;
+  animationFrameId = requestAnimationFrame(loop);
+}
+
+function setRuntimeSuspended(reason, suspended) {
+  const wasSuspended = runtimeIsSuspended();
+  if (suspended) runtimeSuspensionReasons.add(reason);
+  else runtimeSuspensionReasons.delete(reason);
+  const isSuspended = runtimeIsSuspended();
+  if (wasSuspended === isSuspended) return false;
+
+  const now = performance.now();
+  if (isSuspended) {
+    releasePointers();
+    cook.pause(now);
+    pour.pause(now);
+    grillSmoke.pause(now);
+    director.pause(now);
+    R.pause?.(now);
+    dispatchBusiness(D1_UI_INTENT.PAUSE);
+    businessDeltaMs = 0;
+    lastBusinessFrameAt = null;
+    suspensionStartedAt = now;
+    if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+    document.body.dataset.runtimePaused = 'true';
+    persistFirstOrderRuntime();
+    render();
+    return true;
+  }
+
+  cook.resume(now);
+  pour.resume(now);
+  grillSmoke.resume(now);
+  director.resume(now);
+  R.resume?.(now);
+  if (suspensionStartedAt !== null) {
+    suspendedVisualOffsetMs += Math.max(0, now - suspensionStartedAt);
+  }
+  suspensionStartedAt = null;
+  dispatchBusiness(D1_UI_INTENT.RESUME);
+  businessDeltaMs = 0;
+  lastBusinessFrameAt = now;
+  delete document.body.dataset.runtimePaused;
+  render();
+  scheduleLoop();
+  return true;
+}
+
+function blockSuspendedInput(event) {
+  if (!runtimeIsSuspended()) return;
+  if (event.target?.closest?.('#departureCutsceneContinue, #runtimePauseResume')) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}
+window.addEventListener('pointerdown', blockSuspendedInput, true);
+window.addEventListener('click', blockSuspendedInput, true);
+window.addEventListener('keydown', blockSuspendedInput, true);
+el('businessPhase').addEventListener('click', () => setRuntimeSuspended('manual-pause', true));
+el('runtimePauseResume').addEventListener('click', () => {
+  setRuntimeSuspended('manual-pause', false);
+  el('businessPhase').focus();
+});
 
 function handle(key, now) {
   const si = slotIndexOf(key);
@@ -1787,7 +1712,6 @@ function handle(key, now) {
   switch (key) {
     case 'glassRack':
       glassPlaced = true;
-      firstOrderGuide.complete('beer.glass');
       persistFirstOrderRuntime();
       showHint('빈 잔을 노즐 아래에 놓았어요');
       break;
@@ -1795,13 +1719,8 @@ function handle(key, now) {
     case 'binLeek': {
       const r = cook.clickIngredient(key === 'binChicken' ? 'chicken' : 'leek');
       if (!r.ok) {
-        reportGuideInvalid(r.reason === 'transfer-required' ? '완성 꼬치를 먼저 눌러 트레이로 옮기세요.' : '재료 순서가 다릅니다.');
         showHint(r.reason === 'transfer-required' ? '완성 꼬치를 먼저 옮기세요' : '순서가 달라요');
       } else if (r.completed) {
-        const ordinal = cook.assemblyProgress().assembledCount;
-        if (ACTIVE_DAY_ID === 'd1' && r.menuId === 'negima') {
-          firstOrderGuide.complete(`negima.assemble.${ordinal}`);
-        }
         persistFirstOrderRuntime();
         showHint(`${skewerLabel(r.menuId)} 완성 · 꼬치를 눌러 오른쪽 트레이로 옮기세요`);
       }
@@ -1810,12 +1729,8 @@ function handle(key, now) {
     case 'jigSkewer': {
       const r = cook.transferAssembly();
       if (!r.ok) {
-        reportGuideInvalid('재료 다섯 개를 먼저 올바른 순서로 조립하세요.');
         showHint('아직 완성된 꼬치가 없어요');
       } else {
-        if (ACTIVE_DAY_ID === 'd1' && r.menuId === 'negima') {
-          firstOrderGuide.complete(`negima.transfer.${r.transferredCount}`);
-        }
         persistFirstOrderRuntime();
         showHint(`${skewerLabel(r.menuId)} · 전달 트레이 이동 완료`);
       }
@@ -1827,12 +1742,8 @@ function handle(key, now) {
       const r = cook.placeToGrill(now, menuId);
       if (!r.ok) {
         const noWaiting = ['no-waiting', 'no-menu-waiting'].includes(r.reason);
-        reportGuideInvalid(noWaiting ? `전달 트레이에 ${skewerLabel(menuId)}가 없습니다.` : '빈 그릴 칸이 없습니다.');
         showHint(noWaiting ? `대기 중인 ${skewerLabel(menuId)}가 없어요` : '빈 그릴 칸이 없어요');
       } else {
-        if (ACTIVE_DAY_ID === 'd1' && menuId === 'negima') {
-          firstOrderGuide.complete(r.slot === 0 ? 'grill.place.1' : 'grill.place.2');
-        }
         showHint(`${r.slot + 1}번 ${skewerLabel(menuId)} 앞면 조리 시작 · 다른 꼬치와 독립적으로 익습니다`);
       }
       persistFirstOrderRuntime();
@@ -1863,12 +1774,6 @@ function clickGrillSlot(i, now) {
     } else {
       dock.add({ menu: label, label: r.quality.grade, good: r.quality.good });
     }
-    if (ACTIVE_DAY_ID === 'd1' && menuId === 'negima' && !guideRetrievedSlots.has(i)) {
-      guideRetrievedSlots.add(i);
-      guideRetrieveCount += 1;
-      firstOrderGuide.complete(`grill.retrieve.${guideRetrieveCount}`);
-    }
-    if (ACTIVE_DAY_ID === 'd1' && menuId === 'negima') firstOrderGuide.preparedItem('negima', now);
     persistFirstOrderRuntime();
     showHint(ACTIVE_DAY_ID === 'd3' && menuId === 'momo'
       ? '구운 모모를 타레·토치 마감대로 옮겼어요'
@@ -1876,12 +1781,6 @@ function clickGrillSlot(i, now) {
   }
   else if (r.flipped) {
     grillSmoke.burst(i, now);
-    const menuId = cook.slotViews(now)[i]?.menuId ?? 'negima';
-    if (ACTIVE_DAY_ID === 'd1' && menuId === 'negima' && !guideFlippedSlots.has(i)) {
-      guideFlippedSlots.add(i);
-      guideFlipCount += 1;
-      firstOrderGuide.complete(`grill.flip.${guideFlipCount}`);
-    }
     persistFirstOrderRuntime();
     showHint('꼬치를 뒤집는 중입니다');
   }
@@ -2116,7 +2015,8 @@ async function bootBusinessDay() {
     } else {
       businessPort = businessSession.port;
       reportedRiskCount = businessView()?.limits.riskProcessCount ?? 0;
-      lastBusinessFrameAt = performance.now();
+      if (runtimeIsSuspended()) dispatchBusiness(D1_UI_INTENT.PAUSE);
+      else lastBusinessFrameAt = performance.now();
     }
   } catch (error) {
     businessBootError = error;
@@ -2127,21 +2027,18 @@ async function bootBusinessDay() {
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) persistFirstOrderRuntime();
-  if (!businessPort) return;
-  if (document.hidden) {
-    dispatchBusiness(D1_UI_INTENT.PAUSE);
-  } else if (!departureCutsceneActive) {
-    dispatchBusiness(D1_UI_INTENT.RESUME);
-    lastBusinessFrameAt = performance.now();
-  }
-  render();
+  setRuntimeSuspended('document-hidden', document.hidden);
 });
+window.addEventListener('blur', () => setRuntimeSuspended('window-blur', true));
+window.addEventListener('focus', () => setRuntimeSuspended('window-blur', false));
 
 // ── 루프 ─────────────────────────────────────────────────────
 let lastActive = director.activeScreenId();
 let lastWaiting = -1;
 let businessDeltaMs = 0;
 function loop(now) {
+  animationFrameId = null;
+  if (runtimeIsSuspended()) return;
   const discarded = cook.tickBurn(now);
   if (discarded.length) {
     showHint('양면이 탄 꼬치를 폐기했어요');
@@ -2165,23 +2062,24 @@ function loop(now) {
   grillSmoke.update(now, grillViews, {
     visible: active === 'SCR-SVC-GRILL',
   });
-  R.setCleanupOverlayFrame(Math.floor(now / 180));
+  const visualNow = now - suspendedVisualOffsetMs;
+  R.setCleanupOverlayFrame(Math.floor(visualNow / 180));
   updateGrillStatus(now);
   pour.tick(now);
-  beerLiquid?.setTime(now / 1000);
-  beerCoreVfx?.setTime(now / 1000);
+  beerLiquid?.setTime(visualNow / 1000);
+  beerCoreVfx?.setTime(visualNow / 1000);
   updateDrinkPanel(active);
   updateLabels();
   customers.tick(active);
   positionServeTargets();
-  updateTsukiokaArt(now);
+  updateTsukiokaArt(visualNow);
   if (businessRenderDue) render();
   R.renderFrame(now);
-  requestAnimationFrame(loop);
+  scheduleLoop();
 }
 R.goToScreen(INITIAL_SCREEN, 0, 0);
 render();
-requestAnimationFrame(loop);
+scheduleLoop();
 bootBusinessDay();
 
 // ── 개발·테스트 훅 ───────────────────────────────────────────
@@ -2240,6 +2138,17 @@ Object.assign(d1GameDebug, {
     seen: departureCutsceneSeen,
     sceneId: D1_TSUKIOKA_DEPARTURE_SCENE.sceneId,
   }),
+  runtimeSuspension: () => ({
+    paused: runtimeIsSuspended(),
+    reasons: [...runtimeSuspensionReasons].sort(),
+    frameScheduled: animationFrameId !== null,
+    cookPaused: cook.isPaused(),
+    drinkPaused: pour.state().paused,
+    smokePaused: grillSmoke.snapshot().paused,
+    renderPaused: R.isPaused?.() === true,
+  }),
+  rendererStats: () => R.performanceStats(),
+  setRuntimeSuspended: (reason, suspended) => setRuntimeSuspended(reason, suspended),
   dismissDepartureCutscene: () => closeTsukiokaDepartureCutscene(),
   businessAdvanceTo: (elapsedMs) => {
     const current = businessView()?.clock.elapsedMs ?? 0;
@@ -2412,10 +2321,16 @@ Object.assign(d1GameDebug, {
     return result;
   },
   cookClickSlot: (i) => clickGrillSlot(i, performance.now()),
-  cookElapse: (sec) => cook.debugElapse(sec),
+  cookElapse: (sec) => {
+    cook.debugElapse(sec);
+    const now = performance.now();
+    const views = cook.slotViews(now);
+    updateGrillVisual(now, views);
+    updateGrillStatus(now);
+    render();
+    return views;
+  },
   cookTransferAssembly: () => cook.transferAssembly(),
-  firstOrderGuide: () => firstOrderGuide.view(),
-  firstOrderGuideSnapshot: () => firstOrderGuide.snapshot(),
   grillContract: () => ({
     slots: computeGrillSlots(D1_PUBLIC_GRILL_LAYOUT),
     initialPlacementSlots: D1_PUBLIC_GRILL_LAYOUT.initialPlacementSlots,

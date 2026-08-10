@@ -10,10 +10,9 @@ describe('드링크 스테이션 화면 배치', () => {
     expect(OBJECTS.glassRack.hitRect).toEqual(OBJECTS.drinkGlassDeck.rect);
   });
 
-  it('맥주 머신은 전체 화면 cover 대신 축소된 원경 rect를 쓴다', () => {
+  it('맥주 머신은 전체 화면 cover가 아닌 승인 원경 rect를 쓴다', () => {
     expect(OBJECTS.drinkStation.full).not.toBe(true);
-    expect(OBJECTS.drinkStation.rect.width).toBeLessThan(1);
-    expect(OBJECTS.drinkStation.rect.height).toBeLessThan(1);
+    expect(OBJECTS.drinkStation.rect).toEqual({ x: 0.045, y: -0.04, width: 0.91, height: 1.02 });
   });
 });
 

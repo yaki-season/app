@@ -11,6 +11,27 @@ const MOMO = ['chicken', 'chicken', 'chicken', 'chicken', 'chicken'];
 const assemble = (cook) => NEGIMA.forEach((ing) => cook.clickIngredient(ing));
 
 describe('createCookStations', () => {
+  it('정지 경과를 면 조리·뒤집기·입력 잠금에 포함하지 않는다', () => {
+    const cook = createCookStations({ slots: 1 });
+    assemble(cook);
+    cook.placeToGrill(0);
+    expect(cook.beginFlip(0, 1_000)).toMatchObject({ ok: true });
+    expect(cook.pause(1_100)).toBe(true);
+    expect(cook.slotViews(51_100)[0]).toMatchObject({
+      flipping: true,
+      frontElapsedSec: 1,
+      backElapsedSec: 0,
+    });
+    expect(cook.clickSlot(0, 51_100)).toEqual({ ok: false, reason: 'paused' });
+    expect(cook.resume(51_100)).toBe(true);
+    expect(cook.slotViews(51_299)[0].flipping).toBe(true);
+    expect(cook.slotViews(51_300)[0]).toMatchObject({
+      flipping: false,
+      contactFace: 'back',
+      backElapsedSec: 0,
+    });
+  });
+
   it('조립: 순서대로 5개를 끼우면 완성돼 대기 트레이로 간다', () => {
     const cook = createCookStations({ slots: 1 });
     assemble(cook);

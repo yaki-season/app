@@ -1,6 +1,15 @@
 {
   "id": "d1",
   "sessionTargetMs": 420000,
+  "businessWindow": {
+    "startMinute": 1050,
+    "endMinute": 1590,
+    "spansMidnight": true
+  },
+  "arrivalPolicy": {
+    "maxAllSeatsEmptyWaitSec": 13,
+    "autoCloseAfterFinalCustomer": true
+  },
   "seatIds": ["seat-01", "seat-02", "seat-03", "seat-04", "seat-05", "seat-06"],
   "timingMs": {
     "thinkMin": 4000,
@@ -23,7 +32,7 @@
   },
   "waves": [
     {
-      "id": "d1-guided-first-order",
+      "id": "d1-first-order",
       "atMs": 0,
       "customers": [
         {
@@ -32,7 +41,6 @@
           "patienceMs": 100000,
           "order": {
             "id": "D1-ORDER-001",
-            "guided": true,
             "lines": [
               { "menuId": "beer", "quantity": 1 },
               { "menuId": "negima", "quantity": 2 }

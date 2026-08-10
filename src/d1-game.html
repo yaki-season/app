@@ -39,19 +39,8 @@
     <ol id="receipts" class="receipts" data-testid="svc-receipts" aria-label="조립 진행"></ol>
     <span id="orderHud" class="order-hud" data-testid="order-hud"></span>
     <span id="businessClock" class="business-clock" data-testid="business-clock">17:30</span>
-    <span id="businessPhase" class="business-phase" data-testid="business-phase">준비</span>
+    <button id="businessPhase" class="business-phase" data-testid="business-phase" type="button" aria-label="영업 일시정지" aria-pressed="false">준비</button>
   </header>
-
-  <!-- D1 첫 주문 필수 단계 목록·현재 단계·다음 행동은 도움 설정과 무관하게 상시 유지한다. -->
-  <section id="guide" class="d1-guide" data-testid="d1-guide" aria-labelledby="guideTitle" data-expanded="false">
-    <div class="d1-guide-head">
-      <strong id="guideTitle">첫 주문 · 총 3항목</strong>
-      <span id="guideCurrent" data-testid="guide-current"></span>
-      <button id="guideToggle" class="d1-guide-toggle" type="button" aria-expanded="false" aria-controls="guideSteps">전체 보기</button>
-    </div>
-    <p id="guideNextAction" data-testid="guide-next-action" aria-live="polite"></p>
-    <ol id="guideSteps" data-testid="guide-steps"></ol>
-  </section>
 
   <!-- 좌·우 인접 전환 -->
   <button id="navLeft" class="side-nav left" data-testid="nav-left" aria-label="이전 화면">‹</button>
@@ -216,6 +205,22 @@
       <strong id="departureCutsceneSpeaker">츠키오카 세이지</strong>
       <p id="departureCutsceneLine"></p>
       <button id="departureCutsceneContinue" type="button" data-testid="departure-cutscene-continue">계속</button>
+    </div>
+  </section>
+
+  <section
+    id="runtimePausePanel"
+    class="runtime-pause"
+    data-testid="runtime-pause"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="runtimePauseTitle"
+    hidden
+  >
+    <div class="runtime-pause__card">
+      <p>모든 영업·조리 시간이 멈췄습니다</p>
+      <h2 id="runtimePauseTitle">일시정지</h2>
+      <button id="runtimePauseResume" type="button" data-testid="runtime-pause-resume">영업 계속</button>
     </div>
   </section>
 

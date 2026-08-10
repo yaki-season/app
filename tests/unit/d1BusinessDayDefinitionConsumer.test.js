@@ -15,6 +15,8 @@ function validReleaseDefinition() {
       runtimeContractId: 'd1-public-runtime-contract',
     },
     sessionTargetMs: 420_000,
+    businessWindow: { startMinute: 1050, endMinute: 1590, spansMidnight: true },
+    arrivalPolicy: { maxAllSeatsEmptyWaitSec: 13, autoCloseAfterFinalCustomer: true },
     seatIds: ['seat-01', 'seat-02', 'seat-03', 'seat-04', 'seat-05', 'seat-06'],
     timingMs: {
       thinkMin: 4_000,
@@ -41,7 +43,7 @@ function validReleaseDefinition() {
       },
     },
     waves: [{
-      id: 'd1-guided-first-order',
+      id: 'd1-first-order',
       atMs: 0,
       requiresOrderCompletionIds: [],
       customers: [{
@@ -52,7 +54,6 @@ function validReleaseDefinition() {
         patienceMs: 100_000,
         order: {
           id: 'D1-ORDER-001',
-          guided: true,
           lines: [
             { menuId: 'beer', quantity: 1, seasoning: 'none' },
             { menuId: 'negima', quantity: 2, seasoning: 'none' },

@@ -6,7 +6,7 @@
     "active": true,
     "status": "approved",
     "dayId": "d1",
-    "arrivalSegmentId": "d1-guided-open",
+    "arrivalSegmentId": "d1-first-order",
     "runtimeCustomerId": "REGULAR_TSUKIOKA",
     "source": { "kind": "fixed-character", "characterId": "CHAR-TSUKIOKA" },
     "customerCount": 1,
@@ -14,7 +14,7 @@
       { "menuId": "beer", "quantity": 1, "seasoning": "none" },
       { "menuId": "negima", "quantity": 2, "seasoning": "none" }
     ],
-    "guidanceId": "d1-full-first-order-guide",
+    "guidanceId": null,
     "memoryFlagIds": ["d1-first-order-complete"],
     "requiresOrderCompletionIds": []
   },

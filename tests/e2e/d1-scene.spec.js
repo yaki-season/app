@@ -15,7 +15,7 @@ test('D1 2.5D: 배경·손님·카운터 레이어를 합성하고 손님 텍스
   expect(layers.map((l) => l.name)).toEqual(['background', 'seating', 'customer', 'table']);
   expect(layers[0].url).toBe('/public/assets/core/customer/background-complete-r4-b1.png');
   expect(layers[1].url).toBe('/public/assets/core/customer/bg-seating-6-r2-b1.png');
-  expect(layers[3].url).toBe('/public/assets/core/customer/service-counter-u-r4-b1.png');
+  expect(layers[3].url).toBe('/public/assets/core/customer/service-table-straight-r5-b1.png');
   // 깊이가 서로 달라 시차(2.5D)가 생긴다.
   expect(layers[0].z).toBeLessThan(layers[1].z);
   expect(layers[1].z).toBeLessThan(layers[2].z);

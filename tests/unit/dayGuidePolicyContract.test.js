@@ -2,13 +2,25 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('../../src/d1-game.js', import.meta.url), 'utf8');
+const html = readFileSync(new URL('../../src/d1-game.html', import.meta.url), 'utf8');
+const legacyView = readFileSync(new URL('../../src/d1/view.js', import.meta.url), 'utf8');
+const legacyHtml = readFileSync(new URL('../../src/d1.html', import.meta.url), 'utf8');
+const legacySceneHtml = readFileSync(new URL('../../src/d1-scene.html', import.meta.url), 'utf8');
+const orders = JSON.parse(readFileSync(
+  new URL('../../content/orders/early-campaign.json', import.meta.url),
+  'utf8',
+));
 
-describe('날짜별 도움 감소 계약', () => {
-  it('D1 순차·D2 복습·D3 신규 행동 정책을 분리하고 비D1에서는 강제 target을 만들지 않는다', () => {
-    expect(source).toContain("d1: { title: '첫 주문 · 총 3항목', mode: 'sequential' }");
-    expect(source).toContain("d2: { title: 'D2 · 복습 도움', mode: 'review'");
-    expect(source).toContain("d3: { title: 'D3 · 타레와 토치', mode: 'new-action'");
-    expect(source).toContain("if (policy.mode !== 'sequential')");
-    expect(source).toContain("target.dataset.guideTarget = 'false'");
+describe('실제 영업 순차 안내 폐기 계약', () => {
+  it('공개 영업 진입점에 단계 패널·강제 target·진행도 저장을 남기지 않는다', () => {
+    expect(html).not.toContain('data-testid="d1-guide"');
+    expect(source).not.toContain('firstOrderGuide');
+    expect(source).not.toContain('guideTarget');
+    expect(source).not.toContain('guideFlipCount');
+    expect(legacyView).not.toContain("document.querySelector('#guide')");
+    expect(legacyHtml).not.toContain('data-testid="d1-guide"');
+    expect(legacySceneHtml).not.toContain('data-testid="d1-guide"');
+    expect(orders.filter(({ dayId }) => dayId === 'd1').every(({ guidanceId }) => guidanceId === null))
+      .toBe(true);
   });
 });

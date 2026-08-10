@@ -29,6 +29,24 @@ describe('그릴 연기 VFX', () => {
     vi.stubGlobal('document', { createElement: () => fakeCanvas() });
   });
 
+  it('정지 경과를 연기 수명과 평시 방출 예정에 포함하지 않는다', () => {
+    const vfx = createGrillSmokeVfx({
+      scene: new THREE.Scene(),
+      slotMeshes: [slotMesh()],
+      random: () => 0.5,
+      reducedMotion: false,
+    });
+    vfx.burst(0, 1_000);
+    vfx.update(1_100, [{ cooking: true }]);
+    vfx.pause(1_100);
+    vfx.update(51_100, [{ cooking: true }]);
+    expect(vfx.snapshot()).toMatchObject({ paused: true, active: 3 });
+    expect(vfx.burst(0, 51_100)).toBe(0);
+    vfx.resume(51_100);
+    vfx.update(51_200, [{ cooking: true }]);
+    expect(vfx.snapshot()).toMatchObject({ paused: false, active: 3 });
+  });
+
   it('평시 조리 중에만 작은 연기를 내고 6장 풀을 넘지 않는다', () => {
     const scene = new THREE.Scene();
     const vfx = createGrillSmokeVfx({

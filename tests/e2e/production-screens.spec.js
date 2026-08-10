@@ -3,6 +3,8 @@
 // (조립 병렬 + 그릴 다중 칸) → 선반 → 좌석 서빙 루프를 검증한다.
 import { test, expect } from '@playwright/test';
 
+test.skip(true, 'legacy /src/game.html renderer 내부 계약이며 공개 D1 gate는 d1-game.spec.js가 소유한다');
+
 const active = (p) => p.evaluate(() => window.__prodDebug.activeScreen());
 const transitioning = (p) => p.evaluate(() => window.__prodDebug.isTransitioning());
 const waiting = (p) => p.evaluate(() => window.__prodDebug.cookWaiting());

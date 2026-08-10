@@ -64,6 +64,9 @@ export function createCookStations({
   let transferredCount = 0;
   let waitingItems = [];
   let grill = Array.from({ length: normalizedSlotCount }, () => emptySlot());
+  let pausedAtMs = null;
+
+  const effectiveNow = (now) => pausedAtMs ?? now;
 
   function emptySlot() {
     return {
@@ -80,6 +83,7 @@ export function createCookStations({
   }
 
   function syncSlot(slot, now) {
+    now = effectiveNow(now);
     if (!slot || slot.status === 'empty' || slot.lastUpdatedAt == null) return;
     let cursor = slot.lastUpdatedAt;
     if (slot.flip && now >= slot.flip.completeAt) {
@@ -151,6 +155,7 @@ export function createCookStations({
   }
 
   function placeToGrill(now, menuId = null) {
+    if (pausedAtMs !== null) return { ok: false, reason: 'paused' };
     if (waitingItems.length <= 0) return { ok: false, reason: 'no-waiting' };
     const waitingIndex = menuId == null ? 0 : waitingItems.indexOf(menuId);
     if (waitingIndex < 0) return { ok: false, reason: 'no-menu-waiting' };
@@ -199,6 +204,7 @@ export function createCookStations({
   }
 
   function beginFlip(index, now) {
+    if (pausedAtMs !== null) return { ok: false, reason: 'paused' };
     const slot = grill[index];
     if (!slot) return { ok: false, reason: 'invalid-slot' };
     syncSlot(slot, now);
@@ -224,6 +230,7 @@ export function createCookStations({
   }
 
   function completeFlip(index, now) {
+    if (pausedAtMs !== null) return { ok: false, reason: 'paused' };
     const slot = grill[index];
     if (!slot?.flip) return { ok: false, reason: 'not-flipping' };
     if (now < slot.flip.completeAt) {
@@ -242,6 +249,7 @@ export function createCookStations({
   // 한 면이라도 under이면 현재 접촉면과 무관하게 반대 면으로 뒤집는다. 두 면이 모두
   // under를 벗어난 뒤에만 최종 누적 시간을 다시 분류해 회수 품질을 계산한다.
   function clickSlot(index, now) {
+    if (pausedAtMs !== null) return { ok: false, reason: 'paused' };
     const slot = grill[index];
     if (!slot) return { ok: false, reason: 'invalid-slot' };
     syncSlot(slot, now);
@@ -275,6 +283,7 @@ export function createCookStations({
   }
 
   function removeFromGrill(index, now) {
+    if (pausedAtMs !== null) return { ok: false, reason: 'paused' };
     const slot = grill[index];
     if (!slot) return { ok: false, reason: 'invalid-slot' };
     syncSlot(slot, now);
@@ -286,6 +295,7 @@ export function createCookStations({
   }
 
   function reinsertToGrill(index, now) {
+    if (pausedAtMs !== null) return { ok: false, reason: 'paused' };
     const slot = grill[index];
     if (!slot || slot.status !== 'off-grill') return { ok: false, reason: 'not-off-grill' };
     slot.contactFace = slot.orientationFaceDown;
@@ -296,6 +306,7 @@ export function createCookStations({
 
   // 양면 완전 탄 제작물만 자동 폐기한다. 한 면 탄은 Fail로 제공할 수 있다.
   function tickBurn(now) {
+    if (pausedAtMs !== null) return [];
     const discarded = [];
     grill.forEach((slot, index) => {
       syncSlot(slot, now);
@@ -323,6 +334,7 @@ export function createCookStations({
   }
 
   function slotViews(now) {
+    now = effectiveNow(now);
     return grill.map((slot, index) => {
       syncSlot(slot, now);
       const faceElapsedSec = currentElapsedSec(slot);
@@ -361,6 +373,7 @@ export function createCookStations({
   }
 
   function snapshot(now) {
+    now = effectiveNow(now);
     grill.forEach((slot) => syncSlot(slot, now));
     return structuredClone({
       stateVersion: 1,
@@ -395,6 +408,7 @@ export function createCookStations({
     while (waitingItems.length < saved.waiting) waitingItems.push(defaultMenuId);
     if (waitingItems.length > saved.waiting) waitingItems = waitingItems.slice(0, saved.waiting);
     grill = structuredClone(saved.grill);
+    pausedAtMs = null;
     for (const slot of grill) {
       slot.menuId = slot.status === 'empty' ? null : (recipeBook[slot.menuId] ? slot.menuId : defaultMenuId);
       slot.faceReadyAtMs ??= { front: null, back: null };
@@ -420,6 +434,31 @@ export function createCookStations({
       }
     }
     return { ok: true };
+  }
+
+  function pause(now) {
+    if (pausedAtMs !== null) return false;
+    grill.forEach((slot) => syncSlot(slot, now));
+    pausedAtMs = now;
+    return true;
+  }
+
+  function resume(now) {
+    if (pausedAtMs === null) return false;
+    const pausedDurationMs = Math.max(0, now - pausedAtMs);
+    for (const slot of grill) {
+      if (slot.status === 'empty') continue;
+      if (slot.flip?.completeAt > pausedAtMs) slot.flip.completeAt += pausedDurationMs;
+      if (slot.inputLockedUntil > pausedAtMs) slot.inputLockedUntil += pausedDurationMs;
+      for (const face of [FACE.FRONT, FACE.BACK]) {
+        if (slot.faceReadyAtMs?.[face] > pausedAtMs) {
+          slot.faceReadyAtMs[face] += pausedDurationMs;
+        }
+      }
+      slot.lastUpdatedAt = now;
+    }
+    pausedAtMs = null;
+    return true;
   }
 
   return {
@@ -451,6 +490,9 @@ export function createCookStations({
     slotViews,
     snapshot,
     restore,
+    pause,
+    resume,
+    isPaused: () => pausedAtMs !== null,
     slotCount: () => grill.length,
     debugElapse(sec) {
       for (const slot of grill) {

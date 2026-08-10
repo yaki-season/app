@@ -44,6 +44,7 @@ export async function createBeerCoreVfxMaterial() {
     },
     snapshot() {
       return {
+        time: uniforms.uTime.value,
         pourBeer: uniforms.uPourBeer.value === 1,
         pourFoam: uniforms.uPourFoam.value === 1,
         foamCrown: uniforms.uFoamCrown.value,

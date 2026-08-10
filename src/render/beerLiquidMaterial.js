@@ -41,6 +41,7 @@ export async function createBeerLiquidMaterial() {
     setTime(seconds) { uniforms.uTime.value = seconds; },
     snapshot() {
       return {
+        time: uniforms.uTime.value,
         beerFill: uniforms.uBeerFill.value,
         foamFill: uniforms.uFoamFill.value,
         overflow: uniforms.uOverflow.value === 1,

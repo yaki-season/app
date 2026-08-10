@@ -77,7 +77,7 @@ function assertString(value, field) {
 
 export function createBusinessDayDefinition(record, {
   expectedId = null,
-  requireD1GuidedOpening = false,
+  requireD1BusinessPolicy = false,
 } = {}) {
   if (!record || typeof record !== 'object' || Array.isArray(record)) {
     throw new TypeError('D1 영업일 정의 객체가 필요합니다.');
@@ -97,6 +97,30 @@ export function createBusinessDayDefinition(record, {
   assertFinite(definition.sessionTargetMs, 'sessionTargetMs', { min: 1 });
   if (definition.sessionTargetMs > 480_000) {
     throw new TypeError('D1 목표 세션은 8분을 넘을 수 없습니다.');
+  }
+  const businessWindow = definition.businessWindow;
+  if (businessWindow) {
+    assertFinite(businessWindow.startMinute, 'businessWindow.startMinute');
+    assertFinite(businessWindow.endMinute, 'businessWindow.endMinute', { min: 1 });
+    if (businessWindow.endMinute <= businessWindow.startMinute) {
+      throw new TypeError('영업 종료 시각은 시작 시각보다 뒤여야 합니다.');
+    }
+  }
+  const arrivalPolicy = definition.arrivalPolicy;
+  if (arrivalPolicy) {
+    assertFinite(arrivalPolicy.maxAllSeatsEmptyWaitSec, 'arrivalPolicy.maxAllSeatsEmptyWaitSec', { min: 1 });
+    if (typeof arrivalPolicy.autoCloseAfterFinalCustomer !== 'boolean') {
+      throw new TypeError('arrivalPolicy.autoCloseAfterFinalCustomer 불리언이 필요합니다.');
+    }
+  }
+  if (requireD1BusinessPolicy && (
+    businessWindow?.startMinute !== 1050
+    || businessWindow?.endMinute !== 1590
+    || businessWindow?.spansMidnight !== true
+    || arrivalPolicy?.maxAllSeatsEmptyWaitSec !== 13
+    || arrivalPolicy?.autoCloseAfterFinalCustomer !== true
+  )) {
+    throw new TypeError('D1은 17:30~02:30 영업창과 빈 가게 13초 입장·마지막 손님 자동 마감 정책이 필요합니다.');
   }
 
   const timing = definition.timingMs ?? {};
@@ -174,16 +198,15 @@ export function createBusinessDayDefinition(record, {
   }
 
   const first = definition.waves[0]?.customers[0];
-  if (requireD1GuidedOpening && (
+  if (requireD1BusinessPolicy && (
     first?.id !== 'REGULAR_TSUKIOKA'
     || first.order?.id !== 'D1-ORDER-001'
-    || first.order?.guided !== true
     || first.order.lines?.[0]?.menuId !== 'beer'
     || first.order.lines?.[0]?.quantity !== 1
     || first.order.lines?.[1]?.menuId !== 'negima'
     || first.order.lines?.[1]?.quantity !== 2
   )) {
-    throw new TypeError('D1 첫 가이드는 츠키오카의 생맥주 1잔→네기마 2개 주문이어야 합니다.');
+    throw new TypeError('D1 첫 주문은 츠키오카의 생맥주 1잔→네기마 2개여야 합니다.');
   }
   for (const wave of definition.waves) {
     for (const requiredId of wave.requiresOrderCompletionIds ?? []) {
@@ -198,7 +221,7 @@ export function createBusinessDayDefinition(record, {
 export function createD1BusinessDayDefinition(record) {
   return createBusinessDayDefinition(record, {
     expectedId: 'd1',
-    requireD1GuidedOpening: true,
+    requireD1BusinessPolicy: true,
   });
 }
 
@@ -233,9 +256,10 @@ export function createD1BusinessDayState({ definition, runId, seed = 1 }) {
     clock: {
       elapsedMs: 0,
       targetMs: definition.sessionTargetMs,
-      gameMinute: 17 * 60 + 30,
+      gameMinute: definition.businessWindow?.startMinute ?? (17 * 60 + 30),
       paused: false,
       arrivalsClosed: false,
+      allSeatsEmptySinceMs: null,
     },
     limits: {
       riskProcessCount: 0,
@@ -308,7 +332,6 @@ function spawnCustomer(state, definition, customerSpec, seat, waveId) {
     customerIds: [],
     groupId,
     waveId,
-    guided: customerSpec.order.guided === true,
     status: D1_ORDER_STATUS.UNACCEPTED,
     lines: customerSpec.order.lines.map((line, index) => ({
       id: `${customerSpec.order.id}:line:${index + 1}`,
@@ -346,7 +369,11 @@ function spawnEligibleWaves(state, definition) {
     const waveSpec = definition.waves[index];
     const waveState = state.waves[index];
     if (waveState.status !== 'pending') continue;
-    if (state.clock.elapsedMs < waveSpec.atMs) break;
+    const emptyWaitLimitMs = definition.arrivalPolicy?.maxAllSeatsEmptyWaitSec * 1000;
+    const emptyDeadlineMs = state.clock.allSeatsEmptySinceMs != null && Number.isFinite(emptyWaitLimitMs)
+      ? state.clock.allSeatsEmptySinceMs + emptyWaitLimitMs
+      : Number.POSITIVE_INFINITY;
+    if (state.clock.elapsedMs < Math.min(waveSpec.atMs, emptyDeadlineMs)) break;
     if (!(waveSpec.requiresOrderCompletionIds ?? []).every((id) => orderIsComplete(state, id))) break;
     const arrivingOrderCount = new Set(waveSpec.customers.map((customer) => customer.order.id)).size;
     if (operationalOrderCount(state) + arrivingOrderCount > definition.limits.maxActiveOrders) break;
@@ -370,6 +397,7 @@ function spawnEligibleWaves(state, definition) {
       spawnCustomer(state, definition, customer, seats[customerIndex], waveSpec.id);
     });
     waveState.status = 'spawned';
+    state.clock.allSeatsEmptySinceMs = null;
     state.limits.peakActiveOrders = Math.max(state.limits.peakActiveOrders, operationalOrderCount(state));
   }
 }
@@ -515,6 +543,24 @@ function completeCleanup(state, seat) {
   seat.cleanup.progressMs = 0;
   seat.cleanup.completionId = `cleanup:${customer?.id ?? seat.id}`;
   state.metrics.cleanedSeats += 1;
+  if (
+    state.seats.every((candidate) => candidate.status === 'empty')
+    && state.waves.some((wave) => wave.status === 'pending')
+    && state.clock.allSeatsEmptySinceMs == null
+  ) {
+    state.clock.allSeatsEmptySinceMs = state.clock.elapsedMs;
+  }
+}
+
+function trackAllTablesVacated(state) {
+  const hasSeatedCustomer = state.seats.some((seat) => seat.status === 'occupied');
+  if (
+    !hasSeatedCustomer
+    && state.waves.some((wave) => wave.status === 'pending')
+    && state.clock.allSeatsEmptySinceMs == null
+  ) {
+    state.clock.allSeatsEmptySinceMs = state.clock.elapsedMs;
+  }
 }
 
 function progressTimers(state, definition, deltaMs) {
@@ -547,6 +593,7 @@ function progressTimers(state, definition, deltaMs) {
   }
   for (const customer of expired) failCustomers(state, definition, customer, 'patience');
   syncMealDepartures(state, definition);
+  trackAllTablesVacated(state);
   for (const seat of state.seats) {
     if (seat.status !== 'cleanup' || !seat.cleanup.active) continue;
     seat.cleanup.progressMs += deltaMs;
@@ -554,10 +601,11 @@ function progressTimers(state, definition, deltaMs) {
   }
 }
 
-function updateGameClock(state) {
+function updateGameClock(state, definition) {
   const ratio = Math.min(1, state.clock.elapsedMs / state.clock.targetMs);
-  // D1 임시 영업창: 17:30→23:30(6시간). 마지막 손님 구간 뒤 빈 마감 구간은 30분만 둔다.
-  state.clock.gameMinute = Math.round(17 * 60 + 30 + ratio * 360);
+  const startMinute = definition.businessWindow?.startMinute ?? (17 * 60 + 30);
+  const endMinute = definition.businessWindow?.endMinute ?? (23 * 60 + 30);
+  state.clock.gameMinute = Math.round(startMinute + ratio * (endMinute - startMinute));
 }
 
 function hasUnfinishedDayState(state) {
@@ -567,9 +615,11 @@ function hasUnfinishedDayState(state) {
   return activeCustomers || openOrders || state.seats.some((seat) => seat.status !== 'empty');
 }
 
-function updateClosingPhase(state) {
+function updateClosingPhase(state, definition) {
   const allArrivalsResolved = state.waves.every((wave) => wave.status !== 'pending');
-  const finalCleanupComplete = allArrivalsResolved && !hasUnfinishedDayState(state);
+  const finalCleanupComplete = definition.arrivalPolicy?.autoCloseAfterFinalCustomer !== false
+    && allArrivalsResolved
+    && !hasUnfinishedDayState(state);
   if (
     state.phase === D1_DAY_PHASE.OPEN
     && (state.clock.elapsedMs >= state.clock.targetMs || finalCleanupComplete)
@@ -601,11 +651,11 @@ export function advanceD1BusinessDay(state, definition, deltaMs) {
     const step = Math.min(remaining, 100);
     if (next.phase === D1_DAY_PHASE.OPEN) {
       next.clock.elapsedMs = Math.min(next.clock.targetMs, next.clock.elapsedMs + step);
-      updateGameClock(next);
+      updateGameClock(next, definition);
     }
     progressTimers(next, definition, step);
     spawnEligibleWaves(next, definition);
-    updateClosingPhase(next);
+    updateClosingPhase(next, definition);
     remaining -= step;
   }
   return next;
@@ -651,7 +701,7 @@ export function dispatchD1Command(state, definition, command) {
     }
     next.limits.riskProcessCount = command.count;
     next.limits.peakRiskProcesses = Math.max(next.limits.peakRiskProcesses, command.count);
-    updateClosingPhase(next);
+    updateClosingPhase(next, definition);
     return { state: next, applied: true, duplicate: false };
   }
   if (command.type === 'accept-order') {

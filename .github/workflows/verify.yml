@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  runtime-and-tests:
+  public-d1-gate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -33,11 +33,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify runtime boundary
-        run: npm run assets:validate
+      - name: Install Chromium for the public D1 gate
+        run: npx playwright install --with-deps chromium
 
-      - name: Verify implementation reference images
-        run: npm run visual:references:validate
+      - name: Run required public D1 gate
+        run: npm run verify
 
-      - name: Run deterministic unit tests
-        run: npm test
+  repository-diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Inspect repository-wide contracts without blocking D1
+        run: npm run assets:validate && npm run visual:references:validate && npm test

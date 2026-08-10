@@ -27,7 +27,7 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   expect(readiness.placeholderIdsByScene.grill).toContain('CMP-GRILL-FINISHED-PROPER-NEGIMA');
   await expect(page.locator('.art-background')).toHaveAttribute('src', '/public/assets/core/customer/background-complete-r4-b1.png');
   await expect(page.locator('.art-seating')).toHaveAttribute('src', '/public/assets/core/customer/bg-seating-6-r2-b1.png');
-  await expect(page.locator('.art-table')).toHaveAttribute('src', '/public/assets/core/customer/service-counter-u-r4-b1.png');
+  await expect(page.locator('.art-table')).toHaveAttribute('src', '/public/assets/core/customer/service-table-straight-r5-b1.png');
   await expect(page.locator('.art-background')).toHaveJSProperty('naturalWidth', 1920);
   await expect(page.getByTestId('order-negima').locator('img')).toHaveAttribute('src', '/public/assets/core/ui/order-icon-negima-r1-b1.png');
   await expect(page.getByTestId('d1-scene-status')).toHaveAttribute('data-manifest-id', 'D1-TSUKIOKA-WAITING');
@@ -93,7 +93,7 @@ test('D1: 주문·생맥주 부분 제공·2칸 그릴·네기마 최종 제공�
   await expect(page.getByTestId('order-negima')).toContainText('x0/2');
   await page.getByRole('button', { name: '손님 반응 확인' }).click();
   await expect(page.getByTestId('customer-state')).toContainText('완료');
-  await expect(page.getByTestId('d1-guide')).toContainText('완료');
+  await expect(page.getByTestId('d1-guide')).toHaveCount(0);
   await expect(page.locator('#customer-art')).toHaveAttribute('src', '/public/assets/core/customer/d1-tsukioka-received-eating-negima-r2-b1.png');
   await page.waitForFunction(
     () => document.querySelector('#customer-art')?.getAttribute('src')

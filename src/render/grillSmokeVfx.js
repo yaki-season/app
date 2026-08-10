@@ -91,6 +91,7 @@ export function createGrillSmokeVfx({
   const slotSizes = slots.map((mesh) => meshSize(mesh));
   const activeCookingSlots = [];
   let nextAmbientAt = 0;
+  let pausedAtMs = null;
   const pool = Array.from({ length: GRILL_SMOKE_LIMITS.maxPuffs }, (_, index) => {
     const material = new THREE.SpriteMaterial({
       map: textures[index % textures.length],
@@ -182,6 +183,7 @@ export function createGrillSmokeVfx({
   }
 
   function burst(slotIndex, nowMs) {
+    if (pausedAtMs !== null) return 0;
     let emitted = 0;
     for (let index = 0; index < GRILL_SMOKE_LIMITS.flipBurstCount; index += 1) {
       if (emit(slotIndex, nowMs + index * 24, 'flip', index)) emitted += 1;
@@ -190,6 +192,7 @@ export function createGrillSmokeVfx({
   }
 
   function update(nowMs, slotViews, { visible = true } = {}) {
+    if (pausedAtMs !== null) return;
     activeCookingSlots.length = 0;
     slots.forEach((_, slotIndex) => {
       const view = slotViews?.[slotIndex];
@@ -235,12 +238,30 @@ export function createGrillSmokeVfx({
 
   function snapshot() {
     return {
+      paused: pausedAtMs !== null,
       maxPuffs: pool.length,
       active: pool.filter((puff) => puff.active).length,
       ambient: pool.filter((puff) => puff.active && puff.kind === 'ambient').length,
       flip: pool.filter((puff) => puff.active && puff.kind === 'flip').length,
       visible: pool.filter((puff) => puff.sprite.visible).length,
     };
+  }
+
+  function pause(nowMs) {
+    if (pausedAtMs !== null) return false;
+    pausedAtMs = nowMs;
+    return true;
+  }
+
+  function resume(nowMs) {
+    if (pausedAtMs === null) return false;
+    const pausedDurationMs = Math.max(0, nowMs - pausedAtMs);
+    for (const puff of pool) {
+      if (puff.active) puff.startedAt += pausedDurationMs;
+    }
+    if (nextAmbientAt > 0) nextAmbientAt += pausedDurationMs;
+    pausedAtMs = null;
+    return true;
   }
 
   function dispose() {
@@ -251,5 +272,5 @@ export function createGrillSmokeVfx({
     for (const texture of textures) texture.dispose();
   }
 
-  return { burst, update, snapshot, dispose };
+  return { burst, update, pause, resume, snapshot, dispose };
 }

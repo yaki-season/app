@@ -10,6 +10,19 @@ function pour(p, zone, seconds, t0 = 0) {
 }
 
 describe('createDrinkPour', () => {
+  it('정지하면 레버를 즉시 놓고 복귀 뒤 다시 누르기 전까지 양이 늘지 않는다', () => {
+    const p = createDrinkPour();
+    p.press('beer', 0);
+    expect(p.pause(1_000)).toBe(true);
+    expect(p.state()).toMatchObject({ beerSec: 1, active: null, paused: true });
+    p.tick(51_000);
+    expect(p.state().beerSec).toBe(1);
+    expect(p.press('foam', 51_000)).toBe(false);
+    expect(p.resume(51_000)).toBe(true);
+    p.tick(52_000);
+    expect(p.state().beerSec).toBe(1);
+  });
+
   it('목표 주입량과 넘침 한계를 분리한다', () => {
     expect(DRINK.glassCapacity).toBe(4.0);
     expect(DRINK.totalCap).toBeGreaterThan(DRINK.glassCapacity);

@@ -378,6 +378,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
   const currentLook = lookOf(SCREEN_BY_ID[activeId]);
   const camera = makeCamera(eye, currentLook);
   let lookTween = null; // { from:Vector3, to:Vector3, startMs, endMs }
+  let pausedAtMs = null;
 
   // 화면 전환: 시선을 현재값에서 목표 프리셋으로 트윈(수렴). 오브젝트는 즉시 활성 화면으로 토글.
   function goToScreen(screenId, nowMs, transitionMs) {
@@ -417,6 +418,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
   }
 
   function renderFrame(nowMs) {
+    if (pausedAtMs !== null) return;
     tickCamera(nowMs);
     resize();
     renderer.render(scene, camera);
@@ -431,6 +433,26 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     frameCount += 1;
   }
 
+  function pause(nowMs) {
+    if (pausedAtMs !== null) return false;
+    tickCamera(nowMs);
+    pausedAtMs = nowMs;
+    lastFrameAt = null;
+    return true;
+  }
+
+  function resume(nowMs) {
+    if (pausedAtMs === null) return false;
+    const pausedDurationMs = Math.max(0, nowMs - pausedAtMs);
+    if (lookTween) {
+      lookTween.startMs += pausedDurationMs;
+      lookTween.endMs += pausedDurationMs;
+    }
+    pausedAtMs = null;
+    lastFrameAt = null;
+    return true;
+  }
+
   function performanceStats() {
     const avg = frameDurations.length
       ? frameDurations.reduce((s, v) => s + v, 0) / frameDurations.length
@@ -441,6 +463,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       dpr: renderer.getPixelRatio(),
       averageFrameMs: avg,
       fps: avg > 0 ? 1000 / avg : 0,
+      frameCount,
       canvasCount: document.querySelectorAll('canvas').length,
       renderLoopCount: 1,
     };
@@ -556,6 +579,9 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     activeScreenId: () => activeId,
     goToScreen,
     renderFrame,
+    pause,
+    resume,
+    isPaused: () => pausedAtMs !== null,
     resize,
     performanceStats,
     texturesReady: () => pendingTextures === 0,

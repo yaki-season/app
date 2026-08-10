@@ -3,6 +3,7 @@
 // 익힘 단계를 대기 없이 미리 보여주는지, 값이 grill-skewer에 반영되는지 확인한다.
 import { test, expect } from '@playwright/test';
 import { boot } from './helpers.js';
+import { GRILL_PARAMS } from '../../src/render/grillShaderParams.js';
 
 async function bootWithShader(page) {
   await boot(page);
@@ -64,5 +65,5 @@ test('기본값 버튼이 파라미터를 복원한다', async ({ page }) => {
   await page.evaluate(() => window.__grillTuner.setParam('tareGloss', 3.0));
   await page.getByRole('button', { name: '기본값' }).click();
   const restored = await page.evaluate(() => window.__grillTuner.getValues().tareGloss);
-  expect(restored).toBeCloseTo(1.5, 5); // grillShaderParams 기본값
+  expect(restored).toBeCloseTo(GRILL_PARAMS.tareGloss, 5);
 });

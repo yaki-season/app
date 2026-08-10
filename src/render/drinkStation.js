@@ -21,6 +21,7 @@ export function createDrinkPour(config = DRINK) {
   let overflow = false;
   let quality = null; // 'Perfect' | 'Good' | 'OK' | 'Fail' | null(폐기)
   let finalized = false;
+  let paused = false;
 
   function commit(now) {
     if (active && now > lastNow) {
@@ -41,17 +42,37 @@ export function createDrinkPour(config = DRINK) {
   }
 
   function press(zone, now) {
-    if (finalized || overflow) return;
+    if (paused || finalized || overflow) return false;
     commit(now);
     active = zone === 'beer' || zone === 'foam' ? zone : null;
     lastNow = now;
+    return active !== null;
   }
   function release(now) {
+    if (paused) return false;
     commit(now);
     active = null;
+    return true;
   }
   function tick(now) {
+    if (paused) return false;
     commit(now);
+    return true;
+  }
+
+  function pause(now) {
+    if (paused) return false;
+    commit(now);
+    active = null;
+    paused = true;
+    return true;
+  }
+
+  function resume(now) {
+    if (!paused) return false;
+    lastNow = now;
+    paused = false;
+    return true;
   }
 
   function computeQuality() {
@@ -85,6 +106,7 @@ export function createDrinkPour(config = DRINK) {
   }
   function reset() {
     beerMs = 0; foamMs = 0; active = null; lastNow = 0;
+    paused = false;
     overflow = false; quality = null; finalized = false;
   }
 
@@ -105,10 +127,11 @@ export function createDrinkPour(config = DRINK) {
       active,
       overflow,
       quality,
+      paused,
       beerOk: inRange(beerMs / 1000, config.beerRange),
       foamOk: inRange(foamMs / 1000, config.foamRange),
     };
   }
 
-  return { press, release, tick, finish, serveOverflow, discard, reset, state };
+  return { press, release, tick, pause, resume, finish, serveOverflow, discard, reset, state };
 }

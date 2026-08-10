@@ -30,12 +30,22 @@ function requiredFields(record) {
     if (!has(parent, key)) missing.push(path);
   };
 
-  for (const field of ['id', 'schemaVersion', 'source', 'sessionTargetMs', 'seatIds', 'timingMs', 'limits', 'economy', 'totals', 'waves']) {
+  for (const field of ['id', 'schemaVersion', 'source', 'sessionTargetMs', 'businessWindow', 'arrivalPolicy', 'seatIds', 'timingMs', 'limits', 'economy', 'totals', 'waves']) {
     require(record, field, field);
   }
   if (record?.source) {
     for (const field of ['dayId', 'developmentFixtureId', 'runtimeContractId']) {
       require(record.source, field, `source.${field}`);
+    }
+  }
+  if (record?.businessWindow) {
+    for (const field of ['startMinute', 'endMinute', 'spansMidnight']) {
+      require(record.businessWindow, field, `businessWindow.${field}`);
+    }
+  }
+  if (record?.arrivalPolicy) {
+    for (const field of ['maxAllSeatsEmptyWaitSec', 'autoCloseAfterFinalCustomer']) {
+      require(record.arrivalPolicy, field, `arrivalPolicy.${field}`);
     }
   }
   if (record?.timingMs) {
@@ -70,7 +80,7 @@ function requiredFields(record) {
           require(customer, field, `${customerPath}.${field}`);
         }
         if (!customer?.order) return;
-        for (const field of ['id', 'guided', 'lines']) {
+        for (const field of ['id', 'lines']) {
           require(customer.order, field, `${customerPath}.order.${field}`);
         }
         if (!Array.isArray(customer.order.lines)) return;

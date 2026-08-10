@@ -18,6 +18,7 @@ export function createStationDirector({ screens, initial, transitionMs = 300 } =
 
   let fromIndex = currentIndex; // 전환 출발 화면 (렌더러 참고용; 포즈는 라이브 lerp)
   let transition = null; // { startMs, endMs } 또는 null
+  let pausedAtMs = null;
 
   function activeScreenId() {
     return order[currentIndex];
@@ -25,6 +26,7 @@ export function createStationDirector({ screens, initial, transitionMs = 300 } =
 
   // 화면 요청. 이미 활성이면 무시. 전환 중 재요청은 목표만 바꿔 마지막으로 수렴한다(§104).
   function request(id, nowMs) {
+    if (pausedAtMs !== null) return false;
     const next = indexOf(id);
     if (next < 0) throw new Error(`stationDirector: 알 수 없는 화면 ${id}`);
     if (next === currentIndex && !transition) return false;
@@ -46,6 +48,7 @@ export function createStationDirector({ screens, initial, transitionMs = 300 } =
 
   // 전환 시계를 진행한다. 완료되면 전환 종료. 상태가 바뀌면 true.
   function tick(nowMs) {
+    if (pausedAtMs !== null) return false;
     if (!transition) return false;
     if (nowMs >= transition.endMs) {
       transition = null;
@@ -66,10 +69,29 @@ export function createStationDirector({ screens, initial, transitionMs = 300 } =
 
   // 전환 진행도 0..1. 렌더러 크로스페이드/포즈 보간 참고용.
   function progress(nowMs) {
+    if (pausedAtMs !== null) nowMs = pausedAtMs;
     if (!transition) return 1;
     const span = transition.endMs - transition.startMs;
     if (span <= 0) return 1;
     return Math.min(1, Math.max(0, (nowMs - transition.startMs) / span));
+  }
+
+  function pause(nowMs) {
+    if (pausedAtMs !== null) return false;
+    tick(nowMs);
+    pausedAtMs = nowMs;
+    return true;
+  }
+
+  function resume(nowMs) {
+    if (pausedAtMs === null) return false;
+    const pausedDurationMs = Math.max(0, nowMs - pausedAtMs);
+    if (transition) {
+      transition.startMs += pausedDurationMs;
+      transition.endMs += pausedDurationMs;
+    }
+    pausedAtMs = null;
+    return true;
   }
 
   return {
@@ -83,6 +105,9 @@ export function createStationDirector({ screens, initial, transitionMs = 300 } =
     isTransitioning,
     controlsLocked,
     progress,
+    pause,
+    resume,
+    isPaused: () => pausedAtMs !== null,
     canLeft: () => currentIndex > 0,
     canRight: () => currentIndex < order.length - 1,
   };

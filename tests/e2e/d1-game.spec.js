@@ -1,4 +1,4 @@
-// D1 전체 영업 화면의 첫 주문·시작 2칸 조리·순차 가이드 회귀. 전체 4주문 종단은
+// D1 전체 영업 화면의 첫 주문·시작 2칸 조리·실제 입력 회귀. 전체 4주문 종단은
 // d1-business-day.spec.js가 별도로 검증한다.
 import { test, expect } from '@playwright/test';
 import { routeD1ReleaseDefinition } from './d1-release-definition.js';
@@ -9,7 +9,12 @@ const active = (page) => D(page, 'activeScreen');
 async function boot(page) {
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message));
-  page.on('console', (m) => m.type() === 'error' && errs.push(m.text()));
+  page.on('console', (message) => {
+    if (message.type() !== 'error') return;
+    // AUD-002 카탈로그는 미납 파일을 정상 무음 대체로 취급한다. 그 외 404·JS 오류는 계속 차단한다.
+    if (message.location().url.includes('/assets/audio/')) return;
+    errs.push(message.text());
+  });
   await routeD1ReleaseDefinition(page);
   await page.goto('/src/d1-game.html');
   await expect(page.getByTestId('scene-canvas')).toBeVisible();
@@ -38,6 +43,19 @@ async function clickCustomerActor(page, seatId) {
     };
   }, seatId);
   await page.mouse.click(pos.x, pos.y);
+}
+
+async function pourBeerWithLever(page) {
+  const lever = await D(page, 'screenPosOf', 'drinkLeverDrag');
+  if (!lever) throw new Error('보이지 않는 대상: drinkLeverDrag');
+  await page.mouse.move(lever.x, lever.y);
+  await page.mouse.down();
+  await page.mouse.move(lever.x, lever.y + 60, { steps: 4 });
+  await page.waitForTimeout(2_600);
+  await page.mouse.move(lever.x, lever.y - 60, { steps: 4 });
+  await page.waitForTimeout(600);
+  await page.mouse.up();
+  await expect.poll(() => D(page, 'drinkState')).toMatchObject({ beerOk: true, foamOk: true });
 }
 
 test('6석 프로덕션 renderer와 승인 손님 배경이 조리 스테이션과 공존한다', async ({ page }) => {
@@ -213,23 +231,20 @@ test('츠키오카 접수→시작 2칸에서 두 꼬치를 독립적으로 조�
   await expect.poll(() => D(page, 'dockItems').then((d) => d.filter((x) => x.menu === '네기마').length)).toBe(2);
   await expect(page.getByTestId('grill-finished-quality-list')).toContainText('2');
 
-  // 생맥주는 실제 잔 놓기와 결정론적 따르기 훅을 거쳐 선반에 적재한다.
+  // 생맥주는 실제 잔 놓기·레버 드래그·완성 버튼 입력으로 선반에 적재한다.
   await goScreen(page, 'SCR-SVC-DRINK');
   await clickObj(page, 'glassRack');
-  await D(page, 'pourExact', 3, 1);
-  await D(page, 'drinkFinish');
+  await pourBeerWithLever(page);
+  await page.getByTestId('drink-finish').click();
   await expect.poll(() => D(page, 'dockItems').then((d) => d.filter((x) => x.menu === '생맥주').length)).toBe(1);
 
   // 서빙: 먼저 준비된 네기마부터 실제 카드→손님→수량 버튼을 따라 제공한다.
   await goScreen(page, 'SCR-SVC-CUSTOMERS');
   for (let i = 0; i < 2; i += 1) {
     const negimaCard = page.locator('.dock-card').filter({ hasText: '네기마' }).first();
-    await expect(negimaCard).toHaveAttribute('data-guide-target', 'true');
     await negimaCard.click();
     const serveTarget = page.getByTestId(`serve-target-${tsukiokaSeat}`);
-    await expect(serveTarget).toHaveAttribute('data-guide-target', 'true');
     await serveTarget.click();
-    await expect(page.getByTestId('serve-one')).toHaveAttribute('data-guide-target', 'true');
     await page.getByTestId('serve-one').click();
   }
   await expect.poll(() => D(page, 'order').then((o) => o['네기마'].done)).toBe(2);

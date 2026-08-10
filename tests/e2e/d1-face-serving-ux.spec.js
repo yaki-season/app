@@ -92,7 +92,7 @@ test('그릴 시작 2칸은 감각적 굽기 상태와 다음 행동을 FHD/720 
   await prepareInitialBatch(page);
 
   await expect(page.getByTestId('grill-status-layer')).toBeVisible();
-  await expect(page.getByTestId('d1-guide')).toBeHidden();
+  await expect(page.getByTestId('d1-guide')).toHaveCount(0);
   await expect(page.getByTestId('svc-receipts')).toBeHidden();
   await expect(page.locator('.grill-slot-status:not([hidden])')).toHaveCount(2);
   await expect(page.locator('.grill-face-icon.front')).toHaveCount(2);

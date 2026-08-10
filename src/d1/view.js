@@ -16,18 +16,6 @@ import {
 } from '../assets/runtimeAssetResolver.js';
 
 const labels = { entering:'손님이 입장 중입니다.', ordering:'주문을 고민하고 있습니다.', waiting:'주문을 기다리고 있습니다.', 'partially-served':'생맥주를 받았습니다. 네기마를 기다립니다.', reacting:'첫 주문을 맛보고 있습니다.', completed:'첫 주문이 완료되었습니다.' };
-const guides = {
-  [D1_PHASE.ENTERING]:'손님을 자리로 안내하세요.',
-  [D1_PHASE.ORDERING]:'주문을 접수하세요.',
-  [D1_PHASE.DRINK]:'레버 아래 영역으로 맥주를 먼저 따르세요.',
-  [D1_PHASE.DRINK_SERVE]:'완성 생맥주를 손님에게 부분 제공하세요.',
-  [D1_PHASE.ASSEMBLY]:'네기마 세 개를 닭·파 순서로 조립하세요.',
-  [D1_PHASE.GRILL]:'빈 두 칸에 먼저 두 개를 올려 각 면을 따로 조리하세요.',
-  [D1_PHASE.FOOD_SERVE]:'준비 목록의 네기마 세 개를 모두 제공하세요.',
-  [D1_PHASE.REACTION]:'츠키오카의 첫 주문 반응을 확인하세요.',
-  [D1_PHASE.COMPLETE]:'D1 첫 주문을 완료했습니다.',
-};
-
 function sceneKind(phase) {
   if (phase === D1_PHASE.DRINK) return 'drink';
   if (phase === D1_PHASE.ASSEMBLY) return 'assembly';
@@ -42,7 +30,6 @@ export function mountD1({ assets, onArt, onScene } = {}) {
   const preparedList = document.querySelector('#prepared-list');
   const orderItems = document.querySelector('#order-items');
   const customerState = document.querySelector('#customer-state');
-  const guide = document.querySelector('#guide');
   const stateOutput = document.querySelector('#state-output');
 
   let state = createD1Session();
@@ -154,7 +141,6 @@ export function mountD1({ assets, onArt, onScene } = {}) {
   function render() {
     renderOrder(); renderPrepared(); renderControls();
     customerState.textContent = labels[state.customer.state] || state.customer.state;
-    guide.textContent = guides[state.phase];
     if (stateOutput) stateOutput.value = JSON.stringify(state);
     const customerAsset = updateCustomerArt();
     const kind = sceneKind(state.phase);

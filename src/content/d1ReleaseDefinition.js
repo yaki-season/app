@@ -66,7 +66,6 @@ export function buildD1ReleaseDefinition({ bundle, developmentFixture, runtimeCo
         patienceMs: customerType.patienceSec * 1000,
         order: {
           id: order.id,
-          guided: fixtureCustomer.order.guided === true,
           lines: canonicalLines(order),
         },
       };
@@ -86,6 +85,12 @@ export function buildD1ReleaseDefinition({ bundle, developmentFixture, runtimeCo
       runtimeContractId: runtimeContract.id,
     },
     sessionTargetMs: day.businessWindow.targetSessionSec * 1000,
+    businessWindow: {
+      startMinute: day.businessWindow.startMinute,
+      endMinute: day.businessWindow.endMinute,
+      spansMidnight: day.businessWindow.spansMidnight,
+    },
+    arrivalPolicy: clone(day.arrivalPolicy),
     seatIds: clone(developmentFixture.seatIds),
     timingMs: clone(developmentFixture.timingMs),
     limits: { maxActiveOrders: day.maxActiveOrders, maxRiskProcesses: day.maxRiskProcesses },
@@ -101,6 +106,15 @@ export function validateD1ReleaseInputs({ bundle, developmentFixture, runtimeCon
   const day = (bundle.days || []).find(({ id }) => id === 'd1');
   if (!day) return { valid: false, errors: ['[source] d1 day가 없음'] };
   if (developmentFixture.sessionTargetMs !== day.businessWindow.targetSessionSec * 1000) errors.push('[fixture.sessionTargetMs] D1 정본 세션 길이와 다름');
+  if (
+    day.businessWindow.startMinute !== 1050
+    || day.businessWindow.endMinute !== 1590
+    || day.businessWindow.spansMidnight !== true
+  ) errors.push('[day.businessWindow] D1 영업창은 17:30~다음 날 02:30이어야 함');
+  if (
+    day.arrivalPolicy?.maxAllSeatsEmptyWaitSec !== 13
+    || day.arrivalPolicy?.autoCloseAfterFinalCustomer !== true
+  ) errors.push('[day.arrivalPolicy] D1 빈 가게 13초 입장·마지막 손님 자동 마감 계약 위반');
   if (developmentFixture.timingMs.thinkMin !== day.timingSec.orderThinkMin * 1000 || developmentFixture.timingMs.thinkMax !== day.timingSec.orderThinkMax * 1000) errors.push('[fixture.timingMs.think] D1 정본 고민 시간과 다름');
   if (developmentFixture.timingMs.eat !== day.timingSec.eat * 1000) errors.push('[fixture.timingMs.eat] D1 정본 식사 시간과 다름');
   if (developmentFixture.timingMs.waitRecovery !== day.waitRecoverySec * 1000) errors.push('[fixture.timingMs.waitRecovery] D1 정본 회복 시간과 다름');

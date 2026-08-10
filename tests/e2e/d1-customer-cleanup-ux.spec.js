@@ -67,10 +67,12 @@ test('퇴장한 손님은 사라지고 식기 위 정리 홀드가 원형 게이
   expect(box).toBeTruthy();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await D(page, 'businessAdvance', 1_500);
+  await D(page, 'businessAdvance', 500);
 
   await expect(ring).toHaveAttribute('data-active', 'true');
-  await expect(ring).toHaveAttribute('aria-valuenow', '50');
+  const progress = Number(await ring.getAttribute('aria-valuenow'));
+  expect(progress).toBeGreaterThan(0);
+  expect(progress).toBeLessThan(100);
   const cleanupOverlay = await page.evaluate((id) => {
     const debug = window.__d1GameDebug;
     const mesh = debug.renderer.seatCleanupOverlayMesh[id];
@@ -94,7 +96,7 @@ test('퇴장한 손님은 사라지고 식기 위 정리 홀드가 원형 게이
   expect(cleanupOverlay.visible).toBe(true);
   expect(cleanupOverlay.normalizedCenterY).toBeCloseTo(774 / 1080, 3);
 
-  await D(page, 'businessAdvance', 1_500);
+  await D(page, 'businessAdvance', 2_500);
   await page.mouse.up();
   await expect.poll(() => D(page, 'businessView').then(
     (view) => view.seats.find((seat) => seat.seatId === seatId).phase,

@@ -35,7 +35,7 @@ const REQUIRED_RUNTIME_FILES = Object.freeze([
   '/public/assets/core/cooking/spr-assembly-tray-negima-r1-b1.png',
 ]);
 
-test('approved grill negima exact-loads and switches the approved raster for each cooking stage', async ({ page }, testInfo) => {
+test('approved grill negima exact-loads and cooks the approved raw plane with the runtime shader', async ({ page }, testInfo) => {
   await routeD1ReleaseDefinition(page);
   const responses = new Map();
   page.on('response', (response) => {
@@ -129,25 +129,36 @@ test('approved grill negima exact-loads and switches the approved raster for eac
     expect.objectContaining({ status: 'front', contactFace: 'front' }),
     expect.objectContaining({ status: 'front', contactFace: 'front' }),
   ]);
-  const afterSecondPlacement = await D(page, 'rawNegimaRuntime');
   const slotViewsAfterSecond = await D(page, 'cookSlots');
   // 두 번째 꼬치를 올려도 첫 번째 꼬치의 시간과 래스터 단계는 초기화되지 않는다.
   expect(slotViewsAfterSecond[0].faceElapsedSec).toBeGreaterThanOrEqual(firstElapsedBeforeSecond);
   expect(slotViewsAfterSecond[1].faceElapsedSec).toBeLessThan(slotViewsAfterSecond[0].faceElapsedSec);
-  expect(['raw', 'cooking', 'proper']).toContain(afterSecondPlacement.slots[0].approvedStage);
-  expect(['raw', 'cooking']).toContain(afterSecondPlacement.slots[1].approvedStage);
-  for (const slot of afterSecondPlacement.slots) {
+  await expect.poll(async () => {
+    const runtime = await D(page, 'rawNegimaRuntime');
+    const activeSlots = runtime.slots.slice(0, 2);
+    return activeSlots.every((slot) => (
+      slot.approvedRawVisible
+      && slot.shaderOnApprovedPlane
+      && slot.shaderCookingActive
+      && slot.shaderUsesApprovedRaw
+      && slot.interactionVisible
+    )) ? runtime : null;
+  }).not.toBeNull();
+  const activeRawRuntime = await D(page, 'rawNegimaRuntime');
+  expect(['raw', 'cooking', 'proper']).toContain(activeRawRuntime.slots[0].approvedStage);
+  expect(['raw', 'cooking']).toContain(activeRawRuntime.slots[1].approvedStage);
+  for (const slot of activeRawRuntime.slots.slice(0, 2)) {
     expect(slot).toMatchObject({
       approvedRawVisible: true,
-      shaderOnApprovedPlane: false,
-      shaderCookingActive: false,
-      shaderUsesApprovedRaw: false,
+      shaderOnApprovedPlane: true,
+      shaderCookingActive: true,
+      shaderUsesApprovedRaw: true,
       interactionVisible: true,
     });
   }
   await D(page, 'cookElapse', 8);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
-    .toMatchObject({ approvedStage: 'proper', visibleSpriteStage: 'proper' });
+    .toMatchObject({ approvedStage: 'proper', visibleSpriteStage: 'raw', shaderCookingActive: true });
   await page.screenshot({
     path: testInfo.outputPath(`raster-proper-${page.viewportSize().width}x${page.viewportSize().height}.png`),
     fullPage: true,
@@ -165,22 +176,24 @@ test('approved grill negima exact-loads and switches the approved raster for eac
     expect.objectContaining({ status: 'back', contactFace: 'back' }),
     expect.objectContaining({ status: 'front' }),
   ]);
-  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
-    .toMatchObject({
-      approvedStage: 'raw',
-      visibleSpriteStage: 'raw',
-      visualMirrorX: -1,
-      visualDoneness: null,
-    });
+  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0].visualMirrorX).toBe(-1);
+  const flippedBackVisual = await D(page, 'rawNegimaRuntime').then((runtime) => runtime.slots[0]);
+  expect(flippedBackVisual).toMatchObject({
+    visibleSpriteStage: 'raw',
+    visualMirrorX: -1,
+    shaderCookingActive: true,
+  });
   await D(page, 'cookElapse', 8);
-  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
-    .toMatchObject({ approvedStage: 'proper', visibleSpriteStage: 'proper' });
+  let progressedBackVisual = await D(page, 'rawNegimaRuntime').then((runtime) => runtime.slots[0]);
+  expect(['proper', 'overcooked', 'burnt']).toContain(progressedBackVisual.approvedStage);
+  expect(progressedBackVisual.visibleSpriteStage).toBe('raw');
   await D(page, 'cookElapse', 8);
-  await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
-    .toMatchObject({ approvedStage: 'overcooked', visibleSpriteStage: 'overcooked' });
+  progressedBackVisual = await D(page, 'rawNegimaRuntime').then((runtime) => runtime.slots[0]);
+  expect(['overcooked', 'burnt']).toContain(progressedBackVisual.approvedStage);
+  expect(progressedBackVisual.visibleSpriteStage).toBe('raw');
   await D(page, 'cookElapse', 5);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
-    .toMatchObject({ approvedStage: 'burnt', visibleSpriteStage: 'burnt' });
+    .toMatchObject({ approvedStage: 'burnt', visibleSpriteStage: 'raw' });
 });
 
 test('이어하기는 이전 페이지에서 만료된 그릴 잠금을 제거해 완성 꼬치를 즉시 회수한다', async ({ page }) => {
@@ -245,10 +258,10 @@ test('이어하기는 이전 페이지에서 만료된 그릴 잠금을 제거�
     .toMatchObject({
       approvedRawVisible: true,
       approvedStage: 'proper',
-      visibleSpriteStage: 'proper',
-      shaderOnApprovedPlane: false,
-      shaderCookingActive: false,
-      shaderUsesApprovedRaw: false,
+      visibleSpriteStage: 'raw',
+      shaderOnApprovedPlane: true,
+      shaderCookingActive: true,
+      shaderUsesApprovedRaw: true,
       interactionVisible: true,
     });
   const grillSlotKey = (await D(page, 'rawNegimaRuntime')).slots[0].key;

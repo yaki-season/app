@@ -122,7 +122,7 @@ test('FHD/720에서 인게임 guide 없이 상단 HUD, 상태 카드, rack 제�
   await bootAtGrill(page);
   await stageWaitingNegima(page);
   const button = page.getByTestId('grill-waiting-negima');
-  await expect(page.getByTestId('d1-guide')).toBeHidden();
+  await expect(page.getByTestId('d1-guide')).toHaveCount(0);
 
   const buttonRect = await button.boundingBox();
   const viewport = page.viewportSize();

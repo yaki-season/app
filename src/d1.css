@@ -22,7 +22,6 @@ h1,h2,p { margin-top:0; } h1 { margin-bottom:2px; font-size:clamp(1.3rem,3vw,2re
 .order-icon img { width:100%; height:100%; object-fit:contain; }
 .order-item.done .order-icon { background:var(--green); font-weight:800; }
 .order-count { color:var(--muted); font-variant-numeric:tabular-nums; }
-.guide { margin:16px 0 0; color:#fff0ca; border-left:3px solid var(--red); padding-left:10px; }
 .workspace { padding:18px; display:grid; gap:20px; }
 .scene-status { min-height:132px; border:2px dashed #b1784c; border-radius:14px; padding:18px; background:#160e09; display:grid; align-content:center; gap:8px; }
 .scene-status.approved { min-height:auto; border-style:solid; border-color:#4f936d; background:#183025e8; }

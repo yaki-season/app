@@ -13,10 +13,15 @@
     "pretest:e2e": "node tools/dev/link-assets.mjs",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
+    "test:d1:core:unit": "vitest run tests/unit/d1BusinessDay.test.js tests/integration/d1BusinessDayUiPort.test.js tests/unit/d1ReleaseDefinition.test.js tests/unit/d1BusinessDayDefinitionConsumer.test.js tests/unit/cookStations.test.js tests/unit/drinkStation.test.js tests/unit/stationDirector.test.js tests/unit/grillSmokeVfx.test.js tests/unit/dayGuidePolicyContract.test.js",
+    "test:e2e:d1-core": "playwright test tests/e2e/d1-game.spec.js tests/e2e/d1-runtime-suspension.spec.js tests/e2e/d1-release-static-smoke.spec.js",
+    "d1:release:check": "node tools/content/build-d1-release-definition.mjs --check",
+    "verify:d1-core": "npm run d1:release:check && npm run test:d1:core:unit && npm run test:e2e:d1-core",
     "assets:validate": "node tools/assets/validate-runtime-assets.mjs",
     "assets:promote": "node tools/assets/promote-runtime-asset.mjs",
     "visual:references:validate": "node tools/visual/validate-reference-images.mjs",
-    "verify": "npm run assets:validate && npm run visual:references:validate && vitest run && playwright test"
+    "verify": "npm run verify:d1-core",
+    "verify:full-diagnostic": "npm run assets:validate && npm run visual:references:validate && npm run d1:release:check && vitest run && playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",

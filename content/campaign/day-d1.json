@@ -24,13 +24,17 @@
   "autoPolicySuccessRate": 0.9,
   "businessWindow": {
     "startMinute": 1050,
-    "endMinute": 1410,
-    "spansMidnight": false,
+    "endMinute": 1590,
+    "spansMidnight": true,
     "targetSessionSec": 420
+  },
+  "arrivalPolicy": {
+    "maxAllSeatsEmptyWaitSec": 13,
+    "autoCloseAfterFinalCustomer": true
   },
   "segments": [
     {
-      "id": "d1-guided-open",
+      "id": "d1-first-order",
       "startMinute": 1050,
       "endMinute": 1140,
       "customerCount": { "min": 1, "max": 1 },
@@ -62,7 +66,7 @@
     {
       "id": "d1-closing",
       "startMinute": 1380,
-      "endMinute": 1410,
+      "endMinute": 1590,
       "customerCount": { "min": 0, "max": 0 },
       "orderCount": { "min": 0, "max": 0 },
       "itemCount": { "min": 0, "max": 0 },
@@ -84,11 +88,11 @@
     "D1-ORDER-003"
   ],
   "availableMenuIds": ["negima", "beer"],
-  "newActionId": "d1-full-first-order-guide",
+  "newActionId": "d1-first-order-failure-safety",
   "reviewActionIds": ["partial-serving", "seat-cleanup-hold"],
   "tutorialPolicy": {
-    "guidanceLevel": "full",
-    "helpCanBeReenabled": true,
+    "guidanceLevel": "none",
+    "helpCanBeReenabled": false,
     "failurePolicy": "no-failure"
   },
   "settlement": {

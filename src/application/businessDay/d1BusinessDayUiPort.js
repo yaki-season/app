@@ -257,7 +257,6 @@ function orderView(state, order) {
     customerId: order.customerId,
     seatId: customer?.seatId ?? null,
     status: order.status,
-    guided: order.guided,
     acceptedAtMs: order.acceptedAtMs,
     completedAtMs: order.completedAtMs,
     lines: order.lines.map((line) => ({
