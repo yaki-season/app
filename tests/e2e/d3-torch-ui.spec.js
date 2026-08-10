@@ -48,6 +48,9 @@ test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다',
 
   await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-GRILL'));
   await page.waitForTimeout(350);
+  await expect.poll(() => page.evaluate(() => (
+    window.__d1GameDebug.momoRuntime().slots.some((slot) => slot.visible && slot.stage === 'proper')
+  ))).toBe(true);
   await expect(page.getByTestId('d3-torch-cursor')).toBeVisible();
   const viewport = page.viewportSize();
   await page.mouse.move(viewport.width * 0.29, viewport.height * 0.52);
@@ -82,10 +85,18 @@ test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다',
   await page.reload();
   await expect.poll(() => page.evaluate(() => !!window.__d1GameDebug)).toBe(true);
   await expect(page.getByTestId('d3-torch-panel')).toBeVisible();
+  await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-GRILL'));
+  await page.waitForTimeout(350);
+  await expect.poll(() => page.evaluate(() => (
+    window.__d1GameDebug.momoRuntime().slots.some((slot) => slot.visible && slot.stage === 'proper')
+  ))).toBe(true);
   expect(await page.evaluate(() => window.__d1GameDebug.d3TorchView().finish.torchCoverage)).toBe(1);
 
   await expect(page.getByTestId('d3-torch-state')).toContainText('Perfect');
   await page.getByTestId('d3-retrieve-momo').click();
+  await expect.poll(() => page.evaluate(() => (
+    window.__d1GameDebug.momoRuntime().slots.every((slot) => !slot.visible)
+  ))).toBe(true);
   await expect(page.getByTestId('dock-shelf')).toContainText('모모');
 });
 
@@ -143,4 +154,20 @@ test('D3가 개방되지 않은 저장에서는 직접 URL로 기능 UI를 열 �
   await expect(page.getByTestId('assembly-recipe-picker')).toBeHidden();
   await expect(page.getByTestId('d3-torch-panel')).toBeHidden();
   expect(await page.evaluate(() => window.__d1GameDebug.businessSession().ok)).toBe(false);
+});
+
+test('개발용 링크는 저장 없이 D3 토치 영업을 바로 연다', async ({ page }) => {
+  await page.goto('/src/d1-game.html');
+  await page.evaluate(() => localStorage.clear());
+  await page.goto('/src/d1-game.html?day=d3&devUnlock=1&reset=1');
+
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
+  await expect(page.getByTestId('d3-torch-panel')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (
+    window.__d1GameDebug.momoRuntime().slots.some((slot) => slot.visible && slot.stage === 'proper')
+  ))).toBe(true);
+  expect(await page.evaluate(() => window.__d1GameDebug.campaignState().campaign)).toMatchObject({
+    nodeId: 'd3',
+    phase: 'business',
+  });
 });

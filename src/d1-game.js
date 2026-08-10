@@ -98,7 +98,8 @@ setBgm('BGM-SERVICE-QUIET');
 loopOn('AMB-SHOP-INTERIOR');
 loopOn('AMB-CHARCOAL-BED');
 
-const requestedDayId = new URLSearchParams(window.location.search).get('day');
+const runtimeParams = new URLSearchParams(window.location.search);
+const requestedDayId = runtimeParams.get('day');
 const ACTIVE_DAY_ID = ['d2', 'd3'].includes(requestedDayId) ? requestedDayId : 'd1';
 const DAY_META = Object.freeze({
   d1: { label: 'D1', nextLabel: 'D2', nextNodeLabel: '둘째 날 이야기' },
@@ -138,8 +139,11 @@ const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_S
 
 // 새로고침은 진행 중 영업일을 복구한다(PM 001·002 "새로고침 복구" 완료 기준, 공개 S0→D1 인계).
 // 깨끗한 시작이 필요하면 ?reset=1로 명시한다.
-const runtimeParams = new URLSearchParams(window.location.search);
 const resetFirstOrderRuntime = runtimeParams.get('reset') === '1';
+const developmentStartDay = runtimeParams.get('devUnlock') === '1'
+  && ['d2', 'd3'].includes(ACTIVE_DAY_ID)
+  ? ACTIVE_DAY_ID
+  : null;
 if (resetFirstOrderRuntime) clearFirstOrderRuntime(window.localStorage);
 function readFirstOrderRuntime() {
   try {
@@ -337,6 +341,9 @@ for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
   });
 }
 const D3_TORCH_JOB_ID = 'D3-MOMO-TARE-ACTIVE';
+let d3TorchSlotKey = SLOT_KEYS.includes(restoredFirstOrderRuntime?.d3TorchSlotKey)
+  ? restoredFirstOrderRuntime.d3TorchSlotKey
+  : d3Grill.job(D3_TORCH_JOB_ID) ? SLOT_KEYS[0] : null;
 const d3TorchPanel = el('d3TorchPanel');
 const d3TorchTrack = el('d3TorchTrack');
 const d3TorchCursor = el('d3TorchCursor');
@@ -511,6 +518,7 @@ d3TorchTrack.addEventListener('keyup', (event) => {
 el('d3RetrieveMomo').addEventListener('click', () => {
   const result = d3Grill.retrieve(D3_TORCH_JOB_ID);
   if (!result.ok) return;
+  d3TorchSlotKey = null;
   dock.add({ menu: '모모', label: result.item.quality.grade, good: result.item.quality.good });
   persistFirstOrderRuntime();
   showHint(result.item.quality.smokyBonus ? '불향 모모 완성 · 준비 목록에 올렸어요' : '모모 완성품을 준비 목록에 올렸어요');
@@ -546,6 +554,7 @@ function persistFirstOrderRuntime() {
       dayId: ACTIVE_DAY_ID,
       cook: cook.snapshot(performance.now()),
       d3Grill: d3Grill.snapshot(),
+      d3TorchSlotKey,
       dock: dock.snapshot(),
       glassPlaced,
     }));
@@ -1808,6 +1817,7 @@ function clickGrillSlot(i, now) {
     sfx(r.quality?.good ? 'SFX-JUDGE-PERFECT' : 'SFX-JUDGE-FAIL');
     if (ACTIVE_DAY_ID === 'd3' && menuId === 'momo' && !d3Grill.job(D3_TORCH_JOB_ID)) {
       d3Grill.stageCookedItem({ id: D3_TORCH_JOB_ID, menuId: 'momo', seasoning: 'tare', bothFacesCooked: true });
+      d3TorchSlotKey = SLOT_KEYS[i];
     } else {
       dock.add({ menu: label, label: r.quality.grade, good: r.quality.good });
     }
@@ -1963,7 +1973,22 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
   updateGrillCookAudio(views, now);
   updateGrillStateCues(views);
   for (const key of SLOT_KEYS) {
-    const v = views[slotIndexOf(key)];
+    const slotView = views[slotIndexOf(key)];
+    const stagedD3Momo = key === d3TorchSlotKey && d3Grill.job(D3_TORCH_JOB_ID);
+    // Tare and torch finishing happen on the grill. Keep the cooked momo visible
+    // after the cook station hands it to the D3 finishing workflow.
+    const v = stagedD3Momo && (!slotView || slotView.status === 'empty')
+      ? {
+          status: 'back',
+          cooking: true,
+          menuId: 'momo',
+          doneness: 'perfect',
+          faceElapsedSec: 3,
+          visualRotationRad: 0,
+          orientationFaceDown: 'back',
+          flipping: false,
+        }
+      : slotView;
     const mesh = R.objectMesh[key];
     if (!mesh) continue;
     const g = grillMats[key];
@@ -2117,12 +2142,24 @@ async function bootBusinessDay() {
       definition: consumed.definition,
       browserStorage: window.localStorage,
       resetDevelopment,
+      developmentStartDay,
     });
     if (!businessSession.ok) {
       businessBootError = businessSession.error;
     } else {
       businessPort = businessSession.port;
       reportedRiskCount = businessView()?.limits.riskProcessCount ?? 0;
+      if (developmentStartDay === 'd3' && !d3Grill.job(D3_TORCH_JOB_ID)) {
+        d3Grill.stageCookedItem({
+          id: D3_TORCH_JOB_ID,
+          menuId: 'momo',
+          seasoning: 'tare',
+          bothFacesCooked: true,
+        });
+        d3TorchSlotKey = SLOT_KEYS[0];
+        persistFirstOrderRuntime();
+        director.request('SCR-SVC-GRILL', performance.now());
+      }
       if (runtimeIsSuspended()) dispatchBusiness(D1_UI_INTENT.PAUSE);
       else lastBusinessFrameAt = performance.now();
     }
@@ -2388,6 +2425,7 @@ Object.assign(d1GameDebug, {
     const result = d3Grill.job(D3_TORCH_JOB_ID)
       ? { ok: true }
       : d3Grill.stageCookedItem({ id: D3_TORCH_JOB_ID, menuId: 'momo', seasoning: 'tare', bothFacesCooked: true });
+    d3TorchSlotKey ??= SLOT_KEYS[0];
     persistFirstOrderRuntime();
     render();
     return result;

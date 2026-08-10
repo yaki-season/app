@@ -14,6 +14,7 @@ export async function createD1BusinessDayBrowserSession({
   campaignId = 'scenario-s0-d3',
   seed = 0,
   resetDevelopment = false,
+  developmentStartDay = null,
 } = {}) {
   if (!definition) throw new TypeError('D1 영업일 definition이 필요합니다.');
   const bridge = new S0D3CampaignBridge({
@@ -23,7 +24,9 @@ export async function createD1BusinessDayBrowserSession({
     campaignId,
     seed,
   });
-  const loaded = resetDevelopment
+  const loaded = developmentStartDay
+    ? await bridge.restartDevelopmentCampaign()
+    : resetDevelopment
     ? await bridge.restartDevelopmentCampaign()
     : await bridge.loadOrStart();
   if (!loaded.ok) {
@@ -37,6 +40,26 @@ export async function createD1BusinessDayBrowserSession({
   }
 
   let campaign = bridge.getState();
+  if (developmentStartDay) {
+    if (!['d2', 'd3'].includes(developmentStartDay)) {
+      throw new TypeError(`지원하지 않는 개발 시작 날짜입니다: ${developmentStartDay}`);
+    }
+    if (campaign.campaign.nodeId === 's0') bridge.finishPrologue();
+    const precedingDays = developmentStartDay === 'd3' ? ['d1', 'd2'] : ['d1'];
+    for (const precedingDayId of precedingDays) {
+      const startedDay = await bridge.startDay();
+      if (!startedDay.ok) return { ...startedDay, bridge, port: null, position: bridge.getPosition() };
+      const enteredSettlement = bridge.enterSettlement();
+      if (!enteredSettlement.ok) {
+        return { ...enteredSettlement, bridge, port: null, position: bridge.getPosition() };
+      }
+      const completedDay = await bridge.completeDay(precedingDayId, {
+        completionId: `development-unlock:${precedingDayId}`,
+      });
+      if (!completedDay.ok) return { ...completedDay, bridge, port: null, position: bridge.getPosition() };
+    }
+    campaign = bridge.getState();
+  }
   const startedFromS0 = campaign.campaign.nodeId === 's0';
   if (startedFromS0) {
     bridge.finishPrologue();
