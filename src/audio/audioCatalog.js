@@ -169,6 +169,12 @@ export function crowdAmbienceId(seatedCount) {
   return null;
 }
 
+// 실내 앰비언스. AUD-002는 "영업 중 상시"지만 납품 파일에 사람 소리가 섞여 있어, 아무도 앉아
+// 있지 않은 가게에서 틀면 군중음을 켜 둔 것과 같아진다. 좌석이 비면 같이 끈다.
+export function interiorAmbienceId(seatedCount) {
+  return (Number(seatedCount) || 0) >= 1 ? 'AMB-SHOP-INTERIOR' : null;
+}
+
 export function audioIdsByBus(bus) {
   return AUDIO_CATALOG.filter((entry) => entry.bus === bus).map((entry) => entry.id);
 }

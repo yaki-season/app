@@ -259,6 +259,8 @@ export function createD1BusinessDayState({ definition, runId, seed = 1 }) {
       gameMinute: definition.businessWindow?.startMinute ?? (17 * 60 + 30),
       paused: false,
       arrivalsClosed: false,
+      // 다음 입장을 기다리기 시작한 시각. 자리가 비면(정리 완료·전원 퇴장) 켜지고, 실제 입장에
+      // 다시 null이 된다. maxAllSeatsEmptyWaitSec만큼 지나면 예정 시각보다 먼저 손님이 온다.
       allSeatsEmptySinceMs: null,
     },
     limits: {
@@ -363,8 +365,27 @@ function spawnCustomer(state, definition, customerSpec, seat, waveId) {
   state.metrics.visitedCustomers += 1;
 }
 
+// 첫 손님은 좌석 액터가 아니라 화면 가운데를 차지하는 전용 구도로 그려진다(D1의 츠키오카).
+// 그 사람이 자리에 있는 동안 다음 손님을 들이면 두 그림이 겹쳐 보인다. 자리가 정리될 때까지
+// 기다린다. 엑스트라끼리는 좌석 좌표를 쓰므로 이 제한을 받지 않는다.
+// 자리에서 일어난 뒤(meal-complete 이후)에는 그림이 사라지므로 정리를 기다릴 필요는 없다.
+const SEATED_VISIBLE_PHASES = new Set([
+  D1_CUSTOMER_PHASE.THINKING,
+  D1_CUSTOMER_PHASE.ORDER_READY,
+  D1_CUSTOMER_PHASE.WAITING,
+  D1_CUSTOMER_PHASE.RECEIVED_WAITING_GROUP,
+  D1_CUSTOMER_PHASE.EATING,
+]);
+
+function firstWaveStillSeated(state, definition) {
+  return (definition.waves[0]?.customers ?? []).some((customer) => (
+    SEATED_VISIBLE_PHASES.has(state.customers[customer.id]?.phase)
+  ));
+}
+
 function spawnEligibleWaves(state, definition) {
   if (state.clock.arrivalsClosed || state.phase !== D1_DAY_PHASE.OPEN) return;
+  if (firstWaveStillSeated(state, definition)) return;
   for (let index = 0; index < definition.waves.length; index += 1) {
     const waveSpec = definition.waves[index];
     const waveState = state.waves[index];
@@ -543,19 +564,21 @@ function completeCleanup(state, seat) {
   seat.cleanup.progressMs = 0;
   seat.cleanup.completionId = `cleanup:${customer?.id ?? seat.id}`;
   state.metrics.cleanedSeats += 1;
-  if (
-    state.seats.every((candidate) => candidate.status === 'empty')
-    && state.waves.some((wave) => wave.status === 'pending')
-    && state.clock.allSeatsEmptySinceMs == null
-  ) {
-    state.clock.allSeatsEmptySinceMs = state.clock.elapsedMs;
-  }
+  trackSeatAvailability(state);
 }
 
-function trackAllTablesVacated(state) {
-  const hasSeatedCustomer = state.seats.some((seat) => seat.status === 'occupied');
+// 빈자리가 있으면 다음 손님을 기다리기 시작한다.
+//
+// 예전에는 여섯 자리가 **모두** 비어야 이 시계가 돌았다. 그래서 한 명만 앉아 있어도 나머지 다섯
+// 자리가 비어 있는 채로 다음 무리가 예정 시각(atMs)까지 오지 않아, 자리가 남는데도 장사가
+// 멈춘 것처럼 보였다. 빈 좌석이 하나라도 있으면 시계를 돌린다.
+//
+// 무한정 밀려들지는 않는다. 웨이브의 선행 주문 완료 조건과 동시 주문 상한, 실제 빈 좌석 수를
+// spawnEligibleWaves가 다시 확인한다.
+function trackSeatAvailability(state) {
+  const hasFreeSeat = state.seats.some((seat) => seat.status === 'empty');
   if (
-    !hasSeatedCustomer
+    hasFreeSeat
     && state.waves.some((wave) => wave.status === 'pending')
     && state.clock.allSeatsEmptySinceMs == null
   ) {
@@ -593,7 +616,7 @@ function progressTimers(state, definition, deltaMs) {
   }
   for (const customer of expired) failCustomers(state, definition, customer, 'patience');
   syncMealDepartures(state, definition);
-  trackAllTablesVacated(state);
+  trackSeatAvailability(state);
   for (const seat of state.seats) {
     if (seat.status !== 'cleanup' || !seat.cleanup.active) continue;
     seat.cleanup.progressMs += deltaMs;

@@ -56,6 +56,10 @@ export function sfx(id, opts) {
   void engine?.play(id, opts);
 }
 
+export function sfxOff(id) {
+  return engine?.stop(id) ?? false;
+}
+
 export function sfxOnce(id, key, opts) {
   void engine?.playOnce(id, key, opts);
 }
@@ -70,6 +74,6 @@ export function loopOff(id) {
   engine?.stopLoop(id);
 }
 
-export function loopRate(id, rate) {
-  engine?.setLoopRate(id, rate);
+export function loopRate(id, rate, opts) {
+  engine?.setLoopRate(id, rate, opts);
 }

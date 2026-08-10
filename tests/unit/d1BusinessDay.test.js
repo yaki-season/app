@@ -179,17 +179,22 @@ describe('D1 전체 영업일 도메인', () => {
     expect(validateD1BusinessDayState(state, definition)).toEqual({ valid: true, errors: [] });
   });
 
-  it('마지막 착석 손님이 나가면 정리 완료를 기다리지 않고 13초 안에 다음 손님을 입장시킨다', () => {
-    let state = completeTsukioka(initialState());
-    state = advance(state, 16_000);
-    const emptySinceMs = state.clock.elapsedMs;
-    expect(state.clock.allSeatsEmptySinceMs).toBe(emptySinceMs);
+  it('앞 손님이 자리를 뜨면 예정 시각을 기다리지 않고 다음 손님이 들어온다', () => {
+    // 자리가 남아 있는데도 예정 시각(atMs)까지 아무도 오지 않아 가게가 멈춰 보이던 문제.
+    let state = advance(initialState(), 6_000);
+    expect(state.clock.allSeatsEmptySinceMs).not.toBeNull(); // 다섯 자리가 비어 있다
 
-    state = advance(state, 12_999);
+    // 다만 첫 손님은 좌석이 아니라 화면 가운데 전용 구도로 그려진다. 식사 중에 다음 무리를
+    // 들이면 그림이 겹치므로, 주문을 다 받았어도 자리에 있는 동안은 오지 않는다.
+    state = completeTsukioka(state);
+    state = advance(state, 1_000);
+    expect(state.customers.REGULAR_TSUKIOKA.phase).toBe(D1_CUSTOMER_PHASE.EATING);
     expect(state.waves[1].status).toBe('pending');
-    state = advance(state, 1);
+
+    // 자리에서 일어나면 곧바로 들어온다. 예정 시각은 100초인데 그보다 훨씬 이르다.
+    state = advance(state, 15_000);
     expect(state.waves[1].status).toBe('spawned');
-    expect(state.clock.elapsedMs - emptySinceMs).toBe(13_000);
+    expect(state.clock.elapsedMs).toBeLessThan(100_000);
   });
 
   it('D1 첫 주문은 네기마 선제공을 허용하고 중복·수량 초과만 차단한다', () => {

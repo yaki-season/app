@@ -60,6 +60,70 @@
 }
 /* 조립 순서표는 조립대에서만 의미가 있다. */
 .receipts { display: none; }
+/* 익힌 메뉴는 단계 안내를 접는다. 대기 수량 칩만 남는다. */
+.receipts[data-tutorial="false"] li:not([data-testid="wait-count"]) { display: none; }
+
+.recipe-book-toggle {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 12px;
+  color: var(--text);
+  background: rgba(48, 38, 30, 0.7);
+  font: inherit;
+  cursor: pointer;
+}
+.recipe-book-toggle[aria-expanded="true"] { border-color: var(--ember); color: var(--ember); }
+.recipe-book {
+  position: fixed;
+  z-index: 31;
+  top: 50%;
+  left: 50%;
+  width: min(460px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  background: rgba(20, 15, 11, 0.96);
+  box-shadow: 0 18px 64px rgba(0, 0, 0, 0.52);
+}
+.recipe-book[hidden] { display: none; }
+.recipe-book-title {
+  margin: 0 0 12px;
+  color: var(--ember);
+  font-size: 19px;
+  font-weight: 700;
+}
+.recipe-book-entries { display: grid; gap: 10px; }
+.recipe-book-entry {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 11px;
+  background: rgba(48, 38, 30, 0.55);
+}
+.recipe-book-entry-title { margin: 0 0 4px; font-weight: 600; }
+.recipe-book-line {
+  margin: 3px 0 0;
+  color: var(--dim);
+  font-size: 0.92em;
+  line-height: 1.45;
+  /* 재료 이름이 줄 끝에서 반으로 갈리지 않게 한다. */
+  word-break: keep-all;
+}
+.recipe-book-close {
+  margin-top: 14px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 20px;
+  color: #1a120a;
+  background: var(--ember);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
 body:has(.quick-nav button[data-screen="SCR-SVC-ASSEMBLY"].active) .receipts { display: flex; }
 
 .grill-inventory {
@@ -603,6 +667,9 @@ body.d3-torch-cursor-ready #scene { cursor: none; }
   top: 50%;
   left: 50%;
   width: min(480px, calc(100vw - 48px));
+  /* 단계마다 내용이 붙어 패널이 길어진다. 화면을 넘으면 잘리지 않고 스크롤되게 둔다. */
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   transform: translate(-50%, -50%);
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -640,6 +707,18 @@ body.d3-torch-cursor-ready #scene { cursor: none; }
   border-color: var(--good);
   color: var(--text);
 }
+.settlement-step-title {
+  margin: 0;
+  font-weight: 600;
+}
+/* 확인한 단계의 숫자들. 제목보다 한 단계 낮춰 훑어보기 쉽게 둔다. */
+.settlement-step-line {
+  margin: 4px 0 0;
+  color: var(--dim);
+  font-size: 0.92em;
+  line-height: 1.45;
+}
+.settlement-steps li.revealed .settlement-step-line { color: var(--text); }
 #postBusinessAction,
 .continue-button {
   display: inline-flex;

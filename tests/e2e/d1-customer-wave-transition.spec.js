@@ -45,7 +45,7 @@ test('투명 좌석 포커스 박스 대신 머리 위 주문 표식만 강조�
   await expect(page.getByTestId(`bubble-${seat.seatId}`)).toHaveAttribute('data-seat-focus', 'true');
 });
 
-test('츠키오카 퇴장 장면 뒤 직장인 둘은 이전 식기 없이 중앙 인접 좌석에 나타난다', async ({ page }) => {
+test('츠키오카 퇴장 장면 뒤 직장인 둘은 이전 식기 없이 나란히 붙은 좌석에 나타난다', async ({ page }) => {
   const tsukiokaSeatId = await bootAndServeTsukioka(page);
 
   await D(page, 'businessAdvanceWithCutscene', 15_000);
@@ -81,6 +81,7 @@ test('츠키오카 퇴장 장면 뒤 직장인 둘은 이전 식기 없이 중�
     return seatIds.map((seatId) => ({
       seatId,
       x: renderer.projectToScreen(renderer.seatBubbleWorld[seatId]).x,
+      canvasWidth: renderer.renderer.domElement.getBoundingClientRect().width,
       actorScaleX: renderer.seatActorMesh[seatId].scale.x,
       actorRenderOrder: renderer.seatActorMesh[seatId].renderOrder,
       seatingRenderOrder: renderer.artMesh.custSeating.renderOrder,
@@ -91,9 +92,19 @@ test('츠키오카 퇴장 장면 뒤 직장인 둘은 이전 식기 없이 중�
     }));
   }, officeSeats.map(({ seatId }) => seatId));
 
-  expect(visual[0].x).toBeLessThan(visual[1].x);
-  expect(visual[1].x - visual[0].x).toBeLessThan(360);
-  expect(visual.map(({ actorScaleX }) => actorScaleX)).toEqual([1, 1]);
+  // 나란히 붙은 좌석에, 서로 겹치지 않게.
+  //
+  // 픽셀 간격도 좌우 순서도 고정하지 않는다. 좌석 배치(tsukioka ↔ centered-guests)는 자리가 다
+  // 비었을 때만 갈리므로(앉아 있는 손님이 순간이동하지 않도록 — d1-seat-layout-stability.spec.js)
+  // 이 무리는 앞 손님이 쓰던 배치를 물려받고, 배치마다 좌석 번호와 화면 좌우 순서의 대응이 다르다.
+  const seatOrder = officeSeats.map(({ seatId }) => seatId).sort();
+  expect(Number(seatOrder[1].slice(-2)) - Number(seatOrder[0].slice(-2))).toBe(1);
+  const gapRatio = Math.abs(visual[1].x - visual[0].x) / visual[0].canvasWidth;
+  expect(gapRatio).toBeGreaterThan(0.12); // 서로 가리지 않는다
+  expect(gapRatio).toBeLessThan(0.75); // 화면 양 끝으로 흩어지지 않는다
+  // 둘은 같은 유형이라 같은 크기로 선다(직장인은 전신 표시).
+  expect(visual[0].actorScaleX).toBe(visual[1].actorScaleX);
+  expect(visual[0].actorScaleX).toBeGreaterThan(0);
   expect(visual.every(({ seatingRenderOrder, actorRenderOrder, counterRenderOrder }) => (
     seatingRenderOrder < actorRenderOrder && actorRenderOrder < counterRenderOrder
   ))).toBe(true);

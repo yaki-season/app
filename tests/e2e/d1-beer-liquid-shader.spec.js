@@ -64,15 +64,33 @@ test('D1 중립 레버는 위·아래 드래그 방향에 따라 거품·맥주�
     foamSec: 0,
     active: null,
   });
-  await page.mouse.move(lever.x, lever.y + 60, { steps: 4 });
-  await page.waitForTimeout(300);
+  await page.mouse.move(lever.x, lever.y + 16, { steps: 2 });
+  await expect.poll(() => page.evaluate(() => (
+    window.__d1GameDebug.audioState()?.loopRates?.['SFX-DRINK-FILL-PITCH'] ?? null
+  ))).not.toBeNull();
+  const earlyPitch = await page.evaluate(() => (
+    window.__d1GameDebug.audioState().loopRates['SFX-DRINK-FILL-PITCH']
+  ));
+  await page.waitForTimeout(600);
+  const laterPitch = await page.evaluate(() => (
+    window.__d1GameDebug.audioState().loopRates['SFX-DRINK-FILL-PITCH']
+  ));
+  // 차오를수록 올라가되 두어 반음 안에서만 움직인다. 예전의 0.8~2.0배는 한 옥타브를 넘어
+  // 톱질하듯 들렸다.
+  expect(laterPitch).toBeGreaterThan(earlyPitch + 0.02);
+  expect(laterPitch).toBeLessThanOrEqual(1.2);
   await page.mouse.up();
+  await expect.poll(() => page.evaluate(() => (
+    window.__d1GameDebug.audioState()?.loops.includes('SFX-DRINK-FILL-PITCH') ?? false
+  ))).toBe(false);
   expect((await page.evaluate(() => window.__d1GameDebug.drinkState())).beerSec).toBeGreaterThan(0.1);
 
   await page.evaluate(() => window.__d1GameDebug.pourExact(0, 0));
   await page.mouse.move(lever.x, lever.y);
   await page.mouse.down();
-  await page.mouse.move(lever.x, lever.y - 60, { steps: 4 });
+  await page.mouse.move(lever.x, lever.y - 16, { steps: 2 });
+  // 실제 손처럼 활성 경계를 넘은 뒤 중립 근처로 조금 되돌아와도 거품이 유지된다.
+  await page.mouse.move(lever.x, lever.y - 4, { steps: 2 });
   await page.waitForTimeout(300);
   await page.mouse.up();
   expect((await page.evaluate(() => window.__d1GameDebug.drinkState())).foamSec).toBeGreaterThan(0.1);

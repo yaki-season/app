@@ -38,6 +38,7 @@
     <span id="svcStation" class="svc-station" data-testid="svc-station">손님</span>
     <ol id="receipts" class="receipts" data-testid="svc-receipts" aria-label="조립 진행"></ol>
     <span id="orderHud" class="order-hud" data-testid="order-hud"></span>
+    <button id="recipeBookToggle" class="recipe-book-toggle" data-testid="recipe-book-toggle" type="button" aria-expanded="false" aria-controls="recipeBook">비법노트</button>
     <span id="businessClock" class="business-clock" data-testid="business-clock">17:30</span>
     <button id="businessPhase" class="business-phase" data-testid="business-phase" type="button" aria-label="영업 일시정지" aria-pressed="false">준비</button>
   </header>
@@ -243,6 +244,21 @@
     <p id="postBusinessSummary" class="post-business-summary" data-testid="post-business-summary"></p>
     <ol id="settlementSteps" class="settlement-steps" data-testid="settlement-steps"></ol>
     <button id="postBusinessAction" type="button" data-testid="post-business-action"></button>
+  </section>
+
+  <!-- 비법노트: 조립 순서와 굽기·따르기 기준을 언제든 다시 펼쳐 본다 -->
+  <section
+    id="recipeBook"
+    class="recipe-book"
+    data-testid="recipe-book"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="recipeBookTitle"
+    hidden
+  >
+    <p id="recipeBookTitle" class="recipe-book-title">비법노트</p>
+    <div id="recipeBookEntries" class="recipe-book-entries" data-testid="recipe-book-entries"></div>
+    <button id="recipeBookClose" class="recipe-book-close" type="button" data-testid="recipe-book-close">닫기</button>
   </section>
 
   <!-- 완료 오버레이: day-complete 저장 성공 뒤 D2 pre-open -->

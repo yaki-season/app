@@ -509,6 +509,9 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         mesh.material.needsUpdate = true;
       }
     },
+    // 아직 화면에 걸지 않은 그림을 미리 받아 둔다. 교체 순간 디코딩이 끝나 있지 않으면
+    // 그 한 프레임이 비어 검게 뜬다(교대 프레임 애니메이션의 첫 전환).
+    warmTexture: (url) => { if (url) texture(url); },
     setArtUrl: (key, url) => {
       const mesh = artMesh[key];
       if (!mesh) return;

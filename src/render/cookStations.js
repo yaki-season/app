@@ -61,6 +61,7 @@ export function createCookStations({
   if (!recipeBook[defaultMenuId]) throw new Error(`기본 조립 레시피 누락: ${defaultMenuId}`);
   let assembly = { menuId: defaultMenuId, index: 0, complete: false };
   let assembledCount = 0;
+  const learnedMenuIds = new Set();
   let transferredCount = 0;
   let waitingItems = [];
   let grill = Array.from({ length: normalizedSlotCount }, () => emptySlot());
@@ -124,6 +125,8 @@ export function createCookStations({
     if (assembly.index >= activeRecipe.length) {
       const completedMenuId = assembly.menuId;
       assembledCount += 1;
+      // 끝까지 만들어 본 메뉴. 화면 위 조립 안내를 언제 접을지 이 기록이 정한다.
+      learnedMenuIds.add(completedMenuId);
       if (explicitAssemblyTransfer) {
         assembly.complete = true;
       } else {
@@ -382,6 +385,7 @@ export function createCookStations({
       transferredCount,
       waiting: waitingItems.length,
       waitingItems,
+      learnedMenuIds: [...learnedMenuIds],
       grill,
     });
   }
@@ -407,6 +411,10 @@ export function createCookStations({
       : Array.from({ length: saved.waiting }, () => defaultMenuId);
     while (waitingItems.length < saved.waiting) waitingItems.push(defaultMenuId);
     if (waitingItems.length > saved.waiting) waitingItems = waitingItems.slice(0, saved.waiting);
+    learnedMenuIds.clear();
+    for (const menuId of saved.learnedMenuIds ?? []) {
+      if (recipeBook[menuId]) learnedMenuIds.add(menuId);
+    }
     grill = structuredClone(saved.grill);
     pausedAtMs = null;
     for (const slot of grill) {
@@ -465,6 +473,7 @@ export function createCookStations({
     clickIngredient,
     selectRecipe,
     selectedMenuId: () => assembly.menuId,
+    learnedMenuIds: () => new Set(learnedMenuIds),
     currentRecipe: () => [...recipeBook[assembly.menuId]],
     recipeIds: () => Object.keys(recipeBook),
     assemblyIndex,
@@ -506,6 +515,7 @@ export function createCookStations({
     },
     debugFillAssembly(menuId = assembly.menuId) {
       if (!recipeBook[menuId]) return false;
+      learnedMenuIds.add(menuId);
       waitingItems.push(menuId);
       assembly = { menuId, index: 0, complete: false };
       return true;
@@ -515,6 +525,7 @@ export function createCookStations({
       assembledCount = 0;
       transferredCount = 0;
       waitingItems = [];
+      learnedMenuIds.clear();
       grill = grill.map(() => emptySlot());
     },
   };

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { AUDIO_BUS, AUDIO_CATALOG, audioEntry, audioIdsByBus, crowdAmbienceId } from '../../src/audio/audioCatalog.js';
+import { AUDIO_BUS, AUDIO_CATALOG, audioEntry, audioIdsByBus, crowdAmbienceId, interiorAmbienceId } from '../../src/audio/audioCatalog.js';
 import { AUDIO_EXTENSIONS, createAudioEngine } from '../../src/audio/audioEngine.js';
 
 function fakeContext() {
@@ -56,6 +56,12 @@ describe('오디오 카탈로그', () => {
     expect(crowdAmbienceId(4)).toBe('AMB-CROWD-L1');
     expect(crowdAmbienceId(5)).toBe('AMB-CROWD-L2');
     expect(crowdAmbienceId(9)).toBe('AMB-CROWD-L2');
+  });
+
+  it('아무도 앉아 있지 않으면 실내 앰비언스도 끈다', () => {
+    expect(interiorAmbienceId(0)).toBeNull();
+    expect(interiorAmbienceId(1)).toBe('AMB-SHOP-INTERIOR');
+    expect(interiorAmbienceId(6)).toBe('AMB-SHOP-INTERIOR');
   });
 
   it('BGM 6종은 같은 곡을 가리키고 SFX·환경음은 각자 파일을 갖는다', () => {
@@ -198,6 +204,54 @@ describe('오디오 엔진', () => {
 
     expect(engine.setLoopRate('SFX-DRINK-FILL-PITCH', 1.4)).toBe(true);
     expect(context.sources[0].playbackRate.value).toBe(1.4);
+  });
+
+  it('ID로 재생 중인 단발 효과음을 즉시 멈춘다', async () => {
+    const { engine, context } = engineWith();
+    await engine.play('SFX-GRILL-CRACKLE-A');
+    expect(context.sources[0].stopped).toBe(false);
+    expect(engine.stop('SFX-GRILL-CRACKLE-A')).toBe(true);
+    expect(context.sources[0].stopped).toBe(true);
+  });
+
+  it('버퍼 로딩 중 정지된 루프는 뒤늦게 재생하지 않는다', async () => {
+    const context = fakeContext();
+    let releaseFetch;
+    const fetchReady = new Promise((resolve) => { releaseFetch = resolve; });
+    const engine = createAudioEngine({
+      createContext: () => context,
+      fetchImpl: async () => {
+        await fetchReady;
+        return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) };
+      },
+    });
+
+    const starting = engine.startLoop('SFX-GRILL-COOK-LOOP');
+    expect(engine.stopLoop('SFX-GRILL-COOK-LOOP')).toBe(true);
+    releaseFetch();
+    expect(await starting).toBeNull();
+    expect(context.sources).toHaveLength(1);
+    expect(context.sources[0].stopped).toBe(true);
+    expect(engine.state().loops).not.toContain('SFX-GRILL-COOK-LOOP');
+  });
+
+  it('버퍼 로딩 중 정지된 단발 효과음은 뒤늦게 재생하지 않는다', async () => {
+    const context = fakeContext();
+    let releaseFetch;
+    const fetchReady = new Promise((resolve) => { releaseFetch = resolve; });
+    const engine = createAudioEngine({
+      createContext: () => context,
+      fetchImpl: async () => {
+        await fetchReady;
+        return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) };
+      },
+    });
+
+    const starting = engine.play('SFX-GRILL-CRACKLE-A');
+    engine.stop('SFX-GRILL-CRACKLE-A');
+    releaseFetch();
+    expect(await starting).toBeNull();
+    expect(context.sources).toHaveLength(0);
   });
 
   it('음소거와 음량을 버스별로 다룬다', async () => {

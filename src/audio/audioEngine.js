@@ -47,6 +47,9 @@ export function createAudioEngine(options = {}) {
   // id → Promise<AudioBuffer|null>. null은 "없는 파일"이며 다시 받으러 가지 않는다.
   const buffers = new Map();
   const missing = new Set();
+  const pendingLoops = new Map();
+  const activeOneShots = new Map();
+  const playGeneration = new Map();
   const loops = new Map();          // id → { source, gain }
   const firedKeys = new Set();      // 임계별 1회 보장
   const activeWarnings = new Set(); // { priority }
@@ -118,7 +121,20 @@ export function createAudioEngine(options = {}) {
     return false;
   }
 
-  function start(entry, buffer, { rate = 1, gain = 1 } = {}) {
+  // 납품 파일이 연출보다 길 때 호출부가 길이를 잘라 쓴다. 원본을 다시 굽는 대신 재생만 줄이는
+  // 쪽이라, 나중에 짧은 파일이 들어오면 maxSec만 빼면 된다. 뚝 끊기면 클릭음이 나므로 끝에서
+  // 짧게 감쇄시킨다.
+  function truncate(source, nodeGain, gain, maxSec) {
+    const now = context.currentTime ?? 0;
+    const fade = Math.min(0.12, maxSec / 4);
+    if (typeof nodeGain.gain.setValueAtTime === 'function') {
+      nodeGain.gain.setValueAtTime(gain, now + maxSec - fade);
+      nodeGain.gain.linearRampToValueAtTime(0, now + maxSec);
+    }
+    try { source.stop(now + maxSec); } catch { /* stop 미지원 소스 */ }
+  }
+
+  function start(entry, buffer, { rate = 1, gain = 1, maxSec = null } = {}) {
     const source = context.createBufferSource();
     source.buffer = buffer;
     source.loop = entry.loop;
@@ -129,6 +145,9 @@ export function createAudioEngine(options = {}) {
     source.connect(nodeGain);
     nodeGain.connect(busGain.get(entry.bus) ?? masterGain);
     source.start();
+    if (Number.isFinite(maxSec) && maxSec > 0 && !(buffer.duration <= maxSec)) {
+      truncate(source, nodeGain, gain, maxSec);
+    }
 
     if (entry.bus === AUDIO_BUS.WARNING) {
       const token = { priority: entry.priority ?? 0 };
@@ -141,11 +160,25 @@ export function createAudioEngine(options = {}) {
   async function play(id, opts = {}) {
     const entry = audioEntry(id);
     if (!entry || !canSound() || warningBlocked(entry)) return null;
+    const generation = playGeneration.get(id) ?? 0;
     // 화면이 숨겨졌거나 잠금 해제 전이면 쌓아두지 않고 버린다(AUD-001 16항, 자동재생 예외).
     const buffer = await load(id);
     if (!buffer || !canSound()) return null;
+    if (!entry.loop && generation !== (playGeneration.get(id) ?? 0)) return null;
     try {
-      return start(entry, buffer, opts);
+      const handle = start(entry, buffer, opts);
+      if (!entry.loop) {
+        const handles = activeOneShots.get(id) ?? new Set();
+        handles.add(handle);
+        activeOneShots.set(id, handles);
+        const previousOnEnded = handle.source.onended;
+        handle.source.onended = () => {
+          previousOnEnded?.();
+          handles.delete(handle);
+          if (handles.size === 0) activeOneShots.delete(id);
+        };
+      }
+      return handle;
     } catch {
       return null;
     }
@@ -181,29 +214,57 @@ export function createAudioEngine(options = {}) {
 
     async startLoop(id, opts) {
       if (loops.has(id)) return loops.get(id);
+      if (pendingLoops.has(id)) return null;
+      const token = Symbol(id);
+      pendingLoops.set(id, token);
       const handle = await play(id, opts);
+      if (pendingLoops.get(id) !== token) {
+        try { handle?.source.stop(); } catch { /* cancelled while loading */ }
+        return null;
+      }
+      pendingLoops.delete(id);
       if (handle) loops.set(id, handle);
       return handle;
     },
 
     stopLoop(id) {
+      const cancelledPending = pendingLoops.delete(id);
       const handle = loops.get(id);
-      if (!handle) return false;
+      if (!handle) return cancelledPending;
       loops.delete(id);
       try { handle.source.stop(); } catch { /* 이미 끝난 소스 */ }
       return true;
     },
 
+    stop(id) {
+      const handles = activeOneShots.get(id);
+      playGeneration.set(id, (playGeneration.get(id) ?? 0) + 1);
+      if (!handles) return false;
+      activeOneShots.delete(id);
+      for (const handle of handles) {
+        try { handle.source.stop(); } catch { /* already ended */ }
+      }
+      return true;
+    },
+
     // 채움 피치와 토치 훑기는 파일이 아니라 런타임이 변조한다.
-    setLoopRate(id, rate) {
+    //
+    // glideSec을 주면 목표값으로 미끄러진다. 매 프레임 값을 그대로 꽂으면 계단처럼 끊긴 피치가
+    // 지직거리는 잡음(zipper noise)으로 들린다.
+    setLoopRate(id, rate, { glideSec = 0 } = {}) {
       const handle = loops.get(id);
-      if (!handle?.source?.playbackRate) return false;
-      handle.source.playbackRate.value = rate;
+      const param = handle?.source?.playbackRate;
+      if (!param) return false;
+      if (glideSec > 0 && typeof param.setTargetAtTime === 'function') {
+        param.setTargetAtTime(rate, context.currentTime ?? 0, glideSec / 3);
+        return true;
+      }
+      param.value = rate;
       return true;
     },
 
     stopAllLoops() {
-      for (const id of [...loops.keys()]) this.stopLoop(id);
+      for (const id of new Set([...loops.keys(), ...pendingLoops.keys()])) this.stopLoop(id);
     },
 
     setVolume(bus, value) {
@@ -239,6 +300,12 @@ export function createAudioEngine(options = {}) {
         loaded: [...buffers.keys()],
         missing: [...missing],
         loops: [...loops.keys()],
+        pendingLoops: [...pendingLoops.keys()],
+        loopRates: Object.fromEntries([...loops].map(([id, handle]) => [
+          id,
+          handle.source?.playbackRate?.value ?? 1,
+        ])),
+        activeOneShots: [...activeOneShots.keys()],
       };
     },
   };

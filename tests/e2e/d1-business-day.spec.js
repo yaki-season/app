@@ -188,6 +188,15 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   await expect.poll(() => D(page, 'businessView').then(
     (view) => view.settlement.revealedSteps.length,
   )).toBe(5);
+  // 확인한 단계는 제목만이 아니라 그날의 숫자를 보여준다.
+  await expect(page.getByTestId('settlement-step-customers-orders'))
+    .toContainText('방문 4명 · 주문 수락 4건 · 완료 4건');
+  await expect(page.getByTestId('settlement-step-quality-wait')).toContainText('Perfect 8');
+  await expect(page.getByTestId('settlement-step-quality-wait')).toContainText('평균 대기');
+  await expect(page.getByTestId('settlement-step-revenue-tip')).toContainText('매출 33 + 팁 8 = 41');
+  await expect(page.getByTestId('settlement-step-reputation-review')).toContainText('오늘 명성 +12');
+  await expect(page.getByTestId('settlement-step-recipe-goal')).toContainText('모모 레시피');
+
   await expect(page.getByTestId('post-business-action')).toContainText('D1 보상 저장');
   await page.getByTestId('post-business-action').click();
 
