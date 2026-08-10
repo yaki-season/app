@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { createBusinessDayDefinition } from '../../src/campaign-runtime.js';
+import {
+  advanceD1BusinessDay,
+  createBusinessDayDefinition,
+  createD1BusinessDayState,
+  dispatchD1Command,
+  D1_QUALITY,
+} from '../../src/campaign-runtime.js';
 
 const record = JSON.parse(readFileSync(new URL(
   '../../content/releases/d2-business-day-domain.v1.json', import.meta.url,
@@ -22,5 +28,46 @@ describe('D2 전체 영업 정의', () => {
     expect(customers.find((customer) => customer.id === 'D2-COMMUTER-A')?.order.lines)
       .toEqual([{ menuId: 'negima', quantity: 1 }]);
     expect(definition.nextNodeId).toBe('d3');
+  });
+
+  // D2·D3 정의에는 arrivalPolicy 선언이 없다. 예전에는 그 탓에 조기 입장이 통째로 꺼져
+  // 직장인 2인 뒤로 아무도 오지 않고 예정 시각(220초·320초)까지 가게가 비어 있었다.
+  it('입장 정책 선언이 없어도 자리가 비면 예정 시각을 기다리지 않는다', () => {
+    const definition = createBusinessDayDefinition(record, { expectedId: 'd2' });
+    expect(definition.arrivalPolicy ?? null).toBeNull();
+    const officeWave = definition.waves[1];
+    expect(officeWave.atMs).toBe(100_000);
+
+    let state = createD1BusinessDayState({ definition, runId: 'd2-arrival',seed: 3 });
+    let sequence = 0;
+    const dispatch = (type, fields) => {
+      const result = dispatchD1Command(state, definition, { eventId: `d2:${sequence += 1}`, type, ...fields });
+      if (result.state) state = result.state;
+      return result;
+    };
+
+    // 첫 손님 주문만 끝내고 자리를 비운다.
+    for (let tick = 0; tick < 60 && state.waves[1].status === 'pending'; tick += 1) {
+      state = advanceD1BusinessDay(state, definition, 1_000);
+      for (const order of Object.values(state.orders)) {
+        if (order.status === 'unaccepted') dispatch('accept-order', { orderId: order.id });
+      }
+      for (const order of Object.values(state.orders)) {
+        if (!['accepted', 'partial', 'group-pending'].includes(order.status)) continue;
+        for (const line of order.lines) {
+          const remaining = line.quantity - line.servedQualities.length;
+          for (let index = 0; index < remaining; index += 1) {
+            dispatch('serve-item', {
+              customerId: order.customerIds[0],
+              menuId: line.menuId,
+              quality: D1_QUALITY.PERFECT,
+            });
+          }
+        }
+      }
+    }
+
+    expect(state.waves[1].status).toBe('spawned');
+    expect(state.clock.elapsedMs).toBeLessThan(officeWave.atMs);
   });
 });

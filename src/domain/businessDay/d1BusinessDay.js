@@ -61,6 +61,9 @@ const QUALITY_RATE = Object.freeze({
   [D1_QUALITY.FAIL]: 0.1,
 });
 
+// 자리가 빈 뒤 다음 손님을 기다리는 시간. D1 계약값이며 선언이 없는 날도 같은 값을 쓴다.
+const DEFAULT_SEAT_AVAILABLE_WAIT_SEC = 13;
+
 const clone = (value) => structuredClone(value);
 
 function assertFinite(value, field, { min = 0 } = {}) {
@@ -390,7 +393,11 @@ function spawnEligibleWaves(state, definition) {
     const waveSpec = definition.waves[index];
     const waveState = state.waves[index];
     if (waveState.status !== 'pending') continue;
-    const emptyWaitLimitMs = definition.arrivalPolicy?.maxAllSeatsEmptyWaitSec * 1000;
+    // D2·D3 정의에는 arrivalPolicy가 없다. 예전에는 그 곱셈이 NaN이 되어 조기 입장이 통째로
+    // 꺼졌고, 자리가 남아도 예정 시각까지 아무도 오지 않았다. 선언이 없으면 D1과 같은 값을 쓴다.
+    const emptyWaitLimitMs = (
+      definition.arrivalPolicy?.maxAllSeatsEmptyWaitSec ?? DEFAULT_SEAT_AVAILABLE_WAIT_SEC
+    ) * 1000;
     const emptyDeadlineMs = state.clock.allSeatsEmptySinceMs != null && Number.isFinite(emptyWaitLimitMs)
       ? state.clock.allSeatsEmptySinceMs + emptyWaitLimitMs
       : Number.POSITIVE_INFINITY;
