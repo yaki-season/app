@@ -176,18 +176,14 @@ describe(`CH-AKI-STORY portrait binding v${S0_AKI_STORY_PORTRAIT_BINDING_CONTRAC
     expect(runtimeManifest.assets.some(({ id }) => id === 'CH-OWNER-STORY')).toBe(false);
   });
 
-  it('승인 초상과 누락 시 placeholder의 story/summary/business 가시성 경계를 유지한다', () => {
+  it('승인 초상만 story에 표시하고 제거된 개발용 글자 placeholder를 복원하지 않는다', () => {
     expect(runtimeHtml).toContain('id="story-portrait" class="story-portrait"');
-    expect(runtimeHtml).toMatch(
-      /id="portrait-placeholder" class="portrait-placeholder" hidden aria-hidden="true">秋<\/div>/,
-    );
-    expect(runtimeCss).toMatch(
-      /\.portrait-placeholder \{ width:128px; aspect-ratio:3\/4;/,
-    );
-    expect(functionSource('renderS0', 'renderStory')).toContain('portrait.hidden = true');
+    expect(runtimeHtml).not.toContain('portrait-placeholder');
+    expect(runtimeCss).not.toContain('.portrait-placeholder');
+    expect(functionSource('renderS0', 'renderStory')).toContain('hideStoryPortrait()');
     expect(functionSource('renderStory', 'advanceAfterStory')).toContain('renderStoryPortrait(speaker, line.dialogueId)');
-    expect(functionSource('renderSummary', 'renderBusiness')).toContain('portrait.hidden = true');
-    expect(functionSource('renderBusiness', 'renderSettlement')).toContain('portrait.hidden = true');
+    expect(functionSource('renderSummary', 'renderBusiness')).toContain('hideStoryPortrait()');
+    expect(functionSource('renderBusiness', 'renderSettlement')).toContain('hideStoryPortrait()');
     expect(functionSource('renderSettlement', 'renderComplete')).toContain("renderStoryPortrait(FIXED_CHARACTER.AKI");
     expect(runtimeJs).not.toContain('CH-OWNER-STORY');
   });
