@@ -488,6 +488,7 @@ function tickD3CursorTorch(now) {
 }
 document.addEventListener('pointerdown', (event) => {
   if (event.button !== 0 || d3TorchCursor.hidden) return;
+  if (event.target !== canvas) return;
   if (event.target.closest?.('button, [role="button"], .d3-torch-panel, #svcBar, .quick-nav')) return;
   event.preventDefault();
   event.stopImmediatePropagation();
@@ -1881,6 +1882,19 @@ function grillNegimaStage(view) {
   return 'cooking';
 }
 
+function d3TorchMomoStage(job) {
+  if (!job?.finish) return 'proper';
+  const finish = job.finish;
+  if (finish.torchCompleted) {
+    if (finish.torchState === 'failed') return 'burnt';
+    if (finish.torchState === 'over') return 'overcooked';
+    return 'proper';
+  }
+  if (finish.torchFocusMs >= 1_200) return 'burnt';
+  if (finish.torchFocusMs >= 800) return 'overcooked';
+  return 'proper';
+}
+
 // 뒤집는 동안에는 단계 표시를 고정한다. 회전 중 판정이 잠깐 비조리로 보여 'raw'로 튀면
 // 화면·회귀 모두에서 단계가 깜빡인다. 마지막으로 확정된 단계를 들고 있는다.
 const rawNegimaStageBySlot = {};
@@ -1999,7 +2013,8 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
   updateGrillStateCues(views);
   for (const key of SLOT_KEYS) {
     const slotView = views[slotIndexOf(key)];
-    const stagedD3Momo = key === d3TorchSlotKey && d3Grill.job(D3_TORCH_JOB_ID);
+    const d3TorchJob = key === d3TorchSlotKey ? d3Grill.job(D3_TORCH_JOB_ID) : null;
+    const stagedD3Momo = d3TorchJob != null;
     // Tare and torch finishing happen on the grill. Keep the cooked momo visible
     // after the cook station hands it to the D3 finishing workflow.
     const v = stagedD3Momo && (!slotView || slotView.status === 'empty')
@@ -2024,6 +2039,7 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
       g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
     }
     const visibleStage = grillNegimaStage(v);
+    const momoVisibleStage = stagedD3Momo ? d3TorchMomoStage(d3TorchJob) : visibleStage;
     mesh.userData.grillBaseQuaternion ??= mesh.quaternion.clone();
     mesh.quaternion.copy(mesh.userData.grillBaseQuaternion).multiply(
       grillFlipQuaternion.setFromAxisAngle(GRILL_FLIP_AXIS, v?.visualRotationRad ?? 0),
@@ -2066,8 +2082,8 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
     if (momoInstance) {
       momoInstance.holder.visible = showMomoSprite;
       if (!v?.flipping) {
-        momoStageBySlot[key] = visibleStage;
-        momoInstance.setStage(visibleStage);
+        momoStageBySlot[key] = momoVisibleStage;
+        momoInstance.setStage(momoVisibleStage);
         momoInstance.flipPivot.scale.x = v?.orientationFaceDown === 'back' ? -1 : 1;
       }
       momoInstance.flipPivot.rotation.y = 0;

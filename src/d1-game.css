@@ -563,9 +563,24 @@ body:has(.quick-nav button[data-screen="SCR-SVC-CUSTOMERS"].active) .order-hud {
   border-radius: 50% 50% 46% 46%; transform: rotate(18deg); transform-origin: 50% 100%;
   background: radial-gradient(ellipse at 50% 72%,#fff8bd 0 13%,#65c8ff 14% 29%,#ff9a31 31% 62%,transparent 65%);
 }
-.d3-torch-cursor.is-firing .d3-torch-cursor-flame { opacity: 1; animation: d3-torch-flicker .11s steps(2,end) infinite; }
+.d3-torch-cursor-flame::before {
+  content: ""; position: absolute; inset: -22px -28px -12px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,184,67,.42), rgba(255,91,20,.12) 42%, transparent 70%);
+  filter: blur(7px);
+}
+.d3-torch-cursor-flame::after {
+  content: ""; position: absolute; inset: -15px -18px;
+  background:
+    radial-gradient(circle at 18% 22%, #ffd876 0 2px, transparent 3px),
+    radial-gradient(circle at 76% 34%, #ff8c32 0 2px, transparent 3px),
+    radial-gradient(circle at 62% 8%, #fff1a8 0 1px, transparent 2px);
+}
+.d3-torch-cursor.is-firing { filter: drop-shadow(0 8px 7px rgba(0,0,0,.55)) drop-shadow(0 0 18px rgba(255,118,31,.7)); }
+.d3-torch-cursor.is-firing .d3-torch-cursor-flame { opacity: 1; animation: d3-torch-flicker .09s steps(2,end) infinite; }
+.d3-torch-cursor.is-firing .d3-torch-cursor-flame::after { animation: d3-torch-sparks .32s linear infinite; }
 body.d3-torch-cursor-ready #scene { cursor: none; }
 @keyframes d3-torch-flicker { from { transform: rotate(14deg) scale(.92,1); } to { transform: rotate(22deg) scale(1.08,.94); } }
+@keyframes d3-torch-sparks { from { transform: translateY(8px) scale(.8); opacity: 1; } to { transform: translateY(-18px) scale(1.15); opacity: 0; } }
 
 /* 엑스트라 정식 아트가 오기 전에는 stable ID가 붙은 명시적 개발 placeholder로 보인다. */
 .order-bubble[data-placeholder="development"] .order-label {
