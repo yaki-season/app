@@ -44,10 +44,19 @@ function engineWith({ present = () => true } = {}) {
 }
 
 describe('오디오 카탈로그', () => {
-  it('AUD-002의 83개 자산을 중복 없이 담는다', () => {
+  it('AUD-002의 83개 자산을 중복 없는 ID로 담는다', () => {
     expect(AUDIO_CATALOG).toHaveLength(83);
     expect(new Set(AUDIO_CATALOG.map((entry) => entry.id)).size).toBe(83);
-    expect(new Set(AUDIO_CATALOG.map((entry) => entry.url)).size).toBe(83);
+  });
+
+  it('BGM 6종은 같은 곡을 가리키고 SFX·환경음은 각자 파일을 갖는다', () => {
+    const bgmUrls = new Set(audioIdsByBus(AUDIO_BUS.BGM).map((id) => audioEntry(id).url));
+    expect(bgmUrls.size).toBe(1);
+    // 상태별 곡을 나중에 갈라도 ID는 그대로 남아야 한다.
+    expect(audioIdsByBus(AUDIO_BUS.BGM)).toHaveLength(6);
+
+    const nonBgm = AUDIO_CATALOG.filter((entry) => entry.bus !== AUDIO_BUS.BGM);
+    expect(new Set(nonBgm.map((entry) => entry.url)).size).toBe(nonBgm.length);
   });
 
   it('납품 체크리스트와 파일 이름이 정확히 일치한다', () => {
@@ -55,9 +64,9 @@ describe('오디오 카탈로그', () => {
     const readme = readFileSync(new URL('../../public/assets/audio/README.md', import.meta.url), 'utf8');
     const listed = new Set([...readme.matchAll(/`([a-z0-9-]+-r\d+-b\d+\.ogg)`/g)].map((m) => m[1]));
     const catalogFiles = new Set(AUDIO_CATALOG.map((entry) => entry.url.split('/').pop()));
-    // 83개 자산이지만 파일 이름은 82개다. complete-r1-b1.ogg가 조립과 생맥주에 각각 있고
-    // 폴더가 달라 충돌하지 않는다.
-    expect(catalogFiles.size).toBe(82);
+    // 83개 자산이지만 파일은 77개다. BGM 6종이 main 한 곡을 공유하고, complete-r1-b1.ogg가
+    // 조립과 생맥주에 각각 있으나 폴더가 달라 충돌하지 않는다.
+    expect(catalogFiles.size).toBe(77);
     for (const file of catalogFiles) expect(listed, file).toContain(file);
     for (const file of listed) expect(catalogFiles, file).toContain(file);
   });

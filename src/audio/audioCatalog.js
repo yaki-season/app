@@ -31,13 +31,17 @@ function group(dir, bus, entries) {
   }));
 }
 
+// 현재는 6개 상태가 모두 같은 곡을 쓴다. 상태별 곡이 준비되면 여기 파일 이름만 갈라주면 되고,
+// ID는 그대로 두므로 호출부는 손대지 않는다.
+const BGM_SHARED_FILE = 'main';
+
 const BGM = group('bgm', AUDIO_BUS.BGM, [
-  ['BGM-S0-ALLEY', 's0-alley', { loop: true }],
-  ['BGM-PREP', 'prep', { loop: true }],
-  ['BGM-SERVICE-QUIET', 'service-quiet', { loop: true }],
-  ['BGM-SERVICE-RUSH-LAYER', 'service-rush-layer', { loop: true }],
-  ['BGM-CLOSING', 'closing', { loop: true }],
-  ['BGM-SETTLEMENT', 'settlement', { loop: true }],
+  ['BGM-S0-ALLEY', BGM_SHARED_FILE, { loop: true }],
+  ['BGM-PREP', BGM_SHARED_FILE, { loop: true }],
+  ['BGM-SERVICE-QUIET', BGM_SHARED_FILE, { loop: true }],
+  ['BGM-SERVICE-RUSH-LAYER', BGM_SHARED_FILE, { loop: true }],
+  ['BGM-CLOSING', BGM_SHARED_FILE, { loop: true }],
+  ['BGM-SETTLEMENT', BGM_SHARED_FILE, { loop: true }],
 ]);
 
 const AMBIENCE = group('ambience', AUDIO_BUS.AMBIENCE, [

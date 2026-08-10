@@ -24,7 +24,7 @@ import { createGrillSmokeVfx } from './render/grillSmokeVfx.js';
 import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
-import { gameAudio, installGameAudio, sfx, sfxOnce, loopOn, loopOff, loopRate } from './audio/gameAudio.js';
+import { gameAudio, installGameAudio, setBgm, sfx, sfxOnce, loopOn, loopOff, loopRate } from './audio/gameAudio.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
 import {
   isD1OfficeBeerFrame,
@@ -91,6 +91,9 @@ window.__d1GameDebug = d1GameDebug;
 
 // 오디오는 파일이 없으면 조용히 무음으로 돈다. 결선이 게임 부팅을 막지 않는다.
 installGameAudio(window);
+// 현재 BGM은 상태별 곡이 따로 없어 한 곡을 계속 흘린다. 상태마다 다시 걸면 같은 파일이
+// 매번 처음으로 되감겨 오히려 끊겨 들린다.
+setBgm('BGM-SERVICE-QUIET');
 
 const requestedDayId = new URLSearchParams(window.location.search).get('day');
 const ACTIVE_DAY_ID = ['d2', 'd3'].includes(requestedDayId) ? requestedDayId : 'd1';
@@ -1577,7 +1580,11 @@ function setDrinkLeverDragZone(zone, now) {
 
 function updateDrinkLeverDrag(e) {
   if (!activeDrinkLeverDrag || e.pointerId !== activeDrinkLeverDrag.pointerId) return;
-  const zone = drinkLeverZoneForDelta(e.clientY - activeDrinkLeverDrag.startY);
+  const zone = drinkLeverZoneForDelta(
+    e.clientY - activeDrinkLeverDrag.startY,
+    undefined,
+    activeDrinkLeverDrag.zone,
+  );
   setDrinkLeverDragZone(zone, performance.now());
 }
 
@@ -1711,6 +1718,8 @@ function handle(key, now) {
   if (si >= 0) { clickGrillSlot(si, now); return; }
   switch (key) {
     case 'glassRack':
+      sfx('SFX-DRINK-GLASS-SET');
+      sfx('SFX-DRINK-TRAY-TAP');
       glassPlaced = true;
       persistFirstOrderRuntime();
       showHint('빈 잔을 노즐 아래에 놓았어요');
@@ -1744,6 +1753,8 @@ function handle(key, now) {
         const noWaiting = ['no-waiting', 'no-menu-waiting'].includes(r.reason);
         showHint(noWaiting ? `대기 중인 ${skewerLabel(menuId)}가 없어요` : '빈 그릴 칸이 없어요');
       } else {
+        sfx('SFX-GRILL-PLACE-METAL');
+        sfx('SFX-GRILL-PLACE-SIZZLE');
         showHint(`${r.slot + 1}번 ${skewerLabel(menuId)} 앞면 조리 시작 · 다른 꼬치와 독립적으로 익습니다`);
       }
       persistFirstOrderRuntime();
@@ -1830,6 +1841,43 @@ function bindCookingMaterialToApprovedPlane(key) {
     });
   }
   return true;
+}
+
+let drinkLeverAudioZone = null;
+
+// 레버 소리는 입력 경로가 아니라 pour 상태에서 끌어온다. 드래그·클릭·포인터 취소가 각각
+// 다른 경로로 끝나기 때문에 입력마다 걸면 흐름음이 남아 돈다.
+function updateDrinkAudio(state) {
+  const next = state.active ?? null;
+  if (next !== drinkLeverAudioZone) {
+    if (drinkLeverAudioZone === 'beer') {
+      loopOff('SFX-DRINK-BEER-FLOW');
+      loopOff('SFX-DRINK-FILL-PITCH');
+      sfx('SFX-DRINK-BEER-LEVER-OFF');
+    } else if (drinkLeverAudioZone === 'foam') {
+      loopOff('SFX-DRINK-FOAM-FLOW');
+      sfx('SFX-DRINK-FOAM-LEVER-OFF');
+    }
+    if (next === 'beer') {
+      sfx('SFX-DRINK-BEER-LEVER-ON');
+      loopOn('SFX-DRINK-BEER-FLOW');
+      loopOn('SFX-DRINK-FILL-PITCH');
+    } else if (next === 'foam') {
+      sfx('SFX-DRINK-FOAM-LEVER-ON');
+      loopOn('SFX-DRINK-FOAM-FLOW');
+    }
+    drinkLeverAudioZone = next;
+  }
+
+  // 잔을 비우고 새로 시작하면 70%·넘침·완성이 다시 울어야 한다.
+  if (state.phase === 'idle') gameAudio()?.resetOnce('SFX-DRINK-');
+
+  const fill = Math.min(1, state.totalSec / DRINK.glassCapacity);
+  // 차오를수록 조금 높아진다. 파일이 아니라 여기서 만든다.
+  if (next) loopRate('SFX-DRINK-FILL-PITCH', 1 + fill * 0.3);
+  if (fill >= 0.7) sfxOnce('SFX-DRINK-GLASS-RESONANCE', 'fill70');
+  if (state.phase === 'overflow') sfxOnce('SFX-DRINK-OVERFLOW', 'overflow');
+  if (state.phase === 'done') sfxOnce('SFX-DRINK-COMPLETE', 'done');
 }
 
 const GRILL_COOK_LOOPS = ['SFX-GRILL-COOK-LOOP-LOW', 'SFX-GRILL-COOK-LOOP-MID', 'SFX-GRILL-COOK-LOOP-HIGH'];
@@ -2066,6 +2114,7 @@ function loop(now) {
   R.setCleanupOverlayFrame(Math.floor(visualNow / 180));
   updateGrillStatus(now);
   pour.tick(now);
+  updateDrinkAudio(pour.state());
   beerLiquid?.setTime(visualNow / 1000);
   beerCoreVfx?.setTime(visualNow / 1000);
   updateDrinkPanel(active);

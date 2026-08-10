@@ -16,14 +16,15 @@
 - 경고 4종은 `2kHz` 이상 성분 필수. 생맥주 액체음에 묻히면 안 된다.
 - 변형본은 `-a`, `-b` 접미로 최대 3개까지. 일부만 넣어도 된다.
 
-## bgm/ (6)
+## bgm/ (1)
 
-- [ ] `s0-alley-r1-b1.ogg`
-- [ ] `prep-r1-b1.ogg`
-- [ ] `service-quiet-r1-b1.ogg`
-- [ ] `service-rush-layer-r1-b1.ogg` — `service-quiet`와 동일 길이·동일 템포
-- [ ] `closing-r1-b1.ogg`
-- [ ] `settlement-r1-b1.ogg`
+지금은 6개 BGM 상태(S0·준비·한산·러시·마감·정산)가 **모두 이 한 곡**을 쓴다.
+
+- [x] `main-r1-b1.ogg`
+
+상태별로 곡을 나누고 싶어지면 `src/audio/audioCatalog.js`의 `BGM_SHARED_FILE`을 풀고
+`s0-alley`, `prep`, `service-quiet`, `service-rush-layer`, `closing`, `settlement`로 갈라주면 된다.
+ID는 그대로라 게임 코드는 손대지 않는다.
 
 ## ambience/ (8)
 
