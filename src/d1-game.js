@@ -25,7 +25,7 @@ import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
 import { gameAudio, installGameAudio, setBgm, sfx, sfxOff, sfxOnce, loopOn, loopOff, loopRate } from './audio/gameAudio.js';
-import { interiorAmbienceId } from './audio/audioCatalog.js';
+import { crowdAmbienceId, interiorAmbienceId } from './audio/audioCatalog.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
 import { seatHasServedMenu } from './render/seatServing.js';
 import { settlementStepDetail } from './render/settlementSteps.js';
@@ -167,6 +167,11 @@ function readFirstOrderRuntime() {
   }
 }
 const restoredFirstOrderRuntime = readFirstOrderRuntime();
+// 그날 손님 구성을 뽑는 씨앗. 영업 중 새로고침해도 같은 손님이 앉아 있어야 하므로 한 번 뽑으면
+// 그날 저장에 남긴다. D1은 튜토리얼이라 정의에 적힌 순서를 그대로 쓴다.
+const daySeed = ACTIVE_DAY_ID === 'd1'
+  ? null
+  : (restoredFirstOrderRuntime?.daySeed ?? Math.floor(Math.random() * 0xffffffff) + 1);
 const cook = createD1CookStations();
 if (restoredFirstOrderRuntime?.cook) cook.restore(restoredFirstOrderRuntime.cook, performance.now());
 const d3Grill = createD3GrillSession(restoredFirstOrderRuntime?.d3Grill ?? null);
@@ -568,6 +573,7 @@ function persistFirstOrderRuntime() {
       d3TorchSlotKey,
       dock: dock.snapshot(),
       glassPlaced,
+      daySeed,
     }));
   } catch {
     // 저장 공간 실패는 campaign 저장을 덮어쓰지 않으며 현재 세션 진행은 유지한다.
@@ -1546,10 +1552,12 @@ let tsukiokaSeatedBefore = false;
 
 function syncCustomerAmbience(view) {
   const occupied = view?.seats?.filter((seat) => seat.occupied).length ?? 0;
-  // 군중음(AMB-CROWD-*)은 쓰지 않는다. 여섯 자리짜리 가게에서 웅성거림은 좌석에 보이는 사람 수와
-  // 어긋나 늘 겉돌았다. 카탈로그에는 AUD-002 계약대로 남아 있고 재생만 하지 않는다.
-  loopOff('AMB-CROWD-L1');
-  loopOff('AMB-CROWD-L2');
+  // 한 명까지는 대화 없는 조용한 가게다. 두 명부터만 좌석 수에 맞는 군중음을 한 단계씩 켠다.
+  const nextCrowd = crowdAmbienceId(occupied);
+  for (const id of ['AMB-CROWD-L1', 'AMB-CROWD-L2']) {
+    if (id === nextCrowd) loopOn(id);
+    else loopOff(id);
+  }
   // 빈 가게는 조용해야 한다(interiorAmbienceId 주석 참고).
   const nextInterior = interiorAmbienceId(occupied);
   if (nextInterior) loopOn(nextInterior);
@@ -2289,9 +2297,9 @@ el('postBusinessAction').addEventListener('click', handlePostBusinessAction);
 async function bootBusinessDay() {
   try {
     const consumed = ACTIVE_DAY_ID === 'd3'
-      ? await loadD3BusinessDayDefinition({ url: D3_BUSINESS_DAY_DEFINITION_URL })
+      ? await loadD3BusinessDayDefinition({ url: D3_BUSINESS_DAY_DEFINITION_URL, seed: daySeed })
       : ACTIVE_DAY_ID === 'd2'
-        ? await loadD2BusinessDayDefinition({ url: D2_BUSINESS_DAY_DEFINITION_URL })
+        ? await loadD2BusinessDayDefinition({ url: D2_BUSINESS_DAY_DEFINITION_URL, seed: daySeed })
         : await loadD1BusinessDayReleaseDefinition({ url: D1_BUSINESS_DAY_RELEASE_DEFINITION_URL });
     if (!consumed.ok) {
       businessBootError = consumed.error;

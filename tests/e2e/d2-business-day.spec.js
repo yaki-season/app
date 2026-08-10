@@ -87,36 +87,41 @@ test('D2 6명·5주문·10항목은 정리와 정산을 거쳐 D3로 전환한�
   await page.goto('/src/d1-game.html?day=d2');
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
 
+  // 손님 구성은 매 판 뽑히므로(D2부터) id·메뉴를 적어 두지 않고 그때그때 화면 상태를 보고 낸다.
   const result = await page.evaluate(async () => {
     const D = window.__d1GameDebug;
-    const waves = [
-      [0, [['D2-ORDER-001', 'REGULAR_TSUKIOKA', [['beer', 1], ['momo', 1]]]]],
-      [100000, [['D2-ORDER-002', 'D2-OFFICE-A', [['beer', 2], ['negima', 2]]]]],
-      [220000, [['D2-ORDER-003', 'D2-SOLO-A', [['momo', 1]]], ['D2-ORDER-004', 'D2-COMMUTER-A', [['negima', 1]]]]],
-      [320000, [['D2-ORDER-005', 'D2-SOLO-B', [['beer', 1], ['momo', 1]]]]],
-    ];
     let event = 0;
-    for (const [atMs, orders] of waves) {
-      D.businessAdvanceTo(atMs);
-      D.businessAdvance(6000);
-      for (const [orderId, customerId, lines] of orders) {
-        D.businessDispatch({ type: 'accept-order', intentId: `d2:e2e:${event++}`, orderId });
-        for (const [menuId, quantity] of lines) for (let index = 0; index < quantity; index += 1) {
-          D.businessDispatch({ type: 'serve-item', intentId: `d2:e2e:${event++}`, customerId, menuId, quality: 'Perfect' });
+    const dispatch = (type, fields) => D.businessDispatch({ type, intentId: `d2:e2e:${event += 1}`, ...fields });
+
+    for (let step = 0; step < 90; step += 1) {
+      D.businessAdvance(6_000);
+      const view = D.businessView();
+      for (const order of view.orders) {
+        if (order.status === 'unaccepted') dispatch('accept-order', { orderId: order.orderId });
+      }
+      for (const order of view.orders) {
+        const seat = view.seats.find((item) => item.orderId === order.orderId && item.customerId);
+        if (!seat) continue;
+        for (const line of order.lines) {
+          for (let index = 0; index < line.remaining; index += 1) {
+            dispatch('serve-item', { customerId: seat.customerId, menuId: line.menuId, quality: 'Perfect' });
+          }
         }
       }
-      D.businessAdvance(16000);
-      while (D.businessView().seats.some((item) => item.cleanupNeeded)) {
-        const seat = D.businessView().seats.find((item) => item.cleanupNeeded);
-        D.businessBeginCleanup(seat.seatId);
-        D.businessAdvance(3000);
+      for (const seat of D.businessView().seats) {
+        if (seat.cleanupNeeded) {
+          D.businessBeginCleanup(seat.seatId);
+          D.businessAdvance(3_000);
+        }
       }
+      if (D.businessView().settlement.summary) break;
     }
-    D.businessAdvanceTo(420000);
+
+    D.businessAdvanceTo(420_000);
     while (D.businessView().seats.some((item) => item.cleanupNeeded)) {
       const seat = D.businessView().seats.find((item) => item.cleanupNeeded);
       D.businessBeginCleanup(seat.seatId);
-      D.businessAdvance(3000);
+      D.businessAdvance(3_000);
     }
     await D.businessPostAction();
     for (let index = 0; index < 5; index += 1) await D.businessPostAction();
