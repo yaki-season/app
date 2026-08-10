@@ -26,15 +26,16 @@
 `s0-alley`, `prep`, `service-quiet`, `service-rush-layer`, `closing`, `settlement`로 갈라주면 된다.
 ID는 그대로라 게임 코드는 손대지 않는다.
 
-## ambience/ (8)
+## ambience/ (7)
+
+손님이 **1명이면 군중음을 아예 재생하지 않는다.** 2명부터 `crowd-l1`, 5명부터 `crowd-l2`.
 
 - [ ] `alley-night-r1-b1.ogg`
 - [ ] `shop-interior-r1-b1.ogg`
 - [ ] `door-open-r1-b1.ogg`
 - [ ] `door-close-r1-b1.ogg`
-- [ ] `crowd-l1-r1-b1.ogg`
-- [ ] `crowd-l2-r1-b1.ogg`
-- [ ] `crowd-l3-r1-b1.ogg`
+- [ ] `crowd-l1-r1-b1.ogg` — 2~4석
+- [ ] `crowd-l2-r1-b1.ogg` — 5석 이상
 - [ ] `charcoal-bed-r1-b1.ogg`
 
 ## sfx/s0/ (6)

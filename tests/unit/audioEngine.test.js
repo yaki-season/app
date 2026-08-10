@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { AUDIO_BUS, AUDIO_CATALOG, audioEntry, audioIdsByBus } from '../../src/audio/audioCatalog.js';
+import { AUDIO_BUS, AUDIO_CATALOG, audioEntry, audioIdsByBus, crowdAmbienceId } from '../../src/audio/audioCatalog.js';
 import { AUDIO_EXTENSIONS, createAudioEngine } from '../../src/audio/audioEngine.js';
 
 function fakeContext() {
@@ -44,9 +44,18 @@ function engineWith({ present = () => true } = {}) {
 }
 
 describe('오디오 카탈로그', () => {
-  it('AUD-002의 83개 자산을 중복 없는 ID로 담는다', () => {
-    expect(AUDIO_CATALOG).toHaveLength(83);
-    expect(new Set(AUDIO_CATALOG.map((entry) => entry.id)).size).toBe(83);
+  it('AUD-002의 82개 자산을 중복 없는 ID로 담는다', () => {
+    expect(AUDIO_CATALOG).toHaveLength(82);
+    expect(new Set(AUDIO_CATALOG.map((entry) => entry.id)).size).toBe(82);
+  });
+
+  it('손님이 한 명이면 군중음을 재생하지 않는다', () => {
+    expect(crowdAmbienceId(0)).toBeNull();
+    expect(crowdAmbienceId(1)).toBeNull();
+    expect(crowdAmbienceId(2)).toBe('AMB-CROWD-L1');
+    expect(crowdAmbienceId(4)).toBe('AMB-CROWD-L1');
+    expect(crowdAmbienceId(5)).toBe('AMB-CROWD-L2');
+    expect(crowdAmbienceId(9)).toBe('AMB-CROWD-L2');
   });
 
   it('BGM 6종은 같은 곡을 가리키고 SFX·환경음은 각자 파일을 갖는다', () => {
@@ -64,9 +73,9 @@ describe('오디오 카탈로그', () => {
     const readme = readFileSync(new URL('../../public/assets/audio/README.md', import.meta.url), 'utf8');
     const listed = new Set([...readme.matchAll(/`([a-z0-9-]+-r\d+-b\d+\.ogg)`/g)].map((m) => m[1]));
     const catalogFiles = new Set(AUDIO_CATALOG.map((entry) => entry.url.split('/').pop()));
-    // 83개 자산이지만 파일은 77개다. BGM 6종이 main 한 곡을 공유하고, complete-r1-b1.ogg가
+    // 82개 자산이지만 파일은 76개다. BGM 6종이 main 한 곡을 공유하고, complete-r1-b1.ogg가
     // 조립과 생맥주에 각각 있으나 폴더가 달라 충돌하지 않는다.
-    expect(catalogFiles.size).toBe(77);
+    expect(catalogFiles.size).toBe(76);
     for (const file of catalogFiles) expect(listed, file).toContain(file);
     for (const file of listed) expect(catalogFiles, file).toContain(file);
   });

@@ -49,9 +49,9 @@ const AMBIENCE = group('ambience', AUDIO_BUS.AMBIENCE, [
   ['AMB-SHOP-INTERIOR', 'shop-interior', { loop: true }],
   ['AMB-DOOR-OPEN', 'door-open'],
   ['AMB-DOOR-CLOSE', 'door-close'],
-  ['AMB-CROWD-L1', 'crowd-l1', { loop: true }],
-  ['AMB-CROWD-L2', 'crowd-l2', { loop: true }],
-  ['AMB-CROWD-L3', 'crowd-l3', { loop: true }],
+  // 손님 1명은 군중음 없음. 혼자 앉은 손님 뒤에서 웅성거리면 좌석 상태와 어긋난다.
+  ['AMB-CROWD-L1', 'crowd-l1', { loop: true }],  // 2~4석
+  ['AMB-CROWD-L2', 'crowd-l2', { loop: true }],  // 5석 이상
   ['AMB-CHARCOAL-BED', 'charcoal-bed', { loop: true }],
 ]);
 
@@ -165,6 +165,14 @@ const BY_ID = new Map(AUDIO_CATALOG.map((entry) => [entry.id, entry]));
 
 export function audioEntry(id) {
   return BY_ID.get(id) ?? null;
+}
+
+// 착석 인원에 맞는 군중음. 1명 이하는 null이며 이때는 아무것도 재생하지 않는다.
+export function crowdAmbienceId(seatedCount) {
+  const seated = Number(seatedCount) || 0;
+  if (seated >= 5) return 'AMB-CROWD-L2';
+  if (seated >= 2) return 'AMB-CROWD-L1';
+  return null;
 }
 
 export function audioIdsByBus(bus) {
