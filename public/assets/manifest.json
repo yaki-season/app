@@ -301,7 +301,7 @@
     {
       "id": "CH-EXTRA-SOLO-SERVICE",
       "sourceRevision": 7,
-      "runtimeBuild": 1,
+      "runtimeBuild": 2,
       "status": "approved",
       "screenUnit": "SCR-SVC-CUSTOMERS",
       "profile": "standalone-raster",
@@ -321,7 +321,9 @@
         }
       ],
       "clips": [
-        "waiting"
+        "waiting",
+        "eating-skewer",
+        "drinking-beer"
       ],
       "mirrorSafe": false,
       "source": "ARTSRC:CH-EXTRA-SOLO-SERVICE:R7",
@@ -340,7 +342,31 @@
         "width": 1121,
         "height": 1403
       },
-      "format": "png"
+      "format": "png",
+      "companions": [
+        {
+          "role": "solo-eating-skewer",
+          "url": "/assets/core/customer/ch-extra-solo-service-eating-skewer-r7-b2.png",
+          "sha256": "ee0e108489c9454594a0ab5d47d0c07e00690d4c1203dad565737eaf49951ef5",
+          "bytes": 1482377,
+          "dimensions": {
+            "width": 1121,
+            "height": 1403
+          },
+          "format": "png"
+        },
+        {
+          "role": "solo-drinking-beer",
+          "url": "/assets/core/customer/ch-extra-solo-service-drinking-beer-r7-b2.png",
+          "sha256": "b38113dc48b438cdb9ce2830576d8aad04e7c26eb5a9369ae1025dbe81e18ec6",
+          "bytes": 1450741,
+          "dimensions": {
+            "width": 1121,
+            "height": 1403
+          },
+          "format": "png"
+        }
+      ]
     },
     {
       "id": "BG-SERVICE-TABLE-ARTIST009",

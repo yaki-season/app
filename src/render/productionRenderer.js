@@ -317,6 +317,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
           height: 64 / 1080,
         }, LAYER_Z.fixture - 0.02);
         placeBillboard(seatActorMesh[seatId], seatCam, seat.actor, LAYER_Z.actor);
+        seatActorMesh[seatId].userData.frameKey = null;
         if (SEAT_ACTOR_TEXTURE && SEAT_ACTOR_UV) cropUV(seatActorMesh[seatId].geometry, SEAT_ACTOR_UV);
         placeBillboard(objectMesh[`seatServe:${seatId}`], seatCam, seat.hit ?? seat.serve, LAYER_Z.interactive); // 손님 위 정렬된 투명 hit target(원격 D1 계약)
         seatBubbleWorld[seatId] = worldAtScreen(seatCam, seat.bubble.x, seat.bubble.y, LAYER_Z.actor);
@@ -574,6 +575,20 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         a.material.color.setHex(0xffffff);
         a.material.needsUpdate = true;
       }
+    },
+    setSeatActorFrame: (seatId, { scale = 1, offsetY = 0 } = {}) => {
+      const actor = seatActorMesh[seatId];
+      const seatIndex = SEAT_IDS.indexOf(seatId);
+      if (!actor || seatIndex < 0 || seatIndex >= seatCapacity) return;
+      const frameKey = `${seatCapacity}:${seatLayoutMode}:${scale}:${offsetY}`;
+      if (actor.userData.frameKey === frameKey) return;
+      const seat = computeSeats(seatCapacity, { layoutMode: seatLayoutMode })[seatIndex];
+      placeBillboard(actor, seatCam, {
+        ...seat.actor,
+        y: seat.actor.y + offsetY,
+      }, LAYER_Z.actor);
+      actor.scale.set(scale, scale, 1);
+      actor.userData.frameKey = frameKey;
     },
     presetCam,
     activeScreenId: () => activeId,

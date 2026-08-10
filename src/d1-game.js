@@ -28,9 +28,14 @@ import { gameAudio, installGameAudio, setBgm, sfx, sfxOnce, loopOn, loopOff, loo
 import { crowdAmbienceId } from './audio/audioCatalog.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
 import {
+  d1OfficeCustomerVariant,
   isD1OfficeBeerFrame,
   resolveD1OfficeCustomerFrame,
 } from './render/d1OfficeCustomerArt.js';
+import {
+  isD1SoloBeerFrame,
+  resolveD1SoloCustomerFrame,
+} from './render/d1SoloCustomerArt.js';
 import {
   SCREENS,
   SCREEN_IDS,
@@ -607,6 +612,18 @@ const EXTRA_ASSET = {
   office: 'CH-EXTRA-COMMUTER-SERVICE',
   solo: 'CH-EXTRA-SOLO-SERVICE',
 };
+const EXTRA_ACTOR_FRAME = Object.freeze({
+  officeFullBody: Object.freeze({ scale: 1.82, offsetY: 0.16 }),
+  officePortrait: Object.freeze({ scale: 1, offsetY: 0 }),
+  solo: Object.freeze({ scale: 1, offsetY: 0 }),
+  empty: Object.freeze({ scale: 1, offsetY: 0 }),
+});
+
+function officeActorFrame(customerId) {
+  return ['a', 'b'].includes(d1OfficeCustomerVariant(customerId))
+    ? EXTRA_ACTOR_FRAME.officeFullBody
+    : EXTRA_ACTOR_FRAME.officePortrait;
+}
 let businessSession = null;
 let businessPort = null;
 let businessBootError = null;
@@ -1216,10 +1233,18 @@ function syncCustomers() {
         nowMs,
       })
       : null;
+    const soloArt = kind === 'solo'
+      ? resolveD1SoloCustomerFrame(runtimeAssets.SOLO_CUSTOMER, {
+        servedSkewer,
+        servedBeer,
+        nowMs,
+      })
+      : null;
     const tsukiokaHoldingBeer = seat?.customerId === 'REGULAR_TSUKIOKA'
       && (tsukiokaArt?.id === runtimeAssets.TSUKIOKA_PARTIAL_BEER.id
         || tsukiokaArt?.frameRole === 'drink-frame');
     const officeHoldingBeer = isD1OfficeBeerFrame(officeArt);
+    const soloHoldingBeer = isD1SoloBeerFrame(soloArt);
     const customerPresent = !!seat?.occupied
       && !seat.cleanupNeeded
       && !['empty', 'leaving', 'cleanup'].includes(seat.phase);
@@ -1232,7 +1257,7 @@ function syncCustomers() {
     );
     R.setSeatPlateVisible(seatId, onCustomers && customerPresent && servedSkewer);
     R.setSeatBeerVisible(seatId, onCustomers && customerPresent
-      && servedBeer && !tsukiokaHoldingBeer && !officeHoldingBeer);
+      && servedBeer && !tsukiokaHoldingBeer && !officeHoldingBeer && !soloHoldingBeer);
     R.setSeatEmptyDishesVisible(seatId, onCustomers && dirtyTable);
     R.setSeatCleanupOverlayVisible(seatId, onCustomers && cleanupSeatId === seatId);
     const target = R.objectMesh[`seatServe:${seatId}`];
@@ -1244,14 +1269,14 @@ function syncCustomers() {
     if (actor) {
       if (kind === 'office') {
         R.setSeatActorTexture(seatId, officeArt?.url ?? runtimeAssets.COMMUTER_CUSTOMER.url);
-        actor.scale.set(1.22, 1.22, 1);
+        R.setSeatActorFrame(seatId, officeActorFrame(seat.customerId));
       } else if (kind === 'solo') {
-        R.setSeatActorTexture(seatId, runtimeAssets.SOLO_CUSTOMER.url);
-        actor.scale.set(1, 1, 1);
+        R.setSeatActorTexture(seatId, soloArt?.url ?? runtimeAssets.SOLO_CUSTOMER.url);
+        R.setSeatActorFrame(seatId, EXTRA_ACTOR_FRAME.solo);
       } else if (actor.material.map) {
         actor.material.map = null;
         actor.material.needsUpdate = true;
-        actor.scale.set(1, 1, 1);
+        R.setSeatActorFrame(seatId, EXTRA_ACTOR_FRAME.empty);
       }
     }
     const bubble = document.querySelector(`[data-testid="bubble-${seatId}"]`);
