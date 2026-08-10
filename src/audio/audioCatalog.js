@@ -1,4 +1,4 @@
-// AUD-002가 정한 78개 오디오 자산의 단일 출처.
+// AUD-002가 정한 76개 오디오 자산의 단일 출처.
 //
 // 아트와 달리 오디오는 manifest를 거치지 않는다. 아트 manifest는 승인 증적과 SHA 대조가 목적인데,
 // 오디오는 "약속된 경로에 파일을 놓으면 울린다"가 요구사항이라 중간 등록 단계가 오히려 걸림돌이다.
@@ -96,9 +96,7 @@ const DRINK = group('sfx/drink', AUDIO_BUS.SFX, [
   ['SFX-DRINK-BEER-LEVER-ON', 'beer-lever-on'],
   ['SFX-DRINK-BEER-FLOW', 'beer-flow', { loop: true }],
   ['SFX-DRINK-BEER-LEVER-OFF', 'beer-lever-off'],
-  ['SFX-DRINK-FOAM-LEVER-ON', 'foam-lever-on'],
   ['SFX-DRINK-FOAM-FLOW', 'foam-flow', { loop: true }],
-  ['SFX-DRINK-FOAM-LEVER-OFF', 'foam-lever-off'],
   ['SFX-DRINK-FILL-PITCH', 'fill-pitch', { loop: true }],
   ['SFX-DRINK-GLASS-RESONANCE', 'glass-resonance'],
   ['SFX-DRINK-COMPLETE', 'complete'],

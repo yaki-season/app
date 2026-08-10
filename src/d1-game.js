@@ -1781,7 +1781,6 @@ function handle(key, now) {
       } else {
         sfx('SFX-GRILL-PLACE-METAL');
         sfx('SFX-GRILL-PLACE-SIZZLE');
-        sfxOnce('SFX-PREP-FIRST-SIZZLE', 'first-grill-placement');
         showHint(`${r.slot + 1}번 ${skewerLabel(menuId)} 앞면 조리 시작 · 다른 꼬치와 독립적으로 익습니다`);
       }
       persistFirstOrderRuntime();
@@ -1884,14 +1883,14 @@ function updateDrinkAudio(state) {
       sfx('SFX-DRINK-BEER-LEVER-OFF');
     } else if (drinkLeverAudioZone === 'foam') {
       loopOff('SFX-DRINK-FOAM-FLOW');
-      sfx('SFX-DRINK-FOAM-LEVER-OFF');
+      sfx('SFX-DRINK-BEER-LEVER-OFF');
     }
     if (next === 'beer') {
       sfx('SFX-DRINK-BEER-LEVER-ON');
       loopOn('SFX-DRINK-BEER-FLOW');
       loopOn('SFX-DRINK-FILL-PITCH');
     } else if (next === 'foam') {
-      sfx('SFX-DRINK-FOAM-LEVER-ON');
+      sfx('SFX-DRINK-BEER-LEVER-ON');
       loopOn('SFX-DRINK-FOAM-FLOW');
     }
     drinkLeverAudioZone = next;

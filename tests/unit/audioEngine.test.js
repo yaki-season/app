@@ -44,9 +44,9 @@ function engineWith({ present = () => true } = {}) {
 }
 
 describe('오디오 카탈로그', () => {
-  it('AUD-002의 78개 자산을 중복 없는 ID로 담는다', () => {
-    expect(AUDIO_CATALOG).toHaveLength(78);
-    expect(new Set(AUDIO_CATALOG.map((entry) => entry.id)).size).toBe(78);
+  it('AUD-002의 76개 자산을 중복 없는 ID로 담는다', () => {
+    expect(AUDIO_CATALOG).toHaveLength(76);
+    expect(new Set(AUDIO_CATALOG.map((entry) => entry.id)).size).toBe(76);
   });
 
   it('손님이 한 명이면 군중음을 재생하지 않는다', () => {
@@ -73,9 +73,9 @@ describe('오디오 카탈로그', () => {
     const readme = readFileSync(new URL('../../public/assets/audio/README.md', import.meta.url), 'utf8');
     const listed = new Set([...readme.matchAll(/`([a-z0-9-]+-r\d+-b\d+\.ogg)`/g)].map((m) => m[1]));
     const catalogFiles = new Set(AUDIO_CATALOG.map((entry) => entry.url.split('/').pop()));
-    // 78개 자산이지만 파일은 72개다. BGM 6종이 main 한 곡을 공유하고, complete-r1-b1.ogg가
+    // 76개 자산이지만 파일은 70개다. BGM 6종이 main 한 곡을 공유하고, complete-r1-b1.ogg가
     // 조립과 생맥주에 각각 있으나 폴더가 달라 충돌하지 않는다.
-    expect(catalogFiles.size).toBe(72);
+    expect(catalogFiles.size).toBe(70);
     for (const file of catalogFiles) expect(listed, file).toContain(file);
     for (const file of listed) expect(catalogFiles, file).toContain(file);
   });
@@ -113,6 +113,8 @@ describe('오디오 카탈로그', () => {
     expect(audioEntry('SFX-GRILL-FLIP-TONG')).toBeNull();
     expect(audioEntry('SFX-GRILL-FLIP-TURN')).toBeNull();
     expect(audioEntry('SFX-GRILL-FLIP-OILSPIT')).toBeNull();
+    expect(audioEntry('SFX-DRINK-FOAM-LEVER-ON')).toBeNull();
+    expect(audioEntry('SFX-DRINK-FOAM-LEVER-OFF')).toBeNull();
     expect(audioEntry('SFX-S0-KEY-PICK')?.url).toContain('/sfx/s0/key-pick-r1-b1.ogg');
   });
 });

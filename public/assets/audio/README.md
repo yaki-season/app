@@ -1,6 +1,6 @@
 # 오디오 납품 위치
 
-`AUD-002 S0~S2 사운드 제작 목록과 파일 계약`의 78개 자산을 여기에 넣는다.
+`AUD-002 S0~S2 사운드 제작 목록과 파일 계약`의 76개 자산을 여기에 넣는다.
 길이·루프·재생 조건·무음 대체는 `AUD-002`가 단일 출처이며 이 문서는 경로 체크리스트다.
 
 ## 규칙 요약
@@ -73,16 +73,14 @@ ID는 그대로라 게임 코드는 손대지 않는다.
 - [ ] `retrieve-r1-b1.ogg`
 - [ ] `burnt-r1-b1.ogg`
 
-## sfx/drink/ (13)
+## sfx/drink/ (11)
 
 - [ ] `glass-set-r1-b1.ogg`
 - [ ] `tray-tap-r1-b1.ogg`
 - [ ] `beer-lever-on-r1-b1.ogg`
 - [ ] `beer-flow-r1-b1.ogg`
 - [ ] `beer-lever-off-r1-b1.ogg`
-- [ ] `foam-lever-on-r1-b1.ogg`
 - [ ] `foam-flow-r1-b1.ogg`
-- [ ] `foam-lever-off-r1-b1.ogg`
 - [ ] `fill-pitch-r1-b1.ogg` — 피치 변화를 파일에 굽지 않는다
 - [ ] `glass-resonance-r1-b1.ogg`
 - [ ] `complete-r1-b1.ogg`
