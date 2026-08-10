@@ -20,6 +20,7 @@ import { createBeerLiquidMaterial } from './render/beerLiquidMaterial.js';
 import { createBeerCoreVfxMaterial } from './render/beerCoreVfxMaterial.js';
 import { createGrillMaterial } from './render/grillMaterial.js';
 import { elapsedSecToUniform } from './render/grillRenderer.js';
+import { createGrillSmokeVfx } from './render/grillSmokeVfx.js';
 import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
@@ -161,6 +162,10 @@ if (restoredFirstOrderRuntime?.cook) cook.restore(restoredFirstOrderRuntime.cook
 const d3Grill = createD3GrillSession(restoredFirstOrderRuntime?.d3Grill ?? null);
 const SLOT_KEYS = GRILL_SLOT_KEYS.slice(0, cook.slotCount());
 R.setGrillSlots(D1_PUBLIC_GRILL_LAYOUT);
+const grillSmoke = createGrillSmokeVfx({
+  scene: R.scene,
+  slotMeshes: SLOT_KEYS.map((key) => R.objectMesh[key]),
+});
 let firstOrderGuide = createFirstOrderGuide(restoredFirstOrderRuntime?.guide);
 let glassPlaced = restoredFirstOrderRuntime?.glassPlaced === true;
 let guideFlipCount = Number(restoredFirstOrderRuntime?.guideFlipCount ?? 0);
@@ -1795,6 +1800,7 @@ function clickGrillSlot(i, now) {
       : `완성 ${label}가 오른쪽 종류·품질별 목록에 추가됐어요`);
   }
   else if (r.flipped) {
+    grillSmoke.burst(i, now);
     const menuId = cook.slotViews(now)[i]?.menuId ?? 'negima';
     if (ACTIVE_DAY_ID === 'd1' && menuId === 'negima' && !guideFlippedSlots.has(i)) {
       guideFlippedSlots.add(i);
@@ -1852,8 +1858,7 @@ function bindCookingMaterialToApprovedPlane(key) {
   return true;
 }
 
-function updateGrillVisual(now) {
-  const views = cook.slotViews(now);
+function updateGrillVisual(now, views = cook.slotViews(now)) {
   for (const key of SLOT_KEYS) {
     const v = views[slotIndexOf(key)];
     const mesh = R.objectMesh[key];
@@ -2059,7 +2064,11 @@ function loop(now) {
     }
   }
   lastBusinessFrameAt = now;
-  updateGrillVisual(now);
+  const grillViews = cook.slotViews(now);
+  updateGrillVisual(now, grillViews);
+  grillSmoke.update(now, grillViews, {
+    visible: active === 'SCR-SVC-GRILL',
+  });
   R.setCleanupOverlayFrame(Math.floor(now / 180));
   updateGrillStatus(now);
   pour.tick(now);
@@ -2278,6 +2287,7 @@ Object.assign(d1GameDebug, {
   cookAssemblyIndex: () => cook.assemblyIndex(),
   cookWaiting: () => cook.waitingCount(),
   cookSlots: () => cook.slotViews(performance.now()),
+  grillSmoke: () => grillSmoke.snapshot(),
   grillStatusSnapshot: () => grillStatusEls.map(({ card }) => ({
     hidden: card.hidden,
     contactFace: card.dataset.contactFace,
