@@ -28,6 +28,10 @@
     "spansMidnight": true,
     "targetSessionSec": 420
   },
+  "arrivalPolicy": {
+    "maxAllSeatsEmptyWaitSec": 13,
+    "autoCloseAfterFinalCustomer": true
+  },
   "segments": [
     {
       "id": "d3-tare-intro",

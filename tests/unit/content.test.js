@@ -65,6 +65,21 @@ describe('실제 콘텐츠', () => {
 });
 
 describe('스키마 위반 거부 (Ajv)', () => {
+  it('모든 영업일에서 빈 가게 13초 입장 정책을 필수로 고정한다', () => {
+    const bundle = loadBundle();
+    expect(bundle.days.every((day) => (
+      day.arrivalPolicy.maxAllSeatsEmptyWaitSec === 13
+      && day.arrivalPolicy.autoCloseAfterFinalCustomer === true
+    ))).toBe(true);
+
+    delete bundle.days[1].arrivalPolicy;
+    expect(validateContent(bundle, SCHEMAS).valid).toBe(false);
+
+    const drifted = loadBundle();
+    drifted.days[2].arrivalPolicy.maxAllSeatsEmptyWaitSec = 14;
+    expect(validateContent(drifted, SCHEMAS).valid).toBe(false);
+  });
+
   it('범위를 벗어난 인내심을 거부한다', () => {
     const b = loadBundle();
     b.customers[0].patienceSec = 9999; // max 300 초과

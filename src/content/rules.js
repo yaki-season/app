@@ -172,6 +172,12 @@ export function checkContentRules(bundle) {
   }
 
   for (const day of bundle.days || []) {
+    if (
+      day.arrivalPolicy?.maxAllSeatsEmptyWaitSec !== 13
+      || day.arrivalPolicy?.autoCloseAfterFinalCustomer !== true
+    ) {
+      errors.push(`[day:${day.id}] 모든 영업일은 빈 가게 13초 이내 입장·마지막 손님 자동 마감 정책이 필요함`);
+    }
     for (const [field, range] of Object.entries(day.totals || {})) {
       if (range.min > range.max) {
         errors.push(`[day:${day.id}] totals.${field} 최소값이 최대값보다 큼`);

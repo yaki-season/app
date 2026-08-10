@@ -43,6 +43,11 @@ export const D1_SETTLEMENT_STEPS = Object.freeze([
   'recipe-goal',
 ]);
 
+export const BUSINESS_DAY_ARRIVAL_POLICY = Object.freeze({
+  maxAllSeatsEmptyWaitSec: 13,
+  autoCloseAfterFinalCustomer: true,
+});
+
 const TERMINAL_ORDER_STATUS = new Set([
   D1_ORDER_STATUS.COMPLETED,
   D1_ORDER_STATUS.FAILED,
@@ -60,9 +65,6 @@ const QUALITY_RATE = Object.freeze({
   [D1_QUALITY.OK]: 0.4,
   [D1_QUALITY.FAIL]: 0.1,
 });
-
-// 자리가 빈 뒤 다음 손님을 기다리는 시간. D1 계약값이며 선언이 없는 날도 같은 값을 쓴다.
-const DEFAULT_SEAT_AVAILABLE_WAIT_SEC = 13;
 
 const clone = (value) => structuredClone(value);
 
@@ -110,20 +112,18 @@ export function createBusinessDayDefinition(record, {
     }
   }
   const arrivalPolicy = definition.arrivalPolicy;
-  if (arrivalPolicy) {
-    assertFinite(arrivalPolicy.maxAllSeatsEmptyWaitSec, 'arrivalPolicy.maxAllSeatsEmptyWaitSec', { min: 1 });
-    if (typeof arrivalPolicy.autoCloseAfterFinalCustomer !== 'boolean') {
-      throw new TypeError('arrivalPolicy.autoCloseAfterFinalCustomer 불리언이 필요합니다.');
-    }
+  if (
+    arrivalPolicy?.maxAllSeatsEmptyWaitSec !== BUSINESS_DAY_ARRIVAL_POLICY.maxAllSeatsEmptyWaitSec
+    || arrivalPolicy?.autoCloseAfterFinalCustomer !== BUSINESS_DAY_ARRIVAL_POLICY.autoCloseAfterFinalCustomer
+  ) {
+    throw new TypeError('모든 영업일은 빈 가게 13초 이내 입장·마지막 손님 자동 마감 정책이 필요합니다.');
   }
   if (requireD1BusinessPolicy && (
     businessWindow?.startMinute !== 1050
     || businessWindow?.endMinute !== 1590
     || businessWindow?.spansMidnight !== true
-    || arrivalPolicy?.maxAllSeatsEmptyWaitSec !== 13
-    || arrivalPolicy?.autoCloseAfterFinalCustomer !== true
   )) {
-    throw new TypeError('D1은 17:30~02:30 영업창과 빈 가게 13초 입장·마지막 손님 자동 마감 정책이 필요합니다.');
+    throw new TypeError('D1은 17:30~02:30 영업창이 필요합니다.');
   }
 
   const timing = definition.timingMs ?? {};
@@ -393,11 +393,7 @@ function spawnEligibleWaves(state, definition) {
     const waveSpec = definition.waves[index];
     const waveState = state.waves[index];
     if (waveState.status !== 'pending') continue;
-    // D2·D3 정의에는 arrivalPolicy가 없다. 예전에는 그 곱셈이 NaN이 되어 조기 입장이 통째로
-    // 꺼졌고, 자리가 남아도 예정 시각까지 아무도 오지 않았다. 선언이 없으면 D1과 같은 값을 쓴다.
-    const emptyWaitLimitMs = (
-      definition.arrivalPolicy?.maxAllSeatsEmptyWaitSec ?? DEFAULT_SEAT_AVAILABLE_WAIT_SEC
-    ) * 1000;
+    const emptyWaitLimitMs = definition.arrivalPolicy.maxAllSeatsEmptyWaitSec * 1000;
     const emptyDeadlineMs = state.clock.allSeatsEmptySinceMs != null && Number.isFinite(emptyWaitLimitMs)
       ? state.clock.allSeatsEmptySinceMs + emptyWaitLimitMs
       : Number.POSITIVE_INFINITY;
@@ -571,21 +567,13 @@ function completeCleanup(state, seat) {
   seat.cleanup.progressMs = 0;
   seat.cleanup.completionId = `cleanup:${customer?.id ?? seat.id}`;
   state.metrics.cleanedSeats += 1;
-  trackSeatAvailability(state);
+  trackAllTablesVacated(state);
 }
 
-// 빈자리가 있으면 다음 손님을 기다리기 시작한다.
-//
-// 예전에는 여섯 자리가 **모두** 비어야 이 시계가 돌았다. 그래서 한 명만 앉아 있어도 나머지 다섯
-// 자리가 비어 있는 채로 다음 무리가 예정 시각(atMs)까지 오지 않아, 자리가 남는데도 장사가
-// 멈춘 것처럼 보였다. 빈 좌석이 하나라도 있으면 시계를 돌린다.
-//
-// 무한정 밀려들지는 않는다. 웨이브의 선행 주문 완료 조건과 동시 주문 상한, 실제 빈 좌석 수를
-// spawnEligibleWaves가 다시 확인한다.
-function trackSeatAvailability(state) {
-  const hasFreeSeat = state.seats.some((seat) => seat.status === 'empty');
+function trackAllTablesVacated(state) {
+  const hasSeatedCustomer = state.seats.some((seat) => seat.status === 'occupied');
   if (
-    hasFreeSeat
+    !hasSeatedCustomer
     && state.waves.some((wave) => wave.status === 'pending')
     && state.clock.allSeatsEmptySinceMs == null
   ) {
@@ -623,7 +611,7 @@ function progressTimers(state, definition, deltaMs) {
   }
   for (const customer of expired) failCustomers(state, definition, customer, 'patience');
   syncMealDepartures(state, definition);
-  trackSeatAvailability(state);
+  trackAllTablesVacated(state);
   for (const seat of state.seats) {
     if (seat.status !== 'cleanup' || !seat.cleanup.active) continue;
     seat.cleanup.progressMs += deltaMs;
@@ -647,7 +635,7 @@ function hasUnfinishedDayState(state) {
 
 function updateClosingPhase(state, definition) {
   const allArrivalsResolved = state.waves.every((wave) => wave.status !== 'pending');
-  const finalCleanupComplete = definition.arrivalPolicy?.autoCloseAfterFinalCustomer !== false
+  const finalCleanupComplete = definition.arrivalPolicy.autoCloseAfterFinalCustomer
     && allArrivalsResolved
     && !hasUnfinishedDayState(state);
   if (

@@ -21,6 +21,7 @@ export function buildEarlyCampaignDayContract(bundle, dayId) {
     dayId,
     nextNodeId: scenario.nextDay,
     businessWindow: structuredClone(day.businessWindow),
+    arrivalPolicy: structuredClone(day.arrivalPolicy),
     totals: structuredClone(day.totals),
     limits: Object.freeze({
       maxActiveOrders: day.maxActiveOrders,

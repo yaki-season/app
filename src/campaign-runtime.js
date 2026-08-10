@@ -34,6 +34,7 @@ export {
   reportD1RuntimeComponentInventory,
 } from './assets/d1RuntimeInventory.js';
 export {
+  BUSINESS_DAY_ARRIVAL_POLICY,
   D1_CUSTOMER_PHASE,
   D1_DAY_PHASE,
   D1_ORDER_STATUS,

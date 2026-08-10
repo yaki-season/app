@@ -61,6 +61,12 @@ describe('Developer 3 S0~D3 stable data contract', () => {
 
   it('D1~D3 계획은 같은 데이터에서 결정적인 손님·주문·항목·상한을 만든다', () => {
     const content = bundle();
+    expect(['d1', 'd2', 'd3'].map((dayId) => buildEarlyCampaignDayContract(content, dayId).arrivalPolicy))
+      .toEqual([
+        { maxAllSeatsEmptyWaitSec: 13, autoCloseAfterFinalCustomer: true },
+        { maxAllSeatsEmptyWaitSec: 13, autoCloseAfterFinalCustomer: true },
+        { maxAllSeatsEmptyWaitSec: 13, autoCloseAfterFinalCustomer: true },
+      ]);
     expect(['d1', 'd2', 'd3'].map((dayId) => simulateEarlyCampaignPlan(content, dayId)))
       .toMatchObject([
         { dayId: 'd1', nextNodeId: 'd2', customers: 4, orders: 4, items: 8, peakActiveOrders: 2, peakRiskProcesses: 1 },

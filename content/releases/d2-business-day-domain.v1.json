@@ -2,6 +2,7 @@
   "id": "d2",
   "nextNodeId": "d3",
   "sessionTargetMs": 420000,
+  "arrivalPolicy": { "maxAllSeatsEmptyWaitSec": 13, "autoCloseAfterFinalCustomer": true },
   "seatIds": ["seat-01", "seat-02", "seat-03", "seat-04", "seat-05", "seat-06"],
   "timingMs": { "thinkMin": 4000, "thinkMax": 6000, "eat": 15000, "leave": 1000, "cleanup": 3000, "waitRecovery": 10000 },
   "limits": { "maxActiveOrders": 2, "maxRiskProcesses": 2 },

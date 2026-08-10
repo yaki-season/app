@@ -30,11 +30,12 @@ describe('D2 전체 영업 정의', () => {
     expect(definition.nextNodeId).toBe('d3');
   });
 
-  // D2·D3 정의에는 arrivalPolicy 선언이 없다. 예전에는 그 탓에 조기 입장이 통째로 꺼져
-  // 직장인 2인 뒤로 아무도 오지 않고 예정 시각(220초·320초)까지 가게가 비어 있었다.
-  it('입장 정책 선언이 없어도 자리가 비면 예정 시각을 기다리지 않는다', () => {
+  it('13초 입장 정책에 따라 빈 가게에서 예정 시각을 기다리지 않는다', () => {
     const definition = createBusinessDayDefinition(record, { expectedId: 'd2' });
-    expect(definition.arrivalPolicy ?? null).toBeNull();
+    expect(definition.arrivalPolicy).toEqual({
+      maxAllSeatsEmptyWaitSec: 13,
+      autoCloseAfterFinalCustomer: true,
+    });
     const officeWave = definition.waves[1];
     expect(officeWave.atMs).toBe(100_000);
 

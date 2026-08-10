@@ -18,6 +18,7 @@
     "timingSec",
     "autoPolicySuccessRate",
     "businessWindow",
+    "arrivalPolicy",
     "segments",
     "totals",
     "maxActiveOrders",
@@ -90,8 +91,8 @@
       "required": ["maxAllSeatsEmptyWaitSec", "autoCloseAfterFinalCustomer"],
       "additionalProperties": false,
       "properties": {
-        "maxAllSeatsEmptyWaitSec": { "type": "number", "minimum": 1, "maximum": 120, "unit": "초" },
-        "autoCloseAfterFinalCustomer": { "type": "boolean" }
+        "maxAllSeatsEmptyWaitSec": { "const": 13, "unit": "초" },
+        "autoCloseAfterFinalCustomer": { "const": true }
       }
     },
     "segments": {
