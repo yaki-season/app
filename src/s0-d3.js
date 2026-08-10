@@ -31,6 +31,20 @@ setBgm('BGM-S0-ALLEY');
 loopOn('AMB-ALLEY-NIGHT');
 loopOn('SFX-S0-DISTANT-SHOP');
 
+const S0_AMBIENT_ONESHOTS = ['SFX-S0-WET-TIRE', 'SFX-S0-TRAIN-PASS'];
+let s0AmbientIndex = 0;
+function scheduleS0AmbientOneShot() {
+  const delayMs = 6_000 + Math.random() * 12_000;
+  window.setTimeout(() => {
+    if (mode === 's0' || (mode === 'story' && dayId === 'S0')) {
+      sfx(S0_AMBIENT_ONESHOTS[s0AmbientIndex % S0_AMBIENT_ONESHOTS.length]);
+      s0AmbientIndex += 1;
+    }
+    scheduleS0AmbientOneShot();
+  }, delayMs);
+}
+scheduleS0AmbientOneShot();
+
 const errors = validateS0D3Content();
 errors.push(...validateS0ExteriorBackgroundBindingContract());
 if (errors.length) throw new Error(`S0~D3 콘텐츠 오류:\n${errors.join('\n')}`);
@@ -54,6 +68,16 @@ let returnMode = null;
 let dayId = 'S0';
 let campaignBridge = null;
 let approvedRuntimeAssets = new Map();
+const playedStoryAudio = new Set();
+
+function syncStoryAudio(dialogueId) {
+  if (playedStoryAudio.has(dialogueId)) return;
+  playedStoryAudio.add(dialogueId);
+  if (dialogueId === 'DLG-S0-003') {
+    sfx('SFX-PREP-CHARCOAL-IGNITE');
+    window.setTimeout(() => sfx('SFX-PREP-FAN'), 350);
+  }
+}
 
 const STORY_BACKGROUND_ASSET_IDS = Object.freeze({
   S0: 'BG-EXTERIOR-S0-GATE-OPEN',
@@ -336,6 +360,7 @@ function renderStory() {
   const story = S0_D3_STORY_SCENES[storyIndex];
   const line = story.lines[lineIndex];
   const speaker = speakerById(line.speakerId);
+  syncStoryAudio(line.dialogueId);
   dayId = story.dayId;
   const storyHeadings = {
     S0: '다시 불을 켜는 밤',

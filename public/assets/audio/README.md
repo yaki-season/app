@@ -1,6 +1,6 @@
 # 오디오 납품 위치
 
-`AUD-002 S0~S2 사운드 제작 목록과 파일 계약`의 81개 자산을 여기에 넣는다.
+`AUD-002 S0~S2 사운드 제작 목록과 파일 계약`의 78개 자산을 여기에 넣는다.
 길이·루프·재생 조건·무음 대체는 `AUD-002`가 단일 출처이며 이 문서는 경로 체크리스트다.
 
 ## 규칙 요약
@@ -53,15 +53,14 @@ ID는 그대로라 게임 코드는 손대지 않는다.
 - [ ] `fan-r1-b1.ogg`
 - [ ] `first-sizzle-r1-b1.ogg`
 
-## sfx/assembly/ (5)
+## sfx/assembly/ (4)
 
 - [ ] `pierce-r1-b1.ogg`
-- [ ] `skewer-rebound-r1-b1.ogg`
 - [ ] `reject-r1-b1.ogg`
 - [ ] `remove-r1-b1.ogg`
 - [ ] `complete-r1-b1.ogg`
 
-## sfx/grill/ (12)
+## sfx/grill/ (10)
 
 - [ ] `place-metal-r1-b1.ogg`
 - [ ] `place-sizzle-r1-b1.ogg`
@@ -70,9 +69,7 @@ ID는 그대로라 게임 코드는 손대지 않는다.
 - [ ] `crackle-b-r1-b1.ogg`
 - [ ] `crackle-c-r1-b1.ogg`
 - [ ] `proper-enter-r1-b1.ogg`
-- [ ] `flip-tong-r1-b1.ogg`
-- [ ] `flip-turn-r1-b1.ogg`
-- [ ] `flip-oilspit-r1-b1.ogg`
+- [ ] `flip-r1-b1.ogg`
 - [ ] `retrieve-r1-b1.ogg`
 - [ ] `burnt-r1-b1.ogg`
 

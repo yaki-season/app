@@ -1,4 +1,4 @@
-// AUD-002가 정한 81개 오디오 자산의 단일 출처.
+// AUD-002가 정한 78개 오디오 자산의 단일 출처.
 //
 // 아트와 달리 오디오는 manifest를 거치지 않는다. 아트 manifest는 승인 증적과 SHA 대조가 목적인데,
 // 오디오는 "약속된 경로에 파일을 놓으면 울린다"가 요구사항이라 중간 등록 단계가 오히려 걸림돌이다.
@@ -72,7 +72,6 @@ const PREP = group('sfx/prep', AUDIO_BUS.SFX, [
 
 const ASSEMBLY = group('sfx/assembly', AUDIO_BUS.SFX, [
   ['SFX-ASM-PIERCE', 'pierce'],
-  ['SFX-ASM-SKEWER-REBOUND', 'skewer-rebound'],
   ['SFX-ASM-REJECT', 'reject'],
   ['SFX-ASM-REMOVE', 'remove'],
   ['SFX-ASM-COMPLETE', 'complete'],
@@ -86,9 +85,7 @@ const GRILL = group('sfx/grill', AUDIO_BUS.SFX, [
   ['SFX-GRILL-CRACKLE-B', 'crackle-b'],
   ['SFX-GRILL-CRACKLE-C', 'crackle-c'],
   ['SFX-GRILL-PROPER-ENTER', 'proper-enter'],
-  ['SFX-GRILL-FLIP-TONG', 'flip-tong'],
-  ['SFX-GRILL-FLIP-TURN', 'flip-turn'],
-  ['SFX-GRILL-FLIP-OILSPIT', 'flip-oilspit'],
+  ['SFX-GRILL-FLIP', 'flip'],
   ['SFX-GRILL-RETRIEVE', 'retrieve'],
   ['SFX-GRILL-BURNT', 'burnt'],
 ]);

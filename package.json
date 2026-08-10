@@ -8,6 +8,7 @@
     "link:assets": "node tools/dev/link-assets.mjs",
     "predev": "node tools/dev/link-assets.mjs",
     "dev": "vite --host 127.0.0.1 --port 8777 --strictPort",
+    "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
     "pretest:e2e": "node tools/dev/link-assets.mjs",

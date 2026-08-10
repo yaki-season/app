@@ -1753,7 +1753,6 @@ function handle(key, now) {
         showHint(r.reason === 'transfer-required' ? '완성 꼬치를 먼저 옮기세요' : '순서가 달라요');
       } else {
         sfx('SFX-ASM-PIERCE');
-        sfx('SFX-ASM-SKEWER-REBOUND');
         if (r.completed) {
           sfx('SFX-ASM-COMPLETE');
           persistFirstOrderRuntime();
@@ -1819,6 +1818,7 @@ function clickGrillSlot(i, now) {
       : `완성 ${label}가 오른쪽 종류·품질별 목록에 추가됐어요`);
   }
   else if (r.flipped) {
+    sfx('SFX-GRILL-FLIP');
     grillSmoke.burst(i, now);
     persistFirstOrderRuntime();
     showHint('꼬치를 뒤집는 중입니다');
@@ -1912,6 +1912,19 @@ const GRILL_COOK_LOOP = 'SFX-GRILL-COOK-LOOP';
 const GRILL_CRACKLES = ['SFX-GRILL-CRACKLE-A', 'SFX-GRILL-CRACKLE-B', 'SFX-GRILL-CRACKLE-C'];
 let grillCookLoopActive = false;
 let nextGrillCrackleAt = null;
+const previousGrillDoneness = Array(GRILL_SLOT_KEYS.length).fill(null);
+
+function updateGrillStateCues(views) {
+  views.forEach((view, index) => {
+    const next = view?.cooking ? view.doneness : null;
+    const previous = previousGrillDoneness[index];
+    if (next !== previous) {
+      if (next === 'perfect') sfx('SFX-GRILL-PROPER-ENTER');
+      if (next === 'burnt') sfx('SFX-GRILL-BURNT');
+      previousGrillDoneness[index] = next;
+    }
+  });
+}
 
 // 기본 지글거림은 하나만 유지한다. 가장 많이 익은 칸을 기준으로 타닥 단발음의
 // 간격을 줄여, 여러 슬롯이 있어도 루프가 뭉개지지 않으면서 익힘 진행을 들려준다.
@@ -1949,6 +1962,7 @@ function updateGrillCookAudio(views, now) {
 
 function updateGrillVisual(now, views = cook.slotViews(now)) {
   updateGrillCookAudio(views, now);
+  updateGrillStateCues(views);
   for (const key of SLOT_KEYS) {
     const v = views[slotIndexOf(key)];
     const mesh = R.objectMesh[key];
