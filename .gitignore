@@ -11,6 +11,6 @@ playwright-report/
 /captures/
 
 # 로컬 개발 서버(python http.server)에서 /assets → public/assets 를 잇는 정션. 커밋하지 않는다.
-/assets/
+/assets
 
 .DS_Store

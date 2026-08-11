@@ -2361,7 +2361,7 @@
       "clips": [],
       "mirrorSafe": false,
       "source": "ARTSRC:UI-RECIPE-BOOK-PAPER:R1",
-      "provenance": "OpenAI image generation; user approved 2026-08-11",
+      "provenance": "PROV:UI-RECIPE-BOOK-PAPER:R1",
       "license": "YAKI SEASON internal approved artwork",
       "specRefs": [
         "UI recipe book background"
