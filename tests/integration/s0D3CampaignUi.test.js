@@ -45,7 +45,7 @@ describe('S0~D3 campaign presentation bridge', () => {
     }
 
     expect(campaignPresentationPosition(bridge.getState())).toEqual({
-      kind: 'complete',
+      kind: 'epilogue',
       dayId: 'D3',
     });
     expect(bridge.getState().economy).toMatchObject({

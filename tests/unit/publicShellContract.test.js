@@ -56,8 +56,8 @@ describe('public shell 설정과 진단 계약', () => {
   });
 });
 
-describe('D4 예고 진입 계약', () => {
-  it('정확한 d4-preview·preview 저장만 허용한다', () => {
+describe('D3 후일담 종착 저장 계약', () => {
+  it('기존 세이브와 호환되는 정확한 d4-preview·preview 저장만 허용한다', () => {
     const result = {
       ok: true,
       value: {

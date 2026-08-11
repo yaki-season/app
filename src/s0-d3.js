@@ -1,4 +1,5 @@
 import {
+  D3_EPILOGUE_PAGES,
   FIXED_CHARACTER,
   S0_D3_STORY_SCENES,
   S0_INTERACTIONS,
@@ -66,6 +67,7 @@ let storyIndex = 0;
 let lineIndex = 0;
 let returnMode = null;
 let dayId = 'S0';
+let epilogueIndex = 0;
 let campaignBridge = null;
 let approvedRuntimeAssets = new Map();
 const playedStoryAudio = new Set();
@@ -435,13 +437,19 @@ async function advanceAfterStory(story) {
   const alreadyCompleted = campaignBridge.getState()?.campaign?.completedDayIds
     ?.includes(story.dayId.toLowerCase());
   if (story.timing === 'post-settlement' && alreadyCompleted) {
-    if (story.dayId === 'D3') mode = 'complete';
+    if (story.dayId === 'D3') {
+      epilogueIndex = 0;
+      mode = 'epilogue';
+    }
     else storyIndex += 1;
     return;
   }
   const completed = await campaignBridge.completeDay(story.dayId);
   if (!completed.ok) throw new Error(completed.error.message);
-  if (story.dayId === 'D3') mode = 'complete';
+  if (story.dayId === 'D3') {
+    epilogueIndex = 0;
+    mode = 'epilogue';
+  }
   else storyIndex += 1;
 }
 
@@ -489,19 +497,68 @@ function renderSettlement() {
   }, true));
 }
 
-function renderComplete() {
+function navigateToMainScreen() {
+  window.location.assign(new URL('./public-shell.html', window.location.href));
+}
+
+function renderEpilogue() {
+  const page = D3_EPILOGUE_PAGES[epilogueIndex];
   heading.textContent = '사흘째 밤, 남겨 둔 불빛';
   hideStoryPortrait();
   hideStoryIllustration();
-  hideStoryBackground();
-  setIds({ screen: 'SCR-POST-NEXT-GOAL', state: 'D3-complete', scene: 'none', dialogue: 'none' });
-  content.innerHTML = '<p class="scene-narration">작은 가게의 불빛은 사흘째 밤에도 꺼지지 않았다. 내일도 이 문을 열 수 있을 것 같다.</p>';
-  actions.replaceChildren(button('처음부터 다시 보기', async () => {
-    const restarted = await campaignBridge.restartDevelopmentCampaign();
-    if (!restarted.ok) throw new Error(restarted.error.message);
-    clearFirstOrderRuntime(window.localStorage);
-    mode = 's0'; s0Index = 0; storyIndex = 0; lineIndex = 0; dayId = 'S0'; render();
-  }));
+  renderStoryBackground('D3');
+  setIds({
+    screen: 'SCR-POST-EPILOGUE',
+    state: `D3-epilogue-${epilogueIndex + 1}`,
+    scene: 'SCN-D3-EPILOGUE',
+    dialogue: page.pageId,
+  });
+  document.querySelector('#epilogue-visual-line').textContent = page.visualLine;
+
+  const article = document.createElement('article');
+  article.className = 'epilogue-card';
+  const kicker = document.createElement('p');
+  kicker.className = 'epilogue-kicker';
+  kicker.textContent = page.kicker;
+  const title = document.createElement('h2');
+  title.className = 'epilogue-title';
+  title.textContent = page.title;
+  article.append(kicker, title);
+  for (const paragraph of page.paragraphs) {
+    const copy = document.createElement('p');
+    copy.className = 'epilogue-copy';
+    copy.textContent = paragraph;
+    article.append(copy);
+  }
+  if (page.releaseNote) {
+    const releaseNote = document.createElement('p');
+    releaseNote.className = 'epilogue-release-note';
+    releaseNote.textContent = page.releaseNote;
+    article.append(releaseNote);
+  }
+  const progress = document.createElement('p');
+  progress.className = 'epilogue-progress';
+  progress.textContent = `${epilogueIndex + 1} / ${D3_EPILOGUE_PAGES.length}`;
+  article.append(progress);
+  content.replaceChildren(article);
+
+  const epilogueActions = [];
+  if (epilogueIndex > 0) {
+    epilogueActions.push(button('이전 장면', () => {
+      epilogueIndex -= 1;
+      render();
+    }));
+  }
+  const lastPage = epilogueIndex === D3_EPILOGUE_PAGES.length - 1;
+  epilogueActions.push(button(lastPage ? '메인 화면으로' : '다음 장면', () => {
+    if (lastPage) {
+      navigateToMainScreen();
+      return;
+    }
+    epilogueIndex += 1;
+    render();
+  }, true));
+  actions.replaceChildren(...epilogueActions);
 }
 
 function renderCampaignError(error) {
@@ -535,9 +592,10 @@ function restorePresentationPosition(position, { postDayId = null } = {}) {
     }
   }
   if (position.kind === 'prologue') return;
-  if (position.kind === 'complete') {
-    mode = 'complete';
+  if (position.kind === 'epilogue') {
+    mode = 'epilogue';
     dayId = 'D3';
+    epilogueIndex = 0;
     return;
   }
   dayId = position.dayId;
@@ -554,7 +612,7 @@ function render() {
   else if (mode === 'summary') renderSummary();
   else if (mode === 'business') renderBusiness();
   else if (mode === 'settlement') renderSettlement();
-  else renderComplete();
+  else renderEpilogue();
 }
 
 async function initialize() {
@@ -574,7 +632,7 @@ async function initialize() {
 
 await initialize();
 window.__s0d3Debug = {
-  getState: () => ({ mode, s0Index, storyIndex, lineIndex, dayId }),
+  getState: () => ({ mode, s0Index, storyIndex, lineIndex, dayId, epilogueIndex }),
   campaignState: () => campaignBridge?.getState() ?? null,
   contentErrors: errors,
 };

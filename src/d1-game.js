@@ -114,7 +114,7 @@ const ACTIVE_DAY_ID = ['d2', 'd3'].includes(requestedDayId) ? requestedDayId : '
 const DAY_META = Object.freeze({
   d1: { label: 'D1', nextLabel: 'D2', nextNodeLabel: '둘째 날 이야기', unlockLabels: ['모모 레시피'] },
   d2: { label: 'D2', nextLabel: 'D3', nextNodeLabel: '셋째 날 이야기', unlockLabels: [] },
-  d3: { label: 'D3', nextLabel: 'D4', nextNodeLabel: '다음 날 예고', unlockLabels: [] },
+  d3: { label: 'D3', nextLabel: '후일담', nextNodeLabel: '사흘째 밤의 후일담', unlockLabels: [] },
 });
 const ACTIVE_DAY = DAY_META[ACTIVE_DAY_ID];
 document.title = `YAKI SEASON — ${ACTIVE_DAY.label} 영업`;
@@ -1646,7 +1646,9 @@ function renderBusiness() {
   if (completed) {
     const campaign = businessSession?.bridge?.getState?.();
     el('resultMessage').textContent = `${ACTIVE_DAY.label} 완료 · 보상 ${campaign?.economy?.balance ?? 44} · 명성 ${campaign?.economy?.reputation ?? 12} · ${ACTIVE_DAY.nextLabel} 저장 완료`;
-    el('continueButton').textContent = `${ACTIVE_DAY.nextLabel}로 계속`;
+    el('continueButton').textContent = ACTIVE_DAY_ID === 'd3'
+      ? '후일담으로 계속'
+      : `${ACTIVE_DAY.nextLabel}로 계속`;
     el('continueButton').href = `./s0-d3.html?post=${ACTIVE_DAY_ID}`;
   }
 }

@@ -45,10 +45,28 @@ h1,h2,p { margin-top:0; } h1 { margin-bottom:0; font-size:clamp(1.4rem,3vw,2.2re
 .summary { margin:0; padding-left:1.4rem; display:grid; gap:8px; }
 .actions { width:min(1280px,100%); margin-inline:auto; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; }
 .primary { background:var(--accent); border-color:#f08a58; font-weight:800; }
+/* D3 종착 저장은 기존 세이브 호환성을 유지하되 공개 화면에서는 산문형 후일담으로 닫는다. */
+.epilogue-visual { display:none; position:relative; z-index:3; width:min(760px,82%); padding:clamp(26px,5vw,56px); text-align:center; }
+body[data-screen-id="SCR-POST-EPILOGUE"] .epilogue-visual { display:grid; justify-items:center; gap:22px; }
+.epilogue-visual p { margin:0; max-width:36em; color:#f8e6c7; font-family:Georgia,"Noto Serif KR","Batang",serif; font-size:clamp(1.05rem,2.2vw,1.5rem); line-height:1.9; text-wrap:balance; text-shadow:0 3px 14px #000; }
+.epilogue-ember { width:clamp(44px,6vw,72px); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle,#ffd68a 0 4%,#d66b38 20%,#7d2918 46%,transparent 70%); filter:blur(.4px) drop-shadow(0 0 22px #d65c2caa); animation:epilogue-ember 3.6s ease-in-out infinite; }
+body[data-screen-id="SCR-POST-EPILOGUE"] .visual-placeholder::before { content:""; position:absolute; inset:0; z-index:2; background:linear-gradient(180deg,#09060452,#100b08c7 86%),radial-gradient(circle at 50% 58%,#8b3d2028,transparent 46%); pointer-events:none; }
+.epilogue-card { max-width:880px; margin-inline:auto; display:grid; gap:14px; }
+.epilogue-kicker { margin:0; color:#dca46f; font-size:.78rem; font-weight:800; letter-spacing:.15em; text-transform:uppercase; }
+.epilogue-title { margin:0 0 8px; color:#ffe1aa; font-family:Georgia,"Noto Serif KR","Batang",serif; font-size:clamp(1.45rem,3vw,2.35rem); font-weight:700; }
+.epilogue-copy { margin:0; color:#f3e4cc; font-family:Georgia,"Noto Serif KR","Batang",serif; font-size:clamp(1rem,1.75vw,1.2rem); line-height:1.9; word-break:keep-all; }
+.epilogue-release-note { margin:10px 0 0; padding-top:18px; border-top:1px solid #91623e88; color:#ffc780; font-weight:800; letter-spacing:.04em; }
+.epilogue-progress { margin:0; color:var(--muted); font-size:.85rem; }
+@keyframes epilogue-ember { 0%,100% { opacity:.72; transform:scale(.92); } 50% { opacity:1; transform:scale(1.06); } }
+@media (prefers-reduced-motion:reduce) { .epilogue-ember { animation:none; } }
 @media (max-height:800px) and (min-width:721px) {
   .scenario-app { grid-template-rows:auto minmax(220px,1fr) auto auto; gap:10px; }
   .scenario-header,.content-panel { padding:12px 16px; }
   .visual-placeholder { min-height:220px; }
   .content-panel { min-height:120px; }
 }
-@media (max-width:720px) { .story-portrait { width:min(30vw,150px); } }
+@media (max-width:720px) {
+  .story-portrait { width:min(30vw,150px); }
+  .epilogue-visual { width:92%; padding:20px 10px; }
+  .epilogue-copy { word-break:normal; }
+}

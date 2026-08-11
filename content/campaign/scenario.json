@@ -194,7 +194,7 @@
     "skipSummary": [
       "타레 붓 공정을 안전하게 배운다.",
       "그릴과 생맥주 교차 위험을 복습한다.",
-      "정산 뒤 읽기 전용 D4 예고를 연다."
+      "정산 뒤 사흘간의 영업을 닫는 읽기 전용 후일담을 연다."
     ],
     "interactions": [],
     "readOnly": false,
@@ -212,27 +212,27 @@
     "active": true,
     "status": "approved",
     "kind": "preview",
-    "stage": "D4 예고",
-    "emotionKey": "다음 불빛",
+    "stage": "D3 후일담",
+    "emotionKey": "남겨 둔 불빛",
     "prevDay": "d3",
     "nextDay": null,
     "unlocks": [],
-    "fallbackNote": "예고 화면을 닫아도 D3 정산과 저장 상태는 그대로 유지한다.",
+    "fallbackNote": "후일담을 닫고 메인 화면으로 돌아가도 D3 정산과 저장 상태는 그대로 유지한다.",
     "entryConditionId": "d3-settlement-complete",
     "completionConditionId": "preview-dismissed",
     "scenes": [
       {
-        "id": "SCN-D4-PREVIEW",
+        "id": "SCN-D3-EPILOGUE",
         "timing": "preview",
         "skipSummary": [
-          "D4에는 즉시 제공 메뉴가 추가될 예정이다.",
-          "현재 빌드에서는 영업·보상·저장을 실행하지 않는다."
+          "사흘 동안 남은 불빛과 손님들의 기억을 돌아본다.",
+          "다음 계절의 이야기는 차후 공개된다."
         ]
       }
     ],
     "skipSummary": [
-      "D4는 읽기 전용 예고다.",
-      "게임플레이와 경제 상태를 바꾸지 않는다."
+      "D3 후일담은 읽기 전용 종착 장면이다.",
+      "메인 화면으로 돌아가도 게임플레이와 경제 상태를 바꾸지 않는다."
     ],
     "interactions": [],
     "readOnly": true,

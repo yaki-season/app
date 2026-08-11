@@ -14,6 +14,7 @@ import {
 import {
   DEFAULT_PUBLIC_SETTINGS,
   buildSafeDiagnostic,
+  isD4PreviewSave,
   saveSummary,
   serializeSafeDiagnostic,
   validatePublicSettings,
@@ -204,6 +205,7 @@ function summaryDefinition(summary) {
 function renderStart(extraStatus = null) {
   setScreen(SCREEN.START);
   const valid = Boolean(loadResult?.ok);
+  const campaignComplete = isD4PreviewSave(loadResult);
   const missing = loadResult?.error?.code === PERSISTENCE_ERROR_CODE.SAVE_MISSING;
   const summary = saveSummary(loadResult);
   const intro = element('div');
@@ -217,7 +219,11 @@ function renderStart(extraStatus = null) {
   );
   if (extraStatus) intro.append(extraStatus);
   else if (valid) {
-    const card = operationStatus('success', '돌아갈 자리가 남아 있습니다', summary.dayLabel);
+    const card = operationStatus(
+      'success',
+      campaignComplete ? '사흘의 영업을 마쳤습니다' : '돌아갈 자리가 남아 있습니다',
+      campaignComplete ? '다음 이야기를 기다리는 동안 후일담을 다시 읽을 수 있습니다.' : summary.dayLabel,
+    );
     card.append(summaryDefinition(summary));
     intro.append(card);
   } else if (missing) {
@@ -232,7 +238,7 @@ function renderStart(extraStatus = null) {
   });
   menu.append(
     actionButton('새 게임', requestNewGame, { primary: !valid, id: 'new-game-button' }),
-    actionButton('이어하기', () => navigateToScenario(), {
+    actionButton(campaignComplete ? '후일담 다시 보기' : '이어하기', () => navigateToScenario(), {
       disabled: !valid,
       primary: valid,
       id: 'continue-button',

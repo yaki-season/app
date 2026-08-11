@@ -39,7 +39,8 @@ export function createS0D3StoragePort(browserStorage) {
 }
 
 // Developer 1의 campaign aggregate가 요구하는 안정 node chain이다.
-// d4-preview는 opaque 종착 node일 뿐 이 presentation adapter가 D4 UI를 구현하지 않는다.
+// d4-preview는 기존 저장과 domain 계약을 위한 opaque 종착 node다. 공개 presentation은
+// 구현되지 않은 D4 UI 대신 D3 후일담을 보여 준다.
 export const S0_D3_CAMPAIGN_RECORDS = Object.freeze([
   Object.freeze({ id: 's0', kind: 'prologue', nextId: 'd1', contentId: 'scenario.s0' }),
   Object.freeze({ id: 'd1', kind: 'day', nextId: 'd2', contentId: 'campaign.day.d1' }),
@@ -54,7 +55,7 @@ export function createS0D3CampaignDefinition() {
 
 export function campaignPresentationPosition(state) {
   if (state?.campaign?.nodeId === 's0') return Object.freeze({ kind: 'prologue', dayId: 'S0' });
-  if (state?.campaign?.nodeId === 'd4-preview') return Object.freeze({ kind: 'complete', dayId: 'D3' });
+  if (state?.campaign?.nodeId === 'd4-preview') return Object.freeze({ kind: 'epilogue', dayId: 'D3' });
   if (['d1', 'd2', 'd3'].includes(state?.campaign?.nodeId)) {
     return Object.freeze({
       kind: state.campaign.phase === CAMPAIGN_PHASE.PRE_OPEN ? 'pre-open' : state.campaign.phase,

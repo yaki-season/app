@@ -1,0 +1,14 @@
+.git
+.github
+.DS_Store
+node_modules
+dist
+test-results
+playwright-report
+tests
+tools
+art-workspace
+/assets
+.asset-promotion-receipts
+.asset-promotion-staging
+npm-debug.log*

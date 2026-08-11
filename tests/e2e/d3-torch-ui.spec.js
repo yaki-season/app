@@ -100,7 +100,7 @@ test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다',
   await expect(page.getByTestId('dock-shelf')).toContainText('모모');
 });
 
-test('D3 8명·7주문은 마지막 정리 뒤 정산하고 D4-preview로 전환한다', async ({ page }) => {
+test('D3 8명·7주문은 마지막 정리 뒤 정산하고 후일담 종착 저장으로 전환한다', async ({ page }) => {
   await installD3Save(page);
   await page.goto('/src/d1-game.html?day=d3');
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
@@ -144,6 +144,29 @@ test('D3 8명·7주문은 마지막 정리 뒤 정산하고 D4-preview로 전환
   });
   expect(result.view.phase).toBe('complete');
   expect(result.campaign.campaign).toMatchObject({ nodeId: 'd4-preview', phase: 'preview' });
+
+  await expect(page.getByTestId('result-overlay')).toBeVisible();
+  await expect(page.getByTestId('continue-button')).toHaveText('후일담으로 계속');
+  await page.getByTestId('continue-button').click();
+  await expect(page).toHaveURL(/\/src\/s0-d3\.html\?post=d3$/);
+  await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D3-POST');
+
+  for (let line = 0; line < 3; line += 1) {
+    await page.locator('#actions .primary').click();
+  }
+  await expect(page.locator('body')).toHaveAttribute('data-state-id', 'D3-epilogue-1');
+  await expect(page.getByRole('heading', { name: '불은 금세 식지 않았다' })).toBeVisible();
+
+  for (let pageIndex = 1; pageIndex < 4; pageIndex += 1) {
+    await page.getByRole('button', { name: '다음 장면' }).click();
+  }
+  await expect(page.locator('body')).toHaveAttribute('data-state-id', 'D3-epilogue-4');
+  await expect(page.getByText('YAKI SEASON의 다음 이야기는 차후 공개됩니다.')).toBeVisible();
+
+  await page.getByRole('button', { name: '메인 화면으로' }).click();
+  await expect(page).toHaveURL(/\/src\/public-shell\.html$/);
+  await expect(page.getByRole('button', { name: '후일담 다시 보기' })).toBeVisible();
+  await expect(page.getByText('사흘의 영업을 마쳤습니다')).toBeVisible();
 });
 
 test('D3가 개방되지 않은 저장에서는 직접 URL로 기능 UI를 열 수 없다', async ({ page }) => {

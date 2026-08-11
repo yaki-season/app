@@ -119,6 +119,30 @@ npm run assets:validate
 npm run visual:references:validate
 ```
 
+## Docker 배포
+
+프로덕션 정적 파일은 멀티 스테이지 이미지 안에서 빌드되며, 컨테이너의 `/`는 공개 시작 화면을 제공합니다.
+
+```bash
+docker build -t yaki-season-app:local .
+docker run --rm -p 8080:80 yaki-season-app:local
+```
+
+Node 기반 이미지를 내려받을 수 없는 오프라인 환경에서는 호스트 빌드 결과로 같은 런타임 이미지를 만들 수 있습니다.
+
+```bash
+npm ci
+npm run build
+docker build -f deploy/Dockerfile.prebuilt -t yaki-season-app:local .
+```
+
+배포 서버로 옮길 이미지 tar는 다음과 같이 만들고 불러올 수 있습니다.
+
+```bash
+docker save -o yaki-season-app.tar yaki-season-app:local
+docker load -i yaki-season-app.tar
+```
+
 전체 진단은 아래 명령으로 실행할 수 있습니다.
 
 ```bash
