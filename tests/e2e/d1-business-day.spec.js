@@ -233,9 +233,15 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   });
   await expect(page.getByTestId('result-overlay')).toBeVisible();
   await page.getByTestId('continue-button').click();
-  await expect(page).toHaveURL(/\/src\/s0-d3\.html$/);
-  await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D2-PREOPEN');
+  // D1 마감도 후일담으로 넘어간다(da5d1cb). 날짜별 post 파라미터가 붙는다.
+  await expect(page).toHaveURL(/\/src\/s0-d3\.html\?post=d1$/);
+  // 마감 직후는 그날의 후일담이고, 넘기면 다음 날 pre-open으로 이어진다.
+  await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D1-POST');
   await expect.poll(() => page.evaluate(() => window.__s0d3Debug?.campaignState?.()?.campaign?.nodeId)).toBe('d2');
+  await expect.poll(async () => {
+    await page.locator('#actions button.primary').click();
+    return page.getAttribute('body', 'data-scene-id');
+  }, { timeout: 10_000 }).toBe('SCN-D2-PREOPEN');
   for (let index = 0; index < 3; index += 1) {
     await page.locator('#actions button.primary').click();
   }
