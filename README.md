@@ -119,6 +119,21 @@ npm run assets:validate
 npm run visual:references:validate
 ```
 
+## Vercel 배포
+
+Vercel에서 GitHub 저장소를 가져오면 저장소 루트의 `vercel.json`이 다음 설정을 적용합니다.
+
+- Framework Preset: Vite
+- Install Command: `npm ci`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+- Node.js: `24.x`
+- 환경 변수: 없음
+
+프로젝트의 Root Directory는 저장소 루트인 `./`로 둡니다. 배포 주소의 `/`는 공개 시작 화면인 `public-shell.html`로 연결되며, 기존 `/src/*`와 `/public/*` 주소도 호환됩니다.
+
+GitHub의 `main` 브랜치를 Production Branch로 지정하면 이후 `main` 푸시마다 프로덕션 배포가 자동으로 갱신됩니다. 기능 브랜치나 Pull Request의 푸시는 별도의 Preview Deployment로 확인할 수 있습니다.
+
 ## Docker 배포
 
 프로덕션 정적 파일은 멀티 스테이지 이미지 안에서 빌드되며, 컨테이너의 `/`는 공개 시작 화면을 제공합니다.
