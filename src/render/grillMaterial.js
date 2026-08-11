@@ -1,7 +1,7 @@
 // 2.5D 장면 꼬치용 익힘 재질.
 //
 // 코덱스가 파라미터로 분리한 익힘 셰이더(`skewer.frag.glsl`, TECH-REND-001)를 Three.js
-// ShaderMaterial(GLSL3)로 감싼다. 셰이더는 단일 원본을 유지하려고 fetch로 읽고, 헤더
+// ShaderMaterial(GLSL3)로 감싼다. 셰이더는 단일 원본(.glsl)을 그대로 번들에 실어 읽고, 헤더
 // (`#version`·`precision`)만 떼어낸다 — 나머지 uniform·본문은 grill-shader.spec가 그대로 검증한다.
 //
 // 베이스 텍스처는 코드로 그린 절차적 네기마(닭·대파 교차)다. 아트가 오면 이 텍스처만 교체하면
@@ -10,8 +10,9 @@
 import * as THREE from 'three';
 import { RECIPE, INGREDIENT } from '../config/recipe.js';
 import { GRILL_PARAMS } from './grillShaderParams.js';
-
-const FRAG_URL = '/src/shaders/skewer.frag.glsl';
+// 번들에 함께 실린다. 예전처럼 런타임에 fetch하면 배포본에서 /src 경로가 없어 404가 나고,
+// 익힘 셰이더가 통째로 빠진 채(흰 판) 돌아간다.
+import fragmentSource from '../shaders/skewer.frag.glsl?raw';
 
 const VERT = /* glsl */ `
 out vec2 vUv;
@@ -147,10 +148,8 @@ function blob(g, x, y, rx, ry) {
 
 // ── 재질 ────────────────────────────────────────────────────────
 export async function createGrillMaterial() {
-  const res = await fetch(FRAG_URL);
-  if (!res.ok) throw new Error(`익힘 셰이더 로드 실패 (${res.status})`);
   // Three GLSL3가 #version·precision을 자동으로 붙이므로 원본 헤더는 제거한다.
-  const fragBody = (await res.text())
+  const fragBody = fragmentSource
     .replace(/^#version.*$/m, '')
     .replace(/^precision.*$/m, '');
 
