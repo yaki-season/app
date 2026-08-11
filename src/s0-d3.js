@@ -99,6 +99,14 @@ const STORY_ILLUSTRATION_BY_DIALOGUE_ID = Object.freeze({
     assetId: 'IL-D1-PREOPEN-AKI',
     alt: '첫 손님을 위해 정성껏 준비하는 아사노 아키',
   }),
+  'DLG-D2-PRE-001': Object.freeze({
+    assetId: 'IL-D1-PREOPEN-AKI',
+    alt: '둘째 날 영업을 준비하는 아사노 아키',
+  }),
+  'DLG-D2-PRE-002': Object.freeze({
+    assetId: 'IL-D1-PREOPEN-TSUKIOKA',
+    alt: '둘째 날 다시 가게를 찾은 츠키오카 세이지',
+  }),
 });
 
 function hideStoryIllustration() {

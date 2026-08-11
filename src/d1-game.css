@@ -83,30 +83,31 @@
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   transform: translate(-50%, -50%);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 20px;
-  background: rgba(20, 15, 11, 0.96);
+  border: 0;
+  border-radius: 8px 42px 8px 8px;
+  padding: 42px 38px 32px 62px;
+  color: #382619;
+  background: #ead39d url('/assets/core/ui/grandfather-secret-recipe-notebook-bg-r1-b1.png') center / 100% 100% no-repeat;
   box-shadow: 0 18px 64px rgba(0, 0, 0, 0.52);
 }
 .recipe-book[hidden] { display: none; }
 .recipe-book-title {
   margin: 0 0 12px;
-  color: var(--ember);
+  color: #6d321d;
   font-size: 19px;
   font-weight: 700;
 }
 .recipe-book-entries { display: grid; gap: 10px; }
 .recipe-book-entry {
-  border: 1px solid var(--line);
+  border: 1px solid rgba(103, 62, 31, 0.32);
   border-radius: 8px;
   padding: 9px 11px;
-  background: rgba(48, 38, 30, 0.55);
+  background: rgba(255, 247, 215, 0.42);
 }
 .recipe-book-entry-title { margin: 0 0 4px; font-weight: 600; }
 .recipe-book-line {
   margin: 3px 0 0;
-  color: var(--dim);
+  color: #5d4938;
   font-size: 0.92em;
   line-height: 1.45;
   /* 재료 이름이 줄 끝에서 반으로 갈리지 않게 한다. */
@@ -118,11 +119,14 @@
   border: 0;
   border-radius: 999px;
   padding: 8px 20px;
-  color: #1a120a;
-  background: var(--ember);
+  color: #fff2d2;
+  background: #6d321d;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+}
+@media (max-width: 520px) {
+  .recipe-book { padding: 34px 24px 28px 50px; }
 }
 body:has(.quick-nav button[data-screen="SCR-SVC-ASSEMBLY"].active) .receipts { display: flex; }
 

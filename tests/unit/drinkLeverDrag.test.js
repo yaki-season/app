@@ -15,4 +15,10 @@ describe('drinkLeverZoneForDelta', () => {
     expect(drinkLeverZoneForDelta(DRINK_LEVER_DRAG_THRESHOLD_PX)).toBe('beer');
     expect(drinkLeverZoneForDelta(-DRINK_LEVER_DRAG_THRESHOLD_PX)).toBe('foam');
   });
+
+  it('keeps an activated direction latched inside the deadzone', () => {
+    expect(drinkLeverZoneForDelta(-2, DRINK_LEVER_DRAG_THRESHOLD_PX, 'foam')).toBe('foam');
+    expect(drinkLeverZoneForDelta(2, DRINK_LEVER_DRAG_THRESHOLD_PX, 'beer')).toBe('beer');
+    expect(drinkLeverZoneForDelta(DRINK_LEVER_DRAG_THRESHOLD_PX, DRINK_LEVER_DRAG_THRESHOLD_PX, 'foam')).toBe('beer');
+  });
 });

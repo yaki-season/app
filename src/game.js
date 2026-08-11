@@ -329,7 +329,11 @@ function setDrinkLeverDragZone(zone, now) {
 
 function updateDrinkLeverDrag(e) {
   if (!activeDrinkLeverDrag || e.pointerId !== activeDrinkLeverDrag.pointerId) return;
-  const zone = drinkLeverZoneForDelta(e.clientY - activeDrinkLeverDrag.startY);
+  const zone = drinkLeverZoneForDelta(
+    e.clientY - activeDrinkLeverDrag.startY,
+    undefined,
+    activeDrinkLeverDrag.zone,
+  );
   setDrinkLeverDragZone(zone, performance.now());
 }
 

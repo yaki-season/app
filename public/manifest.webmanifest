@@ -1,0 +1,32 @@
+{
+  "name": "YAKI SEASON",
+  "short_name": "YAKI SEASON",
+  "description": "숯불 야키토리 노포를 운영하는 손맛 경영 게임",
+  "lang": "ko",
+  "start_url": "/src/public-shell.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#17100d",
+  "theme_color": "#17100d",
+  "icons": [
+    {
+      "src": "/yaki-season-icon-r3-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/yaki-season-icon-r3-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/yaki-season-icon-r3.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

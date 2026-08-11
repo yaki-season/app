@@ -49,7 +49,7 @@ test('잔을 완성하면 채움 소리와 공명이 함께 끝난다', async ({
 // 좌석 수에 따른 앰비언스 규칙 자체는 interiorAmbienceId·crowdAmbienceId 단위 테스트가 지킨다.
 // (빈 가게는 D1 영업 중에는 도달하지 않아 종단으로 재현할 수 없다.)
 // 여기서는 그 규칙이 실제 재생에 연결돼 있는지만 본다.
-test('실내 앰비언스는 손님이 있을 때만 돌고 군중음은 쓰지 않는다', async ({ page }) => {
+test('한 손님은 조용하고 둘 이상부터 낮은 군중음을 재생한다', async ({ page }) => {
   await bootD1(page);
   // 33MB 실내 앰비언스는 디코딩이 오래 걸린다. 재생 대기까지 포함해서 본다.
   const ambienceQueued = async () => {
@@ -84,12 +84,12 @@ test('실내 앰비언스는 손님이 있을 때만 돌고 군중음은 쓰지 
   await D(page, 'businessBeginCleanup', seat.seatId);
   await D(page, 'businessAdvance', 5_000);
 
-  // 둘 이상 앉아도 군중음은 쓰지 않는다. 실내 앰비언스만 돈다.
+  // 둘 이상 앉으면 낮은 군중음이 실내 앰비언스와 함께 돈다.
   await expect.poll(occupiedSeats, { timeout: 10_000 }).toBeGreaterThan(1);
-  const crowded = await ambienceQueued();
-  expect(crowded).toContain('AMB-SHOP-INTERIOR');
-  expect(crowded).not.toContain('AMB-CROWD-L1');
-  expect(crowded).not.toContain('AMB-CROWD-L2');
+  await expect.poll(ambienceQueued, { timeout: 5_000 }).toContain('AMB-CROWD-L1');
+  const group = await ambienceQueued();
+  expect(group).toContain('AMB-SHOP-INTERIOR');
+  expect(group).not.toContain('AMB-CROWD-L2');
 });
 
 test('꼬치를 회수하면 그릴 상태음도 함께 끝난다', async ({ page }) => {

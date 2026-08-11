@@ -109,6 +109,10 @@ test('츠키오카 접수→시작 2칸에서 두 꼬치를 독립적으로 조�
   await D(page, 'businessAdvance', 6000);
   const tsukiokaSeat = (await D(page, 'businessView')).seats
     .find((seat) => seat.customerId === 'REGULAR_TSUKIOKA').seatId;
+  await expect.poll(() => D(page, 'audioState').then((audio) => ({
+    loops: audio?.loops.filter((id) => id.startsWith('AMB-CROWD-')) ?? [],
+    pending: audio?.pendingLoops.filter((id) => id.startsWith('AMB-CROWD-')) ?? [],
+  }))).toEqual({ loops: [], pending: [] });
   const customerHit = await page.evaluate((seatId) => {
     const renderer = window.__d1GameDebug.renderer;
     const actor = renderer.seatActorMesh[seatId];
@@ -228,6 +232,11 @@ test('츠키오카 접수→시작 2칸에서 두 꼬치를 독립적으로 조�
   await clickObj(page, 'pgSlot1');
   await expect.poll(() => D(page, 'cookSlots').then((slots) => slots.map(({ status }) => status)))
     .toEqual(['empty', 'empty']);
+  await expect.poll(() => D(page, 'audioState').then((audio) => ({
+    loops: audio?.loops.filter((id) => ['AMB-CHARCOAL-BED', 'SFX-GRILL-COOK-LOOP'].includes(id)) ?? [],
+    pending: audio?.pendingLoops.filter((id) => ['AMB-CHARCOAL-BED', 'SFX-GRILL-COOK-LOOP'].includes(id)) ?? [],
+    crackles: audio?.activeOneShots.filter((id) => id.startsWith('SFX-GRILL-CRACKLE-')) ?? [],
+  }))).toEqual({ loops: [], pending: [], crackles: [] });
   await expect.poll(() => D(page, 'dockItems').then((d) => d.filter((x) => x.menu === '네기마').length)).toBe(2);
   await expect(page.getByTestId('grill-finished-quality-list')).toContainText('2');
 

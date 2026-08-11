@@ -141,7 +141,7 @@ export const S0_AKI_STORY_PORTRAIT_BINDING = Object.freeze({
   componentId: 'story.actors',
   actorId: 'CHAR-AKI',
   requiredAssetId: 'CH-AKI-STORY',
-  sourceMasterId: 'CM-AKI-STORY-PORTRAIT-R1',
+  sourceMasterId: 'CM-AKI-STORY-PORTRAIT-R5',
   semanticOwner: 'artist-2.s0-prologue-story',
   stateVariants: Object.freeze(
     S0_AKI_STORY_EXPRESSION_VARIANTS.map(({ stateVariant }) => stateVariant),
@@ -164,7 +164,7 @@ export const S0_AKI_STORY_PORTRAIT_BINDING = Object.freeze({
     semanticDomZOrder: 80,
   }),
   bodyPartCount: 0,
-  bodyRepresentation: 'non-interactive-head-shoulders-upper-torso-portrait',
+  bodyRepresentation: 'non-interactive-full-body-portrait',
   directClickAllowed: false,
   sourceMasterPolicy: Object.freeze({
     oneSharedOriginal: true,
@@ -297,7 +297,7 @@ export function validateS0AkiStoryPortraitBindingContract() {
     errors.push('AKI exact component/actor/asset IDs changed');
   }
   if (
-    binding.sourceMasterId !== 'CM-AKI-STORY-PORTRAIT-R1'
+    binding.sourceMasterId !== 'CM-AKI-STORY-PORTRAIT-R5'
     || !binding.sourceMasterPolicy.oneSharedOriginal
     || binding.sourceMasterPolicy.duplicatePerScreen
     || binding.sourceMasterPolicy.duplicatePerExpression

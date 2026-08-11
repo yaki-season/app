@@ -33,7 +33,7 @@ h1,h2,p { margin-top:0; } h1 { margin-bottom:0; font-size:clamp(1.4rem,3vw,2.2re
 .story-illustration[hidden] { display:none; }
 .visual-placeholder:has(.story-illustration:not([hidden])) { background:#0b0a09; }
 .story-portrait {
-  position:relative; z-index:2; width:min(20vw,256px); max-height:48vh;
+  position:relative; z-index:2; width:min(24vw,300px); max-height:72vh;
   object-fit:contain; object-position:center bottom; pointer-events:none;
   filter:drop-shadow(0 12px 20px #0009);
 }

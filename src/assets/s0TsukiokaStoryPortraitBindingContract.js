@@ -10,7 +10,7 @@ export const S0_TSUKIOKA_STORY_PORTRAIT_BINDING = Object.freeze({
   componentId: 'story.actors',
   actorId: 'CHAR-TSUKIOKA',
   requiredAssetId: 'CH-TSUKIOKA-STORY',
-  sourceMasterId: 'CM-TSUKIOKA-STORY-PORTRAIT-R1',
+  sourceMasterId: 'CM-TSUKIOKA-STORY-PORTRAIT-R2',
   semanticOwner: 'artist-2.s0-prologue-story',
   camera: Object.freeze({ cameraId: 'S0-TSUKIOKA-STORY-FIXED-V1' }),
 });

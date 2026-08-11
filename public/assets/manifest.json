@@ -1404,7 +1404,7 @@
     {
       "id": "MDL-BEER-GLASS",
       "sourceRevision": 1,
-      "runtimeBuild": 1,
+      "runtimeBuild": 2,
       "status": "approved",
       "screenUnit": "SCR-SVC-DRINK",
       "profile": "standalone-raster",
@@ -1434,7 +1434,7 @@
         "Artist 3 task 025 MDL-BEER-GLASS R1"
       ],
       "reviewedAt": "2026-08-03",
-      "url": "/assets/core/drink/mdl-beer-glass-r1-b1.png",
+      "url": "/assets/core/drink/mdl-beer-glass-r1-b2.png",
       "sha256": "aeccd91428f1370cdffce582f332a075e36db9fbc00474f3d5c88ccacaa1c051",
       "bytes": 768716,
       "dimensions": {
@@ -1445,7 +1445,7 @@
       "companions": [
         {
           "role": "glass-deck",
-          "url": "/assets/core/drink/mdl-beer-glass-deck-r1-b1.png",
+          "url": "/assets/core/drink/mdl-beer-glass-deck-r1-b2.png",
           "sha256": "bf76bf7ae6fa090b29f0bd75ff244738e55a7f28c494f070c17265ffdc1c9825",
           "bytes": 1208435,
           "format": "png",
@@ -1689,7 +1689,7 @@
     },
     {
       "id": "CH-AKI-STORY",
-      "sourceRevision": 4,
+      "sourceRevision": 5,
       "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-STORY-BEAT",
@@ -1703,24 +1703,24 @@
       "anchors": [{ "id": "bottom-center", "x": 0.5, "y": 1 }],
       "clips": ["fatigue", "focus", "mistake", "relief"],
       "mirrorSafe": false,
-      "source": "ARTSRC:CH-AKI-STORY:R4",
-      "provenance": "PROV:CH-AKI-STORY:R4",
+      "source": "ARTSRC:CH-AKI-STORY:R5",
+      "provenance": "PROV:CH-AKI-STORY:R5",
       "license": "YAKI SEASON internal user-approved artwork",
       "specRefs": [
         "ART-003 v5.9.0",
         "Artist 2 task 023 CH-AKI-STORY",
-        "User approval 2026-08-09: male protagonist portrait R4"
+        "User approval 2026-08-11: full-body protagonist portrait R5"
       ],
-      "reviewedAt": "2026-08-09",
-      "url": "/assets/core/s0/story/ch-aki-story-r4-b1.png",
-      "sha256": "53ad896a1aec82e8641d43ad847a7555892f60477b5493cb1dc85b6748eb32a0",
-      "bytes": 1177909,
-      "dimensions": { "width": 1086, "height": 1448 },
+      "reviewedAt": "2026-08-11",
+      "url": "/assets/core/s0/story/ch-aki-story-r5-b1.png",
+      "sha256": "ffd1e6b2c2657ca9142fde57db462a591898b0ba39f79f6640c4efab9630619b",
+      "bytes": 743505,
+      "dimensions": { "width": 991, "height": 1587 },
       "format": "png"
     },
     {
       "id": "CH-TSUKIOKA-STORY",
-      "sourceRevision": 1,
+      "sourceRevision": 2,
       "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-STORY-BEAT",
@@ -1734,18 +1734,18 @@
       "anchors": [{ "id": "bottom-center", "x": 0.5, "y": 1 }],
       "clips": ["calm", "supportive"],
       "mirrorSafe": false,
-      "source": "ARTSRC:CH-TSUKIOKA-STORY:R1",
-      "provenance": "PROV:CH-TSUKIOKA-STORY:R1",
+      "source": "ARTSRC:CH-TSUKIOKA-STORY:R2",
+      "provenance": "PROV:CH-TSUKIOKA-STORY:R2",
       "license": "YAKI SEASON internal user-approved artwork",
       "specRefs": [
         "SCN-002 REGULAR_TSUKIOKA",
         "Artist 2 task 023 CH-TSUKIOKA-STORY",
-        "User approval 2026-08-09: Tsukioka Seiji portrait R1"
+        "User approval 2026-08-11: Tsukioka Seiji full-body portrait R2"
       ],
-      "reviewedAt": "2026-08-09",
-      "url": "/assets/core/s0/story/ch-tsukioka-story-r1-b1.png",
-      "sha256": "52c4ed42248fc5b6e60b383fbb563fac552f2437e9d678e53928e991e2aa0909",
-      "bytes": 1711188,
+      "reviewedAt": "2026-08-11",
+      "url": "/assets/core/s0/story/ch-tsukioka-story-r2-b1.png",
+      "sha256": "2683741d1016de8ff8c23cf3153bde753675f3d9a3280acd58229b6569fddb4f",
+      "bytes": 863129,
       "dimensions": { "width": 1024, "height": 1536 },
       "format": "png"
     },
@@ -2338,6 +2338,41 @@
       "dimensions": {
         "width": 1920,
         "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "UI-RECIPE-BOOK-PAPER",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SYS-RECIPE-BOOK",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:UI-RECIPE-BOOK-PAPER:R1",
+      "provenance": "OpenAI image generation; user approved 2026-08-11",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "UI recipe book background"
+      ],
+      "reviewedAt": "2026-08-11",
+      "url": "/assets/core/ui/grandfather-secret-recipe-notebook-bg-r1-b1.png",
+      "sha256": "e10f814dc9db59ad2802b4ec8c765344563130342fc9ebd306beed47a558c057",
+      "bytes": 2325204,
+      "dimensions": {
+        "width": 1024,
+        "height": 1536
       },
       "format": "png"
     }

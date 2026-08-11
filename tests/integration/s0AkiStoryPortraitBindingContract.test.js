@@ -49,7 +49,7 @@ describe(`CH-AKI-STORY portrait binding v${S0_AKI_STORY_PORTRAIT_BINDING_CONTRAC
       componentId: 'story.actors',
       actorId: 'CHAR-AKI',
       requiredAssetId: 'CH-AKI-STORY',
-      sourceMasterId: 'CM-AKI-STORY-PORTRAIT-R1',
+      sourceMasterId: 'CM-AKI-STORY-PORTRAIT-R5',
       semanticOwner: 'artist-2.s0-prologue-story',
       bodyPartCount: 0,
       directClickAllowed: false,
@@ -144,7 +144,7 @@ describe(`CH-AKI-STORY portrait binding v${S0_AKI_STORY_PORTRAIT_BINDING_CONTRAC
     });
     expect(S0_AKI_STORY_PORTRAIT_BINDING.bounds.interactionBounds).toBeNull();
     expect(S0_AKI_STORY_PORTRAIT_BINDING.bodyRepresentation).toBe(
-      'non-interactive-head-shoulders-upper-torso-portrait',
+      'non-interactive-full-body-portrait',
     );
   });
 
@@ -170,8 +170,8 @@ describe(`CH-AKI-STORY portrait binding v${S0_AKI_STORY_PORTRAIT_BINDING_CONTRAC
     });
     expect(runtimeManifest.assets.find(({ id }) => id === 'CH-AKI-STORY')).toMatchObject({
       status: 'approved',
-      sourceRevision: 4,
-      url: '/assets/core/s0/story/ch-aki-story-r4-b1.png',
+      sourceRevision: 5,
+      url: '/assets/core/s0/story/ch-aki-story-r5-b1.png',
     });
     expect(runtimeManifest.assets.some(({ id }) => id === 'CH-OWNER-STORY')).toBe(false);
   });

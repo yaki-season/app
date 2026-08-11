@@ -17,7 +17,7 @@ export default defineConfig({
   // 1로 고정한다. 늘리려면 반드시 반복 실행으로 확인할 것.
   workers: 1,
   use: {
-    baseURL: 'http://localhost:8777',
+    baseURL: 'http://127.0.0.1:8777',
     launchOptions: {
       // 헤드리스 실행 환경에 GPU가 없어도 WebGL2를 소프트웨어로 사용할 수 있게 한다.
       args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
