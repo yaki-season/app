@@ -11,7 +11,6 @@ YAKI SEASON은 가게를 다시 여는 프롤로그에서 시작해 날짜별 �
 ## 공개 배포
 
 - 게임 플레이: <https://yakiseason.vercel.app/>
-- 공개 shell 직접 주소: <https://yakiseason.vercel.app/public-shell.html>
 
 Vercel Production 배포는 2026-08-11에 Chromium 1280×720·1920×1080 기준으로 확인했습니다. 사이트 루트와 공개 shell 부팅, CSS·JavaScript·이미지 로딩, 오디오 MP3/WAV fallback, 새 게임에서 S0 프롤로그로 이어지는 흐름이 정상 동작합니다.
 
