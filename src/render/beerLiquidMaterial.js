@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-
-const FRAG_URL = '/src/shaders/beerLiquid.frag.glsl';
+import fragmentSource from '../shaders/beerLiquid.frag.glsl?raw';
 const VERT = /* glsl */ `
 out vec2 vUv;
 void main() {
@@ -10,9 +9,7 @@ void main() {
 `;
 
 export async function createBeerLiquidMaterial() {
-  const response = await fetch(FRAG_URL);
-  if (!response.ok) throw new Error(`beer liquid shader load failed (${response.status})`);
-  const fragmentShader = (await response.text())
+  const fragmentShader = fragmentSource
     .replace(/^#version.*$/m, '')
     .replace(/^precision.*$/m, '');
   const uniforms = {

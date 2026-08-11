@@ -14,6 +14,11 @@ describe('드링크 스테이션 화면 배치', () => {
     expect(OBJECTS.drinkStation.full).not.toBe(true);
     expect(OBJECTS.drinkStation.rect).toEqual({ x: 0.045, y: -0.04, width: 0.91, height: 1.02 });
   });
+
+  it('액체·VFX 셰이더가 준비되기 전 기본 평면은 투명하다', () => {
+    expect(OBJECTS.drinkBeerLiquid.invisible).toBe(true);
+    expect(OBJECTS.drinkBeerVfx.invisible).toBe(true);
+  });
 });
 
 describe('손님 화면 원경 배치', () => {

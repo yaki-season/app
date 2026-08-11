@@ -123,10 +123,10 @@ export const OBJECTS = {
   // 빈잔 덱은 상시 표시, 노즐 아래 배치 잔은 덱 클릭 뒤에만 표시한다.
   drinkGlassDeck: { kind: 'image', rect: { x: 0.12, y: 0.43, width: 0.34, height: 0.30 }, layer: 'interactive', order: 20, stableAssetId: COOKING_ART.drinkGlass, companionRole: DRINK_ART_STATE.glassDeck, opaque: false },
   // 잔 PNG 전체 bounds가 아니라 실제 원통형 몸통 안쪽만 사용한다(손잡이·투명 여백 제외).
-  drinkBeerLiquid: { rect: { x: 0.481, y: 0.424, width: 0.063, height: 0.204 }, layer: 'interactive', color: 0xffffff, kind: 'plane', decorative: true },
+  drinkBeerLiquid: { rect: { x: 0.481, y: 0.424, width: 0.063, height: 0.204 }, layer: 'interactive', color: 0xffffff, kind: 'plane', decorative: true, invisible: true },
   drinkPlacedGlass: { kind: 'image', rect: { x: 0.438, y: 0.37, width: 0.16, height: 0.30 }, layer: 'interactive', order: 21, stableAssetId: COOKING_ART.drinkGlass, opaque: false },
   // 노즐 끝→잔 입구/몸통만 덮는 좁은 VFX 영역. 화면 전체 포말 blob을 방지한다.
-  drinkBeerVfx: { rect: { x: 0.467, y: 0.385, width: 0.095, height: 0.335 }, layer: 'vfx', color: 0xffffff, kind: 'plane', decorative: true },
+  drinkBeerVfx: { rect: { x: 0.467, y: 0.385, width: 0.095, height: 0.335 }, layer: 'vfx', color: 0xffffff, kind: 'plane', decorative: true, invisible: true },
   grillBg: { kind: 'image', full: true, layer: 'background', order: 0, stableAssetId: COOKING_ART.grillBackground, opaque: true },
   assemblyBg: { kind: 'image', full: true, layer: 'background', order: 0, stableAssetId: COOKING_ART.assemblyBackground, opaque: true },
 
