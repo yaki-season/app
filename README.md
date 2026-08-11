@@ -8,6 +8,13 @@ YAKI SEASON은 가게를 다시 여는 프롤로그에서 시작해 날짜별 �
 
 현재 저장소에는 S0 프롤로그부터 D3 영업까지의 플레이 흐름이 구현되어 있습니다.
 
+## 공개 배포
+
+- 게임 플레이: <https://yakiseason.vercel.app/>
+- 공개 shell 직접 주소: <https://yakiseason.vercel.app/public-shell.html>
+
+Vercel Production 배포는 2026-08-11에 Chromium 1280×720·1920×1080 기준으로 확인했습니다. 사이트 루트와 공개 shell 부팅, CSS·JavaScript·이미지 로딩, 오디오 MP3/WAV fallback, 새 게임에서 S0 프롤로그로 이어지는 흐름이 정상 동작합니다.
+
 ## 주요 기능
 
 - 닭고기와 대파를 순서대로 끼우는 네기마 조립
