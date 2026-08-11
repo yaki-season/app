@@ -1,5 +1,5 @@
 // SYS-002 / 작업 005 — 2.5D 영업 장면 (더미) 종단 검증.
-// 별도 진입점 /src/scene/index.html. 아트 없이 더미 도형으로 조립→굽기→서빙 루프와
+// 별도 진입점 /src/single-customer-harness.html. 아트 없이 더미 도형으로 조립→굽기→서빙 루프와
 // 셰프측 카메라 프리셋, 츠키오카 반응을 검증한다.
 import { test, expect } from '@playwright/test';
 
@@ -22,7 +22,7 @@ async function boot(page) {
   page.on('console', (m) => {
     if (m.type() === 'error') errs.push(m.text());
   });
-  await page.goto('/src/index.html');
+  await page.goto('/src/single-customer-harness.html');
   await page.waitForTimeout(400);
   return errs;
 }

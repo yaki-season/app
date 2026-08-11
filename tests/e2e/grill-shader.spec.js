@@ -7,7 +7,7 @@ test('꼬치 셰이더가 WebGL2에서 컴파일되고 모든 익힘 단계가 �
     if (message.type() === 'error') errors.push(message.text());
   });
 
-  await page.goto('/src/index.html');
+  await page.goto('/src/single-customer-harness.html');
   const result = await page.evaluate(async () => {
     const { createGrillRenderer } = await import('/src/render/grillRenderer.js');
     const canvas = document.createElement('canvas');

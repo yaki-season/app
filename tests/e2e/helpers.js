@@ -16,7 +16,7 @@ export const getState = (page) => page.evaluate(() => window.__sceneDebug.getSta
 export const doneness = (page) => page.evaluate(() => window.__sceneDebug.doneness());
 
 export async function boot(page) {
-  await page.goto('/src/index.html');
+  await page.goto('/src/single-customer-harness.html');
   await expect(page.getByTestId('scene-canvas')).toBeVisible();
   await expect.poll(() => getState(page).then((s) => s.process)).toBe('assembly');
 }

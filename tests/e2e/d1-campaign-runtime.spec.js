@@ -10,7 +10,7 @@ const d1Record = JSON.parse(readFileSync(fileURLToPath(
 ), 'utf8'));
 
 test('브라우저 localStorage에서 D1 전체 영업·정산·D2 저장 복구가 이어진다', async ({ page }) => {
-  await page.goto('/src/index.html');
+  await page.goto('/src/single-customer-harness.html');
   const result = await page.evaluate(async ({ campaignRecords: campaignFixture, d1Record: d1Fixture }) => {
     const api = await import('/src/campaign-runtime.js');
     window.localStorage.clear();

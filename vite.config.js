@@ -65,16 +65,23 @@ function contentRuntimeFiles() {
   };
 }
 
-function legacyPathCompatibility() {
+function publicEntryAndLegacyPathCompatibility() {
   const rewrite = (request, _response, next) => {
-    if (request.url === '/src') request.url = '/';
-    else if (request.url?.startsWith('/src/')) request.url = request.url.slice(4);
-    if (request.url === '/public') request.url = '/';
-    else if (request.url?.startsWith('/public/')) request.url = request.url.slice(7);
+    const url = new URL(request.url ?? '/', 'http://localhost');
+    if (url.pathname === '/' || url.pathname === '/index.html'
+      || url.pathname === '/src' || url.pathname === '/src/') {
+      request.url = `/public-shell.html${url.search}`;
+    } else if (url.pathname.startsWith('/src/')) {
+      request.url = `${url.pathname.slice(4)}${url.search}`;
+    } else if (url.pathname === '/public') {
+      request.url = `/${url.search}`;
+    } else if (url.pathname.startsWith('/public/')) {
+      request.url = `${url.pathname.slice(7)}${url.search}`;
+    }
     next();
   };
   return {
-    name: 'legacy-path-compatibility',
+    name: 'public-entry-and-legacy-path-compatibility',
     configureServer(server) {
       server.middlewares.use(rewrite);
     },
@@ -87,8 +94,8 @@ function legacyPathCompatibility() {
 export default defineConfig({
   root: sourceRoot,
   publicDir: resolve(import.meta.dirname, 'public'),
-  // 기존 /src/*.html 북마크와 /public/assets/* 런타임 요청을 root 변경 뒤에도 유지한다.
-  plugins: [contentRuntimeFiles(), legacyPathCompatibility()],
+  // 공개 루트와 기존 /src/*.html·/public/assets/* 북마크를 함께 유지한다.
+  plugins: [contentRuntimeFiles(), publicEntryAndLegacyPathCompatibility()],
   resolve: {
     alias: [{
       find: /^\/node_modules\//,

@@ -62,6 +62,17 @@ async function openShell(page) {
   await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-SYS-START');
 }
 
+test('사이트 루트는 테스트 장면 대신 공개 시작 화면을 열고 새 게임으로 이어진다', async ({ page }) => {
+  await installStorage(page, {});
+  await page.goto('/');
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-SYS-START');
+  await page.getByRole('button', { name: '새 게임', exact: true }).click();
+  await expect(page).toHaveURL(/\/s0-d3\.html\?new=1$/);
+  await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-STORY-PROLOGUE');
+});
+
 test('FHD/720 title에서 키보드·마우스로 설정·도움·일시정지를 사용할 수 있다', async ({ page }) => {
   await installStorage(page, {});
   await openShell(page);

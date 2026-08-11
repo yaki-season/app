@@ -21,6 +21,7 @@ describe('Vercel deployment contract', () => {
   it('serves the public shell at the site root and preserves legacy paths', () => {
     expect(config.rewrites).toEqual(expect.arrayContaining([
       { source: '/', destination: '/public-shell.html' },
+      { source: '/index.html', destination: '/public-shell.html' },
       { source: '/src/:path*', destination: '/:path*' },
       { source: '/public/:path*', destination: '/:path*' },
     ]));

@@ -90,7 +90,9 @@ npm run dev
 
 개발 서버가 실행되면 다음 주소를 엽니다.
 
-- 게임 시작: <http://127.0.0.1:8777/src/public-shell.html>
+- 게임 시작: <http://127.0.0.1:8777/>
+
+기존 공개 shell 주소인 <http://127.0.0.1:8777/src/public-shell.html>도 호환 경로로 유지됩니다.
 
 ## 테스트
 

@@ -231,7 +231,7 @@ test('S0 진행 중 새로고침은 저장 전 안전 정책대로 첫 상호작
 });
 
 test('새 게임 첫 checkpoint 전 기존 active를 보존하고 성공 뒤 backup 정책으로 남긴다', async ({ page }) => {
-  await page.goto('/src/index.html');
+  await page.goto('/src/single-customer-harness.html');
   const existingRaw = await page.evaluate(async () => {
     localStorage.clear();
     const { S0D3CampaignBridge } = await import('/src/scenario/s0-d3-campaign.js');

@@ -10,6 +10,10 @@
       "destination": "/public-shell.html"
     },
     {
+      "source": "/index.html",
+      "destination": "/public-shell.html"
+    },
+    {
       "source": "/src/:path*",
       "destination": "/:path*"
     },
