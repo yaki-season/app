@@ -15,16 +15,25 @@ export const D3_TORCH_RULES = Object.freeze({
   coveredZoneMs: 180,
   properCoverage: 0.8,
   properMinMs: 900,
-  overTotalMs: 3_500,
-  focusFailMs: 1_200,
+  overTotalMs: 10_000,
+  focusWarnMs: 3_000,
+  focusFailMs: 5_000,
   riskDelta: 1,
 });
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
+export function torchReadiness(state) {
+  const coverageProgress = (state.torchCoverage ?? 0) / D3_TORCH_RULES.properCoverage;
+  const durationProgress = (state.torchTotalMs ?? 0) / D3_TORCH_RULES.properMinMs;
+  return clamp(Math.min(coverageProgress, durationProgress), 0, 1);
+}
+
 export function createD3TorchFinishState() {
   return {
     tareApplied: false,
+    tareCoatCount: 0,
+    tareReheatCount: 0,
     torchState: TORCH_STATE.NONE,
     torchCoverage: 0,
     torchFocusMs: 0,
@@ -36,13 +45,27 @@ export function createD3TorchFinishState() {
 }
 export function applyTare(state) {
   if (state.torchState === TORCH_STATE.ACTIVE) return { ok: false, reason: 'torch-active' };
+  if (state.torchCompleted) return { ok: false, reason: 'torch-completed' };
   state.tareApplied = true;
-  return { ok: true };
+  state.tareCoatCount = (state.tareCoatCount ?? 0) + 1;
+  return { ok: true, tareCoatCount: state.tareCoatCount, tareReheatCount: state.tareReheatCount };
+}
+
+export function reheatTare(state) {
+  if (state.torchState === TORCH_STATE.ACTIVE) return { ok: false, reason: 'torch-active' };
+  if ((state.tareCoatCount ?? 0) <= (state.tareReheatCount ?? 0)) {
+    return { ok: false, reason: 'tare-coat-required' };
+  }
+  state.tareReheatCount = (state.tareReheatCount ?? 0) + 1;
+  return { ok: true, tareCoatCount: state.tareCoatCount, tareReheatCount: state.tareReheatCount };
 }
 
 export function beginTorch(state, { bothFacesCooked = false, safetyBlocked = false } = {}) {
   if (!bothFacesCooked) return { ok: false, reason: 'both-faces-required' };
-  if (!state.tareApplied) return { ok: false, reason: 'tare-required' };
+  if ((state.tareCoatCount ?? 0) === 0) return { ok: false, reason: 'tare-required' };
+  if (Math.min(state.tareCoatCount ?? 0, state.tareReheatCount ?? 0) < 2) {
+    return { ok: false, reason: 'tare-finish-required' };
+  }
   if (safetyBlocked) return { ok: false, reason: 'safety-blocked' };
   if (state.torchCompleted) return { ok: false, reason: 'already-completed' };
   if (state.torchState === TORCH_STATE.ACTIVE) return { ok: false, reason: 'already-active' };
@@ -108,7 +131,15 @@ export function torchQuality(state) {
 }
 
 export function canRetrieveTorchMenu(state) {
-  return state.torchCompleted
+  if ((state.tareCoatCount ?? 0) === 0) return { ok: false, reason: 'tare-required' };
+  return Math.min(state.tareCoatCount ?? 0, state.tareReheatCount ?? 0) >= 2
     ? { ok: true }
-    : { ok: false, reason: state.tareApplied ? 'torch-required' : 'tare-required' };
+    : { ok: false, reason: 'tare-finish-required' };
+}
+
+export function tareQuality(state) {
+  const cycles = Math.min(state.tareCoatCount ?? 0, state.tareReheatCount ?? 0);
+  return cycles >= 2
+    ? { grade: 'Perfect', good: true, smokyBonus: false, servable: true }
+    : { grade: 'Good', good: true, smokyBonus: false, servable: true };
 }

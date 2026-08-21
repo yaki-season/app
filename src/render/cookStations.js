@@ -59,20 +59,29 @@ export function createCookStations({
     ? Object.fromEntries(Object.entries(recipes).map(([menuId, sequence]) => [menuId, [...sequence]]))
     : { [defaultMenuId]: [...recipe] });
   if (!recipeBook[defaultMenuId]) throw new Error(`기본 조립 레시피 누락: ${defaultMenuId}`);
-  let assembly = { menuId: defaultMenuId, index: 0, complete: false };
+  let assembly = { menuId: defaultMenuId, seasoning: 'none', index: 0, complete: false, tareBrushCount: 0 };
   let assembledCount = 0;
   const learnedMenuIds = new Set();
   let transferredCount = 0;
   let waitingItems = [];
   let grill = Array.from({ length: normalizedSlotCount }, () => emptySlot());
   let pausedAtMs = null;
+  let productSequence = 0;
+
+  const makeProduct = (menuId, seasoning = 'none', id = null) => ({
+    id: id ?? `COOK-${++productSequence}`,
+    menuId,
+    seasoning,
+  });
 
   const effectiveNow = (now) => pausedAtMs ?? now;
 
   function emptySlot() {
     return {
       status: 'empty',
+      id: null,
       menuId: null,
+      seasoning: 'none',
       orientationFaceDown: FACE.FRONT,
       contactFace: null,
       elapsedSec: { front: 0, back: 0 },
@@ -109,10 +118,12 @@ export function createCookStations({
   }
 
   // ── 조립 ───────────────────────────────────────────────────
-  function selectRecipe(menuId) {
+  function selectRecipe(menuId, seasoning = 'none') {
     if (!recipeBook[menuId]) return { ok: false, reason: 'unknown-recipe' };
     if (assembly.index > 0 || assembly.complete) return { ok: false, reason: 'assembly-in-progress' };
     assembly.menuId = menuId;
+    assembly.seasoning = seasoning;
+    assembly.tareBrushCount = 0;
     return { ok: true, menuId, recipe: [...recipeBook[menuId]] };
   }
 
@@ -130,9 +141,9 @@ export function createCookStations({
       if (explicitAssemblyTransfer) {
         assembly.complete = true;
       } else {
-        waitingItems.push(completedMenuId);
+        waitingItems.push(makeProduct(completedMenuId, assembly.seasoning));
         transferredCount += 1;
-        assembly = { menuId: completedMenuId, index: 0, complete: false };
+        assembly = { menuId: completedMenuId, seasoning: assembly.seasoning, index: 0, complete: false };
       }
       return { ok: true, completed: true, menuId: completedMenuId };
     }
@@ -140,17 +151,29 @@ export function createCookStations({
   }
   const assemblyIndex = () => assembly.index;
   const assemblyComplete = () => assembly.complete;
+  function brushAssemblyTare() {
+    if (!assembly.complete || assembly.menuId !== 'momo' || assembly.seasoning !== 'tare') {
+      return { ok: false, reason: 'tare-momo-required' };
+    }
+    assembly.tareBrushCount = Math.min(3, (assembly.tareBrushCount ?? 0) + 1);
+    return { ok: true, brushCount: assembly.tareBrushCount, complete: assembly.tareBrushCount >= 3 };
+  }
   function transferAssembly() {
     if (!assembly.complete) return { ok: false, reason: 'not-complete' };
+    if (assembly.menuId === 'momo' && assembly.seasoning === 'tare' && (assembly.tareBrushCount ?? 0) < 3) {
+      return { ok: false, reason: 'tare-brush-required' };
+    }
     const menuId = assembly.menuId;
-    waitingItems.push(menuId);
+    const product = makeProduct(menuId, assembly.seasoning);
+    product.tarePrepared = (assembly.tareBrushCount ?? 0) >= 3;
+    waitingItems.push(product);
     transferredCount += 1;
-    assembly = { menuId, index: 0, complete: false };
+    assembly = { menuId, seasoning: assembly.seasoning, index: 0, complete: false };
     return { ok: true, transferred: true, menuId, waiting: waitingItems.length, transferredCount };
   }
   const waitingCount = (menuId = null) => menuId == null
     ? waitingItems.length
-    : waitingItems.filter((itemMenuId) => itemMenuId === menuId).length;
+    : waitingItems.filter((item) => item.menuId === menuId).length;
 
   // ── 그릴 ───────────────────────────────────────────────────
   function freeSlotIndex() {
@@ -160,22 +183,25 @@ export function createCookStations({
   function placeToGrill(now, menuId = null) {
     if (pausedAtMs !== null) return { ok: false, reason: 'paused' };
     if (waitingItems.length <= 0) return { ok: false, reason: 'no-waiting' };
-    const waitingIndex = menuId == null ? 0 : waitingItems.indexOf(menuId);
+    const waitingIndex = menuId == null ? 0 : waitingItems.findIndex((item) => item.menuId === menuId);
     if (waitingIndex < 0) return { ok: false, reason: 'no-menu-waiting' };
     const index = freeSlotIndex();
     if (index < 0) return { ok: false, reason: 'no-slot' };
-    const [placedMenuId] = waitingItems.splice(waitingIndex, 1);
+    const [placed] = waitingItems.splice(waitingIndex, 1);
     grill[index] = {
       ...emptySlot(),
       status: FACE.FRONT,
-      menuId: placedMenuId,
+      id: placed.id,
+      menuId: placed.menuId,
+      seasoning: placed.seasoning,
+      tarePrepared: placed.tarePrepared === true,
       orientationFaceDown: FACE.FRONT,
       contactFace: FACE.FRONT,
       lastUpdatedAt: now,
     };
     return menuId == null
       ? { ok: true, slot: index }
-      : { ok: true, slot: index, menuId: placedMenuId };
+      : { ok: true, slot: index, id: placed.id, menuId: placed.menuId, seasoning: placed.seasoning };
   }
 
   function currentElapsedSec(slot) {
@@ -274,6 +300,7 @@ export function createCookStations({
     }
 
     const menuId = slot.menuId ?? defaultMenuId;
+    const { id, seasoning, tarePrepared } = slot;
     const quality = {
       ...qualityFor(frontResult, backResult),
       frontResult,
@@ -281,8 +308,8 @@ export function createCookStations({
     };
     grill[index] = emptySlot();
     return quality.servable
-      ? { ok: true, retrieved: true, menuId, quality }
-      : { ok: false, retrieved: false, discarded: true, menuId, reason: 'fully-burnt', quality };
+      ? { ok: true, retrieved: true, id, menuId, seasoning, tarePrepared, quality }
+      : { ok: false, retrieved: false, discarded: true, id, menuId, seasoning, reason: 'fully-burnt', quality };
   }
 
   function removeFromGrill(index, now) {
@@ -358,6 +385,8 @@ export function createCookStations({
         index,
         status: slot.status,
         menuId: slot.menuId,
+        id: slot.id,
+        seasoning: slot.seasoning,
         doneness: slot.contactFace ? classifyDoneness(faceElapsedSec) : null,
         faceElapsedSec,
         frontElapsedSec: slot.elapsedSec.front,
@@ -386,6 +415,7 @@ export function createCookStations({
       waiting: waitingItems.length,
       waitingItems,
       learnedMenuIds: [...learnedMenuIds],
+      productSequence,
       grill,
     });
   }
@@ -406,10 +436,12 @@ export function createCookStations({
     assembledCount = Number.isInteger(saved.assembledCount)
       ? saved.assembledCount
       : transferredCount + (assembly.complete ? 1 : 0);
+    productSequence = Number.isInteger(saved.productSequence) ? saved.productSequence : 0;
     waitingItems = Array.isArray(saved.waitingItems)
-      ? saved.waitingItems.filter((menuId) => recipeBook[menuId])
-      : Array.from({ length: saved.waiting }, () => defaultMenuId);
-    while (waitingItems.length < saved.waiting) waitingItems.push(defaultMenuId);
+      ? saved.waitingItems.map((item) => typeof item === 'string' ? makeProduct(item) : item)
+        .filter((item) => recipeBook[item.menuId])
+      : Array.from({ length: saved.waiting }, () => makeProduct(defaultMenuId));
+    while (waitingItems.length < saved.waiting) waitingItems.push(makeProduct(defaultMenuId));
     if (waitingItems.length > saved.waiting) waitingItems = waitingItems.slice(0, saved.waiting);
     learnedMenuIds.clear();
     for (const menuId of saved.learnedMenuIds ?? []) {
@@ -419,6 +451,8 @@ export function createCookStations({
     pausedAtMs = null;
     for (const slot of grill) {
       slot.menuId = slot.status === 'empty' ? null : (recipeBook[slot.menuId] ? slot.menuId : defaultMenuId);
+      slot.id = slot.status === 'empty' ? null : (slot.id ?? `COOK-${++productSequence}`);
+      slot.seasoning ??= 'none';
       slot.faceReadyAtMs ??= { front: null, back: null };
       // 구형 D1 저장은 첫 두 꼬치를 staged로 보관했다. 독립 조리 규칙에서는
       // 이어하기 직후 그 꼬치도 앞면 접촉 상태로 전환해 멈춘 제작물을 남기지 않는다.
@@ -473,20 +507,26 @@ export function createCookStations({
     clickIngredient,
     selectRecipe,
     selectedMenuId: () => assembly.menuId,
+    selectedSeasoning: () => assembly.seasoning ?? 'none',
     learnedMenuIds: () => new Set(learnedMenuIds),
     currentRecipe: () => [...recipeBook[assembly.menuId]],
     recipeIds: () => Object.keys(recipeBook),
     assemblyIndex,
     assemblyComplete,
+    brushAssemblyTare,
     transferAssembly,
     assemblyProgress: () => ({
       index: assembly.index,
       complete: assembly.complete,
+      menuId: assembly.menuId,
+      seasoning: assembly.seasoning ?? 'none',
+      tareBrushCount: assembly.tareBrushCount ?? 0,
       assembledCount,
       transferredCount,
     }),
     waitingCount,
-    waitingItems: () => [...waitingItems],
+    waitingItems: () => waitingItems.map((item) => item.menuId),
+    waitingProducts: () => structuredClone(waitingItems),
     placeToGrill,
     clickSlot,
     beginFlip,
@@ -513,10 +553,10 @@ export function createCookStations({
         if (slot.inputLockedUntil) slot.inputLockedUntil -= sec * 1000;
       }
     },
-    debugFillAssembly(menuId = assembly.menuId) {
+    debugFillAssembly(menuId = assembly.menuId, seasoning = assembly.seasoning ?? 'none') {
       if (!recipeBook[menuId]) return false;
       learnedMenuIds.add(menuId);
-      waitingItems.push(menuId);
+      waitingItems.push(makeProduct(menuId, seasoning));
       assembly = { menuId, index: 0, complete: false };
       return true;
     },

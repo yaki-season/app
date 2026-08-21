@@ -44,7 +44,12 @@ test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다',
   await expect(page.getByTestId('d3-torch-panel')).toBeVisible();
   await expect(page.getByTestId('d3-torch-cursor')).toBeHidden();
   await page.getByTestId('d3-apply-tare').click();
-  await expect(page.getByTestId('d3-torch-state')).toContainText('토치 대기');
+  await page.getByTestId('d3-reheat-tare').click();
+  await page.getByTestId('d3-apply-tare').click();
+  await page.getByTestId('d3-reheat-tare').click();
+  await expect(page.getByTestId('d3-torch-state')).toContainText('토치 선택 가능');
+  await expect(page.getByTestId('d3-torch-track')).toBeHidden();
+  await page.getByTestId('d3-select-torch').click();
 
   await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-GRILL'));
   await page.waitForTimeout(350);
@@ -61,6 +66,12 @@ test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다',
     await page.mouse.move(viewport.width * x, viewport.height * 0.52);
   }
   await page.mouse.up({ button: 'left' });
+  await expect(page.getByTestId('d3-torch-state')).toContainText('작동 중');
+  await page.mouse.down({ button: 'left' });
+  await page.waitForTimeout(80);
+  await page.mouse.move(viewport.width * 0.47, viewport.height * 0.52);
+  await page.mouse.up({ button: 'left' });
+  await page.getByTestId('d3-finish-torch').click();
   await expect(page.getByTestId('d3-torch-state')).toContainText('Perfect');
   const stationPreservation = await page.evaluate(async () => {
     const debug = window.__d1GameDebug;
@@ -90,7 +101,7 @@ test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다',
   await expect.poll(() => page.evaluate(() => (
     window.__d1GameDebug.momoRuntime().slots.some((slot) => slot.visible && slot.stage === 'proper')
   ))).toBe(true);
-  expect(await page.evaluate(() => window.__d1GameDebug.d3TorchView().finish.torchCoverage)).toBe(1);
+  expect(await page.evaluate(() => window.__d1GameDebug.d3TorchView().finish.torchCoverage)).toBeGreaterThanOrEqual(0.8);
 
   await expect(page.getByTestId('d3-torch-state')).toContainText('Perfect');
   await page.getByTestId('d3-retrieve-momo').click();
@@ -98,6 +109,26 @@ test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다',
     window.__d1GameDebug.momoRuntime().slots.every((slot) => !slot.visible)
   ))).toBe(true);
   await expect(page.getByTestId('dock-shelf')).toContainText('모모');
+});
+
+test('타레 도포·재가열은 토치 선택 없이 별도 완료하고 회수한다', async ({ page }) => {
+  await installD3Save(page);
+  await page.goto('/src/d1-game.html?day=d3');
+  await expect.poll(() => page.evaluate(() => !!window.__d1GameDebug)).toBe(true);
+  await page.evaluate(() => window.__d1GameDebug.d3TorchStage());
+
+  await page.getByTestId('d3-apply-tare').click();
+  await expect(page.getByTestId('d3-reheat-tare')).toBeEnabled();
+  await expect(page.getByTestId('d3-select-torch')).toBeDisabled();
+  await page.getByTestId('d3-reheat-tare').click();
+  await page.getByTestId('d3-apply-tare').click();
+  await page.getByTestId('d3-reheat-tare').click();
+
+  await expect(page.getByTestId('d3-select-torch')).toBeEnabled();
+  await expect(page.getByTestId('d3-torch-track')).toBeHidden();
+  await page.getByTestId('d3-retrieve-momo').click();
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.dockItems()
+    .some((item) => item.menu === '타레 모모' && item.label === 'Perfect'))).toBe(true);
 });
 
 test('D3 8명·7주문은 마지막 정리 뒤 정산하고 후일담 종착 저장으로 전환한다', async ({ page }) => {

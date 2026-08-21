@@ -53,9 +53,16 @@
 
   <nav id="assemblyRecipePicker" class="assembly-recipe-picker" data-testid="assembly-recipe-picker" aria-label="조립할 꼬치 선택" hidden>
     <span>오늘의 꼬치</span>
-    <button type="button" data-menu-id="negima" aria-pressed="true">네기마</button>
-    <button type="button" data-menu-id="momo" aria-pressed="false">모모</button>
+    <button type="button" data-menu-id="negima" data-seasoning="none" aria-pressed="true">네기마</button>
+    <button type="button" data-menu-id="momo" data-seasoning="none" aria-pressed="false">모모</button>
+    <button type="button" data-menu-id="momo" data-seasoning="tare" data-d3-only="true" aria-pressed="false">타레 모모</button>
   </nav>
+  <section id="assemblyTarePanel" class="assembly-tare-panel" data-testid="assembly-tare-panel" hidden>
+    <strong>타레 양념장</strong>
+    <span id="assemblyTareProgress" aria-live="polite">붓질 0/3</span>
+    <button id="assemblyTareBrush" type="button" data-testid="assembly-tare-brush">붓으로 꼬치에 바르기</button>
+    <div class="assembly-tare-meter" aria-hidden="true"><span id="assemblyTareFill"></span></div>
+  </section>
 
   <!-- 그릴 전용 재고 UI. 생꼬치는 한 장의 카드로 배치하고 완성품은 공용 준비 목록을 읽기 전용으로 투영한다. -->
   <section
@@ -144,10 +151,12 @@
 
   <section id="d3TorchPanel" class="d3-torch-panel" data-testid="d3-torch-panel" data-state-id="D3-MOMO-TARE-READY" aria-labelledby="d3TorchTitle" hidden>
     <div class="d3-torch-head">
-      <strong id="d3TorchTitle">타레 모모 · 토치 마감</strong>
+      <strong id="d3TorchTitle">타레 모모 · 도포·재가열 마감</strong>
       <span id="d3TorchState" data-testid="d3-torch-state" data-component-id="grill.torchState" data-required-asset-id="UI-TORCH-STATE-D3" aria-live="polite">타레 대기</span>
     </div>
     <button id="d3ApplyTare" type="button" data-testid="d3-apply-tare" data-component-id="grill.tare.apply" data-required-asset-id="PROP-TARE-BRUSH-D3">타레 바르기</button>
+    <button id="d3ReheatTare" type="button" data-testid="d3-reheat-tare" data-component-id="grill.tare.reheat" disabled>그릴에서 재가열</button>
+    <button id="d3SelectTorch" type="button" data-testid="d3-select-torch" data-component-id="grill.torch.select" disabled>선택: 토치로 불향 더하기</button>
     <button
       id="d3TorchTrack"
       class="d3-torch-track"
@@ -163,7 +172,8 @@
     <div class="d3-torch-meter" role="progressbar" aria-label="토치 적용 범위" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
       <span id="d3TorchCoverage" data-component-id="grill.torchCoverage" data-required-asset-id="UI-TORCH-COVERAGE-D3"></span>
     </div>
-    <p id="d3TorchHelp">키보드: Space로 토치를 켠 채 ← →로 이동</p>
+    <button id="d3FinishTorch" type="button" data-testid="d3-finish-torch" disabled>토치 마감 완료</button>
+    <p id="d3TorchHelp">타레를 두 번 바르면 Perfect · 토치는 선택 불향 보너스 (키보드 Space + ← →)</p>
     <p id="d3TorchWarning" class="d3-torch-warning" data-component-id="grill.torchFocusWarning" data-required-asset-id="UI-TORCH-FOCUS-WARN-D3" aria-live="assertive"></p>
     <button id="d3RetrieveMomo" type="button" data-testid="d3-retrieve-momo" disabled>완성품 회수</button>
   </section>

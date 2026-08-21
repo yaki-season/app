@@ -24,6 +24,7 @@ import { createGrillSmokeVfx } from './render/grillSmokeVfx.js';
 import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
+import { D3_TORCH_RULES, torchReadiness } from './domain/cooking/d3TorchFinish.js';
 import { gameAudio, installGameAudio, setBgm, sfx, sfxOff, sfxOnce, loopOn, loopOff, loopRate } from './audio/gameAudio.js';
 import { crowdAmbienceId, interiorAmbienceId } from './audio/audioCatalog.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
@@ -124,7 +125,9 @@ const MENU_META = Object.freeze({
   negima: { label: '네기마' },
   momo: { label: '모모' },
 });
-const skewerLabel = (menuId) => MENU_META[menuId]?.label ?? '꼬치';
+const skewerLabel = (menuId, seasoning = 'none') => (
+  menuId === 'momo' && seasoning === 'tare' ? '타레 모모' : MENU_META[menuId]?.label ?? '꼬치'
+);
 
 const el = (id) => document.getElementById(id);
 const canvas = el('scene');
@@ -154,6 +157,7 @@ const developmentStartDay = runtimeParams.get('devUnlock') === '1'
   && ['d2', 'd3'].includes(ACTIVE_DAY_ID)
   ? ACTIVE_DAY_ID
   : null;
+const developmentTestFlow = runtimeParams.get('testFlow');
 if (resetFirstOrderRuntime) clearFirstOrderRuntime(window.localStorage);
 function readFirstOrderRuntime() {
   try {
@@ -344,7 +348,8 @@ const dock = createPreparedDock({ container: dockShelf });
 const assemblyRecipePicker = el('assemblyRecipePicker');
 for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
   button.addEventListener('click', () => {
-    const result = cook.selectRecipe(button.dataset.menuId);
+    const seasoning = button.dataset.seasoning ?? 'none';
+    const result = cook.selectRecipe(button.dataset.menuId, seasoning);
     if (!result.ok) {
       showHint(result.reason === 'assembly-in-progress'
         ? '지금 조립 중인 꼬치를 먼저 완성하세요'
@@ -355,7 +360,17 @@ for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
     render();
   });
 }
-const D3_TORCH_JOB_ID = 'D3-MOMO-TARE-ACTIVE';
+el('assemblyTareBrush').addEventListener('click', () => {
+  const result = cook.brushAssemblyTare();
+  if (!result.ok) return;
+  sfx('SFX-TARE-BRUSH');
+  showHint(result.complete ? '타레 양념을 고르게 발랐어요 · 꼬치를 트레이로 옮기세요' : `타레 붓질 ${result.brushCount}/3`);
+  persistFirstOrderRuntime();
+  render();
+});
+let D3_TORCH_JOB_ID = restoredFirstOrderRuntime?.d3TorchJobId
+  ?? d3Grill.views()[0]?.id
+  ?? 'D3-MOMO-TARE-DEBUG';
 let d3TorchSlotKey = SLOT_KEYS.includes(restoredFirstOrderRuntime?.d3TorchSlotKey)
   ? restoredFirstOrderRuntime.d3TorchSlotKey
   : d3Grill.job(D3_TORCH_JOB_ID) ? SLOT_KEYS[0] : null;
@@ -367,6 +382,7 @@ let d3TorchLastAt = 0;
 let d3TorchPointerPosition = 0.5;
 let d3TorchFrame = 0;
 let d3KeyboardPosition = 0.5;
+let d3TorchModeSelected = false;
 const d3TorchPositionFromClientX = (clientX) => Math.max(0, Math.min(1,
   ((clientX / Math.max(1, window.innerWidth)) - 0.28) / 0.44,
 ));
@@ -383,9 +399,11 @@ function renderD3Torch() {
     return;
   }
   const finish = job.finish;
-  const percent = Math.round(finish.torchCoverage * 100);
+  const tareCycles = Math.min(finish.tareCoatCount ?? 0, finish.tareReheatCount ?? 0);
+  const tareComplete = tareCycles >= 2;
+  const percent = Math.round(torchReadiness(finish) * 100);
   const stateLabel = {
-    none: finish.tareApplied ? '토치 대기' : '타레 대기',
+    none: tareComplete ? '타레 완료 · 토치 선택 가능' : `타레 마감 ${tareCycles}/2`,
     active: '토치 작동 중',
     under: '마감 부족 · Good',
     proper: '적정 마감 · Perfect + 불향',
@@ -393,7 +411,7 @@ function renderD3Torch() {
     failed: '집중 과열 · Fail',
   }[finish.torchState];
   d3TorchPanel.dataset.stateId = {
-    none: finish.tareApplied ? 'D3-MOMO-TARE-APPLIED' : 'D3-MOMO-TARE-READY',
+    none: tareComplete ? 'D3-MOMO-TARE-COMPLETE' : 'D3-MOMO-TARE-READY',
     active: 'D3-MOMO-TORCH-ACTIVE',
     under: 'D3-MOMO-TORCH-UNDER',
     proper: 'D3-MOMO-TORCH-PROPER',
@@ -401,20 +419,35 @@ function renderD3Torch() {
     failed: 'D3-MOMO-TORCH-FAILED',
   }[finish.torchState];
   el('d3TorchState').textContent = stateLabel;
-  el('d3ApplyTare').disabled = finish.tareApplied || finish.torchState === 'active';
-  d3TorchTrack.disabled = !finish.tareApplied || finish.torchCompleted;
+  el('d3ApplyTare').disabled = (finish.tareCoatCount ?? 0) > (finish.tareReheatCount ?? 0)
+    || tareComplete
+    || finish.torchState === 'active'
+    || finish.torchCompleted;
+  el('d3ReheatTare').disabled = (finish.tareCoatCount ?? 0) <= (finish.tareReheatCount ?? 0)
+    || tareComplete
+    || finish.torchState === 'active';
+  el('d3SelectTorch').disabled = !tareComplete || finish.torchCompleted;
+  el('d3SelectTorch').setAttribute('aria-pressed', String(d3TorchModeSelected));
+  d3TorchTrack.hidden = !d3TorchModeSelected;
+  d3TorchPanel.querySelector('.d3-torch-meter').hidden = !d3TorchModeSelected;
+  d3TorchTrack.disabled = !tareComplete || !d3TorchModeSelected || finish.torchCompleted;
+  el('d3FinishTorch').disabled = !d3TorchModeSelected
+    || finish.torchCompleted
+    || finish.torchTotalMs <= 0;
   const cursorReady = d3FeatureOpen
-    && finish.tareApplied
+    && tareComplete
+    && d3TorchModeSelected
     && !finish.torchCompleted
     && director.activeScreenId() === 'SCR-SVC-GRILL';
   d3TorchCursor.hidden = !cursorReady;
   document.body.classList.toggle('d3-torch-cursor-ready', cursorReady);
-  el('d3RetrieveMomo').disabled = !finish.torchCompleted;
+  el('d3RetrieveMomo').disabled = !tareComplete || finish.torchState === 'active';
   el('d3TorchFill').style.width = `${percent}%`;
   el('d3TorchCoverage').style.width = `${percent}%`;
   const meter = d3TorchPanel.querySelector('[role="progressbar"]');
   meter.setAttribute('aria-valuenow', String(percent));
-  el('d3TorchWarning').textContent = finish.torchFocusMs >= 800 && !finish.torchCompleted
+  meter.setAttribute('aria-valuetext', `불향 완성도 ${percent}%`);
+  el('d3TorchWarning').textContent = finish.torchFocusMs >= D3_TORCH_RULES.focusWarnMs && !finish.torchCompleted
     ? '한 지점이 과열되고 있어요. 좌우로 이동하세요.'
     : finish.torchState === 'failed' ? '집중 과열로 품질이 Fail이 됐어요.' : '';
 }
@@ -439,15 +472,13 @@ function sweepD3Torch(position, deltaMs) {
   loopRate('SFX-TORCH-SWEEP', 0.9 + Math.abs(position - 0.5) * 0.4);
   const focusMs = d3Grill.job(D3_TORCH_JOB_ID)?.finish.torchFocusMs ?? 0;
   // 과열은 한 번의 경고로 끝낸다. 화면 문구가 사라지면 다음 과열에서 다시 운다.
-  if (focusMs >= 800) sfxOnce('SFX-TORCH-OVERHEAT', 'focus');
+  if (focusMs >= D3_TORCH_RULES.focusWarnMs) sfxOnce('SFX-TORCH-OVERHEAT', 'focus');
   else gameAudio()?.resetOnce('SFX-TORCH-OVERHEAT:focus');
   persistFirstOrderRuntime();
   renderD3Torch();
 }
 
 function finishD3TorchInput() {
-  const job = d3Grill.job(D3_TORCH_JOB_ID);
-  if (job?.finish.torchState === 'active') d3Grill.finishTorch(D3_TORCH_JOB_ID);
   loopOff('SFX-TORCH-SWEEP');
   loopOff('SFX-TORCH-LOOP');
   sfx('SFX-TORCH-EXTINGUISH');
@@ -459,14 +490,41 @@ function finishD3TorchInput() {
   renderD3Torch();
 }
 
+el('d3FinishTorch').addEventListener('click', () => {
+  const result = d3Grill.finishTorch(D3_TORCH_JOB_ID);
+  if (!result.ok) return;
+  d3TorchModeSelected = false;
+  sfx('SFX-TORCH-EXTINGUISH');
+  showHint(`토치 마감 완료 · ${result.quality.grade}`);
+  persistFirstOrderRuntime();
+  renderD3Torch();
+});
+
 el('d3ApplyTare').addEventListener('click', () => {
   const result = d3Grill.applyTare(D3_TORCH_JOB_ID);
   if (result.ok) {
     sfx('SFX-TARE-BRUSH');
-    sfx('SFX-TARE-SIZZLE');
-    showHint('타레 적용 완료 · 토치를 누른 채 좌우로 훑으세요');
+    const coats = d3Grill.job(D3_TORCH_JOB_ID)?.finish.tareCoatCount ?? 0;
+    showHint(`타레 ${coats}회 도포 완료 · 이제 그릴에서 재가열하세요`);
   }
   persistFirstOrderRuntime();
+  renderD3Torch();
+});
+el('d3ReheatTare').addEventListener('click', () => {
+  const result = d3Grill.reheatTare(D3_TORCH_JOB_ID);
+  if (result.ok) {
+    sfx('SFX-TARE-SIZZLE');
+    const cycles = Math.min(result.tareCoatCount, result.tareReheatCount);
+    showHint(cycles >= 2
+      ? '타레 마감 완료 · 바로 회수하거나 별도로 토치를 선택하세요'
+      : '재가열 완료 · Perfect를 위해 타레를 한 번 더 바르세요');
+  }
+  persistFirstOrderRuntime();
+  renderD3Torch();
+});
+el('d3SelectTorch').addEventListener('click', () => {
+  d3TorchModeSelected = !d3TorchModeSelected;
+  showHint(d3TorchModeSelected ? '토치 선택 · 꼬치 위를 누른 채 좌우로 훑으세요' : '토치 선택을 해제했습니다');
   renderD3Torch();
 });
 d3TorchTrack.addEventListener('pointerdown', (event) => {
@@ -535,7 +593,9 @@ el('d3RetrieveMomo').addEventListener('click', () => {
   const result = d3Grill.retrieve(D3_TORCH_JOB_ID);
   if (!result.ok) return;
   d3TorchSlotKey = null;
-  dock.add({ menu: '모모', label: result.item.quality.grade, good: result.item.quality.good });
+  dock.add({ menu: '타레 모모', seasoning: result.item.seasoning, label: result.item.quality.grade, good: result.item.quality.good });
+  D3_TORCH_JOB_ID = d3Grill.views()[0]?.id ?? 'D3-MOMO-TARE-DEBUG';
+  if (d3Grill.job(D3_TORCH_JOB_ID)) d3TorchSlotKey = SLOT_KEYS[0];
   persistFirstOrderRuntime();
   showHint(result.item.quality.smokyBonus ? '불향 모모 완성 · 준비 목록에 올렸어요' : '모모 완성품을 준비 목록에 올렸어요');
   render();
@@ -570,6 +630,7 @@ function persistFirstOrderRuntime() {
       dayId: ACTIVE_DAY_ID,
       cook: cook.snapshot(performance.now()),
       d3Grill: d3Grill.snapshot(),
+      d3TorchJobId: D3_TORCH_JOB_ID,
       d3TorchSlotKey,
       dock: dock.snapshot(),
       glassPlaced,
@@ -1579,10 +1640,21 @@ function renderBusiness() {
     && director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
   assemblyRecipePicker.hidden = !recipePickerOpen;
   for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
-    const selected = button.dataset.menuId === cook.selectedMenuId();
+    button.hidden = button.dataset.d3Only === 'true' && ACTIVE_DAY_ID !== 'd3';
+    const selected = button.dataset.menuId === cook.selectedMenuId()
+      && (button.dataset.seasoning ?? 'none') === cook.selectedSeasoning();
     button.setAttribute('aria-pressed', String(selected));
     button.disabled = !selected && (cook.assemblyIndex() > 0 || cook.assemblyComplete());
   }
+  const assemblyProgress = cook.assemblyProgress();
+  const tareAssemblyOpen = recipePickerOpen
+    && assemblyProgress.complete
+    && assemblyProgress.menuId === 'momo'
+    && assemblyProgress.seasoning === 'tare';
+  el('assemblyTarePanel').hidden = !tareAssemblyOpen;
+  el('assemblyTareProgress').textContent = `붓질 ${assemblyProgress.tareBrushCount}/3`;
+  el('assemblyTareFill').style.width = `${(assemblyProgress.tareBrushCount / 3) * 100}%`;
+  el('assemblyTareBrush').disabled = assemblyProgress.tareBrushCount >= 3;
   el('businessClock').textContent = view?.clock?.label ?? '--:--';
   const manuallyPaused = runtimeSuspensionReasons.has('manual-pause');
   el('businessPhase').textContent = manuallyPaused
@@ -1894,7 +1966,9 @@ function handle(key, now) {
     case 'jigSkewer': {
       const r = cook.transferAssembly();
       if (!r.ok) {
-        showHint('아직 완성된 꼬치가 없어요');
+        showHint(r.reason === 'tare-brush-required'
+          ? '타레 모모에 양념장을 먼저 고르게 발라 주세요'
+          : '아직 완성된 꼬치가 없어요');
       } else {
         persistFirstOrderRuntime();
         showHint(`${skewerLabel(r.menuId)} · 전달 트레이 이동 완료`);
@@ -1936,15 +2010,24 @@ function clickGrillSlot(i, now) {
     const label = skewerLabel(menuId);
     sfx('SFX-GRILL-RETRIEVE');
     sfx(r.quality?.good ? 'SFX-JUDGE-PERFECT' : 'SFX-JUDGE-FAIL');
-    if (ACTIVE_DAY_ID === 'd3' && menuId === 'momo' && !d3Grill.job(D3_TORCH_JOB_ID)) {
-      d3Grill.stageCookedItem({ id: D3_TORCH_JOB_ID, menuId: 'momo', seasoning: 'tare', bothFacesCooked: true });
-      d3TorchSlotKey = SLOT_KEYS[i];
+    if (ACTIVE_DAY_ID === 'd3' && menuId === 'momo' && r.seasoning === 'tare') {
+      d3Grill.stageCookedItem({
+        id: r.id,
+        menuId: 'momo',
+        seasoning: r.seasoning,
+        bothFacesCooked: true,
+        tarePrepared: r.tarePrepared,
+      });
+      if (!d3Grill.job(D3_TORCH_JOB_ID)) {
+        D3_TORCH_JOB_ID = r.id;
+        d3TorchSlotKey = SLOT_KEYS[i];
+      }
     } else {
       dock.add({ menu: label, label: r.quality.grade, good: r.quality.good });
     }
     persistFirstOrderRuntime();
-    showHint(ACTIVE_DAY_ID === 'd3' && menuId === 'momo'
-      ? '구운 모모를 타레·토치 마감대로 옮겼어요'
+    showHint(ACTIVE_DAY_ID === 'd3' && menuId === 'momo' && r.seasoning === 'tare'
+      ? '구운 타레 모모를 도포·재가열 마감대로 옮겼어요'
       : `완성 ${label}가 오른쪽 종류·품질별 목록에 추가됐어요`);
   }
   else if (r.flipped) {
@@ -1985,8 +2068,8 @@ function d3TorchMomoStage(job) {
     if (finish.torchState === 'over') return 'overcooked';
     return 'proper';
   }
-  if (finish.torchFocusMs >= 1_200) return 'burnt';
-  if (finish.torchFocusMs >= 800) return 'overcooked';
+  if (finish.torchFocusMs >= D3_TORCH_RULES.focusFailMs) return 'burnt';
+  if (finish.torchFocusMs >= D3_TORCH_RULES.focusWarnMs) return 'overcooked';
   return 'proper';
 }
 
@@ -2321,7 +2404,7 @@ async function bootBusinessDay() {
     } else {
       businessPort = businessSession.port;
       reportedRiskCount = businessView()?.limits.riskProcessCount ?? 0;
-      if (developmentStartDay === 'd3' && !d3Grill.job(D3_TORCH_JOB_ID)) {
+      if (developmentStartDay === 'd3' && developmentTestFlow !== 'assembly-tare' && !d3Grill.job(D3_TORCH_JOB_ID)) {
         d3Grill.stageCookedItem({
           id: D3_TORCH_JOB_ID,
           menuId: 'momo',
@@ -2331,6 +2414,9 @@ async function bootBusinessDay() {
         d3TorchSlotKey = SLOT_KEYS[0];
         persistFirstOrderRuntime();
         director.request('SCR-SVC-GRILL', performance.now());
+      } else if (developmentStartDay === 'd3' && developmentTestFlow === 'assembly-tare') {
+        cook.selectRecipe('momo', 'tare');
+        director.request('SCR-SVC-ASSEMBLY', performance.now());
       }
       if (runtimeIsSuspended()) dispatchBusiness(D1_UI_INTENT.PAUSE);
       else lastBusinessFrameAt = performance.now();

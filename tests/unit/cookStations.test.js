@@ -70,8 +70,8 @@ describe('createCookStations', () => {
     const cook = createD1CookStations();
     cook.debugFillAssembly('negima');
     cook.debugFillAssembly('momo');
-    expect(cook.placeToGrill(0, 'momo')).toEqual({ ok: true, slot: 0, menuId: 'momo' });
-    expect(cook.placeToGrill(1_000, 'negima')).toEqual({ ok: true, slot: 1, menuId: 'negima' });
+    expect(cook.placeToGrill(0, 'momo')).toMatchObject({ ok: true, slot: 0, menuId: 'momo' });
+    expect(cook.placeToGrill(1_000, 'negima')).toMatchObject({ ok: true, slot: 1, menuId: 'negima' });
     expect(cook.slotViews(9_000)).toEqual([
       expect.objectContaining({ menuId: 'momo', frontElapsedSec: 9 }),
       expect.objectContaining({ menuId: 'negima', frontElapsedSec: 8 }),
@@ -437,5 +437,25 @@ describe('createCookStations', () => {
       expect.objectContaining({ status: 'front', frontElapsedSec: 10 }),
       expect.objectContaining({ status: 'front', frontElapsedSec: 8 }),
     ]);
+  });
+
+  it('타레 모모는 조립대 붓질을 완료해야 전달되고 양념 상태가 회수까지 보존된다', () => {
+    const cook = createD1CookStations();
+    cook.selectRecipe('momo', 'tare');
+    MOMO.forEach((ingredient) => cook.clickIngredient(ingredient));
+    expect(cook.transferAssembly()).toEqual({ ok: false, reason: 'tare-brush-required' });
+    expect(cook.brushAssemblyTare()).toMatchObject({ brushCount: 1, complete: false });
+    expect(cook.brushAssemblyTare()).toMatchObject({ brushCount: 2, complete: false });
+    expect(cook.brushAssemblyTare()).toMatchObject({ brushCount: 3, complete: true });
+    expect(cook.transferAssembly()).toMatchObject({ ok: true });
+    expect(cook.placeToGrill(0, 'momo')).toMatchObject({ seasoning: 'tare' });
+    cook.debugElapse(8);
+    cook.clickSlot(0, 0);
+    cook.debugElapse(8);
+    expect(cook.clickSlot(0, 0)).toMatchObject({
+      retrieved: true,
+      seasoning: 'tare',
+      tarePrepared: true,
+    });
   });
 });

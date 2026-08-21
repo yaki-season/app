@@ -573,6 +573,11 @@ body:has(.quick-nav button[data-screen="SCR-SVC-CUSTOMERS"].active) .order-hud {
   box-shadow: 0 8px 24px rgba(0, 0, 0, .38);
 }
 .assembly-recipe-picker[hidden] { display: none; }
+.assembly-tare-panel { position: fixed; left: 50%; bottom: 88px; z-index: 35; transform: translateX(-50%); display: grid; grid-template-columns: auto auto auto; align-items: center; gap: 8px; padding: 10px 14px; border: 2px solid #9b5d31; border-radius: 12px; background: rgba(39, 18, 10, .94); color: #ffe6b0; }
+.assembly-tare-panel[hidden] { display: none; }
+.assembly-tare-panel button { min-height: 44px; border: 2px solid #d89a52; border-radius: 9px; background: #67351f; color: #fff3d0; font: inherit; font-weight: 800; }
+.assembly-tare-meter { grid-column: 1 / -1; height: 8px; overflow: hidden; border-radius: 99px; background: #21120d; }
+.assembly-tare-meter span { display: block; width: 0; height: 100%; background: linear-gradient(90deg, #7f2b18, #d75b28); transition: width .18s ease; }
 .assembly-recipe-picker > span { padding: 0 8px; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
 .assembly-recipe-picker button {
   min-height: 34px;
@@ -600,6 +605,7 @@ body:has(.quick-nav button[data-screen="SCR-SVC-CUSTOMERS"].active) .order-hud {
   padding: 14px; color: var(--text); background: rgba(25, 17, 12, .97); box-shadow: 0 12px 36px rgba(0,0,0,.45);
 }
 .d3-torch-panel[hidden] { display: none; }
+.d3-torch-track[hidden], .d3-torch-meter[hidden] { display: none; }
 .d3-torch-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .d3-torch-panel button { min-height: 44px; border: 2px solid var(--line); border-radius: 9px; padding: 8px 12px; color: var(--text); background: #3b291d; font: inherit; font-weight: 700; }
 .d3-torch-panel button:focus-visible { outline: 3px solid #fff0ca; outline-offset: 2px; }

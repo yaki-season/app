@@ -4,12 +4,14 @@ import {
   canRetrieveTorchMenu,
   createD3TorchFinishState,
   finishTorch,
+  reheatTare,
   sweepTorch,
+  tareQuality,
   torchQuality,
 } from './d3TorchFinish.js';
 
 const clone = (value) => structuredClone(value);
-const requiresTorch = ({ menuId, seasoning }) => menuId === 'momo' && seasoning === 'tare';
+const requiresTareFinish = ({ menuId, seasoning }) => menuId === 'momo' && seasoning === 'tare';
 
 export function createD3GrillSession(saved = null) {
   const jobs = new Map();
@@ -30,18 +32,24 @@ export function createD3GrillSession(saved = null) {
     return { ok: true };
   }
 
-  function stageCookedItem({ id, menuId, seasoning = 'none', bothFacesCooked = false }) {
+  function stageCookedItem({ id, menuId, seasoning = 'none', bothFacesCooked = false, tarePrepared = false }) {
     if (!id || !menuId) return { ok: false, reason: 'invalid-item' };
     if (jobs.has(id)) return { ok: false, reason: 'duplicate-item' };
     if (!bothFacesCooked) return { ok: false, reason: 'both-faces-required' };
-    const torchRequired = requiresTorch({ menuId, seasoning });
+    const torchRequired = requiresTareFinish({ menuId, seasoning });
+    const finish = torchRequired ? createD3TorchFinishState() : null;
+    if (finish && tarePrepared) {
+      finish.tareApplied = true;
+      finish.tareCoatCount = 2;
+      finish.tareReheatCount = 2;
+    }
     const job = {
       id,
       menuId,
       seasoning,
       bothFacesCooked,
       torchRequired,
-      finish: torchRequired ? createD3TorchFinishState() : null,
+      finish,
     };
     jobs.set(id, job);
     return { ok: true, job: clone(job) };
@@ -65,6 +73,13 @@ export function createD3GrillSession(saved = null) {
     return beginTorch(job.finish, { ...options, bothFacesCooked: job.bothFacesCooked });
   }
 
+  function reheatTareFor(id) {
+    const job = jobFor(id);
+    if (!job) return { ok: false, reason: 'unknown-item' };
+    if (!job.torchRequired) return { ok: false, reason: 'tare-not-required' };
+    return reheatTare(job.finish);
+  }
+
   function sweepTorchFor(id, input) {
     const job = jobFor(id);
     if (!job) return { ok: false, reason: 'unknown-item' };
@@ -86,7 +101,9 @@ export function createD3GrillSession(saved = null) {
       const allowed = canRetrieveTorchMenu(job.finish);
       if (!allowed.ok) return allowed;
     }
-    const quality = job.torchRequired ? torchQuality(job.finish) : clone(baseQuality);
+    const quality = job.torchRequired
+      ? (job.finish.torchCompleted ? torchQuality(job.finish) : tareQuality(job.finish))
+      : clone(baseQuality);
     jobs.delete(id);
     return {
       ok: true,
@@ -103,6 +120,7 @@ export function createD3GrillSession(saved = null) {
   return {
     stageCookedItem,
     applyTare: applyTareTo,
+    reheatTare: reheatTareFor,
     beginTorch: beginTorchFor,
     sweepTorch: sweepTorchFor,
     finishTorch: finishTorchFor,

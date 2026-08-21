@@ -4,7 +4,10 @@ import { createD3GrillSession } from '../../src/domain/cooking/d3GrillSession.js
 const MOMO_TARE = { id: 'D3-MOMO-001', menuId: 'momo', seasoning: 'tare', bothFacesCooked: true };
 
 function properTorch(session, id = MOMO_TARE.id) {
-  session.applyTare(id);
+  for (let cycle = 0; cycle < 2; cycle += 1) {
+    session.applyTare(id);
+    session.reheatTare(id);
+  }
   session.beginTorch(id);
   [0.05, 0.25, 0.45, 0.65, 0.85].forEach((position) => {
     session.sweepTorch(id, { position, deltaMs: 200 });
@@ -13,12 +16,34 @@ function properTorch(session, id = MOMO_TARE.id) {
 }
 
 describe('D3 메뉴·그릴·저장 연결', () => {
-  it('타레 모모는 양면 조리 뒤에도 토치 완료 전 회수를 막는다', () => {
+  it('타레 모모는 타레 전 회수를 막지만 토치는 요구하지 않는다', () => {
     const session = createD3GrillSession();
     expect(session.stageCookedItem(MOMO_TARE).ok).toBe(true);
     expect(session.retrieve(MOMO_TARE.id)).toEqual({ ok: false, reason: 'tare-required' });
     session.applyTare(MOMO_TARE.id);
-    expect(session.retrieve(MOMO_TARE.id)).toEqual({ ok: false, reason: 'torch-required' });
+    expect(session.retrieve(MOMO_TARE.id)).toEqual({ ok: false, reason: 'tare-finish-required' });
+  });
+
+  it('두 번 도포·재가열하면 토치 없이 Perfect로 회수한다', () => {
+    const session = createD3GrillSession();
+    session.stageCookedItem(MOMO_TARE);
+    session.applyTare(MOMO_TARE.id);
+    session.reheatTare(MOMO_TARE.id);
+    session.applyTare(MOMO_TARE.id);
+    session.reheatTare(MOMO_TARE.id);
+    expect(session.retrieve(MOMO_TARE.id)).toMatchObject({
+      ok: true,
+      item: { id: MOMO_TARE.id, seasoning: 'tare', quality: { grade: 'Perfect', smokyBonus: false } },
+    });
+  });
+
+  it('복수 타레 모모의 상태를 제작물 ID별로 독립 보존한다', () => {
+    const session = createD3GrillSession();
+    session.stageCookedItem(MOMO_TARE);
+    session.stageCookedItem({ ...MOMO_TARE, id: 'D3-MOMO-002' });
+    session.applyTare(MOMO_TARE.id);
+    expect(session.job(MOMO_TARE.id).finish.tareCoatCount).toBe(1);
+    expect(session.job('D3-MOMO-002').finish.tareCoatCount).toBe(0);
   });
 
   it('적정 토치가 끝난 타레 모모를 Perfect·불향 보너스로 회수한다', () => {
@@ -48,6 +73,9 @@ describe('D3 메뉴·그릴·저장 연결', () => {
     const source = createD3GrillSession();
     source.stageCookedItem(MOMO_TARE);
     source.applyTare(MOMO_TARE.id);
+    source.reheatTare(MOMO_TARE.id);
+    source.applyTare(MOMO_TARE.id);
+    source.reheatTare(MOMO_TARE.id);
     source.beginTorch(MOMO_TARE.id);
     source.sweepTorch(MOMO_TARE.id, { position: 0.05, deltaMs: 200 });
 

@@ -85,29 +85,21 @@ const STORY_BACKGROUND_ASSET_IDS = Object.freeze({
   S0: 'BG-EXTERIOR-S0-GATE-OPEN',
   DEFAULT: 'BG-INTERIOR-BASE',
 });
-const S0_STORY_ILLUSTRATION_ASSET_ID = 'IL-S0-AKI-REOPENED-SHOP';
-const STORY_ILLUSTRATION_BY_DIALOGUE_ID = Object.freeze({
-  'DLG-D1-PRE-001': Object.freeze({
-    assetId: 'IL-D1-PREOPEN-AKI',
-    alt: '영업을 앞두고 첫 손님을 기다리는 아사노 아키',
-  }),
-  'DLG-D1-PRE-002': Object.freeze({
-    assetId: 'IL-D1-PREOPEN-TSUKIOKA',
-    alt: '다시 문을 연 가게를 찾아온 츠키오카 세이지',
-  }),
-  'DLG-D1-PRE-003': Object.freeze({
-    assetId: 'IL-D1-PREOPEN-AKI',
-    alt: '첫 손님을 위해 정성껏 준비하는 아사노 아키',
-  }),
-  'DLG-D2-PRE-001': Object.freeze({
-    assetId: 'IL-D1-PREOPEN-AKI',
-    alt: '둘째 날 영업을 준비하는 아사노 아키',
-  }),
-  'DLG-D2-PRE-002': Object.freeze({
-    assetId: 'IL-D1-PREOPEN-TSUKIOKA',
-    alt: '둘째 날 다시 가게를 찾은 츠키오카 세이지',
-  }),
+const STORY_ILLUSTRATION_BY_SCENE_KEY = Object.freeze({
+  S0: Object.freeze({ assetId: 'IL-S0-DECISION-PIXEL', alt: '비 갠 밤, 다시 연 가게 앞에 선 아사노 아키' }),
+  'D1-PRE': Object.freeze({ assetId: 'IL-D1-PREOPEN-PIXEL', alt: '첫 영업을 준비하며 츠키오카를 맞는 아사노 아키' }),
+  'D1-POST': Object.freeze({ assetId: 'IL-D1-POST-PIXEL', alt: '첫 영업을 마치고 츠키오카의 격려를 받는 아사노 아키' }),
+  'D2-PRE': Object.freeze({ assetId: 'IL-D2-PREOPEN-PIXEL', alt: '둘째 날 모모를 준비하며 손님을 맞는 아사노 아키' }),
+  'D2-POST': Object.freeze({ assetId: 'IL-D2-POST-PIXEL', alt: '둘째 날 다시 오겠다는 손님을 배웅하는 아사노 아키' }),
+  'D3-PRE': Object.freeze({ assetId: 'IL-D3-PREOPEN-PIXEL', alt: '타레 노트를 살피며 직장인 손님들을 맞는 아사노 아키' }),
+  'D3-POST': Object.freeze({ assetId: 'IL-D3-POST-PIXEL', alt: '셋째 날 영업 뒤 손님과 츠키오카에게 인사하는 아사노 아키' }),
 });
+
+function storyIllustrationBinding(activeDayId, dialogueId) {
+  if (activeDayId === 'S0') return STORY_ILLUSTRATION_BY_SCENE_KEY.S0;
+  const timing = dialogueId?.includes('-POST-') ? 'POST' : 'PRE';
+  return STORY_ILLUSTRATION_BY_SCENE_KEY[`${activeDayId}-${timing}`];
+}
 
 function hideStoryIllustration() {
   storyIllustration.hidden = true;
@@ -116,9 +108,7 @@ function hideStoryIllustration() {
 }
 
 function renderStoryIllustration(activeDayId, dialogueId) {
-  const binding = activeDayId === 'S0'
-    ? { assetId: S0_STORY_ILLUSTRATION_ASSET_ID, alt: '비 갠 밤, 다시 연 가게 앞에 선 아사노 아키' }
-    : STORY_ILLUSTRATION_BY_DIALOGUE_ID[dialogueId];
+  const binding = storyIllustrationBinding(activeDayId, dialogueId);
   if (!binding) {
     hideStoryIllustration();
     return false;
