@@ -11,6 +11,7 @@ import {
   loadD2MomoSpriteRuntime,
 } from './render/d2MomoSpriteRuntime.js';
 import {
+  ASSEMBLY_TARE_COATS,
   COOK_SLOT_NEXT_ACTION,
   createD1CookStations,
 } from './render/cookStations.js';
@@ -360,14 +361,83 @@ for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
     render();
   });
 }
-el('assemblyTareBrush').addEventListener('click', () => {
+const assemblyTareCursor = el('assemblyTareCursor');
+const assemblyTarePaintedZones = new Set();
+let assemblyTarePointerId = null;
+let assemblyTareLastZone = null;
+
+function objectScreenPoint(key) {
+  const point = new THREE.Vector3();
+  R.objectMesh[key]?.getWorldPosition(point);
+  return R.projectToScreen(point);
+}
+
+function assemblyTareTargetBounds() {
+  const center = objectScreenPoint('jigSkewer');
+  const halfWidth = Math.min(250, window.innerWidth * 0.2);
+  return { left: center.x - halfWidth, right: center.x + halfWidth, top: center.y - 70, bottom: center.y + 70 };
+}
+
+function assemblyTareReady() {
+  const progress = cook.assemblyProgress();
+  return director.activeScreenId() === 'SCR-SVC-ASSEMBLY'
+    && progress.complete
+    && progress.menuId === 'momo'
+    && progress.seasoning === 'tare'
+    && progress.tareBrushCount < ASSEMBLY_TARE_COATS;
+}
+
+function paintAssemblyTareAt(clientX) {
+  const bounds = assemblyTareTargetBounds();
+  const position = Math.max(0, Math.min(1, (clientX - bounds.left) / Math.max(1, bounds.right - bounds.left)));
+  const zone = Math.min(9, Math.floor(position * 10));
+  const from = assemblyTareLastZone == null ? zone : Math.min(zone, assemblyTareLastZone);
+  const to = assemblyTareLastZone == null ? zone : Math.max(zone, assemblyTareLastZone);
+  for (let index = from; index <= to; index += 1) assemblyTarePaintedZones.add(index);
+  assemblyTareLastZone = zone;
+  assemblyTareCursor.dataset.coverage = String(assemblyTarePaintedZones.size);
+}
+
+function finishAssemblyTareBrush(event) {
+  if (assemblyTarePointerId == null || (event.pointerId != null && event.pointerId !== assemblyTarePointerId)) return;
+  assemblyTareCursor.classList.remove('is-brushing');
+  const coveredEnough = assemblyTarePaintedZones.size >= 8;
+  assemblyTarePointerId = null;
+  assemblyTareLastZone = null;
+  if (!coveredEnough) {
+    showHint('꼬치 전체에 닿도록 붓을 끝까지 움직여 주세요');
+    return;
+  }
   const result = cook.brushAssemblyTare();
   if (!result.ok) return;
   sfx('SFX-TARE-BRUSH');
-  showHint(result.complete ? '타레 양념을 고르게 발랐어요 · 꼬치를 트레이로 옮기세요' : `타레 붓질 ${result.brushCount}/3`);
+  showHint(result.complete ? '타레 양념을 두 겹 고르게 발랐어요 · 꼬치를 트레이로 옮기세요' : `타레 도포 ${result.brushCount}/${ASSEMBLY_TARE_COATS} · 한 번 더 칠하세요`);
+  assemblyTarePaintedZones.clear();
   persistFirstOrderRuntime();
   render();
+}
+
+document.addEventListener('pointermove', (event) => {
+  if (!assemblyTareReady()) return;
+  assemblyTareCursor.style.left = `${event.clientX}px`;
+  assemblyTareCursor.style.top = `${event.clientY}px`;
+  if (event.pointerId === assemblyTarePointerId) paintAssemblyTareAt(event.clientX);
 });
+document.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0 || event.target !== canvas || !assemblyTareReady()) return;
+  const bounds = assemblyTareTargetBounds();
+  if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  assemblyTarePointerId = event.pointerId;
+  assemblyTarePaintedZones.clear();
+  assemblyTareLastZone = null;
+  assemblyTareCursor.classList.add('is-brushing');
+  canvas.setPointerCapture?.(event.pointerId);
+  paintAssemblyTareAt(event.clientX);
+}, true);
+document.addEventListener('pointerup', finishAssemblyTareBrush, true);
+document.addEventListener('pointercancel', finishAssemblyTareBrush, true);
 let D3_TORCH_JOB_ID = restoredFirstOrderRuntime?.d3TorchJobId
   ?? d3Grill.views()[0]?.id
   ?? 'D3-MOMO-TARE-DEBUG';
@@ -383,9 +453,16 @@ let d3TorchPointerPosition = 0.5;
 let d3TorchFrame = 0;
 let d3KeyboardPosition = 0.5;
 let d3TorchModeSelected = false;
-const d3TorchPositionFromClientX = (clientX) => Math.max(0, Math.min(1,
-  ((clientX / Math.max(1, window.innerWidth)) - 0.28) / 0.44,
-));
+let d3TorchLastClientX = null;
+function d3TorchTargetBounds() {
+  const center = objectScreenPoint(d3TorchSlotKey ?? SLOT_KEYS[0]);
+  const halfWidth = Math.min(250, window.innerWidth * 0.2);
+  return { left: center.x - halfWidth, right: center.x + halfWidth, top: center.y - 85, bottom: center.y + 85 };
+}
+const d3TorchPositionFromClientX = (clientX) => {
+  const bounds = d3TorchTargetBounds();
+  return Math.max(0, Math.min(1, (clientX - bounds.left) / Math.max(1, bounds.right - bounds.left)));
+};
 
 function renderD3Torch() {
   const job = d3Grill.job(D3_TORCH_JOB_ID);
@@ -428,7 +505,7 @@ function renderD3Torch() {
     || finish.torchState === 'active';
   el('d3SelectTorch').disabled = !tareComplete || finish.torchCompleted;
   el('d3SelectTorch').setAttribute('aria-pressed', String(d3TorchModeSelected));
-  d3TorchTrack.hidden = !d3TorchModeSelected;
+  d3TorchTrack.hidden = true;
   d3TorchPanel.querySelector('.d3-torch-meter').hidden = !d3TorchModeSelected;
   d3TorchTrack.disabled = !tareComplete || !d3TorchModeSelected || finish.torchCompleted;
   el('d3FinishTorch').disabled = !d3TorchModeSelected
@@ -532,13 +609,14 @@ d3TorchTrack.addEventListener('pointerdown', (event) => {
   d3TorchPointerActive = true;
   d3TorchLastAt = performance.now();
   d3TorchTrack.setPointerCapture?.(event.pointerId);
-  sweepD3Torch((event.clientX - d3TorchTrack.getBoundingClientRect().left) / d3TorchTrack.clientWidth, 16);
+  d3TorchPointerPosition = (event.clientX - d3TorchTrack.getBoundingClientRect().left) / d3TorchTrack.clientWidth;
+  sweepD3Torch(d3TorchPointerPosition, 16);
+  cancelAnimationFrame(d3TorchFrame);
+  d3TorchFrame = requestAnimationFrame(tickD3CursorTorch);
 });
 d3TorchTrack.addEventListener('pointermove', (event) => {
   if (!d3TorchPointerActive) return;
-  const now = performance.now();
-  sweepD3Torch((event.clientX - d3TorchTrack.getBoundingClientRect().left) / d3TorchTrack.clientWidth, now - d3TorchLastAt);
-  d3TorchLastAt = now;
+  d3TorchPointerPosition = (event.clientX - d3TorchTrack.getBoundingClientRect().left) / d3TorchTrack.clientWidth;
 });
 d3TorchTrack.addEventListener('pointerup', finishD3TorchInput);
 d3TorchTrack.addEventListener('pointercancel', finishD3TorchInput);
@@ -547,6 +625,10 @@ document.addEventListener('pointermove', (event) => {
   d3TorchCursor.style.left = `${event.clientX}px`;
   d3TorchCursor.style.top = `${event.clientY}px`;
   d3TorchPointerPosition = d3TorchPositionFromClientX(event.clientX);
+  if (d3TorchLastClientX != null && Math.abs(event.clientX - d3TorchLastClientX) > 2) {
+    d3TorchCursor.dataset.direction = event.clientX < d3TorchLastClientX ? 'left' : 'right';
+  }
+  d3TorchLastClientX = event.clientX;
 });
 function tickD3CursorTorch(now) {
   if (!d3TorchPointerActive) return;
@@ -560,6 +642,11 @@ document.addEventListener('pointerdown', (event) => {
   if (event.target.closest?.('button, [role="button"], .d3-torch-panel, #svcBar, .quick-nav')) return;
   event.preventDefault();
   event.stopImmediatePropagation();
+  const bounds = d3TorchTargetBounds();
+  if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
+    showHint('불꽃을 그릴 위 타레 모모에 가까이 대세요');
+    return;
+  }
   if (!ensureD3TorchActive()) return;
   d3TorchPointerActive = true;
   d3TorchLastAt = performance.now();
@@ -1652,9 +1739,10 @@ function renderBusiness() {
     && assemblyProgress.menuId === 'momo'
     && assemblyProgress.seasoning === 'tare';
   el('assemblyTarePanel').hidden = !tareAssemblyOpen;
-  el('assemblyTareProgress').textContent = `붓질 ${assemblyProgress.tareBrushCount}/3`;
-  el('assemblyTareFill').style.width = `${(assemblyProgress.tareBrushCount / 3) * 100}%`;
-  el('assemblyTareBrush').disabled = assemblyProgress.tareBrushCount >= 3;
+  el('assemblyTareProgress').textContent = `도포 ${assemblyProgress.tareBrushCount}/${ASSEMBLY_TARE_COATS}`;
+  el('assemblyTareFill').style.width = `${(assemblyProgress.tareBrushCount / ASSEMBLY_TARE_COATS) * 100}%`;
+  assemblyTareCursor.hidden = !tareAssemblyOpen || assemblyProgress.tareBrushCount >= ASSEMBLY_TARE_COATS;
+  document.body.classList.toggle('assembly-tare-cursor-ready', !assemblyTareCursor.hidden);
   el('businessClock').textContent = view?.clock?.label ?? '--:--';
   const manuallyPaused = runtimeSuspensionReasons.has('manual-pause');
   el('businessPhase').textContent = manuallyPaused
@@ -2693,6 +2781,9 @@ Object.assign(d1GameDebug, {
   d3TorchSweep: (position, deltaMs) => { const result = d3Grill.sweepTorch(D3_TORCH_JOB_ID, { position, deltaMs }); persistFirstOrderRuntime(); render(); return result; },
   d3TorchFinish: () => { const result = d3Grill.finishTorch(D3_TORCH_JOB_ID); persistFirstOrderRuntime(); render(); return result; },
   cookSelectRecipe: (menuId) => { const result = cook.selectRecipe(menuId); render(); return result; },
+  cookClickIngredient: (ingredientId) => { const result = cook.clickIngredient(ingredientId); render(); return result; },
+  assemblyTareTargetBounds,
+  d3TorchTargetBounds,
   cookFillAssembly: (menuId) => { const result = cook.debugFillAssembly(menuId); render(); return result; },
   cookAssemblyIndex: () => cook.assemblyIndex(),
   cookWaiting: () => cook.waitingCount(),

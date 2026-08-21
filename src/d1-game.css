@@ -573,11 +573,20 @@ body:has(.quick-nav button[data-screen="SCR-SVC-CUSTOMERS"].active) .order-hud {
   box-shadow: 0 8px 24px rgba(0, 0, 0, .38);
 }
 .assembly-recipe-picker[hidden] { display: none; }
-.assembly-tare-panel { position: fixed; left: 50%; bottom: 88px; z-index: 35; transform: translateX(-50%); display: grid; grid-template-columns: auto auto auto; align-items: center; gap: 8px; padding: 10px 14px; border: 2px solid #9b5d31; border-radius: 12px; background: rgba(39, 18, 10, .94); color: #ffe6b0; }
+.assembly-tare-panel { position: fixed; left: 50%; bottom: 88px; z-index: 35; transform: translateX(-50%); display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px 14px; width: min(420px, calc(100vw - 32px)); padding: 10px 14px; border: 2px solid #9b5d31; border-radius: 12px; background: rgba(39, 18, 10, .88); color: #ffe6b0; pointer-events: none; }
 .assembly-tare-panel[hidden] { display: none; }
-.assembly-tare-panel button { min-height: 44px; border: 2px solid #d89a52; border-radius: 9px; background: #67351f; color: #fff3d0; font: inherit; font-weight: 800; }
+.assembly-tare-panel small { grid-column: 1 / -1; color: #d6b88c; text-align: center; }
 .assembly-tare-meter { grid-column: 1 / -1; height: 8px; overflow: hidden; border-radius: 99px; background: #21120d; }
 .assembly-tare-meter span { display: block; width: 0; height: 100%; background: linear-gradient(90deg, #7f2b18, #d75b28); transition: width .18s ease; }
+.assembly-tare-cursor { position: fixed; z-index: 36; width: 76px; height: 96px; transform: translate(-25px, -68px) rotate(-12deg); transform-origin: 30px 70px; pointer-events: none; filter: drop-shadow(0 7px 5px rgba(0,0,0,.55)); }
+.assembly-tare-cursor[hidden] { display: none; }
+.assembly-tare-cursor-handle { position: absolute; left: 28px; top: 0; width: 12px; height: 62px; border: 3px solid #351b10; border-radius: 7px; background: linear-gradient(90deg,#7b421f,#d39348 48%,#6c351a); }
+.assembly-tare-cursor-bristles { position: absolute; left: 18px; top: 54px; width: 34px; height: 30px; border: 3px solid #351b10; border-radius: 5px 5px 15px 15px; background: linear-gradient(#4a2517 0 35%,#8d2e18 36% 100%); }
+.assembly-tare-cursor-bristles::after { content: ''; position: absolute; left: 5px; right: 5px; bottom: -9px; height: 13px; border-radius: 50%; background: #9d3219; opacity: 0; }
+.assembly-tare-cursor.is-brushing { transform: translate(-25px, -68px) rotate(8deg) scale(.96); filter: drop-shadow(0 5px 4px rgba(0,0,0,.55)) drop-shadow(0 0 9px rgba(174,57,23,.65)); }
+.assembly-tare-cursor.is-brushing .assembly-tare-cursor-bristles::after { opacity: .8; animation: tare-brush-dab .16s steps(2,end) infinite alternate; }
+body.assembly-tare-cursor-ready #scene { cursor: none; }
+@keyframes tare-brush-dab { from { transform: scaleX(.72); } to { transform: scaleX(1.1) translateY(2px); } }
 .assembly-recipe-picker > span { padding: 0 8px; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
 .assembly-recipe-picker button {
   min-height: 34px;
@@ -649,12 +658,17 @@ body:has(.quick-nav button[data-screen="SCR-SVC-CUSTOMERS"].active) .order-hud {
     radial-gradient(circle at 76% 34%, #ff8c32 0 2px, transparent 3px),
     radial-gradient(circle at 62% 8%, #fff1a8 0 1px, transparent 2px);
 }
+.d3-torch-cursor-contact { position: absolute; left: -10px; top: -31px; width: 72px; height: 24px; border-radius: 50%; opacity: 0; background: radial-gradient(ellipse, rgba(255,238,153,.95), rgba(255,106,25,.48) 36%, transparent 72%); filter: blur(3px); transform: rotate(-4deg); }
 .d3-torch-cursor.is-firing { filter: drop-shadow(0 8px 7px rgba(0,0,0,.55)) drop-shadow(0 0 18px rgba(255,118,31,.7)); }
 .d3-torch-cursor.is-firing .d3-torch-cursor-flame { opacity: 1; animation: d3-torch-flicker .09s steps(2,end) infinite; }
 .d3-torch-cursor.is-firing .d3-torch-cursor-flame::after { animation: d3-torch-sparks .32s linear infinite; }
+.d3-torch-cursor.is-firing .d3-torch-cursor-contact { opacity: 1; animation: d3-torch-contact .18s steps(2,end) infinite alternate; }
+.d3-torch-cursor[data-direction="left"] { transform: translate(-18px, -18px) rotate(-4deg); }
+.d3-torch-cursor[data-direction="right"] { transform: translate(-18px, -18px) rotate(4deg); }
 body.d3-torch-cursor-ready #scene { cursor: none; }
 @keyframes d3-torch-flicker { from { transform: rotate(14deg) scale(.92,1); } to { transform: rotate(22deg) scale(1.08,.94); } }
 @keyframes d3-torch-sparks { from { transform: translateY(8px) scale(.8); opacity: 1; } to { transform: translateY(-18px) scale(1.15); opacity: 0; } }
+@keyframes d3-torch-contact { from { transform: rotate(-4deg) scale(.82); } to { transform: rotate(3deg) scale(1.12); } }
 
 /* 엑스트라 정식 아트가 오기 전에는 stable ID가 붙은 명시적 개발 placeholder로 보인다. */
 .order-bubble[data-placeholder="development"] .order-label {

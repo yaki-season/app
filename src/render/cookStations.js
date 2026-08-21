@@ -13,6 +13,7 @@ import {
 
 const FLIP_AIRBORNE_MS = 300;
 const INPUT_LOCK_MS = 300;
+export const ASSEMBLY_TARE_COATS = 2;
 const FACE = Object.freeze({ FRONT: 'front', BACK: 'back' });
 
 export const COOK_SLOT_NEXT_ACTION = Object.freeze({
@@ -155,17 +156,17 @@ export function createCookStations({
     if (!assembly.complete || assembly.menuId !== 'momo' || assembly.seasoning !== 'tare') {
       return { ok: false, reason: 'tare-momo-required' };
     }
-    assembly.tareBrushCount = Math.min(3, (assembly.tareBrushCount ?? 0) + 1);
-    return { ok: true, brushCount: assembly.tareBrushCount, complete: assembly.tareBrushCount >= 3 };
+    assembly.tareBrushCount = Math.min(ASSEMBLY_TARE_COATS, (assembly.tareBrushCount ?? 0) + 1);
+    return { ok: true, brushCount: assembly.tareBrushCount, complete: assembly.tareBrushCount >= ASSEMBLY_TARE_COATS };
   }
   function transferAssembly() {
     if (!assembly.complete) return { ok: false, reason: 'not-complete' };
-    if (assembly.menuId === 'momo' && assembly.seasoning === 'tare' && (assembly.tareBrushCount ?? 0) < 3) {
+    if (assembly.menuId === 'momo' && assembly.seasoning === 'tare' && (assembly.tareBrushCount ?? 0) < ASSEMBLY_TARE_COATS) {
       return { ok: false, reason: 'tare-brush-required' };
     }
     const menuId = assembly.menuId;
     const product = makeProduct(menuId, assembly.seasoning);
-    product.tarePrepared = (assembly.tareBrushCount ?? 0) >= 3;
+    product.tarePrepared = (assembly.tareBrushCount ?? 0) >= ASSEMBLY_TARE_COATS;
     waitingItems.push(product);
     transferredCount += 1;
     assembly = { menuId, seasoning: assembly.seasoning, index: 0, complete: false };

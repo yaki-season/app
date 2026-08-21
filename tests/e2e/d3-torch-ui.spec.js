@@ -57,19 +57,20 @@ test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다',
     window.__d1GameDebug.momoRuntime().slots.some((slot) => slot.visible && slot.stage === 'proper')
   ))).toBe(true);
   await expect(page.getByTestId('d3-torch-cursor')).toBeVisible();
-  const viewport = page.viewportSize();
-  await page.mouse.move(viewport.width * 0.29, viewport.height * 0.52);
+  const torchBounds = await page.evaluate(() => window.__d1GameDebug.d3TorchTargetBounds());
+  const torchY = (torchBounds.top + torchBounds.bottom) / 2;
+  await page.mouse.move(torchBounds.left + 4, torchY);
   await page.mouse.down({ button: 'left' });
   await page.waitForTimeout(210);
-  for (const x of [0.38, 0.47, 0.56, 0.65, 0.71]) {
+  for (const fraction of [0.22, 0.42, 0.62, 0.82, 0.98]) {
     await page.waitForTimeout(210);
-    await page.mouse.move(viewport.width * x, viewport.height * 0.52);
+    await page.mouse.move(torchBounds.left + (torchBounds.right - torchBounds.left) * fraction, torchY);
   }
   await page.mouse.up({ button: 'left' });
   await expect(page.getByTestId('d3-torch-state')).toContainText('작동 중');
   await page.mouse.down({ button: 'left' });
   await page.waitForTimeout(80);
-  await page.mouse.move(viewport.width * 0.47, viewport.height * 0.52);
+  await page.mouse.move((torchBounds.left + torchBounds.right) / 2, torchY);
   await page.mouse.up({ button: 'left' });
   await page.getByTestId('d3-finish-torch').click();
   await expect(page.getByTestId('d3-torch-state')).toContainText('Perfect');
@@ -129,6 +130,39 @@ test('타레 도포·재가열은 토치 선택 없이 별도 완료하고 회�
   await page.getByTestId('d3-retrieve-momo').click();
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug.dockItems()
     .some((item) => item.menu === '타레 모모' && item.label === 'Perfect'))).toBe(true);
+});
+
+test('조립대 타레는 붓을 꼬치 전체에 직접 움직여야 도포된다', async ({ page }) => {
+  await page.goto('/src/d1-game.html?day=d3&devUnlock=1&reset=1&testFlow=assembly-tare');
+  await expect.poll(() => page.evaluate(() => !!window.__d1GameDebug)).toBe(true);
+  await expect(page.locator('[data-menu-id="momo"][data-seasoning="tare"]')).toHaveAttribute('aria-pressed', 'true');
+  await page.waitForTimeout(350);
+  await page.evaluate(() => {
+    for (let index = 0; index < 5; index += 1) window.__d1GameDebug.cookClickIngredient('chicken');
+  });
+
+  const panel = page.getByTestId('assembly-tare-panel');
+  const brush = page.getByTestId('assembly-tare-cursor');
+  await expect(panel).toBeVisible();
+  await expect(brush).toBeVisible();
+  let bounds = await page.evaluate(() => window.__d1GameDebug.assemblyTareTargetBounds());
+  let centerY = (bounds.top + bounds.bottom) / 2;
+  await page.mouse.move(bounds.left + 4, centerY);
+  await page.mouse.down();
+  await page.mouse.move(bounds.left + (bounds.right - bounds.left) * 0.25, centerY);
+  await page.mouse.up();
+  await expect(page.locator('#assemblyTareProgress')).toHaveText('도포 0/2');
+
+  for (let coat = 1; coat <= 2; coat += 1) {
+    bounds = await page.evaluate(() => window.__d1GameDebug.assemblyTareTargetBounds());
+    centerY = (bounds.top + bounds.bottom) / 2;
+    await page.mouse.move(bounds.left + 4, centerY);
+    await page.mouse.down();
+    await page.mouse.move(bounds.right - 4, centerY, { steps: 12 });
+    await page.mouse.up();
+    await expect(page.locator('#assemblyTareProgress')).toHaveText(`도포 ${coat}/2`);
+  }
+  await expect(brush).toBeHidden();
 });
 
 test('D3 8명·7주문은 마지막 정리 뒤 정산하고 후일담 종착 저장으로 전환한다', async ({ page }) => {

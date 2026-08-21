@@ -445,8 +445,7 @@ describe('createCookStations', () => {
     MOMO.forEach((ingredient) => cook.clickIngredient(ingredient));
     expect(cook.transferAssembly()).toEqual({ ok: false, reason: 'tare-brush-required' });
     expect(cook.brushAssemblyTare()).toMatchObject({ brushCount: 1, complete: false });
-    expect(cook.brushAssemblyTare()).toMatchObject({ brushCount: 2, complete: false });
-    expect(cook.brushAssemblyTare()).toMatchObject({ brushCount: 3, complete: true });
+    expect(cook.brushAssemblyTare()).toMatchObject({ brushCount: 2, complete: true });
     expect(cook.transferAssembly()).toMatchObject({ ok: true });
     expect(cook.placeToGrill(0, 'momo')).toMatchObject({ seasoning: 'tare' });
     cook.debugElapse(8);
