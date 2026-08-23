@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COOK_THRESHOLDS_SEC, DONENESS, EARLY_CAMPAIGN_RECIPES } from '../../src/config/recipe.js';
-import { DRINK } from '../../src/render/drinkStation.js';
-import { recipeBookEntries, shouldShowAssemblyTutorial } from '../../src/render/recipeBook.js';
+import { DRINK } from '../../src/application/gameplay/drinkStation.js';
+import { recipeBookEntries, shouldShowAssemblyTutorial } from '../../src/application/gameplay/recipeBook.js';
 
 const entryOf = (menuId) => recipeBookEntries().find((entry) => entry.menuId === menuId);
 

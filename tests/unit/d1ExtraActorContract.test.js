@@ -10,7 +10,7 @@ import {
   D1_EXTRA_ACTOR_RUNTIME_CLIPS,
   D1_EXTRA_ACTOR_STATE_TO_CLIP,
   resolveD1ExtraActorClip,
-} from '../../src/render/d1ExtraActorContract.js';
+} from '../../src/presentation/ui/d1ExtraActorContract.js';
 
 describe('D1 이름 없는 commuter extra actor 계약', () => {
   it('versioned inventory identity를 새 asset이나 runtime binding 없이 고정한다', () => {

@@ -1,6 +1,6 @@
 // 영업일 정산 계산 검증 (GPL-002/005, businessDay 공식 재사용).
 import { describe, it, expect } from 'vitest';
-import { settleDay } from '../../src/render/daySettlement.js';
+import { settleDay } from '../../src/application/gameplay/daySettlement.js';
 
 const ECON = { basePrice: 100, qualityMultGood: 1.5, qualityMultLow: 1.0, tipBase: 20 };
 

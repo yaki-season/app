@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DRINK_LEVER_DRAG_THRESHOLD_PX,
   drinkLeverZoneForDelta,
-} from '../../src/render/drinkLeverDrag.js';
+} from '../../src/presentation/ui/drinkLeverDrag.js';
 
 describe('drinkLeverZoneForDelta', () => {
   it('중립 범위에서는 아무것도 따르지 않는다', () => {

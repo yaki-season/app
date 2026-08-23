@@ -6,7 +6,7 @@
 // 수치를 여기서 다시 정의하지 않는다. 레시피는 config/recipe.js, 굽기 임계는 COOK_THRESHOLDS_SEC,
 // 따르기 목표는 drinkStation의 DRINK가 정본이고 이 모듈은 읽어서 문장으로 바꾸기만 한다.
 
-import { COOK_THRESHOLDS_SEC, DONENESS, EARLY_CAMPAIGN_RECIPES } from '../config/recipe.js';
+import { COOK_THRESHOLDS_SEC, DONENESS, EARLY_CAMPAIGN_RECIPES } from '../../config/recipe.js';
 import { DRINK } from './drinkStation.js';
 
 export const INGREDIENT_LABEL = Object.freeze({

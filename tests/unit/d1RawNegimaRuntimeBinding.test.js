@@ -12,7 +12,7 @@ import {
 import {
   D1_RAW_NEGIMA_TRIANGLE_COUNT,
   validateD1RawNegimaComposition,
-} from '../../src/render/d1RawNegimaCompositor.js';
+} from '../../src/presentation/three/d1RawNegimaCompositor.js';
 
 const approved = (id, format = 'png', companions = []) => ({
   id,

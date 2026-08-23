@@ -10,7 +10,7 @@ import {
   createD1BusinessDayState,
   dispatchD1Command,
 } from '../../src/campaign-runtime.js';
-import { createCookStations } from '../../src/render/cookStations.js';
+import { createCookStations } from '../../src/application/gameplay/cookStations.js';
 
 const NEGIMA = ['chicken', 'leek', 'chicken', 'leek', 'chicken'];
 const businessDayFixture = JSON.parse(readFileSync(fileURLToPath(

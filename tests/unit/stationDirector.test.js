@@ -1,6 +1,6 @@
 // 프로덕션 화면 전환 상태 머신 순수 로직 검증 (SYS-002 v3 §71,104).
 import { describe, it, expect } from 'vitest';
-import { createStationDirector } from '../../src/render/stationDirector.js';
+import { createStationDirector } from '../../src/application/gameplay/stationDirector.js';
 
 const SCREENS = ['SCR-SVC-CUSTOMERS', 'SCR-SVC-ASSEMBLY', 'SCR-SVC-GRILL', 'SCR-SVC-DRINK'];
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 
-const source = readFileSync(new URL('../../src/d1-game.js', import.meta.url), 'utf8');
+const source = readFileSync(new URL('../../src/app/entrypoints/d1-game.js', import.meta.url), 'utf8');
 const html = readFileSync(new URL('../../src/d1-game.html', import.meta.url), 'utf8');
 const legacyView = readFileSync(new URL('../../src/d1/view.js', import.meta.url), 'utf8');
 const legacyHtml = readFileSync(new URL('../../src/d1.html', import.meta.url), 'utf8');

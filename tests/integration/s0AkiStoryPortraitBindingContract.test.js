@@ -19,7 +19,7 @@ const runtimeCss = readFileSync(
   'utf8',
 );
 const runtimeJs = readFileSync(
-  new URL('../../src/s0-d3.js', import.meta.url),
+  new URL('../../src/app/entrypoints/s0-d3.js', import.meta.url),
   'utf8',
 );
 const runtimeManifest = JSON.parse(readFileSync(

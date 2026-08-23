@@ -16,7 +16,7 @@ import {
   createD1BusinessDayDefinition,
   validateCampaignState,
 } from '../../src/campaign-runtime.js';
-import { buildSeatStates } from '../../src/render/customerAdapter.js';
+import { buildSeatStates } from '../../src/presentation/ui/customerAdapter.js';
 import { canServeD1MenuToSeat } from '../../src/application/businessDay/d1BusinessDayUiPort.js';
 
 const campaignRecords = JSON.parse(readFileSync(fileURLToPath(

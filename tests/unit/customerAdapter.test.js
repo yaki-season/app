@@ -1,6 +1,6 @@
 // 손님 렌더 어댑터 순수 매핑 검증 (SCR-SVC-CUSTOMERS 렌더 인터페이스).
 import { describe, it, expect } from 'vitest';
-import { buildSeatStates } from '../../src/render/customerAdapter.js';
+import { buildSeatStates } from '../../src/presentation/ui/customerAdapter.js';
 import { SEAT_IDS } from '../../src/config/screenLayout.js';
 
 describe('buildSeatStates', () => {

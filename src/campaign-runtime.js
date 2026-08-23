@@ -28,7 +28,7 @@ export {
   D1_UI_INTENT,
   buildD1BusinessDayViewModel,
 } from './application/businessDay/d1BusinessDayUiPort.js';
-export { createD1CookStations } from './render/cookStations.js';
+export { createD1CookStations } from './application/gameplay/cookStations.js';
 export {
   D1_RUNTIME_COMPONENT_INVENTORY,
   reportD1RuntimeComponentInventory,

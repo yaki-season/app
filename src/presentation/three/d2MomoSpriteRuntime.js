@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { runtimeAssetUrl } from '../assets/runtimeAssetResolver.js';
+import { runtimeAssetUrl } from '../../assets/runtimeAssetResolver.js';
 
 export const D2_MOMO_RUNTIME_URLS = Object.freeze({
   raw: '/assets/campaign/d2/spr-momo-grill-raw-r1-b1.png',

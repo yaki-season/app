@@ -6,7 +6,7 @@ const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), '
 describe('D3 토치 UI 계약', () => {
   it('포인터·키보드·게이지·과열 경고와 stable test id를 제공한다', () => {
     const html = read('src/d1-game.html');
-    const js = read('src/d1-game.js');
+    const js = read('src/app/entrypoints/d1-game.js');
     expect(html).toContain('data-testid="d3-torch-panel"');
     expect(html).toContain('data-testid="d3-torch-cursor"');
     expect(html).toContain('role="progressbar"');

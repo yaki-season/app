@@ -5,7 +5,7 @@
 // 심화: 재주문(orderSequence 진행·만족도별 확률 §27,126), 2인 그룹(인접 2좌석·공동 퇴장 §78,80,29),
 // 러시(파동식 입장·활성 상한 §41). 렌더는 customerAdapter가, 수치는 콘텐츠가 소유한다.
 
-import { mulberry32 } from '../state/businessDay.js';
+import { mulberry32 } from '../../state/businessDay.js';
 
 const MENU = { skewer: '네기마', drink: '생맥주' };
 // 재주문 확률: 만족도(§126, candidate). 100%→0.4, 70~99%→0.2, 그 미만→0.

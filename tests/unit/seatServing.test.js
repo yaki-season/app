@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { seatHasServedMenu, seatShareIndex } from '../../src/render/seatServing.js';
+import { seatHasServedMenu, seatShareIndex } from '../../src/application/gameplay/seatServing.js';
 
 // D2 직장인 2인: 주문 하나(맥주 2 · 네기마 2)를 두 좌석이 함께 받는다.
 function sharedOrderView(served) {

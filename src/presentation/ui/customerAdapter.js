@@ -3,7 +3,7 @@
 // 006/GPL-003의 손님·주문·좌석 데이터를 6석 화면의 렌더 상태로 투영한다. 이 모듈은 "어떻게 보이는가"만
 // 담당하고, 손님 배정·대기 감소·정리 같은 운영 로직은 006이 소유한다. 텍스트·게이지는 DOM으로 낸다(§51).
 
-import { SEAT_IDS, SEAT_ACTOR_MOOD } from '../config/screenLayout.js';
+import { SEAT_IDS, SEAT_ACTOR_MOOD } from '../../config/screenLayout.js';
 
 // 순수 매핑: 점유 목록 → 6석 렌더 상태. 006이 넣을 인터페이스.
 // occupants: [{ seatId, mood, orderLabel, waitRatio }], opts.serveReady: 완성품을 낼 수 있는가.

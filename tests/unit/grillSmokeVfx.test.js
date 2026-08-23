@@ -4,7 +4,7 @@ import {
   createGrillSmokeVfx,
   GRILL_SMOKE_LIMITS,
   nextAmbientSmokeDelay,
-} from '../../src/render/grillSmokeVfx.js';
+} from '../../src/presentation/three/grillSmokeVfx.js';
 
 function fakeCanvas() {
   return {

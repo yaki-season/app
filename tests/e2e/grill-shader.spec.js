@@ -9,7 +9,7 @@ test('꼬치 셰이더가 WebGL2에서 컴파일되고 모든 익힘 단계가 �
 
   await page.goto('/src/single-customer-harness.html');
   const result = await page.evaluate(async () => {
-    const { createGrillRenderer } = await import('/src/render/grillRenderer.js');
+    const { createGrillRenderer } = await import('/src/presentation/three/grillRenderer.js');
     const canvas = document.createElement('canvas');
     canvas.style.width = '256px';
     canvas.style.height = '256px';
