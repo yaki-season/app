@@ -16,6 +16,20 @@ const compatibilityEntrypoints = Object.freeze({
   's0-exterior-background-harness.js': "import './app/entrypoints/harnesses/s0-exterior-background-harness.js';",
 });
 
+const publicPages = Object.freeze([
+  'art-recomposition-harness.html',
+  'd1-game.html',
+  'd1-scene.html',
+  'd1.html',
+  'game.html',
+  'grill-ui-harness.html',
+  'index.html',
+  'public-shell.html',
+  's0-d3.html',
+  's0-exterior-background-harness.html',
+  'single-customer-harness.html',
+]);
+
 function filesIn(relativeDirectory) {
   const directory = new URL(relativeDirectory, sourceUrl);
   if (!existsSync(directory)) return [];
@@ -26,6 +40,18 @@ function filesIn(relativeDirectory) {
 }
 
 describe('src 책임별 디렉터리 구조', () => {
+  it('src 루트에는 공개 페이지·호환 진입점·공개 facade만 둔다', () => {
+    const rootFiles = readdirSync(sourceUrl, { withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name)
+      .sort();
+    expect(rootFiles).toEqual([
+      ...publicPages,
+      ...Object.keys(compatibilityEntrypoints),
+      'campaign-runtime.js',
+    ].sort());
+  });
+
   it('기존 브라우저 스크립트 URL은 얇은 호환 진입점으로 유지한다', () => {
     for (const [filename, expectedSource] of Object.entries(compatibilityEntrypoints)) {
       const source = readFileSync(new URL(filename, sourceUrl), 'utf8').trim();
