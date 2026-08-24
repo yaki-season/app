@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { elapsedSecToUniform } from '../../src/presentation/three/grillRenderer.js';
-import { GRILL_PARAMS, GRILL_PARAM_RANGES } from '../../src/presentation/three/grillShaderParams.js';
+import { elapsedSecToUniform } from '../../src/render/grillRenderer.js';
+import { GRILL_PARAMS, GRILL_PARAM_RANGES } from '../../src/render/grillShaderParams.js';
 
 describe('grill shader parameters', () => {
   it('maps game timing to the shader range without exceeding 0..1', () => {
@@ -41,7 +41,7 @@ describe('grill shader parameters', () => {
 // 단계마다 승인 래스터를 갈아끼우면 실루엣·디테일이 통째로 변해 "이미지가 교체된다"로 보인다.
 // 이 계약이 조용히 뒤집히지 않도록 소스에 고정한다.
 describe('그릴 네기마 렌더 계약', () => {
-  const source = readFileSync(new URL('../../src/app/entrypoints/d1-game.js', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../../src/d1-game.js', import.meta.url), 'utf8');
 
   it('굽는 동안 단계별 래스터 교체 대신 셰이더 재질로 색만 바꾼다', () => {
     // 셰이더 재질을 만들어 승인 평면에 물리는 경로가 살아 있어야 한다.

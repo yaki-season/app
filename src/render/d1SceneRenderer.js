@@ -4,8 +4,8 @@
 
 import * as THREE from 'three';
 import { makeCamera, billboard, lerp } from './sceneMath.js';
-import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID } from '../../config/d1Layout.js';
-import { runtimeAssetUrl } from '../../assets/runtimeAssetResolver.js';
+import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID } from '../config/d1Layout.js';
+import { runtimeAssetUrl } from '../assets/runtimeAssetResolver.js';
 
 const FULL = { x: 0, y: 0, width: 1, height: 1 };
 const COVER = 1.3; // 창 비율이 16:9와 달라도 아트 가장자리가 드러나지 않게 여유

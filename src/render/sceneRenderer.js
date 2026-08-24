@@ -12,7 +12,7 @@ import {
   CAMERA_PRESETS,
   CAMERA_TRANSITION_MS,
   DUMMY_SLOTS,
-} from '../../config/sceneLayout.js';
+} from '../config/sceneLayout.js';
 import { ASPECT, makeCamera, worldAtScreen, billboard, anchorToWorld, lerp } from './sceneMath.js';
 
 // 테스트용 셰프 시점 홈 포즈: 바 안쪽에서 살짝 위·뒤에서 카운터 너머를 내려다본다.

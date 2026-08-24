@@ -4,7 +4,7 @@ import {
   COOK_SLOT_NEXT_ACTION,
   createCookStations,
   createD1CookStations,
-} from '../../src/application/gameplay/cookStations.js';
+} from '../../src/render/cookStations.js';
 
 const NEGIMA = ['chicken', 'leek', 'chicken', 'leek', 'chicken'];
 const MOMO = ['chicken', 'chicken', 'chicken', 'chicken', 'chicken'];

@@ -6,8 +6,8 @@
 
 import * as THREE from 'three';
 import { makeCamera, billboard, worldAtScreen, anchorToWorld, lerp, ASPECT, TAN_HALF } from './sceneMath.js';
-import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID, SEAT_IDS, SEAT_ACTOR_MOOD, SEAT_ACTOR_TEXTURE, SEAT_ACTOR_UV, computeSeats, DEFAULT_SEAT_CAP, computeGrillSlots, GRILL_SLOT_KEYS } from '../../config/screenLayout.js';
-import { runtimeAssetUrl } from '../../assets/runtimeAssetResolver.js';
+import { PLAYER_EYE, LAYER_Z, OBJECTS, SCREENS, SCREEN_BY_ID, SEAT_IDS, SEAT_ACTOR_MOOD, SEAT_ACTOR_TEXTURE, SEAT_ACTOR_UV, computeSeats, DEFAULT_SEAT_CAP, computeGrillSlots, GRILL_SLOT_KEYS } from '../config/screenLayout.js';
+import { runtimeAssetUrl } from '../assets/runtimeAssetResolver.js';
 
 export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: false });

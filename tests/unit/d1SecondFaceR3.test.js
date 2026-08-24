@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { GRILL_PARAMS } from '../../src/presentation/three/grillShaderParams.js';
-import { d1SecondFaceR3Params, SECOND_FACE_R3_PARAMS } from '../../src/presentation/three/d1SecondFaceR3.js';
+import { GRILL_PARAMS } from '../../src/render/grillShaderParams.js';
+import { d1SecondFaceR3Params, SECOND_FACE_R3_PARAMS } from '../../src/render/d1SecondFaceR3.js';
 
 describe('D1 second-face R3 승인 셰이더 계약', () => {
   it('뒤집힌 조리 면에만 승인 R3 preset을 적용한다', () => {

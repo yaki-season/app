@@ -3,7 +3,7 @@
 // 이 화면이 활성화된 동안에만 애니메이션 루프를 소유한다 — 다른 화면과 중복 루프를 만들지 않는다.
 
 import { GRILL_PARAMS } from './grillShaderParams.js';
-import { COOK_THRESHOLDS_SEC, DONENESS } from '../../config/recipe.js';
+import { COOK_THRESHOLDS_SEC, DONENESS } from '../config/recipe.js';
 
 async function loadText(url) {
   const res = await fetch(url);

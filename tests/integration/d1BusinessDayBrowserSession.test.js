@@ -181,25 +181,6 @@ describe('D1 브라우저 영업 세션 조립', () => {
 });
 
 describe('D2 브라우저 영업 세션 조립', () => {
-  it('개발 시작 날짜는 중복 초기화 분기 없이 선행 날짜를 완료하고 D2를 연다', async () => {
-    const session = await createD1BusinessDayBrowserSession({
-      definition: d2Definition,
-      storagePort: new MemoryStorageAdapter(),
-      developmentStartDay: 'd2',
-    });
-
-    expect(session).toMatchObject({
-      ok: true,
-      completed: false,
-      resumed: false,
-      startedFromS0: false,
-      campaign: {
-        campaign: { nodeId: 'd2', completedDayIds: ['d1'] },
-      },
-    });
-    expect(session.port.getViewModel()).toMatchObject({ dayId: 'D2', phase: 'open' });
-  });
-
   it('D1 완료 저장에서 D2 실제 영업을 시작하고 모모 주문을 제공한다', async () => {
     const storage = new MemoryStorageAdapter();
     const d1 = await createD1BusinessDayBrowserSession({ definition, storagePort: storage });

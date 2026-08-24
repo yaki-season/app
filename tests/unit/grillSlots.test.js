@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import Ajv from 'ajv';
-import { grillSlotsForReputation, grillUnlockState } from '../../src/application/gameplay/progression.js';
+import { grillSlotsForReputation, grillUnlockState } from '../../src/render/progression.js';
 
 const read = (p) => JSON.parse(readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8'));
 const data = read('content/progression/grill-slots.json');

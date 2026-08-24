@@ -7,7 +7,7 @@ import {
   serializeSafeDiagnostic,
   validatePublicSettings,
   viewportBucket,
-} from '../../src/presentation/public-shell/publicShellContract.js';
+} from '../../src/public-shell/publicShellContract.js';
 
 describe('public shell 설정과 진단 계약', () => {
   it('오디오·원격 설정 없이 네 개의 시각·입력 설정만 허용한다', () => {

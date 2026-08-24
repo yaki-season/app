@@ -82,7 +82,7 @@ describe('D1 visual variant inventory completeness gate', () => {
 
     for (const entrypoint of ['d1.js', 'd1-scene.js']) {
       const source = readFileSync(
-        new URL(`../../src/app/entrypoints/${entrypoint}`, import.meta.url),
+        new URL(`../../src/${entrypoint}`, import.meta.url),
         'utf8',
       );
       expect(source).toContain(

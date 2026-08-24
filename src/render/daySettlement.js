@@ -3,8 +3,8 @@
 // 손님 운영 결과 기록(customerOps.records)과 경제 수치로 방문·제공·이탈·품질 분포·매출·팁·합계·평균
 // 만족도를 낸다. 판매가·팁 공식은 businessDay와 같은 원본을 재사용해 시뮬레이터·게임 괴리를 막는다.
 
-import { revenueFor, tipFor } from '../../state/businessDay.js';
-import { SATISFACTION } from '../../state/customer/customer.js';
+import { revenueFor, tipFor } from '../state/businessDay.js';
+import { SATISFACTION } from '../state/customer/customer.js';
 
 const SAT_SCORE = { good: 100, low: 40 }; // 만족 점수 (GPL-004 §49: Good=40 근사, 여기선 good/low 2단계)
 

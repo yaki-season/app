@@ -9,7 +9,7 @@ import {
   DONENESS,
   COOK_THRESHOLDS_SEC,
   classifyDoneness,
-} from '../../config/recipe.js';
+} from '../config/recipe.js';
 
 const FLIP_AIRBORNE_MS = 300;
 const INPUT_LOCK_MS = 300;

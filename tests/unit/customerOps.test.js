@@ -1,6 +1,6 @@
 // 손님 운영 생애주기·재주문·그룹·러시 검증 (GPL-003).
 import { describe, it, expect } from 'vitest';
-import { createCustomerOps } from '../../src/application/gameplay/customerOps.js';
+import { createCustomerOps } from '../../src/render/customerOps.js';
 
 const TYPES = [
   { id: 'solo', groupSize: 1, patienceSec: 60, tipMultiplier: 1, orderSequence: ['skewer'] },

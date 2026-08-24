@@ -3,7 +3,7 @@ import {
   d1OfficeCustomerVariant,
   isD1OfficeBeerFrame,
   resolveD1OfficeCustomerFrame,
-} from '../../src/presentation/ui/d1OfficeCustomerArt.js';
+} from '../../src/render/d1OfficeCustomerArt.js';
 
 const bundle = Object.freeze({
   id: 'CH-EXTRA-COMMUTER-SERVICE',

@@ -1,6 +1,6 @@
 // 성장·구매 순수 로직 검증 (GPL-005).
 import { describe, it, expect } from 'vitest';
-import { reputationDelta, itemState, catalog, buy, effectiveEconomy, ownedEffects } from '../../src/application/gameplay/progression.js';
+import { reputationDelta, itemState, catalog, buy, effectiveEconomy, ownedEffects } from '../../src/render/progression.js';
 
 const UPGRADES = [
   { id: 'ingredient-chicken-t2', active: true, category: 'ingredient', costGold: 1000, reputationReq: 1, requiresUpgradeId: null, effect: { kind: 'basePriceMult', value: 1.1 } },

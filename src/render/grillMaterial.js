@@ -8,11 +8,11 @@
 // 셰이더는 그대로 익힌다. 익힘 진행(uDoneness)은 게임 로직이 경과 시간으로 만들어 넣는다.
 
 import * as THREE from 'three';
-import { RECIPE, INGREDIENT } from '../../config/recipe.js';
+import { RECIPE, INGREDIENT } from '../config/recipe.js';
 import { GRILL_PARAMS } from './grillShaderParams.js';
 // 번들에 함께 실린다. 예전처럼 런타임에 fetch하면 배포본에서 /src 경로가 없어 404가 나고,
 // 익힘 셰이더가 통째로 빠진 채(흰 판) 돌아간다.
-import fragmentSource from '../../shaders/skewer.frag.glsl?raw';
+import fragmentSource from '../shaders/skewer.frag.glsl?raw';
 
 const VERT = /* glsl */ `
 out vec2 vUv;

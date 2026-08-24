@@ -3,7 +3,7 @@
 // 익힘 단계를 대기 없이 미리 보여주는지, 값이 grill-skewer에 반영되는지 확인한다.
 import { test, expect } from '@playwright/test';
 import { boot } from './helpers.js';
-import { GRILL_PARAMS } from '../../src/presentation/three/grillShaderParams.js';
+import { GRILL_PARAMS } from '../../src/render/grillShaderParams.js';
 
 async function bootWithShader(page) {
   await boot(page);

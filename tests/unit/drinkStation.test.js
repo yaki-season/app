@@ -1,6 +1,6 @@
 // 생맥주 따르기 판정 검증 (GPL-004 §41,44,49-2).
 import { describe, it, expect } from 'vitest';
-import { createDrinkPour, DRINK } from '../../src/application/gameplay/drinkStation.js';
+import { createDrinkPour, DRINK } from '../../src/render/drinkStation.js';
 
 // 특정 시간만큼 한 존을 흘린다.
 function pour(p, zone, seconds, t0 = 0) {

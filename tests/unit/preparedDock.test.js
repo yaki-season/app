@@ -1,6 +1,6 @@
 // 공용 준비 목록 품질 판정 검증 (gameState.clickOrderMat과 같은 규칙, GPL-001 §13).
 import { describe, it, expect } from 'vitest';
-import { preparedItemZone, qualityFromCook } from '../../src/presentation/ui/preparedDock.js';
+import { preparedItemZone, qualityFromCook } from '../../src/render/preparedDock.js';
 
 describe('qualityFromCook', () => {
   it('양면 적정이면 좋음(good)', () => {

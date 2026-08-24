@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { D1_SETTLEMENT_STEPS } from '../../src/domain/businessDay/d1BusinessDay.js';
-import { SETTLEMENT_STEP_LABEL, settlementStepDetail } from '../../src/presentation/ui/settlementSteps.js';
+import { SETTLEMENT_STEP_LABEL, settlementStepDetail } from '../../src/render/settlementSteps.js';
 
 const cleanDay = {
   customers: { visited: 4, lost: 0, cleanedSeats: 4 },

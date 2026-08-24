@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import fragmentSource from '../../shaders/beerLiquid.frag.glsl?raw';
+import fragmentSource from '../shaders/beerLiquid.frag.glsl?raw';
 const VERT = /* glsl */ `
 out vec2 vUv;
 void main() {

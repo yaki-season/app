@@ -15,11 +15,11 @@ const runtimeHtml = readFileSync(
   'utf8',
 );
 const runtimeCss = readFileSync(
-  new URL('../../src/presentation/styles/pages/s0-d3.css', import.meta.url),
+  new URL('../../src/s0-d3.css', import.meta.url),
   'utf8',
 );
 const runtimeJs = readFileSync(
-  new URL('../../src/app/entrypoints/s0-d3.js', import.meta.url),
+  new URL('../../src/s0-d3.js', import.meta.url),
   'utf8',
 );
 const runtimeManifest = JSON.parse(readFileSync(
