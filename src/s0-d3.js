@@ -24,6 +24,7 @@ import {
   S0_TSUKIOKA_STORY_DIALOGUE_VARIANTS,
   S0_TSUKIOKA_STORY_PORTRAIT_BINDING,
 } from './assets/s0TsukiokaStoryPortraitBindingContract.js';
+import { S0_D3_STORY_ILLUSTRATION_BY_SCENE_KEY } from './assets/s0D3StoryIllustrationBindingContract.js';
 import { clearFirstOrderRuntime } from './d1/firstOrderRuntimeStorage.js';
 import { installGameAudio, loopOn, setBgm, sfx } from './audio/gameAudio.js';
 
@@ -85,20 +86,10 @@ const STORY_BACKGROUND_ASSET_IDS = Object.freeze({
   S0: 'BG-EXTERIOR-S0-GATE-OPEN',
   DEFAULT: 'BG-INTERIOR-BASE',
 });
-const STORY_ILLUSTRATION_BY_SCENE_KEY = Object.freeze({
-  S0: Object.freeze({ assetId: 'IL-S0-DECISION-PIXEL', alt: '비 갠 밤, 다시 연 가게 앞에 선 아사노 아키' }),
-  'D1-PRE': Object.freeze({ assetId: 'IL-D1-PREOPEN-PIXEL', alt: '첫 영업을 준비하며 츠키오카를 맞는 아사노 아키' }),
-  'D1-POST': Object.freeze({ assetId: 'IL-D1-POST-PIXEL', alt: '첫 영업을 마치고 츠키오카의 격려를 받는 아사노 아키' }),
-  'D2-PRE': Object.freeze({ assetId: 'IL-D2-PREOPEN-PIXEL', alt: '둘째 날 모모를 준비하며 손님을 맞는 아사노 아키' }),
-  'D2-POST': Object.freeze({ assetId: 'IL-D2-POST-PIXEL', alt: '둘째 날 다시 오겠다는 손님을 배웅하는 아사노 아키' }),
-  'D3-PRE': Object.freeze({ assetId: 'IL-D3-PREOPEN-PIXEL', alt: '타레 노트를 살피며 직장인 손님들을 맞는 아사노 아키' }),
-  'D3-POST': Object.freeze({ assetId: 'IL-D3-POST-PIXEL', alt: '셋째 날 영업 뒤 손님과 츠키오카에게 인사하는 아사노 아키' }),
-});
-
 function storyIllustrationBinding(activeDayId, dialogueId) {
-  if (activeDayId === 'S0') return STORY_ILLUSTRATION_BY_SCENE_KEY.S0;
+  if (activeDayId === 'S0') return S0_D3_STORY_ILLUSTRATION_BY_SCENE_KEY.S0;
   const timing = dialogueId?.includes('-POST-') ? 'POST' : 'PRE';
-  return STORY_ILLUSTRATION_BY_SCENE_KEY[`${activeDayId}-${timing}`];
+  return S0_D3_STORY_ILLUSTRATION_BY_SCENE_KEY[`${activeDayId}-${timing}`];
 }
 
 function hideStoryIllustration() {
@@ -113,7 +104,7 @@ function renderStoryIllustration(activeDayId, dialogueId) {
     hideStoryIllustration();
     return false;
   }
-  const asset = resolveApprovedRuntimeAsset(approvedRuntimeAssets, binding.assetId);
+  const asset = resolveApprovedRuntimeAsset(approvedRuntimeAssets, binding.requiredAssetId);
   if (!asset) {
     hideStoryIllustration();
     return false;

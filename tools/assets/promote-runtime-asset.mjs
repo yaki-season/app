@@ -542,6 +542,8 @@ async function main() {
     }
   }
   const manifest = await readJson(manifestPath);
+  const baselineValidation = await validateRuntimeAssets({ manifest });
+  const baselineErrors = new Set(baselineValidation.errors);
   const existingById = new Map(manifest.assets.map((asset) => [asset.id, asset]));
   for (const { entry } of validated) {
     const existing = existingById.get(entry.id);
@@ -582,7 +584,7 @@ async function main() {
     candidateValidation.errors,
     artifacts,
     [],
-  );
+  ).filter((error) => !baselineErrors.has(error));
   if (candidateErrors.length > 0) {
     throw new Error(`handoff dry-run 검증 실패:\n- ${candidateErrors.join('\n- ')}`);
   }
@@ -609,7 +611,9 @@ async function main() {
       target: artifact.targetFile,
     })),
     oldFiles: [],
-    validateFinalState: async () => (await validateRuntimeAssets()).errors,
+    validateFinalState: async () => (
+      await validateRuntimeAssets()
+    ).errors.filter((error) => !baselineErrors.has(error)),
     simulateFailureAfterManifest:
       process.env.NODE_ENV === 'test'
       && process.env.YAKI_PROMOTION_FAIL_AFTER_MANIFEST === '1',

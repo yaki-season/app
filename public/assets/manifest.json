@@ -1,7 +1,7 @@
 {
   "$schema": "https://yaki-season.local/assets/manifest.schema.json",
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-10",
+  "generatedAt": "2026-08-24",
   "specRefs": [
     "ART-002 v3.6.1",
     "ART-003 v5.0.0",
@@ -1578,7 +1578,10 @@
           "url": "/assets/core/customer/ch-extra-office-a-eating-negima-r6-b1.png",
           "sha256": "88a628440a7f711a12e73a2c749be04d00089c7c97c8022e51fb24e6e04e12e8",
           "bytes": 643353,
-          "dimensions": { "width": 1182, "height": 1330 },
+          "dimensions": {
+            "width": 1182,
+            "height": 1330
+          },
           "format": "png"
         },
         {
@@ -1586,7 +1589,10 @@
           "url": "/assets/core/customer/ch-extra-office-a-drinking-beer-r6-b1.png",
           "sha256": "88ca90f12f32feaa814d847142921b61d395d4789d7481b5702dd5855b89479f",
           "bytes": 650250,
-          "dimensions": { "width": 1182, "height": 1330 },
+          "dimensions": {
+            "width": 1182,
+            "height": 1330
+          },
           "format": "png"
         },
         {
@@ -1594,7 +1600,10 @@
           "url": "/assets/core/customer/ch-extra-office-b-waiting-r6-b1.png",
           "sha256": "1882832a9318f0388c7ce6dcebdeb143f13ee66eead6f4a969cfe3a7f898ce16",
           "bytes": 584200,
-          "dimensions": { "width": 1024, "height": 1536 },
+          "dimensions": {
+            "width": 1024,
+            "height": 1536
+          },
           "format": "png"
         },
         {
@@ -1602,7 +1611,10 @@
           "url": "/assets/core/customer/ch-extra-office-b-eating-negima-r6-b1.png",
           "sha256": "3ef87daf316740ceb0c8b8022ce1fb74c057fce2ce599d3c74b1ae480cfceed6",
           "bytes": 596941,
-          "dimensions": { "width": 1024, "height": 1536 },
+          "dimensions": {
+            "width": 1024,
+            "height": 1536
+          },
           "format": "png"
         },
         {
@@ -1610,7 +1622,10 @@
           "url": "/assets/core/customer/ch-extra-office-b-drinking-beer-r6-b1.png",
           "sha256": "76206895ff41eff8da7a2bb031a79bdcf5a6f5fe8e138bbc0140bb461f10c952",
           "bytes": 618419,
-          "dimensions": { "width": 1024, "height": 1536 },
+          "dimensions": {
+            "width": 1024,
+            "height": 1536
+          },
           "format": "png"
         },
         {
@@ -1618,7 +1633,10 @@
           "url": "/assets/core/customer/ch-extra-office-c-waiting-r6-b1.png",
           "sha256": "676c7d7f708babc3b2fae26bdd603a4a435d9fb85bc93f53d80126613f949dc2",
           "bytes": 1793667,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "dimensions": {
+            "width": 1086,
+            "height": 1448
+          },
           "format": "png"
         },
         {
@@ -1626,7 +1644,10 @@
           "url": "/assets/core/customer/ch-extra-office-c-eating-negima-r6-b1.png",
           "sha256": "1b873248ec4dca6e27a929d2480a0a0c2496df7a0770ecc0b66ce098310751d9",
           "bytes": 1787857,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "dimensions": {
+            "width": 1086,
+            "height": 1448
+          },
           "format": "png"
         },
         {
@@ -1634,7 +1655,10 @@
           "url": "/assets/core/customer/ch-extra-office-c-drinking-beer-r6-b1.png",
           "sha256": "fa31481ef527040cadcb02af6e1df90d4292879cf5cac304568de8447c5f927e",
           "bytes": 1868596,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "dimensions": {
+            "width": 1086,
+            "height": 1448
+          },
           "format": "png"
         },
         {
@@ -1642,7 +1666,10 @@
           "url": "/assets/core/customer/ch-extra-office-d-waiting-r6-b1.png",
           "sha256": "e732afdf24b67fb401de331e17f6e90bf0d0d0d819ce45a8afeed9ea112431b7",
           "bytes": 1790495,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "dimensions": {
+            "width": 1086,
+            "height": 1448
+          },
           "format": "png"
         },
         {
@@ -1650,7 +1677,10 @@
           "url": "/assets/core/customer/ch-extra-office-d-eating-negima-r6-b1.png",
           "sha256": "33c9d5fb5e52d9c7ffed625e5313ff005f847694fffc687349b85fa23ef28756",
           "bytes": 1753364,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "dimensions": {
+            "width": 1086,
+            "height": 1448
+          },
           "format": "png"
         },
         {
@@ -1658,7 +1688,10 @@
           "url": "/assets/core/customer/ch-extra-office-d-drinking-beer-r6-b1.png",
           "sha256": "03bf52c6ba4243fe7c578304e55c047c41bae870db2dba81fce14593606e0a4d",
           "bytes": 1814957,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "dimensions": {
+            "width": 1086,
+            "height": 1448
+          },
           "format": "png"
         },
         {
@@ -1666,7 +1699,10 @@
           "url": "/assets/core/customer/ch-extra-office-e-waiting-r6-b1.png",
           "sha256": "fa75dc7e9d207e4f67cc3011d38058e088de69343b052edbb499f3ed635af374",
           "bytes": 1460015,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "dimensions": {
+            "width": 1086,
+            "height": 1448
+          },
           "format": "png"
         },
         {
@@ -1674,7 +1710,10 @@
           "url": "/assets/core/customer/ch-extra-office-e-eating-negima-r6-b1.png",
           "sha256": "27b3f1f2fa6491626fbc75989a71f910e3ca2c870d23d00861d4fda5566656e5",
           "bytes": 1454049,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "dimensions": {
+            "width": 1086,
+            "height": 1448
+          },
           "format": "png"
         },
         {
@@ -1682,7 +1721,10 @@
           "url": "/assets/core/customer/ch-extra-office-e-drinking-beer-r6-b1.png",
           "sha256": "d9ea1718ad923fdb8560a6596ef9a035850d080d892eda607fd71889775606d2",
           "bytes": 1458201,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "dimensions": {
+            "width": 1086,
+            "height": 1448
+          },
           "format": "png"
         }
       ]
@@ -1699,9 +1741,23 @@
       "colorSpace": "sRGB",
       "alpha": "straight",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0.5, "y": 1 },
-      "anchors": [{ "id": "bottom-center", "x": 0.5, "y": 1 }],
-      "clips": ["fatigue", "focus", "mistake", "relief"],
+      "pivot": {
+        "x": 0.5,
+        "y": 1
+      },
+      "anchors": [
+        {
+          "id": "bottom-center",
+          "x": 0.5,
+          "y": 1
+        }
+      ],
+      "clips": [
+        "fatigue",
+        "focus",
+        "mistake",
+        "relief"
+      ],
       "mirrorSafe": false,
       "source": "ARTSRC:CH-AKI-STORY:R5",
       "provenance": "PROV:CH-AKI-STORY:R5",
@@ -1715,7 +1771,10 @@
       "url": "/assets/core/s0/story/ch-aki-story-r5-b1.png",
       "sha256": "ffd1e6b2c2657ca9142fde57db462a591898b0ba39f79f6640c4efab9630619b",
       "bytes": 743505,
-      "dimensions": { "width": 991, "height": 1587 },
+      "dimensions": {
+        "width": 991,
+        "height": 1587
+      },
       "format": "png"
     },
     {
@@ -1730,9 +1789,21 @@
       "colorSpace": "sRGB",
       "alpha": "straight",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0.5, "y": 1 },
-      "anchors": [{ "id": "bottom-center", "x": 0.5, "y": 1 }],
-      "clips": ["calm", "supportive"],
+      "pivot": {
+        "x": 0.5,
+        "y": 1
+      },
+      "anchors": [
+        {
+          "id": "bottom-center",
+          "x": 0.5,
+          "y": 1
+        }
+      ],
+      "clips": [
+        "calm",
+        "supportive"
+      ],
       "mirrorSafe": false,
       "source": "ARTSRC:CH-TSUKIOKA-STORY:R2",
       "provenance": "PROV:CH-TSUKIOKA-STORY:R2",
@@ -1746,7 +1817,10 @@
       "url": "/assets/core/s0/story/ch-tsukioka-story-r2-b1.png",
       "sha256": "2683741d1016de8ff8c23cf3153bde753675f3d9a3280acd58229b6569fddb4f",
       "bytes": 863129,
-      "dimensions": { "width": 1024, "height": 1536 },
+      "dimensions": {
+        "width": 1024,
+        "height": 1536
+      },
       "format": "png"
     },
     {
@@ -1761,9 +1835,14 @@
       "colorSpace": "sRGB",
       "alpha": "none",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 },
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
       "anchors": [],
-      "clips": ["resolve"],
+      "clips": [
+        "resolve"
+      ],
       "mirrorSafe": false,
       "source": "ARTSRC:IL-S0-AKI-REOPENED-SHOP:R1",
       "provenance": "PROV:IL-S0-AKI-REOPENED-SHOP:R1",
@@ -1777,7 +1856,10 @@
       "url": "/assets/core/s0/story/s0-aki-reopened-shop-full-scene-r1-b1.png",
       "sha256": "251e5bcce8d3940762febc4762480f710d21a814ed7fea2096be73f2829fcdfa",
       "bytes": 2108350,
-      "dimensions": { "width": 1672, "height": 941 },
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
       "format": "png"
     },
     {
@@ -1792,9 +1874,14 @@
       "colorSpace": "sRGB",
       "alpha": "none",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 },
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
       "anchors": [],
-      "clips": ["d1-preopen"],
+      "clips": [
+        "d1-preopen"
+      ],
       "mirrorSafe": false,
       "source": "ARTSRC:IL-D1-PREOPEN-AKI:R1",
       "provenance": "PROV:IL-D1-PREOPEN-AKI:R1",
@@ -1808,7 +1895,10 @@
       "url": "/assets/core/s0/story/d1-preopen-aki-full-scene-r1-b1.png",
       "sha256": "360c223b30f797b14d8148df0d5fb7f4b5850e3144b9d1a4f120fc92fa0977a5",
       "bytes": 2234415,
-      "dimensions": { "width": 1672, "height": 941 },
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
       "format": "png"
     },
     {
@@ -1823,9 +1913,14 @@
       "colorSpace": "sRGB",
       "alpha": "none",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 },
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
       "anchors": [],
-      "clips": ["d1-preopen"],
+      "clips": [
+        "d1-preopen"
+      ],
       "mirrorSafe": false,
       "source": "ARTSRC:IL-D1-PREOPEN-TSUKIOKA:R1",
       "provenance": "PROV:IL-D1-PREOPEN-TSUKIOKA:R1",
@@ -1839,97 +1934,237 @@
       "url": "/assets/core/s0/story/d1-preopen-tsukioka-full-scene-r1-b1.png",
       "sha256": "43542b98fdd068cc0ad059edcf98af3751964e45ff317ef81f525385208bd7b2",
       "bytes": 2073336,
-      "dimensions": { "width": 1672, "height": 941 },
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
       "format": "png"
     },
     {
       "id": "IL-S0-DECISION-PIXEL",
-      "sourceRevision": 2, "runtimeBuild": 1, "status": "approved",
-      "screenUnit": "SCR-STORY-BEAT", "profile": "complete-layer", "pack": "campaign", "kind": "image",
-      "colorSpace": "sRGB", "alpha": "none", "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 }, "anchors": [], "clips": ["s0-decision"], "mirrorSafe": false,
-      "source": "ARTSRC:IL-S0-DECISION-PIXEL:R2", "provenance": "PROV:IL-S0-DECISION-PIXEL:R2",
-      "license": "YAKI SEASON internal user-requested artwork", "specRefs": ["SCN-S0-DECISION"],
-      "reviewedAt": "2026-08-22", "url": "/assets/core/s0/story/s0-decision-full-scene-r2-b1.png",
-      "sha256": "1e83201f52a78ea0796b0ba84c08cd953d4bdbf337634154112205b944d4a41e", "bytes": 2312078,
-      "dimensions": { "width": 1672, "height": 941 }, "format": "png"
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "s0-decision"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-S0-DECISION-PIXEL:R2",
+      "provenance": "PROV:IL-S0-DECISION-PIXEL:R2",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "SCN-S0-DECISION"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/s0-decision-full-scene-r2-b1.png",
+      "sha256": "1e83201f52a78ea0796b0ba84c08cd953d4bdbf337634154112205b944d4a41e",
+      "bytes": 2312078,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
     },
     {
       "id": "IL-D1-PREOPEN-PIXEL",
-      "sourceRevision": 2, "runtimeBuild": 1, "status": "approved",
-      "screenUnit": "SCR-STORY-BEAT", "profile": "complete-layer", "pack": "campaign", "kind": "image",
-      "colorSpace": "sRGB", "alpha": "none", "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 }, "anchors": [], "clips": ["d1-preopen"], "mirrorSafe": false,
-      "source": "ARTSRC:IL-D1-PREOPEN-PIXEL:R2", "provenance": "PROV:IL-D1-PREOPEN-PIXEL:R2",
-      "license": "YAKI SEASON internal user-requested artwork", "specRefs": ["SCN-D1-PREOPEN"],
-      "reviewedAt": "2026-08-22", "url": "/assets/core/s0/story/d1-preopen-full-scene-r2-b1.png",
-      "sha256": "52ac015c1edffa0430c09a064425fd6d38c8a6c66319009d1eec9a5560c1f8f6", "bytes": 2482680,
-      "dimensions": { "width": 1672, "height": 941 }, "format": "png"
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d1-preopen"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D1-PREOPEN-PIXEL:R2",
+      "provenance": "PROV:IL-D1-PREOPEN-PIXEL:R2",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "SCN-D1-PREOPEN"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/d1-preopen-full-scene-r2-b1.png",
+      "sha256": "52ac015c1edffa0430c09a064425fd6d38c8a6c66319009d1eec9a5560c1f8f6",
+      "bytes": 2482680,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
     },
     {
       "id": "IL-D1-POST-PIXEL",
-      "sourceRevision": 1, "runtimeBuild": 1, "status": "approved",
-      "screenUnit": "SCR-STORY-BEAT", "profile": "complete-layer", "pack": "campaign", "kind": "image",
-      "colorSpace": "sRGB", "alpha": "none", "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 }, "anchors": [], "clips": ["d1-post"], "mirrorSafe": false,
-      "source": "ARTSRC:IL-D1-POST-PIXEL:R1", "provenance": "PROV:IL-D1-POST-PIXEL:R1",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d1-post"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D1-POST-PIXEL:R1",
+      "provenance": "PROV:IL-D1-POST-PIXEL:R1",
       "license": "YAKI SEASON internal user-requested artwork",
-      "specRefs": ["SCN-D1-POST", "User requested all cutscenes in D3 pixel style 2026-08-22"],
-      "reviewedAt": "2026-08-22", "url": "/assets/core/s0/story/d1-post-full-scene-r1-b1.png",
-      "sha256": "ed471e41f1f8f0bfc7caa8f2b02460a07dadee82dc13996a01594cd018af79d7", "bytes": 2360043,
-      "dimensions": { "width": 1672, "height": 941 }, "format": "png"
-    },
-    {
-      "id": "IL-D2-PREOPEN-PIXEL",
-      "sourceRevision": 1, "runtimeBuild": 1, "status": "approved",
-      "screenUnit": "SCR-STORY-BEAT", "profile": "complete-layer", "pack": "campaign", "kind": "image",
-      "colorSpace": "sRGB", "alpha": "none", "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 }, "anchors": [], "clips": ["d2-preopen"], "mirrorSafe": false,
-      "source": "ARTSRC:IL-D2-PREOPEN-PIXEL:R1", "provenance": "PROV:IL-D2-PREOPEN-PIXEL:R1",
-      "license": "YAKI SEASON internal user-requested artwork",
-      "specRefs": ["SCN-D2-PREOPEN", "User requested all cutscenes in D3 pixel style 2026-08-22"],
-      "reviewedAt": "2026-08-22", "url": "/assets/core/s0/story/d2-preopen-full-scene-r1-b1.png",
-      "sha256": "0fc472af0fe3e295256ed418826a451e16e97e0a86f23c86e319d1b9399dfb71", "bytes": 2549723,
-      "dimensions": { "width": 1672, "height": 941 }, "format": "png"
+      "specRefs": [
+        "SCN-D1-POST",
+        "User requested all cutscenes in D3 pixel style 2026-08-22"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/d1-post-full-scene-r1-b1.png",
+      "sha256": "ed471e41f1f8f0bfc7caa8f2b02460a07dadee82dc13996a01594cd018af79d7",
+      "bytes": 2360043,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
     },
     {
       "id": "IL-D2-POST-PIXEL",
-      "sourceRevision": 1, "runtimeBuild": 1, "status": "approved",
-      "screenUnit": "SCR-STORY-BEAT", "profile": "complete-layer", "pack": "campaign", "kind": "image",
-      "colorSpace": "sRGB", "alpha": "none", "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 }, "anchors": [], "clips": ["d2-post"], "mirrorSafe": false,
-      "source": "ARTSRC:IL-D2-POST-PIXEL:R1", "provenance": "PROV:IL-D2-POST-PIXEL:R1",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d2-post"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D2-POST-PIXEL:R1",
+      "provenance": "PROV:IL-D2-POST-PIXEL:R1",
       "license": "YAKI SEASON internal user-requested artwork",
-      "specRefs": ["SCN-D2-POST", "User requested all cutscenes in D3 pixel style 2026-08-22"],
-      "reviewedAt": "2026-08-22", "url": "/assets/core/s0/story/d2-post-full-scene-r1-b1.png",
-      "sha256": "b4a6f3f156d109df7c76befd06a11ece116a71cf1cdcf985284318aade4bbe53", "bytes": 2425658,
-      "dimensions": { "width": 1672, "height": 941 }, "format": "png"
+      "specRefs": [
+        "SCN-D2-POST",
+        "User requested all cutscenes in D3 pixel style 2026-08-22"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/d2-post-full-scene-r1-b1.png",
+      "sha256": "b4a6f3f156d109df7c76befd06a11ece116a71cf1cdcf985284318aade4bbe53",
+      "bytes": 2425658,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
     },
     {
       "id": "IL-D3-PREOPEN-PIXEL",
-      "sourceRevision": 2, "runtimeBuild": 1, "status": "approved",
-      "screenUnit": "SCR-STORY-BEAT", "profile": "complete-layer", "pack": "campaign", "kind": "image",
-      "colorSpace": "sRGB", "alpha": "none", "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 }, "anchors": [], "clips": ["d3-preopen"], "mirrorSafe": false,
-      "source": "ARTSRC:IL-D3-PREOPEN-PIXEL:R2", "provenance": "PROV:IL-D3-PREOPEN-PIXEL:R2",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d3-preopen"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D3-PREOPEN-PIXEL:R2",
+      "provenance": "PROV:IL-D3-PREOPEN-PIXEL:R2",
       "license": "YAKI SEASON internal user-approved artwork",
-      "specRefs": ["SCN-D3-PREOPEN", "User selected pixel-art R2 direction 2026-08-22"],
-      "reviewedAt": "2026-08-22", "url": "/assets/core/s0/story/d3-preopen-aki-office-pair-full-scene-r2-b1.png",
-      "sha256": "c2ab5d47ddb22135b69e99ce89a265eae9ead5845c02082703e3282b191536e8", "bytes": 2423444,
-      "dimensions": { "width": 1672, "height": 941 }, "format": "png"
+      "specRefs": [
+        "SCN-D3-PREOPEN",
+        "User selected pixel-art R2 direction 2026-08-22"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/d3-preopen-aki-office-pair-full-scene-r2-b1.png",
+      "sha256": "c2ab5d47ddb22135b69e99ce89a265eae9ead5845c02082703e3282b191536e8",
+      "bytes": 2423444,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
     },
     {
       "id": "IL-D3-POST-PIXEL",
-      "sourceRevision": 1, "runtimeBuild": 1, "status": "approved",
-      "screenUnit": "SCR-STORY-BEAT", "profile": "complete-layer", "pack": "campaign", "kind": "image",
-      "colorSpace": "sRGB", "alpha": "none", "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 }, "anchors": [], "clips": ["d3-post"], "mirrorSafe": false,
-      "source": "ARTSRC:IL-D3-POST-PIXEL:R1", "provenance": "PROV:IL-D3-POST-PIXEL:R1",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d3-post"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D3-POST-PIXEL:R1",
+      "provenance": "PROV:IL-D3-POST-PIXEL:R1",
       "license": "YAKI SEASON internal user-requested artwork",
-      "specRefs": ["SCN-D3-POST", "User requested all cutscenes in D3 pixel style 2026-08-22"],
-      "reviewedAt": "2026-08-22", "url": "/assets/core/s0/story/d3-post-full-scene-r1-b1.png",
-      "sha256": "94a17bcfcedb75a9b611b331d293a99ec0b0197006155a90fab6d8ad58f813cf", "bytes": 2502341,
-      "dimensions": { "width": 1672, "height": 941 }, "format": "png"
+      "specRefs": [
+        "SCN-D3-POST",
+        "User requested all cutscenes in D3 pixel style 2026-08-22"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/d3-post-full-scene-r1-b1.png",
+      "sha256": "94a17bcfcedb75a9b611b331d293a99ec0b0197006155a90fab6d8ad58f813cf",
+      "bytes": 2502341,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
     },
     {
       "id": "BG-WORKSPACE-GRILL",
@@ -2150,6 +2385,45 @@
       "dimensions": {
         "width": 109,
         "height": 494
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D2-PREOPEN-PIXEL",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d2-preopen"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D2-PREOPEN-PIXEL:R2",
+      "provenance": "PROV:IL-D2-PREOPEN-PIXEL:R2",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "SCN-D2-PREOPEN",
+        "YAKI SEASON 아트 규칙 협의 초안 2026-08-24",
+        "User confirmed final R2 and requested runtime application 2026-08-24"
+      ],
+      "reviewedAt": "2026-08-24",
+      "url": "/assets/core/s0/story/d2-preopen-full-scene-r2-b1.png",
+      "sha256": "24050e71ff7d2878d511a609c050e7c54a082291c28c2bb0d17a0d47e04f6b81",
+      "bytes": 3613274,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
       },
       "format": "png"
     }
@@ -2462,6 +2736,44 @@
       "dimensions": {
         "width": 1024,
         "height": 1536
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D2-PREOPEN-PIXEL",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d2-preopen"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D2-PREOPEN-PIXEL:R1",
+      "provenance": "PROV:IL-D2-PREOPEN-PIXEL:R1",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "SCN-D2-PREOPEN",
+        "User requested all cutscenes in D3 pixel style 2026-08-22"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/d2-preopen-full-scene-r1-b1.png",
+      "sha256": "0fc472af0fe3e295256ed418826a451e16e97e0a86f23c86e319d1b9399dfb71",
+      "bytes": 2549723,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
       },
       "format": "png"
     }
