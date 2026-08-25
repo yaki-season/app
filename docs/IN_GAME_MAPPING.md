@@ -12,3 +12,5 @@
 | OFFICE-E → 중년 여성 | `C:\Users\KwonYeongmin\Work\Project\YakiSeason\lora-art-generator\datasets\references\characters\tsukioka-style-training-v1\tsukioka-style-middle-aged-woman-*-reference-v1.png` | `C:\Users\KwonYeongmin\Work\Project\YakiSeason\app\public\assets\core\customer\in-game-mapping\middle-aged-woman-{waiting,eating-negima,drinking-beer}-r6-b1.png` |
 
 각 캐릭터는 `waiting`, `eating-negima`, `drinking-beer` 상태를 사용한다. 서버 캐릭터는 손님 매핑에서 제외한다.
+
+인게임 손님 애셋의 고정 규격(1920×1080, 정면 착석, 투명 배경, 3상태, 가구 금지)은 [`IN_GAME_CUSTOMER_ASSET_SPEC.md`](./IN_GAME_CUSTOMER_ASSET_SPEC.md)에 정의한다.
