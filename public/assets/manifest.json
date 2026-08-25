@@ -1565,7 +1565,7 @@
         "User approval 2026-08-26: Tsukioka retained; office A/B mapped to developers; office C/D/E mapped to Tsukioka-style customer set"
       ],
       "reviewedAt": "2026-08-26",
-      "url": "/assets/core/customer/ch-extra-office-a-waiting-r6-b1.png",
+      "url": "/assets/core/customer/in-game-mapping/developer-a-waiting-r6-b1.png",
       "sha256": "5618d6c56052e0c47f1996df65f8e12584fab439c99607db0b3950144668c258",
       "bytes": 267494,
       "dimensions": {
@@ -1576,7 +1576,7 @@
       "companions": [
         {
           "role": "office-a-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-a-eating-negima-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/developer-a-eating-negima-r6-b1.png",
           "sha256": "ed04c7d8158523b7c019c3866045fbff24aa1472b7fde9e4f06cee8383a0b86a",
           "bytes": 259556,
           "dimensions": {
@@ -1587,7 +1587,7 @@
         },
         {
           "role": "office-a-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-a-drinking-beer-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/developer-a-drinking-beer-r6-b1.png",
           "sha256": "fb0ef92c8e32570f3417c2f15396d6c6ab9aa729da592c6f9cc5e3b04318acf1",
           "bytes": 261577,
           "dimensions": {
@@ -1598,7 +1598,7 @@
         },
         {
           "role": "office-b-waiting",
-          "url": "/assets/core/customer/ch-extra-office-b-waiting-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/developer-b-waiting-r6-b1.png",
           "sha256": "9bc817a453f8b0e7653b0b94ce19292efb934d2e89cf679588ecb294ae03bb0e",
           "bytes": 223814,
           "dimensions": {
@@ -1609,7 +1609,7 @@
         },
         {
           "role": "office-b-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-b-eating-negima-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/developer-b-eating-negima-r6-b1.png",
           "sha256": "9fcb99ae09bb2d76c76312eb27d82fb54083b47e2d359a54220c9363d0860f71",
           "bytes": 225838,
           "dimensions": {
@@ -1620,7 +1620,7 @@
         },
         {
           "role": "office-b-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-b-drinking-beer-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/developer-b-drinking-beer-r6-b1.png",
           "sha256": "f1ab291942888ce4dccce9f0e9e01b1b89117775afcbf8a4dea08949d76ec0da",
           "bytes": 229231,
           "dimensions": {
@@ -1631,7 +1631,7 @@
         },
         {
           "role": "office-c-waiting",
-          "url": "/assets/core/customer/ch-extra-office-c-waiting-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/young-man-delivery-waiting-r6-b1.png",
           "sha256": "ec4bc3bcc14d9a04fb05cd9fc7dc20c7f61a1fb2af67a333b8ed0872195d639e",
           "bytes": 289550,
           "dimensions": {
@@ -1642,7 +1642,7 @@
         },
         {
           "role": "office-c-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-c-eating-negima-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/young-man-delivery-eating-negima-r6-b1.png",
           "sha256": "e90e97c017b96b9981b2e1daa8407501c95e3da40a284aab5324f6a3f34425be",
           "bytes": 294594,
           "dimensions": {
@@ -1653,7 +1653,7 @@
         },
         {
           "role": "office-c-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-c-drinking-beer-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/young-man-delivery-drinking-beer-r6-b1.png",
           "sha256": "9b26380c79c8bbeb7aba1b5135f2fbdb59e770fc4f128572120153ce2224e836",
           "bytes": 289614,
           "dimensions": {
@@ -1664,7 +1664,7 @@
         },
         {
           "role": "office-d-waiting",
-          "url": "/assets/core/customer/ch-extra-office-d-waiting-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/stocky-middle-aged-man-waiting-r6-b1.png",
           "sha256": "0549ac4bb27df6a4c0cb3413f8393133755098a0d57853a2ecaa1441f5a80864",
           "bytes": 518915,
           "dimensions": {
@@ -1675,7 +1675,7 @@
         },
         {
           "role": "office-d-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-d-eating-negima-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/stocky-middle-aged-man-eating-negima-r6-b1.png",
           "sha256": "043d76ae0276ad9a8284b64b302136e04844fad8f482bf80d53f5ad7ca975ef9",
           "bytes": 377566,
           "dimensions": {
@@ -1686,7 +1686,7 @@
         },
         {
           "role": "office-d-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-d-drinking-beer-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/stocky-middle-aged-man-drinking-beer-r6-b1.png",
           "sha256": "bd91b1c0dcc9629a59f2fa2208f8aa0d97624c1f824c56450f51c2c49fc9e420",
           "bytes": 363749,
           "dimensions": {
@@ -1697,7 +1697,7 @@
         },
         {
           "role": "office-e-waiting",
-          "url": "/assets/core/customer/ch-extra-office-e-waiting-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/middle-aged-woman-waiting-r6-b1.png",
           "sha256": "8d9ac91d012c90e5bb0837f7d387537c9ce8febc9a612008ee5d45a4b81a8c83",
           "bytes": 441461,
           "dimensions": {
@@ -1708,7 +1708,7 @@
         },
         {
           "role": "office-e-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-e-eating-negima-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/middle-aged-woman-eating-negima-r6-b1.png",
           "sha256": "b382d16811675b2420eee1b4b4ac1e2357d89577d4ea73fcc74f90534312720d",
           "bytes": 270962,
           "dimensions": {
@@ -1719,7 +1719,7 @@
         },
         {
           "role": "office-e-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-e-drinking-beer-r6-b1.png",
+          "url": "/assets/core/customer/in-game-mapping/middle-aged-woman-drinking-beer-r6-b1.png",
           "sha256": "e9f5e7ddfc939570f257fe01d9d9c21fb844d134e9c48e4ae674d651f5207512",
           "bytes": 273671,
           "dimensions": {
