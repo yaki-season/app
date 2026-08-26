@@ -153,6 +153,10 @@ h2 { line-height: 1.2; }
 .summary-list dd { margin: 0; overflow-wrap: anywhere; }
 .read-only-mark { color: var(--good); font-weight: 900; }
 
+/* 플레이방법은 표처럼 읽히는 화면이라 다른 대화상자보다 넓게 쓴다. */
+dialog[data-overlay-id='OVR-HELP'] { width: min(1040px, calc(100% - 32px)); }
+dialog[data-overlay-id='OVR-HELP'] .dialog-content { max-height: 72vh; }
+
 dialog {
   width: min(640px, calc(100% - 32px));
   max-height: calc(100vh - 32px);
@@ -206,3 +210,81 @@ body[data-reduced-motion="true"] * { scroll-behavior: auto !important; animation
   h1 { font-size: clamp(2rem, 4vw, 3.4rem); }
   .status-card { margin-top: 12px; }
 }
+
+/* ── 플레이방법 ─────────────────────────────────────────── */
+.howto { display: grid; gap: 18px; }
+.howto-lead { margin: 0; color: var(--muted); font-size: 15px; }
+.howto-section-title {
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.howto-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.howto-chip {
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+.howto-chip.is-locked { color: var(--muted); border-style: dashed; font-weight: 500; }
+.howto-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.howto-step {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.howto-step-title { font-size: 14px; }
+.howto-step-detail { color: var(--muted); font-size: 13px; }
+.howto-aside { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+.howto-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.howto-card {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-2);
+}
+.howto-card-title { color: var(--accent); font-size: 15px; }
+.howto-card-line { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.5; }
+.howto-grades { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+.howto-grade {
+  padding: 4px 12px;
+  border-left: 3px solid currentColor;
+  border-radius: 4px;
+  background: var(--panel-2);
+  font-weight: 800;
+}
+.howto-grade.q-Perfect { color: var(--good); }
+.howto-grade.q-Good { color: var(--warning); }
+.howto-grade.q-OK { color: var(--muted); }
+.howto-grade.q-Fail { color: var(--danger); }
+.howto-footer {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.howto-controls { padding-top: 4px; border-top: 1px solid var(--line); }
+.howto-controls .howto-card-line { color: var(--muted); }
