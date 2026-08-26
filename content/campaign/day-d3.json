@@ -91,7 +91,7 @@
     "D3-ORDER-007"
   ],
   "availableMenuIds": ["negima", "beer", "momo"],
-  "newActionId": "d3-tare-brush",
+  "newActionId": "d3-assembly-tare-brush",
   "reviewActionIds": ["grill-drink-cross-station", "screen-away-timer-preservation"],
   "tutorialPolicy": {
     "guidanceLevel": "safe-introduction",

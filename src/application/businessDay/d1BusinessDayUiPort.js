@@ -214,6 +214,7 @@ function seatView(state, definition, seat) {
       waitRatio: 0,
       urgent: false,
       group: false,
+      groupId: null,
       canOrder: false,
       canServe: false,
       cleanupNeeded: false,
@@ -250,6 +251,7 @@ function seatView(state, definition, seat) {
     waitRatio,
     urgent: waiting && customer.waitRemainingMs <= 15_000,
     group: customer.groupId !== null,
+    groupId: customer.groupId,
     canOrder: customer.phase === D1_CUSTOMER_PHASE.ORDER_READY
       && order?.status === D1_ORDER_STATUS.UNACCEPTED,
     canServe: waiting,

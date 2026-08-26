@@ -37,7 +37,7 @@ function grillLines(thresholds) {
   ];
 }
 
-function skewerEntry(menuId, recipe, thresholds) {
+function skewerEntry(menuId, recipe, thresholds, tareAvailable = false) {
   const steps = recipe.map((ingredient) => INGREDIENT_LABEL[ingredient] ?? ingredient);
   // 같은 재료만 반복하는 레시피는 순서를 나열해 봐야 읽기 어렵다. 개수로 알려준다.
   const uniform = new Set(steps).size === 1;
@@ -49,6 +49,9 @@ function skewerEntry(menuId, recipe, thresholds) {
       uniform
         ? `${steps[0]} ${steps.length}조각을 차례로 끼웁니다.`
         : `끼우는 순서 · ${steps.join(' → ')}`,
+      ...(tareAvailable
+        ? ['조립을 마친 뒤 소금으로 보내거나 타레 소스통을 선택합니다. 타레는 조립대에서 꼬치 위를 좌우로 한 번 고르게 칠한 뒤 그릴 재고로 보냅니다.']
+        : []),
       ...grillLines(thresholds),
     ],
   };
@@ -62,7 +65,7 @@ function kawaEntry(recipe) {
     lines: [
       '접은 닭껍질 5조각을 빈 자리부터 차례로 끼웁니다.',
       '소금은 양면을 구운 뒤 회수합니다. 닭껍질은 모모보다 빨리 타므로 색을 더 자주 살피세요.',
-      '타레는 양면을 먼저 굽고 타레 도포와 재가열을 두 번 반복합니다. 토치는 선택입니다.',
+      '타레는 조립을 마친 뒤 조립대의 소스통을 선택해 꼬치 위를 좌우로 한 번 고르게 칠한 뒤 그릴 재고로 보냅니다.',
     ],
   };
 }
@@ -113,6 +116,7 @@ export function recipeBookEntries({
   recipes = EARLY_CAMPAIGN_RECIPES,
   thresholds = COOK_THRESHOLDS_SEC,
   drink = DRINK,
+  tareAvailable = false,
 } = {}) {
   return menuIds
     .map((menuId) => {
@@ -121,7 +125,7 @@ export function recipeBookEntries({
       if (menuId === 'cabbage-salad') return cabbageSaladEntry();
       const recipe = recipes[menuId];
       if (menuId === 'kawa' && recipe) return kawaEntry(recipe);
-      return recipe ? skewerEntry(menuId, recipe, thresholds) : null;
+      return recipe ? skewerEntry(menuId, recipe, thresholds, tareAvailable) : null;
     })
     .filter(Boolean);
 }

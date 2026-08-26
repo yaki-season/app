@@ -212,6 +212,12 @@ describe('D1 영업일 UI port 경계 통합', () => {
 
     advanceTo(port, 100_000);
     port.advance(6_000);
+    expect(port.getViewModel().seats
+      .filter((seat) => seat.customerId?.startsWith('D1-OFFICE')))
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ groupId: 'D1-GROUP-OFFICE' }),
+        expect.objectContaining({ groupId: 'D1-GROUP-OFFICE' }),
+      ]));
     accept(port, 'D1-ORDER-002-A');
     accept(port, 'D1-ORDER-002-B');
     const provided = serve(port, 'D1-OFFICE-B', '네기마', 1);

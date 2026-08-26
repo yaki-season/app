@@ -141,6 +141,27 @@ export const D1_PUBLIC_GRILL_LAYOUT = Object.freeze({
   })),
 });
 
+// D4부터 명성 업그레이드를 적용했을 때 사용하는 3칸 구성. 기존 두 칸과 같은 승인
+// footprint를 유지하면서 석쇠 안쪽에 세 꼬치가 같은 간격으로 놓이도록 별도 계약으로 둔다.
+// 자동 균등 배치(computeGrillSlots(3))는 꼬치가 지나치게 작아지므로 공개 영업 화면에서는
+// 이 명시 레이아웃만 사용한다.
+export const D4_PUBLIC_GRILL_LAYOUT = Object.freeze({
+  contractId: 'D4-REPUTATION-THREE-SLOTS-R1',
+  initialPlacementSlots: Object.freeze([1, 2, 3]),
+  slots: Object.freeze([
+    { x: 640, y: 278, width: 124, height: 412 },
+    { x: 896, y: 266, width: 128, height: 426 },
+    { x: 1152, y: 278, width: 124, height: 412 },
+  ].map((fhdRect, index) => {
+    const visualRect = normalizedRect(fhdRect);
+    return Object.freeze({
+      key: `pgSlot${index}`,
+      rect: rendererCompensatedRect(visualRect),
+      approvedVisualRect: visualRect,
+    });
+  })),
+});
+
 // CM-GRILL-STATION-QUEUED-SELECTION R3에서 연속 석쇠 안쪽만 보수적으로 잡은 검증 경계.
 // 아트 추출/등록용 bbox가 아니라 슬롯 overlay가 물리 석쇠를 벗어나지 않는지 검사하는 runtime 경계다.
 export const D1_GRILL_MASTER_GRATE_SAFE_RECT = normalizedRect({

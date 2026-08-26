@@ -78,7 +78,7 @@ describe('S0~D4 stable data contract', () => {
     expect(simulateEarlyCampaignPlan(content, 'd3')).toEqual(simulateEarlyCampaignPlan(content, 'd3'));
   });
 
-  it('D1 고정 주문, D2 도움 감소, D3 타레 신규 행동을 stable ID로 제공한다', () => {
+  it('D1 고정 주문, D2 도움 감소, D3 조립대 타레 신규 행동을 stable ID로 제공한다', () => {
     const content = bundle();
     expect(content.orders.find(({ id }) => id === 'D1-ORDER-001')).toMatchObject({
       runtimeCustomerId: 'REGULAR_TSUKIOKA',
@@ -94,9 +94,13 @@ describe('S0~D4 stable data contract', () => {
       helpCanBeReenabled: true,
     });
     expect(buildEarlyCampaignDayContract(content, 'd3').tutorial).toMatchObject({
-      newActionId: 'd3-tare-brush',
+      newActionId: 'd3-assembly-tare-brush',
       failurePolicy: 'safe-first-use',
     });
+    for (const scenarioId of ['d3', 'd4', 'd5']) {
+      expect(content.scenarios.find(({ id }) => id === scenarioId).gameplayCommandIds)
+        .toEqual(expect.arrayContaining(['select-assembly-seasoning', 'brush-assembly-tare']));
+    }
   });
 
   it('끊긴 날짜, 중복 고정 인물, 범위 위반, D4 command를 거부한다', () => {
@@ -115,6 +119,13 @@ describe('S0~D4 stable data contract', () => {
     outOfRange.days.find(({ id }) => id === 'd3').totals.items.max = 15;
     expect(checkContentRules(outOfRange).errors.join('\n')).toMatch(/items 합계/);
 
+    const missingD4TareCommand = bundle();
+    missingD4TareCommand.scenarios.find(({ id }) => id === 'd4').gameplayCommandIds =
+      missingD4TareCommand.scenarios.find(({ id }) => id === 'd4').gameplayCommandIds
+        .filter((commandId) => commandId !== 'brush-assembly-tare');
+    expect(checkContentRules(missingD4TareCommand).errors.join('\n'))
+      .toMatch(/\[scenario:d4\].*타레/);
+
     const mutablePreview = bundle();
     mutablePreview.scenarios.at(-1).gameplayCommandIds = ['begin-day'];
     expect(checkContentRules(mutablePreview).errors.join('\n')).toMatch(/preview는 읽기 전용/);
@@ -128,5 +139,14 @@ describe('S0~D4 stable data contract', () => {
     const earlyTare = bundle();
     earlyTare.orders.find(({ id }) => id === 'D2-ORDER-001').items[0].seasoning = 'tare';
     expect(checkContentRules(earlyTare).errors.join('\n')).toMatch(/tare 주문은 d3 이전/);
+
+    const d4Tare = bundle();
+    const d3Order = d4Tare.orders.find(({ id }) => id === 'D3-ORDER-001');
+    d4Tare.days.push({
+      ...structuredClone(d4Tare.days.find(({ id }) => id === 'd3')),
+      id: 'd4',
+    });
+    d3Order.dayId = 'd4';
+    expect(checkContentRules(d4Tare).errors.join('\n')).not.toMatch(/tare 주문은 d3 이전/);
   });
 });

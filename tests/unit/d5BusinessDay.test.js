@@ -21,16 +21,53 @@ describe('D5 토리카와 영업 정의', () => {
     expect(definition.economy.menuPrices.kawa).toBe(5);
   });
 
-  it('접은 닭껍질 5조각과 10~14초 적정·18초 탄 판정을 정본으로 둔다', () => {
+  it('조립대에서 소금·타레를 나누고 타레를 한 번 칠한 뒤 그릴 재고로 보낸다', () => {
     expect(definition.stationProcesses.assembly.items.kawa).toMatchObject({
       ingredientId: 'foldedChickenSkin',
       ingredientCount: 5,
-      seasonings: ['salt', 'tare'],
+      seasoningPolicy: {
+        selectionStage: 'assembly',
+        options: ['salt', 'tare'],
+        saltTransferMode: 'direct',
+        inventoryPartition: 'menu-and-seasoning',
+        tareApplication: {
+          station: 'assembly',
+          afterAssemblyCompleted: true,
+          brushPasses: 1,
+          minimumCoverage: 0.8,
+          torchEnabled: false,
+        },
+      },
     });
     expect(definition.stationProcesses.grill.items.kawa).toMatchObject({
       faceThresholdsSec: { under: 0, perfect: 10, over: 14, burnt: 18 },
-      tareFinishCycles: 2,
-      torchOptional: true,
+      inventorySelection: {
+        groupBy: 'menu',
+        columns: ['salt', 'tare'],
+      },
+    });
+    expect(definition.stationProcesses.assembly.items.kawa.seasoningPolicy.tareApplication).toEqual({
+      station: 'assembly',
+      afterAssemblyCompleted: true,
+      brushPasses: 1,
+      minimumCoverage: 0.8,
+      torchEnabled: false,
+    });
+    expect(definition.stationProcesses.grill.items.kawa).not.toHaveProperty('seasoningOptions');
+    expect(definition.stationProcesses.grill.items.kawa).not.toHaveProperty('seasoningSelectionStage');
+    expect(definition.stationProcesses.grill.items.kawa).not.toHaveProperty('tareFinish');
+    expect(definition.stationProcesses.grill.items.kawa).not.toHaveProperty('tareFinishCycles');
+    expect(definition.stationProcesses.grill.items.kawa).not.toHaveProperty('torchOptional');
+  });
+
+  it('그릴은 소금·타레 재고를 같은 메뉴 행의 두 열로 고르고 굽기만 한다', () => {
+    expect(definition.stationProcesses.grill.items.kawa).toMatchObject({
+      bothFacesRequired: true,
+      fullyBurntPolicy: 'discard',
+      inventorySelection: {
+        groupBy: 'menu',
+        columns: ['salt', 'tare'],
+      },
     });
   });
 

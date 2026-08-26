@@ -22,6 +22,19 @@ describe('비법노트', () => {
     expect(entryOf('momo').lines[0]).toBe('닭다리살 5조각을 차례로 끼웁니다.');
   });
 
+  it('타레는 그릴이 아닌 조립대에서 칠하도록 안내한다', () => {
+    const [negima, kawa] = recipeBookEntries({
+      menuIds: ['negima', 'kawa'],
+      tareAvailable: true,
+    });
+    for (const entry of [negima, kawa]) {
+      const guidance = entry.lines.join(' ');
+      expect(guidance).toContain('조립대');
+      expect(guidance).toContain('좌우로 한 번');
+      expect(guidance).not.toContain('양면을 구운 뒤 소스통');
+    }
+  });
+
   it('굽기 기준은 임계값 정본을 그대로 읽는다', () => {
     const line = entryOf('negima').lines[1];
     expect(line).toBe(

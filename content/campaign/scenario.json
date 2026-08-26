@@ -137,7 +137,7 @@
         "skipSummary": [
           "모모 첫 판매와 기본 조리를 마쳤다.",
           "이름 없는 손님이 재방문 의사를 남겼다.",
-          "D3 목표: 타레 마감과 화면 밖 위험을 익힌다."
+          "D3 목표: 조립대에서 소금·타레를 나누고 타레는 한 번의 붓질로 준비한다."
         ]
       }
     ],
@@ -163,7 +163,7 @@
     "status": "approved",
     "kind": "business-day",
     "stage": "D3",
-    "emotionKey": "화면 밖의 불",
+    "emotionKey": "조립대의 타레 한 붓",
     "prevDay": "d2",
     "nextDay": "d4",
     "dayDataId": "d3",
@@ -176,29 +176,29 @@
         "id": "SCN-D3-PREOPEN",
         "timing": "pre-open",
         "skipSummary": [
-          "D3에 타레 주문과 붓 마감이 열린다.",
-          "그릴과 생맥주가 동시에 진행된다.",
-          "D3 목표: 화면 밖 위험을 확인하며 주문을 완성한다."
+          "D3부터 조립을 마친 꼬치에 소금·타레를 고른다.",
+          "소금 꼬치는 바로 그릴 재고로 보내고 타레는 소스통을 선택한다.",
+          "조립대에서 꼬치 위를 좌우로 한 번 고르게 칠하면 타레 재고가 된다."
         ]
       },
       {
         "id": "SCN-D3-POST",
         "timing": "post-settlement",
         "skipSummary": [
-          "타레와 교차 작업을 안전하게 마쳤다.",
+          "조립대에서 타레 꼬치를 한 번의 붓질로 준비했다.",
           "가게를 소개해도 되는지 묻는 손님이 생겼다.",
           "다음 목표: D4의 사이드 메뉴를 준비한다."
         ]
       }
     ],
     "skipSummary": [
-      "타레 붓 공정을 안전하게 배운다.",
-      "그릴과 생맥주 교차 위험을 복습한다.",
+      "조립대에서 완성한 꼬치를 소금·타레 재고로 나눈다.",
+      "타레 꼬치는 조립대의 소스통과 한 번의 좌우 붓질로 준비한다.",
       "정산 뒤 양배추 사라다와 하이볼을 준비하는 D4를 연다."
     ],
     "interactions": [],
     "readOnly": false,
-    "gameplayCommandIds": ["begin-day", "accept-order", "apply-tare", "serve-item", "cleanup-seat", "complete-settlement"],
+    "gameplayCommandIds": ["begin-day", "accept-order", "select-assembly-seasoning", "brush-assembly-tare", "serve-item", "cleanup-seat", "complete-settlement"],
     "economyCommandIds": ["record-sale", "record-tip", "apply-settlement"],
     "reward": {
       "growthResultIds": ["day-d4", "menu-cabbage-salad", "menu-highball"],
@@ -248,7 +248,7 @@
     ],
     "interactions": [],
     "readOnly": false,
-    "gameplayCommandIds": ["begin-day", "accept-order", "prepare-side-menu", "pour-highball", "serve-item", "cleanup-seat", "complete-settlement"],
+    "gameplayCommandIds": ["begin-day", "accept-order", "select-assembly-seasoning", "brush-assembly-tare", "prepare-side-menu", "pour-highball", "serve-item", "cleanup-seat", "complete-settlement"],
     "economyCommandIds": ["record-sale", "record-tip", "apply-settlement"],
     "reward": {
       "growthResultIds": ["day-d5", "menu-kawa"],
@@ -277,7 +277,7 @@
         "timing": "pre-open",
         "skipSummary": [
           "접은 닭껍질 다섯 조각으로 토리카와를 조립한다.",
-          "소금과 타레 토리카와를 주문에 맞춰 구워 낸다."
+          "조립대에서 소금·타레 재고를 나누고, 타레는 그 자리에서 한 번 칠한다."
         ]
       }
     ],
@@ -287,7 +287,7 @@
     ],
     "interactions": [],
     "readOnly": false,
-    "gameplayCommandIds": ["begin-day", "accept-order", "assemble-kawa", "grill-kawa", "finish-tare", "serve-item", "cleanup-seat", "complete-settlement"],
+    "gameplayCommandIds": ["begin-day", "accept-order", "assemble-kawa", "select-assembly-seasoning", "brush-assembly-tare", "grill-kawa", "serve-item", "cleanup-seat", "complete-settlement"],
     "economyCommandIds": ["record-sale", "record-tip", "apply-settlement"],
     "reward": {
       "growthResultIds": ["day-d5-completed"],

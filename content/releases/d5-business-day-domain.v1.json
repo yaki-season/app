@@ -45,7 +45,19 @@
         "kawa": {
           "ingredientId": "foldedChickenSkin",
           "ingredientCount": 5,
-          "seasonings": ["salt", "tare"]
+          "seasoningPolicy": {
+            "selectionStage": "assembly",
+            "options": ["salt", "tare"],
+            "saltTransferMode": "direct",
+            "inventoryPartition": "menu-and-seasoning",
+            "tareApplication": {
+              "station": "assembly",
+              "afterAssemblyCompleted": true,
+              "brushPasses": 1,
+              "minimumCoverage": 0.8,
+              "torchEnabled": false
+            }
+          }
         }
       }
     },
@@ -56,8 +68,10 @@
           "faceThresholdsSec": { "under": 0, "perfect": 10, "over": 14, "burnt": 18 },
           "bothFacesRequired": true,
           "fullyBurntPolicy": "discard",
-          "tareFinishCycles": 2,
-          "torchOptional": true
+          "inventorySelection": {
+            "groupBy": "menu",
+            "columns": ["salt", "tare"]
+          }
         }
       }
     },

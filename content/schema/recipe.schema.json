@@ -3,7 +3,7 @@
   "$id": "recipe.schema.json",
   "title": "레시피",
   "type": "object",
-  "required": ["id", "schemaVersion", "displayKey", "active", "status", "category", "ingredients"],
+  "required": ["id", "schemaVersion", "displayKey", "active", "status", "category", "ingredients", "seasoningPolicy"],
   "additionalProperties": false,
   "properties": {
     "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
@@ -16,6 +16,35 @@
       "type": "array",
       "minItems": 1,
       "items": { "type": "string", "enum": ["chicken", "leek"] }
+    },
+    "seasoningPolicy": {
+      "type": "object",
+      "required": ["selectionStage", "options", "saltTransferMode", "inventoryPartition", "tareApplication"],
+      "additionalProperties": false,
+      "properties": {
+        "selectionStage": { "const": "assembly" },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["salt", "tare"] }
+        },
+        "saltTransferMode": { "const": "direct" },
+        "inventoryPartition": { "const": "menu-and-seasoning" },
+        "tareApplication": {
+          "type": "object",
+          "required": ["station", "afterAssemblyCompleted", "brushPasses", "minimumCoverage", "torchEnabled"],
+          "additionalProperties": false,
+          "properties": {
+            "station": { "const": "assembly" },
+            "afterAssemblyCompleted": { "const": true },
+            "brushPasses": { "const": 1 },
+            "minimumCoverage": { "const": 0.8 },
+            "torchEnabled": { "const": false }
+          }
+        }
+      }
     },
     "processId": { "type": "string" }
   }

@@ -13,7 +13,8 @@ import {
 
 const FLIP_AIRBORNE_MS = 300;
 const INPUT_LOCK_MS = 300;
-export const ASSEMBLY_TARE_COATS = 2;
+export const ASSEMBLY_TARE_MIN_COVERAGE = 0.8;
+const LEGACY_ASSEMBLY_TARE_COATS = 2;
 const FACE = Object.freeze({ FRONT: 'front', BACK: 'back' });
 
 export const COOK_SLOT_NEXT_ACTION = Object.freeze({
@@ -67,7 +68,18 @@ export function createCookStations({
   ]));
   const thresholdsFor = (menuId) => menuThresholds[menuId] ?? COOK_THRESHOLDS_SEC;
   const classifyFor = (menuId, elapsedSec) => classifyDoneness(elapsedSec, thresholdsFor(menuId));
-  let assembly = { menuId: defaultMenuId, seasoning: 'none', index: 0, complete: false, tareBrushCount: 0 };
+  const emptyAssembly = (menuId = defaultMenuId) => ({
+    menuId,
+    seasoning: 'none',
+    index: 0,
+    complete: false,
+    tarePrepared: false,
+    tareCoverage: 0,
+  });
+  const normalizedSeasoning = (seasoning, fallback = 'salt') => (
+    seasoning === 'tare' ? 'tare' : seasoning === 'salt' ? 'salt' : fallback
+  );
+  let assembly = emptyAssembly();
   let assembledCount = 0;
   const learnedMenuIds = new Set();
   let transferredCount = 0;
@@ -76,11 +88,23 @@ export function createCookStations({
   let pausedAtMs = null;
   let productSequence = 0;
 
-  const makeProduct = (menuId, seasoning = 'none', id = null) => ({
-    id: id ?? `COOK-${++productSequence}`,
+  const makeProduct = (
     menuId,
-    seasoning,
-  });
+    seasoning = 'salt',
+    id = null,
+    tarePrepared = false,
+    tareCoverage = 0,
+  ) => {
+    const resolvedSeasoning = normalizedSeasoning(seasoning);
+    const prepared = resolvedSeasoning === 'tare' && tarePrepared === true;
+    return {
+      id: id ?? `COOK-${++productSequence}`,
+      menuId,
+      seasoning: resolvedSeasoning,
+      tarePrepared: prepared,
+      tareCoverage: prepared ? Math.max(0, Math.min(1, Number(tareCoverage) || 1)) : 0,
+    };
+  };
 
   const effectiveNow = (now) => pausedAtMs ?? now;
 
@@ -90,6 +114,8 @@ export function createCookStations({
       id: null,
       menuId: null,
       seasoning: 'none',
+      tarePrepared: false,
+      tareCoverage: 0,
       orientationFaceDown: FACE.FRONT,
       contactFace: null,
       elapsedSec: { front: 0, back: 0 },
@@ -126,12 +152,14 @@ export function createCookStations({
   }
 
   // ── 조립 ───────────────────────────────────────────────────
-  function selectRecipe(menuId, seasoning = 'none') {
+  function selectRecipe(menuId) {
     if (!recipeBook[menuId]) return { ok: false, reason: 'unknown-recipe' };
     if (assembly.index > 0 || assembly.complete) return { ok: false, reason: 'assembly-in-progress' };
     assembly.menuId = menuId;
-    assembly.seasoning = seasoning;
-    assembly.tareBrushCount = 0;
+    // 꼬치 종류를 먼저 완성한 뒤 조립대에서 소금/타래 마감을 정한다.
+    assembly.seasoning = 'none';
+    assembly.tarePrepared = false;
+    assembly.tareCoverage = 0;
     return { ok: true, menuId, recipe: [...recipeBook[menuId]] };
   }
 
@@ -149,9 +177,9 @@ export function createCookStations({
       if (explicitAssemblyTransfer) {
         assembly.complete = true;
       } else {
-        waitingItems.push(makeProduct(completedMenuId, assembly.seasoning));
+        waitingItems.push(makeProduct(completedMenuId, 'salt'));
         transferredCount += 1;
-        assembly = { menuId: completedMenuId, seasoning: assembly.seasoning, index: 0, complete: false };
+        assembly = emptyAssembly(completedMenuId);
       }
       return { ok: true, completed: true, menuId: completedMenuId };
     }
@@ -159,40 +187,93 @@ export function createCookStations({
   }
   const assemblyIndex = () => assembly.index;
   const assemblyComplete = () => assembly.complete;
-  function brushAssemblyTare() {
-    if (!assembly.complete || assembly.menuId !== 'momo' || assembly.seasoning !== 'tare') {
-      return { ok: false, reason: 'tare-momo-required' };
+  function selectAssemblySeasoning(seasoning) {
+    if (!assembly.complete) return { ok: false, reason: 'assembly-not-complete' };
+    if (seasoning !== 'salt' && seasoning !== 'tare') {
+      return { ok: false, reason: 'invalid-seasoning' };
     }
-    assembly.tareBrushCount = Math.min(ASSEMBLY_TARE_COATS, (assembly.tareBrushCount ?? 0) + 1);
-    return { ok: true, brushCount: assembly.tareBrushCount, complete: assembly.tareBrushCount >= ASSEMBLY_TARE_COATS };
+    if (assembly.seasoning !== seasoning) {
+      assembly.seasoning = seasoning;
+      assembly.tarePrepared = false;
+      assembly.tareCoverage = 0;
+    }
+    return {
+      ok: true,
+      seasoning: assembly.seasoning,
+      tarePrepared: assembly.tarePrepared === true,
+      tareCoverage: assembly.tareCoverage ?? 0,
+    };
+  }
+  function brushAssemblyTare(coverage = 0) {
+    if (!assembly.complete) return { ok: false, reason: 'assembly-not-complete' };
+    if (assembly.seasoning !== 'tare') return { ok: false, reason: 'tare-selection-required' };
+    if (assembly.tarePrepared === true) {
+      return { ok: true, complete: true, coverage: assembly.tareCoverage };
+    }
+    assembly.tareCoverage = Math.max(
+      assembly.tareCoverage ?? 0,
+      Math.max(0, Math.min(1, Number(coverage) || 0)),
+    );
+    if (assembly.tareCoverage < ASSEMBLY_TARE_MIN_COVERAGE) {
+      return {
+        ok: false,
+        reason: 'insufficient-coverage',
+        coverage: assembly.tareCoverage,
+      };
+    }
+    assembly.tarePrepared = true;
+    return { ok: true, complete: true, coverage: assembly.tareCoverage };
   }
   function transferAssembly() {
     if (!assembly.complete) return { ok: false, reason: 'not-complete' };
-    if (assembly.menuId === 'momo' && assembly.seasoning === 'tare' && (assembly.tareBrushCount ?? 0) < ASSEMBLY_TARE_COATS) {
+    const menuId = assembly.menuId;
+    const seasoning = normalizedSeasoning(assembly.seasoning);
+    if (seasoning === 'tare' && assembly.tarePrepared !== true) {
       return { ok: false, reason: 'tare-brush-required' };
     }
-    const menuId = assembly.menuId;
-    const product = makeProduct(menuId, assembly.seasoning);
-    product.tarePrepared = (assembly.tareBrushCount ?? 0) >= ASSEMBLY_TARE_COATS;
+    const product = makeProduct(
+      menuId,
+      seasoning,
+      null,
+      assembly.tarePrepared,
+      assembly.tareCoverage,
+    );
     waitingItems.push(product);
     transferredCount += 1;
-    assembly = { menuId, seasoning: assembly.seasoning, index: 0, complete: false };
-    return { ok: true, transferred: true, menuId, waiting: waitingItems.length, transferredCount };
+    assembly = emptyAssembly(menuId);
+    return {
+      ok: true,
+      transferred: true,
+      menuId,
+      seasoning,
+      tarePrepared: product.tarePrepared,
+      waiting: waitingItems.length,
+      transferredCount,
+    };
   }
-  const waitingCount = (menuId = null) => menuId == null
-    ? waitingItems.length
-    : waitingItems.filter((item) => item.menuId === menuId).length;
+  const waitingCount = (menuId = null, seasoning = null) => waitingItems.filter((item) => (
+    (menuId == null || item.menuId === menuId)
+    && (seasoning == null || item.seasoning === normalizedSeasoning(seasoning))
+  )).length;
 
   // ── 그릴 ───────────────────────────────────────────────────
   function freeSlotIndex() {
     return grill.findIndex((slot) => slot.status === 'empty');
   }
 
-  function placeToGrill(now, menuId = null) {
+  function placeToGrill(now, menuId = null, requestedSeasoning = 'salt') {
     if (pausedAtMs !== null) return { ok: false, reason: 'paused' };
     if (waitingItems.length <= 0) return { ok: false, reason: 'no-waiting' };
-    const waitingIndex = menuId == null ? 0 : waitingItems.findIndex((item) => item.menuId === menuId);
-    if (waitingIndex < 0) return { ok: false, reason: 'no-menu-waiting' };
+    const seasoning = normalizedSeasoning(requestedSeasoning);
+    const waitingIndex = waitingItems.findIndex((item) => (
+      (menuId == null || item.menuId === menuId) && item.seasoning === seasoning
+    ));
+    if (waitingIndex < 0) {
+      if (menuId != null && !waitingItems.some((item) => item.menuId === menuId)) {
+        return { ok: false, reason: 'no-menu-waiting' };
+      }
+      return { ok: false, reason: 'no-seasoning-waiting', menuId, seasoning };
+    }
     const index = freeSlotIndex();
     if (index < 0) return { ok: false, reason: 'no-slot' };
     const [placed] = waitingItems.splice(waitingIndex, 1);
@@ -203,13 +284,14 @@ export function createCookStations({
       menuId: placed.menuId,
       seasoning: placed.seasoning,
       tarePrepared: placed.tarePrepared === true,
+      tareCoverage: placed.tareCoverage ?? (placed.tarePrepared ? 1 : 0),
       orientationFaceDown: FACE.FRONT,
       contactFace: FACE.FRONT,
       lastUpdatedAt: now,
     };
     return menuId == null
       ? { ok: true, slot: index }
-      : { ok: true, slot: index, id: placed.id, menuId: placed.menuId, seasoning: placed.seasoning };
+      : { ok: true, slot: index, id: placed.id, menuId: placed.menuId, seasoning };
   }
 
   function currentElapsedSec(slot) {
@@ -227,9 +309,10 @@ export function createCookStations({
     }
     const frontResult = classifyFor(slot.menuId, slot.elapsedSec.front);
     const backResult = classifyFor(slot.menuId, slot.elapsedSec.back);
-    return frontResult === DONENESS.UNDER || backResult === DONENESS.UNDER
-      ? COOK_SLOT_NEXT_ACTION.FLIP
-      : COOK_SLOT_NEXT_ACTION.RETRIEVE;
+    if (frontResult === DONENESS.UNDER || backResult === DONENESS.UNDER) {
+      return COOK_SLOT_NEXT_ACTION.FLIP;
+    }
+    return COOK_SLOT_NEXT_ACTION.RETRIEVE;
   }
 
   function slotDoneness(index, now) {
@@ -306,7 +389,6 @@ export function createCookStations({
       const result = beginFlip(index, now);
       return { ...result, flipped: result.ok };
     }
-
     const menuId = slot.menuId ?? defaultMenuId;
     const { id, seasoning, tarePrepared } = slot;
     const quality = {
@@ -395,6 +477,8 @@ export function createCookStations({
         menuId: slot.menuId,
         id: slot.id,
         seasoning: slot.seasoning,
+        tarePrepared: slot.tarePrepared === true,
+        tareCoverage: slot.tareCoverage ?? 0,
         doneness: slot.contactFace ? classifyFor(slot.menuId, faceElapsedSec) : null,
         faceElapsedSec,
         frontElapsedSec: slot.elapsedSec.front,
@@ -440,14 +524,28 @@ export function createCookStations({
     assembly = structuredClone(saved.assembly);
     assembly.menuId = recipeBook[assembly.menuId] ? assembly.menuId : defaultMenuId;
     assembly.complete = assembly.complete === true;
+    assembly.seasoning = normalizedSeasoning(assembly.seasoning, 'none');
+    const legacyTareBrushCount = Number.isInteger(assembly.tareBrushCount)
+      ? assembly.tareBrushCount
+      : 0;
+    assembly.tarePrepared = assembly.seasoning === 'tare'
+      && (assembly.tarePrepared === true || legacyTareBrushCount >= LEGACY_ASSEMBLY_TARE_COATS);
+    assembly.tareCoverage = assembly.tarePrepared
+      ? 1
+      : Math.max(0, Math.min(1, Number(assembly.tareCoverage) || 0));
+    delete assembly.tareBrushCount;
     transferredCount = Number.isInteger(saved.transferredCount) ? saved.transferredCount : saved.waiting;
     assembledCount = Number.isInteger(saved.assembledCount)
       ? saved.assembledCount
       : transferredCount + (assembly.complete ? 1 : 0);
     productSequence = Number.isInteger(saved.productSequence) ? saved.productSequence : 0;
     waitingItems = Array.isArray(saved.waitingItems)
-      ? saved.waitingItems.map((item) => typeof item === 'string' ? makeProduct(item) : item)
-        .filter((item) => recipeBook[item.menuId])
+      ? saved.waitingItems.map((item) => {
+        if (typeof item === 'string') return makeProduct(item, 'salt');
+        const seasoning = normalizedSeasoning(item?.seasoning);
+        // 구형 대기 재고에서 tare가 명시됐다면 당시 조립 도포를 통과한 제품이다.
+        return makeProduct(item?.menuId, seasoning, item?.id, seasoning === 'tare');
+      }).filter((item) => recipeBook[item.menuId])
       : Array.from({ length: saved.waiting }, () => makeProduct(defaultMenuId));
     while (waitingItems.length < saved.waiting) waitingItems.push(makeProduct(defaultMenuId));
     if (waitingItems.length > saved.waiting) waitingItems = waitingItems.slice(0, saved.waiting);
@@ -460,7 +558,11 @@ export function createCookStations({
     for (const slot of grill) {
       slot.menuId = slot.status === 'empty' ? null : (recipeBook[slot.menuId] ? slot.menuId : defaultMenuId);
       slot.id = slot.status === 'empty' ? null : (slot.id ?? `COOK-${++productSequence}`);
-      slot.seasoning ??= 'none';
+      slot.seasoning = slot.seasoning === 'tare' ? 'tare' : 'salt';
+      // 이전 버전에서 이미 그릴에 올라간 타래 꼬치는 진행 불능에 빠지지 않도록
+      // 조립 도포가 끝난 상태로 승격한다. 새 흐름에서는 미도포 타래가 그릴에 올 수 없다.
+      slot.tarePrepared = slot.seasoning === 'tare';
+      slot.tareCoverage = slot.tarePrepared ? 1 : 0;
       slot.faceReadyAtMs ??= { front: null, back: null };
       // 구형 D1 저장은 첫 두 꼬치를 staged로 보관했다. 독립 조리 규칙에서는
       // 이어하기 직후 그 꼬치도 앞면 접촉 상태로 전환해 멈춘 제작물을 남기지 않는다.
@@ -514,6 +616,7 @@ export function createCookStations({
   return {
     clickIngredient,
     selectRecipe,
+    selectAssemblySeasoning,
     selectedMenuId: () => assembly.menuId,
     selectedSeasoning: () => assembly.seasoning ?? 'none',
     learnedMenuIds: () => new Set(learnedMenuIds),
@@ -528,7 +631,8 @@ export function createCookStations({
       complete: assembly.complete,
       menuId: assembly.menuId,
       seasoning: assembly.seasoning ?? 'none',
-      tareBrushCount: assembly.tareBrushCount ?? 0,
+      tarePrepared: assembly.tarePrepared === true,
+      tareCoverage: assembly.tareCoverage ?? 0,
       assembledCount,
       transferredCount,
     }),
@@ -566,15 +670,16 @@ export function createCookStations({
         if (slot.inputLockedUntil) slot.inputLockedUntil -= sec * 1000;
       }
     },
-    debugFillAssembly(menuId = assembly.menuId, seasoning = assembly.seasoning ?? 'none') {
+    debugFillAssembly(menuId = assembly.menuId, seasoning = 'salt') {
       if (!recipeBook[menuId]) return false;
       learnedMenuIds.add(menuId);
-      waitingItems.push(makeProduct(menuId, seasoning));
-      assembly = { menuId, index: 0, complete: false };
+      const resolvedSeasoning = normalizedSeasoning(seasoning);
+      waitingItems.push(makeProduct(menuId, resolvedSeasoning, null, resolvedSeasoning === 'tare'));
+      assembly = emptyAssembly(menuId);
       return true;
     },
     reset() {
-      assembly = { menuId: defaultMenuId, index: 0, complete: false };
+      assembly = emptyAssembly();
       assembledCount = 0;
       transferredCount = 0;
       waitingItems = [];
@@ -587,7 +692,7 @@ export function createCookStations({
 export function createD1CookStations(options = {}) {
   return createCookStations({
     ...options,
-    slots: 2,
+    slots: options.slots ?? 2,
     recipes: options.recipes ?? EARLY_CAMPAIGN_RECIPES,
     defaultMenuId: options.defaultMenuId ?? 'negima',
     explicitAssemblyTransfer: true,

@@ -23,6 +23,68 @@ export function buildSeatStates(occupants = [], { serveReady = false } = {}) {
   });
 }
 
+function groupedPhase(members) {
+  if (members.some((member) => member.phase === 'thinking')) return 'thinking';
+  if (members.some((member) => member.phase === 'ordering')) return 'ordering';
+  if (members.some((member) => member.phase === 'waiting')) return 'waiting';
+  if (members.some((member) => member.phase === 'eating')) return 'eating';
+  if (members.some((member) => member.phase === 'done')) return 'done';
+  if (members.some((member) => member.phase === 'leaving')) return 'leaving';
+  if (members.some((member) => member.phase === 'cleanup')) return 'cleanup';
+  return members[0]?.phase ?? 'empty';
+}
+
+function groupedOrderLabel(members) {
+  const uniqueOrders = new Map();
+  for (const member of members) {
+    const orderKey = member.orderId ?? `seat:${member.seatId}`;
+    if (!uniqueOrders.has(orderKey)) uniqueOrders.set(orderKey, member);
+  }
+  const itemTotals = new Map();
+  for (const member of uniqueOrders.values()) {
+    for (const item of member.remainingItems ?? []) {
+      const key = `${item.menuId}:${item.seasoning ?? 'none'}`;
+      const current = itemTotals.get(key) ?? { ...item, remaining: 0 };
+      current.remaining += item.remaining;
+      itemTotals.set(key, current);
+    }
+  }
+  const merged = [...itemTotals.values()]
+    .filter((item) => item.remaining > 0)
+    .map((item) => `${item.menuLabel}${item.remaining > 1 ? ` ×${item.remaining}` : ''}`);
+  if (merged.length > 0) return merged.join(' · ');
+  return [...new Set([...uniqueOrders.values()].map((member) => member.orderLabel).filter(Boolean))]
+    .join(' · ');
+}
+
+// 좌석 단위 상태를 주문서 단위로 바꾼다. 개인 손님은 좌석당 한 장을 유지하고,
+// 그룹은 orderId를 중복 제거한 뒤 한 장으로 합쳐 두 손님 사이에 배치할 수 있게 한다.
+export function buildOrderBubblePresentations(states = []) {
+  const presentations = [];
+  const handledGroupIds = new Set();
+  for (const state of states) {
+    if (!state.groupId) {
+      presentations.push({ ...state, memberSeatIds: [state.seatId] });
+      continue;
+    }
+    if (handledGroupIds.has(state.groupId)) continue;
+    handledGroupIds.add(state.groupId);
+    const members = states.filter((candidate) => candidate.groupId === state.groupId);
+    presentations.push({
+      ...state,
+      occupied: members.some((member) => member.occupied),
+      phase: groupedPhase(members),
+      mood: members.some((member) => member.mood === 'retry') ? 'retry' : state.mood,
+      orderLabel: groupedOrderLabel(members),
+      waitRatio: Math.min(...members.map((member) => member.waitRatio ?? 1)),
+      urgent: members.some((member) => member.urgent),
+      canOrder: members.every((member) => member.canOrder),
+      memberSeatIds: members.map((member) => member.seatId),
+    });
+  }
+  return presentations;
+}
+
 // DOM 말풍선·게이지 + 좌석 액터/serve 메시를 구동한다.
 export function createCustomerAdapter({ renderer, container, customerScreenId = 'SCR-SVC-CUSTOMERS' }) {
   const bubbles = {}; // seatId → { el, label, fill }
@@ -37,14 +99,16 @@ export function createCustomerAdapter({ renderer, container, customerScreenId = 
   }
 
   let states = buildSeatStates();
+  let bubblePresentations = buildOrderBubblePresentations(states);
 
   // 말풍선 내용·게이지를 phase별로 정한다. phase가 없으면(증분 2 스타일) 단순 주문 표시로 처리.
   function bubbleFor(s) {
     const phase = s.phase || (s.occupied ? 'waiting' : 'empty');
+    const groupPrefix = s.groupId ? '그룹 주문 · ' : '';
     switch (phase) {
       case 'thinking': return { text: '…', ratio: null, tone: 'think' };
-      case 'ordering': return { text: `주문서 · ${s.orderLabel}`, ratio: s.waitRatio, tone: 'order' };
-      case 'waiting': return { text: s.orderLabel, ratio: s.waitRatio, tone: 'wait' };
+      case 'ordering': return { text: `${s.groupId ? '그룹 주문' : '주문서'} · ${s.orderLabel}`, ratio: s.waitRatio, tone: 'order' };
+      case 'waiting': return { text: `${groupPrefix}${s.orderLabel}`, ratio: s.waitRatio, tone: 'wait' };
       case 'eating': return { text: '식사 중', ratio: null, tone: 'eat' };
       case 'done': return { text: '완료 (동행 대기)', ratio: null, tone: 'eat' };
       case 'leaving': return { text: s.mood === 'retry' ? '화남!' : '고맙습니다', ratio: null, tone: 'leave' };
@@ -55,6 +119,7 @@ export function createCustomerAdapter({ renderer, container, customerScreenId = 
 
   function apply(nextStates, { actorsVisible = true } = {}) {
     states = nextStates;
+    bubblePresentations = buildOrderBubblePresentations(states);
     for (const s of states) {
       const customerPresent = s.occupied
         && !s.cleanupNeeded
@@ -68,6 +133,8 @@ export function createCustomerAdapter({ renderer, container, customerScreenId = 
       }
       // 좌석 조작 메시(seatServe) 가시성은 호출측(game.js syncCustomers)이 phase로 정한다.
 
+    }
+    for (const s of bubblePresentations) {
       const b = bubbles[s.seatId];
       const info = bubbleFor(s);
       b.label.textContent = info.text;
@@ -87,13 +154,22 @@ export function createCustomerAdapter({ renderer, container, customerScreenId = 
   // 매 프레임: 활성 화면이 손님 화면일 때만 점유 좌석 말풍선을 좌석 위에 배치한다.
   function tick(activeScreenId) {
     const show = activeScreenId === customerScreenId;
-    for (const s of states) {
+    for (const { el } of Object.values(bubbles)) el.hidden = true;
+    if (!show) return;
+    for (const s of bubblePresentations) {
       const b = bubbles[s.seatId];
-      if (!show || !s.occupied || ['empty', 'leaving', 'cleanup'].includes(s.phase)) {
-        b.el.hidden = true;
-        continue;
-      }
-      const p = renderer.projectToScreen(renderer.seatBubbleWorld[s.seatId]);
+      if (!s.occupied || ['empty', 'leaving', 'cleanup'].includes(s.phase)) continue;
+      const points = s.memberSeatIds
+        .map((seatId) => renderer.seatBubbleWorld[seatId])
+        .filter(Boolean)
+        .map((anchor) => renderer.projectToScreen(anchor));
+      if (points.length === 0) continue;
+      const p = points.reduce((sum, point) => ({
+        x: sum.x + point.x,
+        y: sum.y + point.y,
+      }), { x: 0, y: 0 });
+      p.x /= points.length;
+      p.y /= points.length;
       b.el.style.left = `${p.x}px`;
       b.el.style.top = `${p.y}px`;
       b.el.hidden = false;

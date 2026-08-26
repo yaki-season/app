@@ -12,6 +12,8 @@
 <link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-glass-draft-r3.png">
 <link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-ice-fill-draft-r2.png">
 <link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-bottles-draft-r1.png">
+<link rel="preload" as="image" href="/assets/campaign/d3/prop-tare-sauce-pot-r2-b1.png">
+<link rel="preload" as="image" href="/assets/campaign/d3/prop-tare-sauce-pot-open-r2-b1.png">
 <link rel="stylesheet" href="./game.css">
 <link rel="stylesheet" href="./d1-game.css">
 <script type="importmap">
@@ -20,11 +22,6 @@
 </head>
 <body>
   <canvas id="scene" data-testid="scene-canvas"></canvas>
-  <div id="d3TorchCursor" class="d3-torch-cursor" data-testid="d3-torch-cursor" aria-hidden="true" hidden>
-    <span class="d3-torch-cursor-tool"></span>
-    <span class="d3-torch-cursor-flame"></span>
-    <span class="d3-torch-cursor-contact"></span>
-  </div>
   <div id="assemblyTareCursor" class="assembly-tare-cursor" data-testid="assembly-tare-cursor" aria-hidden="true" hidden>
     <span class="assembly-tare-cursor-handle"></span>
     <span class="assembly-tare-cursor-bristles"></span>
@@ -61,18 +58,31 @@
   <button id="navRight" class="side-nav right" data-testid="nav-right" aria-label="다음 화면">›</button>
 
   <nav id="assemblyRecipePicker" class="assembly-recipe-picker" data-testid="assembly-recipe-picker" aria-label="조립할 꼬치 선택" hidden>
-    <span>오늘의 꼬치</span>
-    <button type="button" data-menu-id="negima" data-seasoning="none" aria-pressed="true">네기마</button>
-    <button type="button" data-menu-id="momo" data-seasoning="none" aria-pressed="false">모모</button>
-    <button type="button" data-menu-id="momo" data-seasoning="tare" data-d3-only="true" aria-pressed="false">타레 모모</button>
-    <button type="button" data-menu-id="kawa" data-seasoning="salt" data-d5-only="true" aria-pressed="false">소금 토리카와</button>
-    <button type="button" data-menu-id="kawa" data-seasoning="tare" data-d5-only="true" aria-pressed="false">타레 토리카와</button>
+    <span>꼬치 종류</span>
+    <button type="button" data-menu-id="negima" aria-pressed="true">네기마</button>
+    <button type="button" data-menu-id="momo" aria-pressed="false">모모</button>
+    <button type="button" data-menu-id="kawa" data-d5-only="true" aria-pressed="false">토리카와</button>
   </nav>
-  <section id="assemblyTarePanel" class="assembly-tare-panel" data-testid="assembly-tare-panel" hidden>
-    <strong>타레 양념장</strong>
-    <span id="assemblyTareProgress" aria-live="polite">도포 0/2</span>
-    <small>조립대의 꼬치 위를 직접 눌러 좌우로 칠하세요</small>
-    <div class="assembly-tare-meter" aria-hidden="true"><span id="assemblyTareFill"></span></div>
+  <section id="assemblyTarePanel" class="assembly-tare-panel" data-testid="assembly-tare-panel" aria-label="타레 양념" hidden>
+    <button
+      id="assemblyTarePot"
+      class="assembly-tare-pot"
+      type="button"
+      data-testid="assembly-tare-pot"
+      aria-pressed="false"
+      aria-keyshortcuts="ArrowLeft ArrowRight"
+      disabled
+    >
+      <img id="assemblyTarePotArt" src="/assets/campaign/d3/prop-tare-sauce-pot-r2-b1.png" alt="">
+      <span><strong>타레 양념</strong><small>조립한 꼬치에 붓으로 바르기</small></span>
+    </button>
+    <div class="assembly-tare-guide">
+      <strong id="assemblyTareProgress" aria-live="polite">꼬치를 먼저 조립하세요</strong>
+      <small>소스통을 누른 뒤 꼬치 위를 한 번 좌우로 끝까지 칠하세요</small>
+      <div class="assembly-tare-meter" role="progressbar" aria-label="타레 도포 범위" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <span id="assemblyTareFill"></span>
+      </div>
+    </div>
   </section>
 
   <!-- 그릴 전용 재고 UI. 생꼬치는 한 장의 카드로 배치하고 완성품은 공용 준비 목록을 읽기 전용으로 투영한다. -->
@@ -88,10 +98,9 @@
         <span>굽기 전</span>
         <strong id="grillRawInventoryTitle">생꼬치 재고</strong>
       </header>
-      <button
+      <article
         id="grillWaitingNegima"
         class="grill-waiting-card grill-waiting-negima"
-        type="button"
         data-testid="grill-waiting-negima"
         aria-describedby="grillWaitingNegimaHint"
       >
@@ -103,11 +112,14 @@
           </span>
           <span id="grillWaitingNegimaHint">대기 중인 꼬치가 없습니다</span>
         </span>
-      </button>
-      <button
+        <span class="grill-seasoning-actions" aria-label="네기마 양념 선택">
+          <button id="grillWaitingNegimaSalt" type="button" data-seasoning="salt"><span>소금</span><strong id="grillWaitingNegimaSaltCount">× 0</strong></button>
+          <button id="grillWaitingNegimaTare" type="button" data-seasoning="tare"><span>타레</span><strong id="grillWaitingNegimaTareCount">× 0</strong></button>
+        </span>
+      </article>
+      <article
         id="grillWaitingMomo"
         class="grill-waiting-card grill-waiting-momo"
-        type="button"
         data-testid="grill-waiting-momo"
         aria-describedby="grillWaitingMomoHint"
       >
@@ -119,11 +131,14 @@
           </span>
           <span id="grillWaitingMomoHint">대기 중인 꼬치가 없습니다</span>
         </span>
-      </button>
-      <button
+        <span class="grill-seasoning-actions" aria-label="모모 양념 선택">
+          <button id="grillWaitingMomoSalt" type="button" data-seasoning="salt"><span>소금</span><strong id="grillWaitingMomoSaltCount">× 0</strong></button>
+          <button id="grillWaitingMomoTare" type="button" data-seasoning="tare"><span>타레</span><strong id="grillWaitingMomoTareCount">× 0</strong></button>
+        </span>
+      </article>
+      <article
         id="grillWaitingKawa"
         class="grill-waiting-card grill-waiting-kawa"
-        type="button"
         data-testid="grill-waiting-kawa"
         aria-describedby="grillWaitingKawaHint"
         hidden
@@ -136,7 +151,11 @@
           </span>
           <span id="grillWaitingKawaHint">대기 중인 꼬치가 없습니다</span>
         </span>
-      </button>
+        <span class="grill-seasoning-actions" aria-label="토리카와 양념 선택">
+          <button id="grillWaitingKawaSalt" type="button" data-seasoning="salt"><span>소금</span><strong id="grillWaitingKawaSaltCount">× 0</strong></button>
+          <button id="grillWaitingKawaTare" type="button" data-seasoning="tare"><span>타레</span><strong id="grillWaitingKawaTareCount">× 0</strong></button>
+        </span>
+      </article>
     </article>
 
     <article class="grill-inventory-panel grill-inventory-panel--finished" aria-labelledby="grillFinishedInventoryTitle">
@@ -244,35 +263,6 @@
 
   <!-- 공용 완성품 목록. 조작은 하나로 유지하고 요리/음료의 접지 구역만 분리한다. -->
   <div id="dockShelf" class="dock-shelf" data-testid="dock-shelf" aria-label="요리 서빙대와 음료 픽업대" hidden></div>
-
-  <section id="d3TorchPanel" class="d3-torch-panel" data-testid="d3-torch-panel" data-state-id="D3-MOMO-TARE-READY" aria-labelledby="d3TorchTitle" hidden>
-    <div class="d3-torch-head">
-      <strong id="d3TorchTitle">타레 모모 · 도포·재가열 마감</strong>
-      <span id="d3TorchState" data-testid="d3-torch-state" data-component-id="grill.torchState" data-required-asset-id="UI-TORCH-STATE-D3" aria-live="polite">타레 대기</span>
-    </div>
-    <button id="d3ApplyTare" type="button" data-testid="d3-apply-tare" data-component-id="grill.tare.apply" data-required-asset-id="PROP-TARE-BRUSH-D3">타레 바르기</button>
-    <button id="d3ReheatTare" type="button" data-testid="d3-reheat-tare" data-component-id="grill.tare.reheat" disabled>그릴에서 재가열</button>
-    <button id="d3SelectTorch" type="button" data-testid="d3-select-torch" data-component-id="grill.torch.select" disabled>선택: 토치로 불향 더하기</button>
-    <button
-      id="d3TorchTrack"
-      class="d3-torch-track"
-      type="button"
-      data-testid="d3-torch-track"
-      data-component-id="grill.torch"
-      data-required-asset-id="MDL-GRILL-TORCH"
-      aria-describedby="d3TorchHelp d3TorchWarning"
-    >
-      <span id="d3TorchFill" class="d3-torch-fill" data-component-id="grill.torch.flame" data-required-asset-id="VFX-TORCH-FLAME"></span>
-      <span class="d3-torch-label">그릴의 꼬치 위를 직접 누른 채 좌우로 훑기</span>
-    </button>
-    <div class="d3-torch-meter" role="progressbar" aria-label="토치 적용 범위" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-      <span id="d3TorchCoverage" data-component-id="grill.torchCoverage" data-required-asset-id="UI-TORCH-COVERAGE-D3"></span>
-    </div>
-    <button id="d3FinishTorch" type="button" data-testid="d3-finish-torch" disabled>토치 마감 완료</button>
-    <p id="d3TorchHelp">토치는 선택 불향 보너스 · 선택한 뒤 그릴의 꼬치 위를 직접 눌러 좌우로 훑으세요</p>
-    <p id="d3TorchWarning" class="d3-torch-warning" data-component-id="grill.torchFocusWarning" data-required-asset-id="UI-TORCH-FOCUS-WARN-D3" aria-live="assertive"></p>
-    <button id="d3RetrieveMomo" type="button" data-testid="d3-retrieve-momo" disabled>완성품 회수</button>
-  </section>
 
   <!-- 선택 완성품과 일치하는 모든 손님을 포인터·키보드 대상으로 제공 -->
   <section

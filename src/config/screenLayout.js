@@ -8,7 +8,6 @@
 
 import {
   D1_GRILL_FINISHED_TRAY,
-  D1_PUBLIC_GRILL_LAYOUT,
   D1_GRILL_SLOT_KEYS,
   D1_GRILL_WAITING_TRAY,
   createD1GrillObjects,
@@ -82,7 +81,7 @@ export const SCREEN_TRANSITION_MS = 300;
 export const GRILL_MAX_SLOTS = 8;
 export const DEFAULT_GRILL_SLOTS = 2;
 export function computeGrillSlots(count = DEFAULT_GRILL_SLOTS) {
-  if (count === D1_PUBLIC_GRILL_LAYOUT) return D1_PUBLIC_GRILL_LAYOUT.slots;
+  if (count && typeof count === 'object' && Array.isArray(count.slots)) return count.slots;
   const n = Math.max(1, Math.min(GRILL_MAX_SLOTS, count));
   // 좌우 트레이 예약 영역(대기 끝 x=0.245)을 침범하지 않는 그릴 본체 레인.
   const left = 0.285;

@@ -6,5 +6,18 @@
   "status": "candidate",
   "category": "skewer",
   "ingredients": ["chicken", "chicken", "chicken", "chicken", "chicken"],
+  "seasoningPolicy": {
+    "selectionStage": "assembly",
+    "options": ["salt", "tare"],
+    "saltTransferMode": "direct",
+    "inventoryPartition": "menu-and-seasoning",
+    "tareApplication": {
+      "station": "assembly",
+      "afterAssemblyCompleted": true,
+      "brushPasses": 1,
+      "minimumCoverage": 0.8,
+      "torchEnabled": false
+    }
+  },
   "processId": "grill-negima"
 }

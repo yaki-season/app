@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { runtimeAssetUrl } from '../assets/runtimeAssetResolver.js';
 
+const WHITE_TINT = new THREE.Color(0xffffff);
+const TARE_TINT = new THREE.Color(0x7a2f20);
+
 export const D2_MOMO_RUNTIME_URLS = Object.freeze({
   raw: '/assets/campaign/d2/spr-momo-grill-raw-r1-b1.png',
   cooking: '/assets/campaign/d2/spr-momo-grill-cooking-r1-b1.png',
@@ -87,6 +90,12 @@ function spriteInstance(textures, slotMesh, sourceTransform, initialStage, asset
       Object.entries(planes).forEach(([key, plane]) => { plane.visible = key === normalized; });
       holder.userData.stage = normalized;
       return normalized;
+    },
+    setTare(amount = 0) {
+      const mix = Math.max(0, Math.min(1, Number(amount) || 0));
+      Object.values(planes).forEach((plane) => {
+        plane.material.color.copy(WHITE_TINT).lerp(TARE_TINT, mix * 0.38);
+      });
     },
     stage: () => holder.userData.stage,
   };

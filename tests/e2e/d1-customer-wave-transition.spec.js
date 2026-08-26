@@ -45,6 +45,42 @@ test('투명 좌석 포커스 박스 대신 머리 위 주문 표식만 강조�
   await expect(page.getByTestId(`bubble-${seat.seatId}`)).toHaveAttribute('data-seat-focus', 'true');
 });
 
+test('첫 손님이 실패 음식에 화나서 떠나도 다음 손님은 계속 들어온다', async ({ page }) => {
+  const definition = await routeD1ReleaseDefinition(page);
+  await page.goto('/src/d1-game.html?reset=1');
+  await expect.poll(() => D(page, 'businessReady')).toBe(true);
+  await D(page, 'businessAdvance', 6_000);
+
+  const firstSeat = (await D(page, 'businessView')).seats
+    .find(({ customerId }) => customerId === 'REGULAR_TSUKIOKA');
+  await D(page, 'businessClickSeat', firstSeat.seatId);
+  expect(await D(page, 'businessDispatch', {
+    type: 'serve-item',
+    intentId: 'arrival-after-angry:fail',
+    customerId: 'REGULAR_TSUKIOKA',
+    menuId: 'negima',
+    quality: 'Fail',
+  })).toMatchObject({ ok: true, applied: true });
+  await expect.poll(async () => (await D(page, 'businessView')).orders
+    .find(({ orderId }) => orderId === 'D1-ORDER-001')?.status).toBe('failed');
+
+  // 퇴장 1초 뒤 가게가 비면 최대 13초 대기 정책으로 다음 파동이 당겨진다.
+  await D(page, 'businessAdvance', 15_000);
+  const view = await D(page, 'businessView');
+  expect(view.seats.filter(({ groupId }) => groupId === 'D1-GROUP-OFFICE')).toHaveLength(2);
+  expect(view.orders.find(({ orderId }) => orderId === 'D1-ORDER-001')?.status).toBe('failed');
+
+  // 그룹은 15초 진행 구간 끝에서 막 입장해 아직 4~6초의 주문 고민(`…`) 중일 수 있다.
+  // SwiftShader 부하가 큰 1920 화면의 실시간 rAF에 맡기지 않고 도메인 시계를 확실히 진행한다.
+  await D(page, 'businessAdvance', definition.timingMs.thinkMax);
+  const readyGroupSeats = (await D(page, 'businessView')).seats
+    .filter(({ groupId }) => groupId === 'D1-GROUP-OFFICE');
+  expect(readyGroupSeats.map(({ phase }) => phase)).toEqual(['ordering', 'ordering']);
+  const groupOrderBubble = page.locator('.order-bubble:visible');
+  await expect(groupOrderBubble).toHaveCount(1);
+  await expect(groupOrderBubble).toContainText('그룹 주문');
+});
+
 test('츠키오카 퇴장 장면 뒤 직장인 둘은 이전 식기 없이 나란히 붙은 좌석에 나타난다', async ({ page }) => {
   const tsukiokaSeatId = await bootAndServeTsukioka(page);
 
@@ -76,6 +112,14 @@ test('츠키오카 퇴장 장면 뒤 직장인 둘은 이전 식기 없이 나�
   const officeSeats = (await D(page, 'businessView')).seats
     .filter(({ customerId }) => customerId?.startsWith('D1-OFFICE'));
   expect(officeSeats).toHaveLength(2);
+  expect(officeSeats.every(({ groupId }) => groupId === 'D1-GROUP-OFFICE')).toBe(true);
+  const visibleOrderBubbles = page.locator('.order-bubble:visible');
+  await expect(visibleOrderBubbles).toHaveCount(1);
+  await expect(visibleOrderBubbles).toContainText('그룹 주문');
+  await D(page, 'businessClickSeat', officeSeats[0].seatId);
+  const acceptedGroupOrders = (await D(page, 'businessView')).orders
+    .filter(({ orderId }) => ['D1-ORDER-002-A', 'D1-ORDER-002-B'].includes(orderId));
+  expect(acceptedGroupOrders.map(({ status }) => status)).toEqual(['accepted', 'accepted']);
   const visual = await page.evaluate((seatIds) => {
     const renderer = window.__d1GameDebug.renderer;
     return seatIds.map((seatId) => ({
@@ -111,4 +155,9 @@ test('츠키오카 퇴장 장면 뒤 직장인 둘은 이전 식기 없이 나�
   expect(visual.every(({ foodVisible, beerVisible, emptyDishesVisible }) => (
     !foodVisible && !beerVisible && !emptyDishesVisible
   ))).toBe(true);
+
+  const groupBubbleBox = await visibleOrderBubbles.boundingBox();
+  const expectedBubbleCenterX = (visual[0].x + visual[1].x) / 2;
+  expect(Math.abs((groupBubbleBox.x + groupBubbleBox.width / 2) - expectedBubbleCenterX))
+    .toBeLessThanOrEqual(2);
 });

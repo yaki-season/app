@@ -45,6 +45,22 @@ h1,h2,p { margin-top:0; } h1 { margin-bottom:0; font-size:clamp(1.4rem,3vw,2.2re
 .summary { margin:0; padding-left:1.4rem; display:grid; gap:8px; }
 .actions { width:min(1280px,100%); margin-inline:auto; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; }
 .primary { background:var(--accent); border-color:#f08a58; font-weight:800; }
+.day-prep-card { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr); gap:clamp(20px,4vw,54px); align-items:center; max-width:980px; margin-inline:auto; }
+.day-prep-copy h2 { margin:0 0 10px; color:#ffe1aa; font-size:clamp(1.4rem,2.5vw,2rem); }
+.day-prep-copy > p:last-child { margin-bottom:0; }
+.day-prep-kicker { margin:0 0 6px; color:#e8955f; font-size:.78rem; font-weight:900; letter-spacing:.12em; }
+.day-prep-no-spend { color:var(--muted); font-size:.92rem; }
+.day-prep-details { display:grid; gap:16px; }
+.grill-slot-flow { display:flex; align-items:center; justify-content:center; gap:16px; padding:18px; border:1px solid #a9774d; border-radius:14px; background:#130d09a8; color:#d8b38b; }
+.grill-slot-flow strong { color:#ffdb94; font-size:clamp(1.35rem,3vw,2rem); }
+.upgrade-requirements { margin:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.upgrade-requirements div { padding:10px 12px; border-radius:10px; background:#130d097d; text-align:center; }
+.upgrade-requirements dt { color:var(--muted); font-size:.78rem; }
+.upgrade-requirements dd { margin:2px 0 0; color:#fff1d8; font-size:1.15rem; font-weight:800; }
+.day-prep-status { grid-column:1/-1; min-height:1.6em; margin:0; padding-top:14px; border-top:1px solid #91623e77; color:#ffd48e; text-align:center; font-weight:700; }
+.day-prep-card[data-upgrade-state="claimed"] .grill-slot-flow { border-color:#d28a4f; box-shadow:inset 0 0 24px #b45d2426; }
+.day-prep-card[data-upgrade-state="locked"] .grill-slot-flow,
+.day-prep-card[data-upgrade-state="unavailable"] .grill-slot-flow { filter:saturate(.55); opacity:.78; }
 /* D4 완료 저장은 산문형 후일담으로 닫고, 구 버전 D3 종착 저장은 D4 프리오픈으로 복구한다. */
 .epilogue-visual { display:none; position:relative; z-index:3; width:min(760px,82%); padding:clamp(26px,5vw,56px); text-align:center; }
 body[data-screen-id="SCR-POST-EPILOGUE"] .epilogue-visual { display:grid; justify-items:center; gap:22px; }
@@ -67,6 +83,8 @@ body[data-screen-id="SCR-POST-EPILOGUE"] .visual-placeholder::before { content:"
 }
 @media (max-width:720px) {
   .story-portrait { width:min(30vw,150px); }
+  .day-prep-card { grid-template-columns:1fr; gap:18px; }
+  .day-prep-status { grid-column:auto; }
   .epilogue-visual { width:92%; padding:20px 10px; }
   .epilogue-copy { word-break:normal; }
 }

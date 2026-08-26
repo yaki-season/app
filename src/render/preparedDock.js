@@ -12,6 +12,7 @@ export function qualityFromCook(frontResult, backResult) {
 const LEGACY_MENU_ID = Object.freeze({
   '생맥주': 'beer',
   '네기마': 'negima',
+  '타레 네기마': 'negima',
   '모모': 'momo',
   '타레 모모': 'momo',
   '토리카와': 'kawa',

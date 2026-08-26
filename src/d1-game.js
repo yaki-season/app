@@ -15,7 +15,6 @@ import {
   loadD5KawaSpriteRuntime,
 } from './render/d5KawaSpriteRuntime.js';
 import {
-  ASSEMBLY_TARE_COATS,
   COOK_SLOT_NEXT_ACTION,
   createD1CookStations,
 } from './render/cookStations.js';
@@ -31,8 +30,6 @@ import { createPreparedDock } from './render/preparedDock.js';
 import { D4_MENU_ART_URLS } from './assets/d4MenuArt.js';
 import { createInstantServiceStation } from './application/stations/instantServiceStation.js';
 import { createHighballStation } from './application/stations/highballStation.js';
-import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
-import { D3_TORCH_RULES, torchReadiness } from './domain/cooking/d3TorchFinish.js';
 import { gameAudio, installGameAudio, setBgm, sfx, sfxOff, sfxOnce, loopOn, loopOff, loopRate } from './audio/gameAudio.js';
 import { crowdAmbienceId, interiorAmbienceId } from './audio/audioCatalog.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
@@ -65,6 +62,7 @@ import {
   D1_GRILL_FOOD_FOOTPRINT,
   D1_GRILL_FINISHED_TRAY,
   D1_PUBLIC_GRILL_LAYOUT,
+  D4_PUBLIC_GRILL_LAYOUT,
 } from './config/d1GrillLayout.js';
 import {
   D1_ASSEMBLY_BUILD_SLOT,
@@ -83,6 +81,7 @@ import {
 import {
   createD1BusinessDayBrowserSession,
 } from './application/businessDay/d1BusinessDayBrowserSession.js';
+import { S0D3CampaignBridge } from './scenario/s0-d3-campaign.js';
 import { D1_TSUKIOKA_DEPARTURE_SCENE } from './scenario/d1BusinessCutscenes.js';
 import {
   D1_BUSINESS_DAY_RELEASE_DEFINITION_URL,
@@ -140,6 +139,7 @@ document.title = `YAKI SEASON — ${ACTIVE_DAY.label} 영업`;
 const MENU_ID_BY_LABEL = Object.freeze({
   '생맥주': 'beer',
   '네기마': 'negima',
+  '타레 네기마': 'negima',
   '모모': 'momo',
   '타레 모모': 'momo',
   '토리카와': 'kawa',
@@ -158,9 +158,10 @@ const MENU_META = Object.freeze({
   highball: { label: '하이볼' },
 });
 const skewerLabel = (menuId, seasoning = 'none') => {
-  if (menuId === 'momo' && seasoning === 'tare') return '타레 모모';
-  if (menuId === 'kawa') return seasoning === 'tare' ? '타레 토리카와' : '소금 토리카와';
-  return MENU_META[menuId]?.label ?? '꼬치';
+  const base = MENU_META[menuId]?.label ?? '꼬치';
+  if (seasoning === 'tare') return `타레 ${base}`;
+  if (menuId === 'kawa') return '소금 토리카와';
+  return base;
 };
 
 const el = (id) => document.getElementById(id);
@@ -225,11 +226,31 @@ const restoredFirstOrderRuntime = readFirstOrderRuntime();
 const daySeed = ACTIVE_DAY_ID === 'd1'
   ? null
   : (restoredFirstOrderRuntime?.daySeed ?? Math.floor(Math.random() * 0xffffffff) + 1);
-const cook = createD1CookStations();
-if (restoredFirstOrderRuntime?.cook) cook.restore(restoredFirstOrderRuntime.cook, performance.now());
-const d3Grill = createD3GrillSession(restoredFirstOrderRuntime?.d3Grill ?? null);
+async function resolveClaimedGrillSlotCount() {
+  if (!['d4', 'd5'].includes(ACTIVE_DAY_ID)) return 2;
+  try {
+    // 업그레이드는 프리오픈 체크포인트에 먼저 저장된다. 영업 도메인을 부팅하기 전에 같은
+    // 저장을 검증해 읽어야 세 번째 슬롯의 mesh·sprite·shader가 첫 프레임부터 함께 생긴다.
+    const reader = new S0D3CampaignBridge({ browserStorage: window.localStorage });
+    const loaded = await reader.loadOrStart();
+    if (!loaded.ok) return 2;
+    return reader.getState()?.progression?.claimedGrillSlots >= 3 ? 3 : 2;
+  } catch {
+    return 2;
+  }
+}
+const configuredGrillSlotCount = await resolveClaimedGrillSlotCount();
+const activeGrillLayout = configuredGrillSlotCount >= 3
+  ? D4_PUBLIC_GRILL_LAYOUT
+  : D1_PUBLIC_GRILL_LAYOUT;
+const cook = createD1CookStations({ slots: configuredGrillSlotCount });
+if (restoredFirstOrderRuntime?.cook) {
+  cook.restore(restoredFirstOrderRuntime.cook, performance.now());
+  cook.setSlots(configuredGrillSlotCount);
+}
 const SLOT_KEYS = GRILL_SLOT_KEYS.slice(0, cook.slotCount());
-R.setGrillSlots(D1_PUBLIC_GRILL_LAYOUT);
+R.setGrillSlots(activeGrillLayout);
+document.body.dataset.grillSlotCount = String(configuredGrillSlotCount);
 const grillSmoke = createGrillSmokeVfx({
   scene: R.scene,
   slotMeshes: SLOT_KEYS.map((key) => R.objectMesh[key]),
@@ -423,6 +444,16 @@ const grillWaitingMomoCount = el('grillWaitingMomoCount');
 const grillWaitingKawa = el('grillWaitingKawa');
 const grillWaitingKawaHint = el('grillWaitingKawaHint');
 const grillWaitingKawaCount = el('grillWaitingKawaCount');
+const grillWaitingActions = Object.freeze({
+  negima: Object.freeze({ salt: el('grillWaitingNegimaSalt'), tare: el('grillWaitingNegimaTare') }),
+  momo: Object.freeze({ salt: el('grillWaitingMomoSalt'), tare: el('grillWaitingMomoTare') }),
+  kawa: Object.freeze({ salt: el('grillWaitingKawaSalt'), tare: el('grillWaitingKawaTare') }),
+});
+const grillWaitingActionCounts = Object.freeze({
+  negima: Object.freeze({ salt: el('grillWaitingNegimaSaltCount'), tare: el('grillWaitingNegimaTareCount') }),
+  momo: Object.freeze({ salt: el('grillWaitingMomoSaltCount'), tare: el('grillWaitingMomoTareCount') }),
+  kawa: Object.freeze({ salt: el('grillWaitingKawaSaltCount'), tare: el('grillWaitingKawaTareCount') }),
+});
 const grillFinishedInventoryCount = el('grillFinishedInventoryCount');
 const grillFinishedQualityList = el('grillFinishedQualityList');
 const customerServePanel = el('customerServePanel');
@@ -443,9 +474,11 @@ function invokeLockedControl(key, now = performance.now()) {
   lockUntil[key] = performance.now() + 200;
   return true;
 }
-grillWaitingNegima.addEventListener('click', () => invokeLockedControl('grillWaitTray'));
-grillWaitingMomo.addEventListener('click', () => invokeLockedControl('grillWaitMomo'));
-grillWaitingKawa.addEventListener('click', () => invokeLockedControl('grillWaitKawa'));
+for (const [menuId, actions] of Object.entries(grillWaitingActions)) {
+  for (const [seasoning, button] of Object.entries(actions)) {
+    button.addEventListener('click', () => invokeLockedControl(`grillWait:${menuId}:${seasoning}`));
+  }
+}
 const dockShelf = el('dockShelf');
 const dock = createPreparedDock({ container: dockShelf });
 let instantStation = createInstantServiceStation();
@@ -455,8 +488,7 @@ const drinkMode = ['d4', 'd5'].includes(ACTIVE_DAY_ID) ? 'combined' : 'beer';
 const assemblyRecipePicker = el('assemblyRecipePicker');
 for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
   button.addEventListener('click', () => {
-    const seasoning = button.dataset.seasoning ?? 'none';
-    const result = cook.selectRecipe(button.dataset.menuId, seasoning);
+    const result = cook.selectRecipe(button.dataset.menuId);
     if (!result.ok) {
       showHint(result.reason === 'assembly-in-progress'
         ? '지금 조립 중인 꼬치를 먼저 완성하세요'
@@ -468,7 +500,13 @@ for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
   });
 }
 const assemblyTareCursor = el('assemblyTareCursor');
+const assemblyTarePot = el('assemblyTarePot');
+const assemblyTarePotArt = el('assemblyTarePotArt');
+const ASSEMBLY_TARE_ZONE_COUNT = 10;
+const ASSEMBLY_TARE_MIN_COVERAGE = 0.8;
 const assemblyTarePaintedZones = new Set();
+const assemblyTareKeyboardDirections = new Set();
+let assemblyTareModeSelected = false;
 let assemblyTarePointerId = null;
 let assemblyTareLastZone = null;
 
@@ -487,47 +525,122 @@ function assemblyTareTargetBounds() {
 function assemblyTareReady() {
   const progress = cook.assemblyProgress();
   return director.activeScreenId() === 'SCR-SVC-ASSEMBLY'
+    && assemblyTareModeSelected
     && progress.complete
-    && progress.menuId === 'momo'
     && progress.seasoning === 'tare'
-    && progress.tareBrushCount < ASSEMBLY_TARE_COATS;
+    && progress.tarePrepared !== true;
 }
 
-function paintAssemblyTareAt(clientX) {
+function updateAssemblyTareCoverage(coverage) {
+  const normalized = Math.max(0, Math.min(1, Number(coverage) || 0));
+  const percent = Math.round(normalized * 100);
+  el('assemblyTareFill').style.width = `${percent}%`;
+  const meter = el('assemblyTareFill').parentElement;
+  meter.setAttribute('aria-valuenow', String(percent));
+  meter.setAttribute('aria-valuetext', `타레 도포 ${percent}%`);
+}
+
+function paintAssemblyTareAt(clientX, clientY) {
   const bounds = assemblyTareTargetBounds();
+  const insideTarget = clientX >= bounds.left && clientX <= bounds.right
+    && clientY >= bounds.top && clientY <= bounds.bottom;
+  if (!insideTarget) {
+    assemblyTareLastZone = null;
+    return;
+  }
   const position = Math.max(0, Math.min(1, (clientX - bounds.left) / Math.max(1, bounds.right - bounds.left)));
-  const zone = Math.min(9, Math.floor(position * 10));
+  const zone = Math.min(ASSEMBLY_TARE_ZONE_COUNT - 1, Math.floor(position * ASSEMBLY_TARE_ZONE_COUNT));
   const from = assemblyTareLastZone == null ? zone : Math.min(zone, assemblyTareLastZone);
   const to = assemblyTareLastZone == null ? zone : Math.max(zone, assemblyTareLastZone);
   for (let index = from; index <= to; index += 1) assemblyTarePaintedZones.add(index);
   assemblyTareLastZone = zone;
-  assemblyTareCursor.dataset.coverage = String(assemblyTarePaintedZones.size);
+  const coverage = assemblyTarePaintedZones.size / ASSEMBLY_TARE_ZONE_COUNT;
+  assemblyTareCursor.dataset.coverage = String(coverage);
+  updateAssemblyTareCoverage(coverage);
+}
+
+function commitAssemblyTareBrush(coverage) {
+  const result = cook.brushAssemblyTare(coverage);
+  if (!result.ok) {
+    if (result.reason === 'insufficient-coverage') persistFirstOrderRuntime();
+    showHint(result.reason === 'insufficient-coverage'
+      ? '꼬치 전체에 닿도록 붓을 왼쪽 끝부터 오른쪽 끝까지 움직여 주세요'
+      : '타레 소스통을 먼저 선택해 주세요');
+    updateAssemblyTareCoverage(result.coverage ?? coverage);
+    return false;
+  }
+  assemblyTareModeSelected = false;
+  assemblyTareKeyboardDirections.clear();
+  sfx('SFX-TARE-BRUSH');
+  showHint('타레를 고르게 발랐어요 · 꼬치를 눌러 전달 트레이로 옮기세요');
+  assemblyTarePaintedZones.clear();
+  persistFirstOrderRuntime();
+  render();
+  return true;
 }
 
 function finishAssemblyTareBrush(event) {
   if (assemblyTarePointerId == null || (event.pointerId != null && event.pointerId !== assemblyTarePointerId)) return;
+  event.preventDefault?.();
+  event.stopImmediatePropagation?.();
   assemblyTareCursor.classList.remove('is-brushing');
-  const coveredEnough = assemblyTarePaintedZones.size >= 8;
+  const coverage = assemblyTarePaintedZones.size / ASSEMBLY_TARE_ZONE_COUNT;
   assemblyTarePointerId = null;
   assemblyTareLastZone = null;
-  if (!coveredEnough) {
-    showHint('꼬치 전체에 닿도록 붓을 끝까지 움직여 주세요');
+  commitAssemblyTareBrush(coverage);
+}
+
+assemblyTarePot.addEventListener('click', () => {
+  const progress = cook.assemblyProgress();
+  if (!progress.complete) {
+    showHint('꼬치를 먼저 끝까지 조립해 주세요');
     return;
   }
-  const result = cook.brushAssemblyTare();
-  if (!result.ok) return;
-  sfx('SFX-TARE-BRUSH');
-  showHint(result.complete ? '타레 양념을 두 겹 고르게 발랐어요 · 꼬치를 트레이로 옮기세요' : `타레 도포 ${result.brushCount}/${ASSEMBLY_TARE_COATS} · 한 번 더 칠하세요`);
-  assemblyTarePaintedZones.clear();
+  if (progress.tarePrepared) {
+    showHint('타레 도포가 끝났어요 · 꼬치를 눌러 전달 트레이로 옮기세요');
+    return;
+  }
+  if (assemblyTareModeSelected) {
+    const result = cook.selectAssemblySeasoning('salt');
+    if (!result.ok) return;
+    assemblyTareModeSelected = false;
+    assemblyTarePaintedZones.clear();
+    assemblyTareKeyboardDirections.clear();
+    showHint('타레 붓을 내려놓았어요 · 꼬치를 누르면 소금 꼬치로 옮깁니다');
+  } else {
+    const result = progress.seasoning === 'tare'
+      ? { ok: true }
+      : cook.selectAssemblySeasoning('tare');
+    if (!result.ok) return;
+    assemblyTareModeSelected = true;
+    assemblyTarePaintedZones.clear();
+    assemblyTareKeyboardDirections.clear();
+    updateAssemblyTareCoverage(0);
+    showHint('타레 붓을 들었어요 · 조립한 꼬치 위를 한 번 좌우로 끝까지 칠하세요');
+  }
   persistFirstOrderRuntime();
   render();
-}
+});
+
+assemblyTarePot.addEventListener('keydown', (event) => {
+  if (!['ArrowLeft', 'ArrowRight'].includes(event.key) || !assemblyTareReady()) return;
+  event.preventDefault();
+  assemblyTareKeyboardDirections.add(event.key);
+  const offset = event.key === 'ArrowLeft' ? 0 : ASSEMBLY_TARE_ZONE_COUNT / 2;
+  for (let index = 0; index < ASSEMBLY_TARE_ZONE_COUNT / 2; index += 1) {
+    assemblyTarePaintedZones.add(offset + index);
+  }
+  const coverage = assemblyTarePaintedZones.size / ASSEMBLY_TARE_ZONE_COUNT;
+  updateAssemblyTareCoverage(coverage);
+  if (coverage >= ASSEMBLY_TARE_MIN_COVERAGE) commitAssemblyTareBrush(coverage);
+  else showHint('반대 방향 화살표도 눌러 꼬치 전체를 칠하세요');
+});
 
 document.addEventListener('pointermove', (event) => {
   if (!assemblyTareReady()) return;
   assemblyTareCursor.style.left = `${event.clientX}px`;
   assemblyTareCursor.style.top = `${event.clientY}px`;
-  if (event.pointerId === assemblyTarePointerId) paintAssemblyTareAt(event.clientX);
+  if (event.pointerId === assemblyTarePointerId) paintAssemblyTareAt(event.clientX, event.clientY);
 });
 document.addEventListener('pointerdown', (event) => {
   if (event.button !== 0 || event.target !== canvas || !assemblyTareReady()) return;
@@ -540,262 +653,10 @@ document.addEventListener('pointerdown', (event) => {
   assemblyTareLastZone = null;
   assemblyTareCursor.classList.add('is-brushing');
   canvas.setPointerCapture?.(event.pointerId);
-  paintAssemblyTareAt(event.clientX);
+  paintAssemblyTareAt(event.clientX, event.clientY);
 }, true);
 document.addEventListener('pointerup', finishAssemblyTareBrush, true);
 document.addEventListener('pointercancel', finishAssemblyTareBrush, true);
-let D3_TORCH_JOB_ID = restoredFirstOrderRuntime?.d3TorchJobId
-  ?? d3Grill.views()[0]?.id
-  ?? 'D3-MOMO-TARE-DEBUG';
-let d3TorchSlotKey = SLOT_KEYS.includes(restoredFirstOrderRuntime?.d3TorchSlotKey)
-  ? restoredFirstOrderRuntime.d3TorchSlotKey
-  : d3Grill.job(D3_TORCH_JOB_ID) ? SLOT_KEYS[0] : null;
-const d3TorchPanel = el('d3TorchPanel');
-const d3TorchTrack = el('d3TorchTrack');
-const d3TorchCursor = el('d3TorchCursor');
-let d3TorchPointerActive = false;
-let d3TorchLastAt = 0;
-let d3TorchPointerPosition = 0.5;
-let d3TorchFrame = 0;
-let d3KeyboardPosition = 0.5;
-let d3TorchModeSelected = false;
-let d3TorchLastClientX = null;
-function d3TorchTargetBounds() {
-  const center = objectScreenPoint(d3TorchSlotKey ?? SLOT_KEYS[0]);
-  const halfWidth = Math.min(250, window.innerWidth * 0.2);
-  return { left: center.x - halfWidth, right: center.x + halfWidth, top: center.y - 85, bottom: center.y + 85 };
-}
-const d3TorchPositionFromClientX = (clientX) => {
-  const bounds = d3TorchTargetBounds();
-  return Math.max(0, Math.min(1, (clientX - bounds.left) / Math.max(1, bounds.right - bounds.left)));
-};
-
-function renderD3Torch() {
-  const job = d3Grill.job(D3_TORCH_JOB_ID);
-  const d3FeatureOpen = businessSession?.ok === true
-    && businessSession.completed !== true
-    && ['D3', 'D4', 'D5'].includes(businessView()?.dayId);
-  d3TorchPanel.hidden = !d3FeatureOpen || !job;
-  if (!job) {
-    d3TorchCursor.hidden = true;
-    document.body.classList.remove('d3-torch-cursor-ready');
-    return;
-  }
-  const finish = job.finish;
-  const finishLabel = skewerLabel(job.menuId, job.seasoning);
-  el('d3TorchTitle').textContent = `${finishLabel} · 도포·재가열 마감`;
-  const tareCycles = Math.min(finish.tareCoatCount ?? 0, finish.tareReheatCount ?? 0);
-  const tareComplete = tareCycles >= 2;
-  const percent = Math.round(torchReadiness(finish) * 100);
-  const stateLabel = {
-    none: tareComplete ? '타레 완료 · 토치 선택 가능' : `타레 마감 ${tareCycles}/2`,
-    active: '토치 작동 중',
-    under: '마감 부족 · Good',
-    proper: '적정 마감 · Perfect + 불향',
-    over: '과다 마감 · OK',
-    failed: '집중 과열 · Fail',
-  }[finish.torchState];
-  d3TorchPanel.dataset.stateId = {
-    none: tareComplete ? 'D3-MOMO-TARE-COMPLETE' : 'D3-MOMO-TARE-READY',
-    active: 'D3-MOMO-TORCH-ACTIVE',
-    under: 'D3-MOMO-TORCH-UNDER',
-    proper: 'D3-MOMO-TORCH-PROPER',
-    over: 'D3-MOMO-TORCH-OVER',
-    failed: 'D3-MOMO-TORCH-FAILED',
-  }[finish.torchState];
-  el('d3TorchState').textContent = stateLabel;
-  el('d3ApplyTare').disabled = (finish.tareCoatCount ?? 0) > (finish.tareReheatCount ?? 0)
-    || tareComplete
-    || finish.torchState === 'active'
-    || finish.torchCompleted;
-  el('d3ReheatTare').disabled = (finish.tareCoatCount ?? 0) <= (finish.tareReheatCount ?? 0)
-    || tareComplete
-    || finish.torchState === 'active';
-  el('d3SelectTorch').disabled = !tareComplete || finish.torchCompleted;
-  el('d3SelectTorch').setAttribute('aria-pressed', String(d3TorchModeSelected));
-  d3TorchTrack.hidden = true;
-  d3TorchPanel.querySelector('.d3-torch-meter').hidden = !d3TorchModeSelected;
-  d3TorchTrack.disabled = !tareComplete || !d3TorchModeSelected || finish.torchCompleted;
-  el('d3FinishTorch').disabled = !d3TorchModeSelected
-    || finish.torchCompleted
-    || finish.torchTotalMs <= 0;
-  const cursorReady = d3FeatureOpen
-    && tareComplete
-    && d3TorchModeSelected
-    && !finish.torchCompleted
-    && director.activeScreenId() === 'SCR-SVC-GRILL';
-  d3TorchCursor.hidden = !cursorReady;
-  document.body.classList.toggle('d3-torch-cursor-ready', cursorReady);
-  el('d3RetrieveMomo').disabled = !tareComplete || finish.torchState === 'active';
-  el('d3TorchFill').style.width = `${percent}%`;
-  el('d3TorchCoverage').style.width = `${percent}%`;
-  const meter = d3TorchPanel.querySelector('[role="progressbar"]');
-  meter.setAttribute('aria-valuenow', String(percent));
-  meter.setAttribute('aria-valuetext', `불향 완성도 ${percent}%`);
-  el('d3TorchWarning').textContent = finish.torchFocusMs >= D3_TORCH_RULES.focusWarnMs && !finish.torchCompleted
-    ? '한 지점이 과열되고 있어요. 좌우로 이동하세요.'
-    : finish.torchState === 'failed' ? '집중 과열로 품질이 Fail이 됐어요.' : '';
-}
-
-function ensureD3TorchActive() {
-  const job = d3Grill.job(D3_TORCH_JOB_ID);
-  if (!job || job.finish.torchCompleted) return false;
-  if (job.finish.torchState !== 'active') {
-    const started = d3Grill.beginTorch(D3_TORCH_JOB_ID);
-    if (!started.ok) return false;
-    sfx('SFX-TORCH-IGNITE');
-    loopOn('SFX-TORCH-LOOP');
-    loopOn('SFX-TORCH-SWEEP');
-  }
-  return true;
-}
-
-function sweepD3Torch(position, deltaMs) {
-  if (!ensureD3TorchActive()) return;
-  d3Grill.sweepTorch(D3_TORCH_JOB_ID, { position, deltaMs: Math.max(16, Math.min(250, deltaMs)) });
-  // 훑기 소리는 파일이 아니라 위치로 변조한다. 가장자리로 갈수록 살짝 높아진다.
-  loopRate('SFX-TORCH-SWEEP', 0.9 + Math.abs(position - 0.5) * 0.4);
-  const focusMs = d3Grill.job(D3_TORCH_JOB_ID)?.finish.torchFocusMs ?? 0;
-  // 과열은 한 번의 경고로 끝낸다. 화면 문구가 사라지면 다음 과열에서 다시 운다.
-  if (focusMs >= D3_TORCH_RULES.focusWarnMs) sfxOnce('SFX-TORCH-OVERHEAT', 'focus');
-  else gameAudio()?.resetOnce('SFX-TORCH-OVERHEAT:focus');
-  persistFirstOrderRuntime();
-  renderD3Torch();
-}
-
-function finishD3TorchInput() {
-  loopOff('SFX-TORCH-SWEEP');
-  loopOff('SFX-TORCH-LOOP');
-  sfx('SFX-TORCH-EXTINGUISH');
-  d3TorchPointerActive = false;
-  cancelAnimationFrame(d3TorchFrame);
-  d3TorchFrame = 0;
-  d3TorchCursor.classList.remove('is-firing');
-  persistFirstOrderRuntime();
-  renderD3Torch();
-}
-
-el('d3FinishTorch').addEventListener('click', () => {
-  const result = d3Grill.finishTorch(D3_TORCH_JOB_ID);
-  if (!result.ok) return;
-  d3TorchModeSelected = false;
-  sfx('SFX-TORCH-EXTINGUISH');
-  showHint(`토치 마감 완료 · ${result.quality.grade}`);
-  persistFirstOrderRuntime();
-  renderD3Torch();
-});
-
-el('d3ApplyTare').addEventListener('click', () => {
-  const result = d3Grill.applyTare(D3_TORCH_JOB_ID);
-  if (result.ok) {
-    sfx('SFX-TARE-BRUSH');
-    const coats = d3Grill.job(D3_TORCH_JOB_ID)?.finish.tareCoatCount ?? 0;
-    showHint(`타레 ${coats}회 도포 완료 · 이제 그릴에서 재가열하세요`);
-  }
-  persistFirstOrderRuntime();
-  renderD3Torch();
-});
-el('d3ReheatTare').addEventListener('click', () => {
-  const result = d3Grill.reheatTare(D3_TORCH_JOB_ID);
-  if (result.ok) {
-    sfx('SFX-TARE-SIZZLE');
-    const cycles = Math.min(result.tareCoatCount, result.tareReheatCount);
-    showHint(cycles >= 2
-      ? '타레 마감 완료 · 바로 회수하거나 별도로 토치를 선택하세요'
-      : '재가열 완료 · Perfect를 위해 타레를 한 번 더 바르세요');
-  }
-  persistFirstOrderRuntime();
-  renderD3Torch();
-});
-el('d3SelectTorch').addEventListener('click', () => {
-  d3TorchModeSelected = !d3TorchModeSelected;
-  showHint(d3TorchModeSelected ? '토치 선택 · 꼬치 위를 누른 채 좌우로 훑으세요' : '토치 선택을 해제했습니다');
-  renderD3Torch();
-});
-d3TorchTrack.addEventListener('pointerdown', (event) => {
-  if (!ensureD3TorchActive()) return;
-  d3TorchPointerActive = true;
-  d3TorchLastAt = performance.now();
-  d3TorchTrack.setPointerCapture?.(event.pointerId);
-  d3TorchPointerPosition = (event.clientX - d3TorchTrack.getBoundingClientRect().left) / d3TorchTrack.clientWidth;
-  sweepD3Torch(d3TorchPointerPosition, 16);
-  cancelAnimationFrame(d3TorchFrame);
-  d3TorchFrame = requestAnimationFrame(tickD3CursorTorch);
-});
-d3TorchTrack.addEventListener('pointermove', (event) => {
-  if (!d3TorchPointerActive) return;
-  d3TorchPointerPosition = (event.clientX - d3TorchTrack.getBoundingClientRect().left) / d3TorchTrack.clientWidth;
-});
-d3TorchTrack.addEventListener('pointerup', finishD3TorchInput);
-d3TorchTrack.addEventListener('pointercancel', finishD3TorchInput);
-document.addEventListener('pointermove', (event) => {
-  if (d3TorchCursor.hidden) return;
-  d3TorchCursor.style.left = `${event.clientX}px`;
-  d3TorchCursor.style.top = `${event.clientY}px`;
-  d3TorchPointerPosition = d3TorchPositionFromClientX(event.clientX);
-  if (d3TorchLastClientX != null && Math.abs(event.clientX - d3TorchLastClientX) > 2) {
-    d3TorchCursor.dataset.direction = event.clientX < d3TorchLastClientX ? 'left' : 'right';
-  }
-  d3TorchLastClientX = event.clientX;
-});
-function tickD3CursorTorch(now) {
-  if (!d3TorchPointerActive) return;
-  sweepD3Torch(d3TorchPointerPosition, now - d3TorchLastAt);
-  d3TorchLastAt = now;
-  d3TorchFrame = requestAnimationFrame(tickD3CursorTorch);
-}
-document.addEventListener('pointerdown', (event) => {
-  if (event.button !== 0 || d3TorchCursor.hidden) return;
-  if (event.target !== canvas) return;
-  if (event.target.closest?.('button, [role="button"], .d3-torch-panel, #svcBar, .quick-nav')) return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  const bounds = d3TorchTargetBounds();
-  if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
-    showHint('불꽃을 그릴 위 타레 모모에 가까이 대세요');
-    return;
-  }
-  if (!ensureD3TorchActive()) return;
-  d3TorchPointerActive = true;
-  d3TorchLastAt = performance.now();
-  d3TorchPointerPosition = d3TorchPositionFromClientX(event.clientX);
-  d3TorchCursor.classList.add('is-firing');
-  sweepD3Torch(d3TorchPointerPosition, 16);
-  d3TorchFrame = requestAnimationFrame(tickD3CursorTorch);
-}, true);
-document.addEventListener('pointerup', (event) => {
-  if (!d3TorchPointerActive) return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  finishD3TorchInput();
-}, true);
-document.addEventListener('pointercancel', finishD3TorchInput, true);
-d3TorchTrack.addEventListener('keydown', (event) => {
-  if (event.code === 'Space') {
-    event.preventDefault();
-    ensureD3TorchActive();
-    renderD3Torch();
-  } else if (['ArrowLeft', 'ArrowRight'].includes(event.code) && d3Grill.job(D3_TORCH_JOB_ID)?.finish.torchState === 'active') {
-    event.preventDefault();
-    d3KeyboardPosition = Math.max(0.05, Math.min(0.95, d3KeyboardPosition + (event.code === 'ArrowLeft' ? -0.2 : 0.2)));
-    sweepD3Torch(d3KeyboardPosition, 200);
-  }
-});
-d3TorchTrack.addEventListener('keyup', (event) => {
-  if (event.code === 'Space') finishD3TorchInput();
-});
-el('d3RetrieveMomo').addEventListener('click', () => {
-  const result = d3Grill.retrieve(D3_TORCH_JOB_ID);
-  if (!result.ok) return;
-  d3TorchSlotKey = null;
-  const itemLabel = skewerLabel(result.item.menuId, result.item.seasoning);
-  dock.add({ menuId: result.item.menuId, menu: itemLabel, seasoning: result.item.seasoning, quality: result.item.quality.grade, good: result.item.quality.good });
-  D3_TORCH_JOB_ID = d3Grill.views()[0]?.id ?? 'D3-MOMO-TARE-DEBUG';
-  if (d3Grill.job(D3_TORCH_JOB_ID)) d3TorchSlotKey = SLOT_KEYS[0];
-  persistFirstOrderRuntime();
-  showHint(result.item.quality.smokyBonus ? `불향 ${itemLabel} 완성 · 준비 목록에 올렸어요` : `${itemLabel} 완성품을 준비 목록에 올렸어요`);
-  render();
-});
 if (restoredFirstOrderRuntime?.dock) dock.restore(restoredFirstOrderRuntime.dock);
 const pour = createDrinkPour();
 let beerLiquid = null;
@@ -825,9 +686,6 @@ function persistFirstOrderRuntime() {
       stateVersion: 1,
       dayId: ACTIVE_DAY_ID,
       cook: cook.snapshot(performance.now()),
-      d3Grill: d3Grill.snapshot(),
-      d3TorchJobId: D3_TORCH_JOB_ID,
-      d3TorchSlotKey,
       dock: dock.snapshot(),
       glassPlaced,
       highball: highballStation.snapshot(),
@@ -1048,10 +906,37 @@ function confirmServe(all) {
   render();
 }
 
+function acceptGroupOrders(seat) {
+  const view = businessView();
+  const groupSeats = view?.seats.filter((candidate) => (
+    candidate.occupied && candidate.groupId === seat.groupId
+  )) ?? [];
+  if (groupSeats.length < 2 || !groupSeats.every((candidate) => candidate.canOrder)) {
+    showHint('동행이 주문을 고르는 중입니다');
+    return false;
+  }
+  const uniqueOrderIds = [...new Set(groupSeats.map((candidate) => candidate.orderId).filter(Boolean))];
+  if (view.limits.activeOrderCount + uniqueOrderIds.length > view.limits.maxActiveOrders) {
+    showHint('현재 처리 중인 주문을 먼저 마무리하세요');
+    return false;
+  }
+  const results = uniqueOrderIds.map((orderId) => dispatchBusiness(D1_UI_INTENT.ACCEPT_ORDER, {
+    orderId,
+  }));
+  if (!results.every((result) => result.ok && result.applied)) return false;
+  persistFirstOrderRuntime();
+  showHint('그룹 주문 접수');
+  return true;
+}
+
 function activateSeat(seatId) {
   const seat = seatView(seatId);
   if (!seat) return;
   if (seat.canOrder) {
+    if (seat.groupId) {
+      acceptGroupOrders(seat);
+      return;
+    }
     const result = dispatchBusiness(D1_UI_INTENT.ACCEPT_ORDER, { seatId });
     if (result.ok) {
       persistFirstOrderRuntime();
@@ -1113,30 +998,32 @@ function elapsedLabel(value) {
 }
 
 function grillStatusCopy(slot) {
+  const menuLabel = MENU_META[slot.menuId]?.label ?? '꼬치';
+  const seasonedLabel = `${slot.seasoning === 'tare' ? '타레' : '소금'} ${menuLabel}`;
   if (slot.status === 'staged') {
     return {
-      face: '저장 상태 복구 중',
+      face: `${seasonedLabel} · 저장 상태 복구 중`,
       icon: { symbol: '·', className: 'airborne' },
       action: '앞면 조리를 다시 시작합니다',
     };
   }
   if (slot.flipping) {
     return {
-      face: '뒤집는 중',
+      face: `${seasonedLabel} · 뒤집는 중`,
       icon: { symbol: '↻', className: 'airborne' },
       action: '꼬치가 돌아가는 중입니다',
     };
   }
   if (slot.nextAction === COOK_SLOT_NEXT_ACTION.RETRIEVE) {
     return {
-      face: '양면 굽기 완료',
+      face: `${seasonedLabel} · 양면 굽기 완료`,
       icon: { symbol: '✓', className: 'back' },
       action: '다 익었어요 · 꼬치를 눌러 꺼내세요',
     };
   }
 
   const flipped = slot.contactFace === 'back';
-  const face = flipped ? '뒤집은 면 굽는 중' : '첫 면 굽는 중';
+  const face = `${seasonedLabel} · ${flipped ? '뒤집은 면 굽는 중' : '첫 면 굽는 중'}`;
   const icon = flipped
     ? { symbol: 'Ⅱ', className: 'back' }
     : { symbol: 'Ⅰ', className: 'front' };
@@ -1943,7 +1830,6 @@ function render() {
   renderReceipts();
   renderOrderHud();
   renderBusiness();
-  renderD3Torch();
   updateDrinkPanel(director.activeScreenId());
   updateInstantPanel(director.activeScreenId());
   syncCustomers();
@@ -1954,6 +1840,39 @@ function render() {
   businessRenderDue = false;
 }
 
+const ASSEMBLY_TARE_TINT = new THREE.Color(0x5e281a);
+
+function setAssemblyTareTint(instance, amount, { ingredientsOnly = false } = {}) {
+  const normalized = Math.max(0, Math.min(1, Number(amount) || 0));
+  if (typeof instance?.setTare === 'function') {
+    instance.setTare(normalized);
+    return;
+  }
+  instance?.root?.traverse((node) => {
+    if (!node.isMesh) return;
+    if (ingredientsOnly) {
+      let parent = node;
+      let ingredient = false;
+      while (parent && parent !== instance.root) {
+        if (/^(chicken|green-onion)-\d{2}$/.test(parent.name)) {
+          ingredient = true;
+          break;
+        }
+        parent = parent.parent;
+      }
+      if (!ingredient) return;
+    }
+    for (const material of (Array.isArray(node.material) ? node.material : [node.material])) {
+      if (!material?.color) continue;
+      material.userData.assemblyTareBaseColor ??= material.color.clone();
+      material.color.copy(material.userData.assemblyTareBaseColor).lerp(
+        ASSEMBLY_TARE_TINT,
+        normalized * 0.22,
+      );
+    }
+  });
+}
+
 function syncAssemblyVisual() {
   const onAssembly = director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
   const selectedMenuId = cook.selectedMenuId();
@@ -1961,6 +1880,7 @@ function syncAssemblyVisual() {
   const momoReady = momoRuntime.status === 'approved';
   const kawaReady = kawaRuntime.status === 'approved';
   const progress = cook.assemblyProgress();
+  const assembledTare = progress.complete && progress.tarePrepared;
   if (assemblyNegimaInstances.build) {
     // 네기마 조립 compositor가 가진 온전한 3D 대나무 꼬치를 모든 꼬치 메뉴의 공통
     // 베이스로 유지한다. 모모·토리카와 단계 PNG는 재료만 얹고 자체 막대는 그리지 않는다.
@@ -1969,24 +1889,35 @@ function syncAssemblyVisual() {
       selectedMenuId === 'negima' ? progress.index : 0,
     );
     assemblyNegimaInstances.build.holder.visible = onAssembly && negimaReady && usesCommonSkewerBase;
+    setAssemblyTareTint(
+      assemblyNegimaInstances.build,
+      selectedMenuId === 'negima' && assembledTare ? 1 : 0,
+      { ingredientsOnly: true },
+    );
   }
   if (momoInstances.build) {
     momoInstances.build.setIngredientCount(progress.index);
     momoInstances.build.holder.visible = onAssembly && momoReady && selectedMenuId === 'momo';
+    setAssemblyTareTint(momoInstances.build, selectedMenuId === 'momo' && assembledTare ? 1 : 0);
   }
   if (kawaInstances.build) {
     kawaInstances.build.setIngredientCount(progress.index);
     kawaInstances.build.holder.visible = onAssembly && kawaReady && selectedMenuId === 'kawa';
+    setAssemblyTareTint(kawaInstances.build, selectedMenuId === 'kawa' && assembledTare ? 1 : 0);
   }
   const waitingItems = cook.waitingItems();
+  const waitingProducts = cook.waitingProducts();
   assemblyNegimaInstances.tray.forEach((instance, index) => {
     instance.holder.visible = onAssembly && negimaReady && waitingItems[index] === 'negima';
+    setAssemblyTareTint(instance, waitingProducts[index]?.seasoning === 'tare' ? 1 : 0);
   });
   momoInstances.tray.forEach((instance, index) => {
     instance.holder.visible = onAssembly && momoReady && waitingItems[index] === 'momo';
+    setAssemblyTareTint(instance, waitingProducts[index]?.seasoning === 'tare' ? 1 : 0);
   });
   kawaInstances.tray.forEach((instance, index) => {
     instance.holder.visible = onAssembly && kawaReady && waitingItems[index] === 'kawa';
+    setAssemblyTareTint(instance, waitingProducts[index]?.seasoning === 'tare' ? 1 : 0);
   });
 }
 
@@ -2010,40 +1941,47 @@ function assemblyInstanceGeometry(instance) {
 function renderGrillWaitingControl(slotViews) {
   const onGrill = director.activeScreenId() === 'SCR-SVC-GRILL';
   const onCustomers = director.activeScreenId() === 'SCR-SVC-CUSTOMERS';
-  const waitingByMenu = {
-    negima: cook.waitingCount('negima'),
-    momo: cook.waitingCount('momo'),
-    kawa: cook.waitingCount('kawa'),
-  };
+  const waitingByMenu = Object.fromEntries(['negima', 'momo', 'kawa'].map((menuId) => [menuId, {
+    salt: cook.waitingCount(menuId, 'salt'),
+    tare: cook.waitingCount(menuId, 'tare'),
+  }]));
   const hasEmptySlot = slotViews.some((slot) => slot.status === 'empty');
+  const tareUnlocked = ['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID);
   grillInventory.hidden = !onGrill;
   // The prepared inventory is shared state, but selecting it is a customer-station action.
   // Keep the stock while hiding the service-counter art from every work station.
   dockShelf.classList.toggle('station-context-hidden', !onCustomers);
   dockShelf.setAttribute('aria-hidden', String(!onCustomers));
   const syncCard = (menuId, card, countEl, hintEl) => {
-    const count = waitingByMenu[menuId];
-    const label = skewerLabel(menuId);
+    const counts = waitingByMenu[menuId];
+    const count = counts.salt + counts.tare;
+    const label = MENU_META[menuId]?.label ?? '꼬치';
     card.hidden = menuId === 'kawa'
       ? ACTIVE_DAY_ID !== 'd5'
       : menuId === 'momo' && ACTIVE_DAY_ID === 'd1';
-    card.disabled = !onGrill || count === 0 || !hasEmptySlot;
+    const disabled = !onGrill || count === 0 || !hasEmptySlot;
+    card.classList.toggle('is-disabled', disabled);
     card.dataset.waitingCount = String(count);
     card.dataset.hasEmptySlot = String(hasEmptySlot);
     countEl.textContent = `× ${count}`;
     hintEl.textContent = count === 0
       ? `조립대에서 ${label}를 완성해 주세요`
       : hasEmptySlot
-        ? '클릭하여 첫 빈 칸에 한 개 올리기'
+        ? tareUnlocked ? `소금 ${counts.salt} · 타레 ${counts.tare}` : `소금 ${counts.salt}`
         : '빈 그릴 칸이 생기면 배치할 수 있습니다';
-    card.setAttribute(
-      'aria-label',
-      count === 0
-        ? `${label}. 대기 중인 꼬치 없음.`
+    for (const [seasoning, button] of Object.entries(grillWaitingActions[menuId])) {
+      const seasoningCount = counts[seasoning];
+      button.hidden = seasoning === 'tare' && !tareUnlocked;
+      button.disabled = disabled || seasoningCount === 0;
+      button.dataset.waitingCount = String(seasoningCount);
+      grillWaitingActionCounts[menuId][seasoning].textContent = `× ${seasoningCount}`;
+      const seasoningLabel = seasoning === 'tare' ? '타레' : '소금';
+      button.setAttribute('aria-label', seasoningCount === 0
+        ? `${seasoningLabel} ${label}. 대기 중인 꼬치 없음.`
         : hasEmptySlot
-          ? `${label}. 대기 ${count}개. 다음 한 개를 첫 빈 그릴 칸에 올리기.`
-          : `${label}. 대기 ${count}개. 빈 그릴 칸 없음.`,
-    );
+          ? `${seasoningLabel} ${label}. 대기 ${seasoningCount}개. 첫 빈 그릴 칸에 올리기.`
+          : `${seasoningLabel} ${label}. 대기 ${seasoningCount}개. 빈 그릴 칸 없음.`);
+    }
   };
   syncCard('negima', grillWaitingNegima, grillWaitingNegimaCount, grillWaitingNegimaHint);
   syncCard('momo', grillWaitingMomo, grillWaitingMomoCount, grillWaitingMomoHint);
@@ -2140,13 +2078,11 @@ function renderReceipts() {
     ol.appendChild(progress);
   }
   const w = document.createElement('li');
-  const waiting = [
-    ['네기마', cook.waitingCount('negima')],
-    ['모모', cook.waitingCount('momo')],
-    ['토리카와', cook.waitingCount('kawa')],
-  ].filter(([, count]) => count > 0);
+  const waiting = cook.waitingProducts().map((item) => skewerLabel(item.menuId, item.seasoning));
+  const waitingCounts = new Map();
+  for (const label of waiting) waitingCounts.set(label, (waitingCounts.get(label) ?? 0) + 1);
   w.textContent = waiting.length
-    ? waiting.map(([label, count]) => `${label} ${count}`).join(' · ')
+    ? [...waitingCounts].map(([label, count]) => `${label} ${count}`).join(' · ')
     : '대기 0';
   w.dataset.testid = 'wait-count';
   w.style.width = 'auto';
@@ -2189,6 +2125,45 @@ function syncCustomerAmbience(view) {
   previousOccupiedSeatCount = occupied;
 }
 
+function renderAssemblyTareControl(activeDayFeatureOpen) {
+  const progress = cook.assemblyProgress();
+  const unlocked = activeDayFeatureOpen
+    && ['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
+    && director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
+  const panel = el('assemblyTarePanel');
+  panel.hidden = !unlocked;
+  if (!unlocked) {
+    assemblyTareModeSelected = false;
+    assemblyTarePointerId = null;
+    assemblyTareLastZone = null;
+    assemblyTarePaintedZones.clear();
+    assemblyTareKeyboardDirections.clear();
+    assemblyTareCursor.classList.remove('is-brushing');
+    assemblyTareCursor.hidden = true;
+    document.body.classList.remove('assembly-tare-cursor-ready');
+    return;
+  }
+
+  if (!progress.complete || progress.tarePrepared) assemblyTareModeSelected = false;
+  const ready = progress.complete && !progress.tarePrepared;
+  assemblyTarePot.disabled = !ready;
+  assemblyTarePot.setAttribute('aria-pressed', String(assemblyTareModeSelected));
+  assemblyTarePotArt.src = assemblyTareModeSelected
+    ? '/assets/campaign/d3/prop-tare-sauce-pot-open-r2-b1.png'
+    : '/assets/campaign/d3/prop-tare-sauce-pot-r2-b1.png';
+  assemblyTareCursor.hidden = !assemblyTareReady();
+  document.body.classList.toggle('assembly-tare-cursor-ready', assemblyTareReady());
+
+  const status = el('assemblyTareProgress');
+  if (!progress.complete) status.textContent = '꼬치를 먼저 조립하세요';
+  else if (progress.tarePrepared) status.textContent = '타레 도포 완료 · 꼬치를 눌러 이동';
+  else if (assemblyTareModeSelected) status.textContent = '꼬치 위를 한 번 좌우로 칠하세요';
+  else status.textContent = '소금으로 옮기거나 타레를 선택하세요';
+  if (assemblyTarePointerId == null) {
+    updateAssemblyTareCoverage(progress.tarePrepared ? 1 : (progress.tareCoverage ?? 0));
+  }
+}
+
 function renderBusiness() {
   const view = businessView();
   syncCustomerAmbience(view);
@@ -2202,21 +2177,11 @@ function renderBusiness() {
   for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
     button.hidden = (button.dataset.d3Only === 'true' && !['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID))
       || (button.dataset.d5Only === 'true' && ACTIVE_DAY_ID !== 'd5');
-    const selected = button.dataset.menuId === cook.selectedMenuId()
-      && (button.dataset.seasoning ?? 'none') === cook.selectedSeasoning();
+    const selected = button.dataset.menuId === cook.selectedMenuId();
     button.setAttribute('aria-pressed', String(selected));
     button.disabled = !selected && (cook.assemblyIndex() > 0 || cook.assemblyComplete());
   }
-  const assemblyProgress = cook.assemblyProgress();
-  const tareAssemblyOpen = recipePickerOpen
-    && assemblyProgress.complete
-    && assemblyProgress.menuId === 'momo'
-    && assemblyProgress.seasoning === 'tare';
-  el('assemblyTarePanel').hidden = !tareAssemblyOpen;
-  el('assemblyTareProgress').textContent = `도포 ${assemblyProgress.tareBrushCount}/${ASSEMBLY_TARE_COATS}`;
-  el('assemblyTareFill').style.width = `${(assemblyProgress.tareBrushCount / ASSEMBLY_TARE_COATS) * 100}%`;
-  assemblyTareCursor.hidden = !tareAssemblyOpen || assemblyProgress.tareBrushCount >= ASSEMBLY_TARE_COATS;
-  document.body.classList.toggle('assembly-tare-cursor-ready', !assemblyTareCursor.hidden);
+  renderAssemblyTareControl(activeDayFeatureOpen);
   el('businessClock').textContent = view?.clock?.label ?? '--:--';
   const manuallyPaused = runtimeSuspensionReasons.has('manual-pause');
   el('businessPhase').textContent = manuallyPaused
@@ -2296,7 +2261,10 @@ function renderRecipeBook() {
     : ACTIVE_DAY_ID === 'd4'
       ? ['negima', 'momo', 'beer', 'cabbage-salad', 'highball']
     : ['negima', 'momo', 'beer'];
-  for (const entry of recipeBookEntries({ menuIds })) {
+  for (const entry of recipeBookEntries({
+    menuIds,
+    tareAvailable: ['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID),
+  })) {
     const article = document.createElement('article');
     article.className = 'recipe-book-entry';
     article.dataset.testid = `recipe-book-${entry.menuId}`;
@@ -2507,6 +2475,23 @@ const GLASS_RACK_SFX_SEC = 2;
 function handle(key, now) {
   const si = slotIndexOf(key);
   if (si >= 0) { clickGrillSlot(si, now); return; }
+  if (key.startsWith('grillWait:')) {
+    const [, menuId, seasoning] = key.split(':');
+    const r = cook.placeToGrill(now, menuId, seasoning);
+    const label = skewerLabel(menuId, seasoning);
+    if (!r.ok) {
+      const noWaiting = ['no-waiting', 'no-menu-waiting', 'no-seasoning-waiting'].includes(r.reason);
+      showHint(noWaiting ? `대기 중인 ${label}가 없어요` : '빈 그릴 칸이 없어요');
+    } else {
+      sfx('SFX-GRILL-PLACE-METAL');
+      sfx('SFX-GRILL-PLACE-SIZZLE', { maxSec: GRILL_CUE_SEC });
+      showHint(`${r.slot + 1}번에 ${label}를 올렸어요 · 앞면부터 익습니다`);
+    }
+    persistFirstOrderRuntime();
+    syncRiskCount(now);
+    render();
+    return;
+  }
   switch (key) {
     case 'glassRack':
       // 납품 음원이 연출보다 길어 잔 하나 놓는 데 계속 울린다. 2초에서 끊는다.
@@ -2530,7 +2515,9 @@ function handle(key, now) {
         if (r.completed) {
           sfx('SFX-ASM-COMPLETE');
           persistFirstOrderRuntime();
-          showHint(`${skewerLabel(r.menuId)} 완성 · 꼬치를 눌러 오른쪽 트레이로 옮기세요`);
+          showHint(['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
+            ? `${skewerLabel(r.menuId)} 조립 완료 · 소금은 꼬치를 눌러 이동, 타레는 오른쪽 소스통을 선택하세요`
+            : `${skewerLabel(r.menuId)} 완성 · 꼬치를 눌러 오른쪽 트레이로 옮기세요`);
         }
       }
       break;
@@ -2539,29 +2526,15 @@ function handle(key, now) {
       const r = cook.transferAssembly();
       if (!r.ok) {
         showHint(r.reason === 'tare-brush-required'
-          ? '타레 모모에 양념장을 먼저 고르게 발라 주세요'
+          ? '타레 붓으로 꼬치 전체를 한 번 좌우로 칠해 주세요'
           : '아직 완성된 꼬치가 없어요');
       } else {
+        assemblyTareModeSelected = false;
+        assemblyTarePaintedZones.clear();
+        assemblyTareKeyboardDirections.clear();
         persistFirstOrderRuntime();
-        showHint(`${skewerLabel(r.menuId)} · 전달 트레이 이동 완료`);
+        showHint(`${skewerLabel(r.menuId, r.seasoning)} · 전달 트레이 이동 완료`);
       }
-      break;
-    }
-    case 'grillWaitTray':
-    case 'grillWaitMomo':
-    case 'grillWaitKawa': {
-      const menuId = key === 'grillWaitMomo' ? 'momo' : key === 'grillWaitKawa' ? 'kawa' : 'negima';
-      const r = cook.placeToGrill(now, menuId);
-      if (!r.ok) {
-        const noWaiting = ['no-waiting', 'no-menu-waiting'].includes(r.reason);
-        showHint(noWaiting ? `대기 중인 ${skewerLabel(menuId)}가 없어요` : '빈 그릴 칸이 없어요');
-      } else {
-        sfx('SFX-GRILL-PLACE-METAL');
-        sfx('SFX-GRILL-PLACE-SIZZLE', { maxSec: GRILL_CUE_SEC });
-        showHint(`${r.slot + 1}번 ${skewerLabel(menuId)} 앞면 조리 시작 · 다른 꼬치와 독립적으로 익습니다`);
-      }
-      persistFirstOrderRuntime();
-      syncRiskCount(now);
       break;
     }
     case 'grillFinishedTray':
@@ -2580,32 +2553,12 @@ function clickGrillSlot(i, now) {
   const r = cook.clickSlot(i, now);
   if (r.retrieved) {
     const menuId = r.menuId ?? 'negima';
-    const label = skewerLabel(menuId);
+    const label = skewerLabel(menuId, r.seasoning);
     sfx('SFX-GRILL-RETRIEVE');
     sfx(r.quality?.good ? 'SFX-JUDGE-PERFECT' : 'SFX-JUDGE-FAIL');
-    const needsTareFinish = ['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
-      && ['momo', 'kawa'].includes(menuId)
-      && r.seasoning === 'tare';
-    if (needsTareFinish) {
-      d3Grill.stageCookedItem({
-        id: r.id,
-        menuId,
-        seasoning: r.seasoning,
-        bothFacesCooked: true,
-        tarePrepared: r.tarePrepared,
-        baseQuality: r.quality,
-      });
-      if (!d3Grill.job(D3_TORCH_JOB_ID)) {
-        D3_TORCH_JOB_ID = r.id;
-        d3TorchSlotKey = SLOT_KEYS[i];
-      }
-    } else {
-      dock.add({ menuId, menu: label, seasoning: r.seasoning ?? null, quality: r.quality.grade, good: r.quality.good, zone: 'food' });
-    }
+    dock.add({ menuId, menu: label, seasoning: r.seasoning ?? null, quality: r.quality.grade, good: r.quality.good, zone: 'food' });
     persistFirstOrderRuntime();
-    showHint(needsTareFinish
-      ? `구운 ${label}를 도포·재가열 마감대로 옮겼어요`
-      : `완성 ${label}가 오른쪽 종류·품질별 목록에 추가됐어요`);
+    showHint(`완성 ${label}가 오른쪽 종류·품질별 목록에 추가됐어요`);
   }
   else if (r.flipped) {
     sfx('SFX-GRILL-FLIP');
@@ -2635,19 +2588,6 @@ function grillNegimaStage(view) {
   if (view.doneness === 'over') return 'overcooked';
   if (view.doneness === 'burnt') return 'burnt';
   return 'cooking';
-}
-
-function d3TorchMomoStage(job) {
-  if (!job?.finish) return 'proper';
-  const finish = job.finish;
-  if (finish.torchCompleted) {
-    if (finish.torchState === 'failed') return 'burnt';
-    if (finish.torchState === 'over') return 'overcooked';
-    return 'proper';
-  }
-  if (finish.torchFocusMs >= D3_TORCH_RULES.focusFailMs) return 'burnt';
-  if (finish.torchFocusMs >= D3_TORCH_RULES.focusWarnMs) return 'overcooked';
-  return 'proper';
 }
 
 // 뒤집는 동안에는 단계 표시를 고정한다. 회전 중 판정이 잠깐 비조리로 보여 'raw'로 튀면
@@ -2805,22 +2745,7 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
   updateGrillStateCues(views);
   for (const key of SLOT_KEYS) {
     const slotView = views[slotIndexOf(key)];
-    const d3TorchJob = key === d3TorchSlotKey ? d3Grill.job(D3_TORCH_JOB_ID) : null;
-    const stagedD3Skewer = d3TorchJob != null;
-    // Tare and torch finishing happen on the grill. Keep the cooked skewer visible
-    // after the cook station hands it to the D3 finishing workflow.
-    const v = stagedD3Skewer && (!slotView || slotView.status === 'empty')
-      ? {
-          status: 'back',
-          cooking: true,
-          menuId: d3TorchJob.menuId,
-          doneness: 'perfect',
-          faceElapsedSec: 3,
-          visualRotationRad: 0,
-          orientationFaceDown: 'back',
-          flipping: false,
-        }
-      : slotView;
+    const v = slotView;
     const mesh = R.objectMesh[key];
     if (!mesh) continue;
     const g = grillMats[key];
@@ -2829,9 +2754,10 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
       g.setTime(now / 1000);
       for (const [param, value] of Object.entries(d1SecondFaceR3Params(v))) g.setParam(param, value);
       g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
+      g.setTare(v?.tarePrepared ? 0.34 : 0);
     }
     const visibleStage = grillNegimaStage(v);
-    const skewerVisibleStage = stagedD3Skewer ? d3TorchMomoStage(d3TorchJob) : visibleStage;
+    const skewerVisibleStage = visibleStage;
     mesh.userData.grillBaseQuaternion ??= mesh.quaternion.clone();
     mesh.quaternion.copy(mesh.userData.grillBaseQuaternion).multiply(
       grillFlipQuaternion.setFromAxisAngle(GRILL_FLIP_AXIS, v?.visualRotationRad ?? 0),
@@ -2877,6 +2803,7 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
       if (!v?.flipping) {
         momoStageBySlot[key] = skewerVisibleStage;
         momoInstance.setStage(skewerVisibleStage);
+        momoInstance.setTare(v?.tarePrepared ? 1 : 0);
         momoInstance.flipPivot.scale.x = v?.orientationFaceDown === 'back' ? -1 : 1;
       }
       momoInstance.flipPivot.rotation.y = 0;
@@ -2893,6 +2820,7 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
       if (!v?.flipping) {
         kawaStageBySlot[key] = skewerVisibleStage;
         kawaInstance.setStage(skewerVisibleStage);
+        kawaInstance.setTare(v?.tarePrepared ? 1 : 0);
         kawaInstance.flipPivot.scale.x = v?.orientationFaceDown === 'back' ? -1 : 1;
       }
       kawaInstance.flipPivot.rotation.y = 0;
@@ -2932,6 +2860,7 @@ buildQuickNav();
 el('navLeft').addEventListener('click', () => director.left(performance.now()));
 el('navRight').addEventListener('click', () => director.right(performance.now()));
 window.addEventListener('keydown', (e) => {
+  if (e.defaultPrevented) return;
   if (e.key === 'ArrowLeft') director.left(performance.now());
   else if (e.key === 'ArrowRight') director.right(performance.now());
 });
@@ -3023,20 +2952,6 @@ async function bootBusinessDay() {
     } else {
       businessPort = businessSession.port;
       reportedRiskCount = businessView()?.limits.riskProcessCount ?? 0;
-      if (developmentStartDay === 'd3' && developmentTestFlow !== 'assembly-tare' && !d3Grill.job(D3_TORCH_JOB_ID)) {
-        d3Grill.stageCookedItem({
-          id: D3_TORCH_JOB_ID,
-          menuId: 'momo',
-          seasoning: 'tare',
-          bothFacesCooked: true,
-        });
-        d3TorchSlotKey = SLOT_KEYS[0];
-        persistFirstOrderRuntime();
-        director.request('SCR-SVC-GRILL', performance.now());
-      } else if (developmentStartDay === 'd3' && developmentTestFlow === 'assembly-tare') {
-        cook.selectRecipe('momo', 'tare');
-        director.request('SCR-SVC-ASSEMBLY', performance.now());
-      }
       if (runtimeIsSuspended()) dispatchBusiness(D1_UI_INTENT.PAUSE);
       else lastBusinessFrameAt = performance.now();
     }
@@ -3348,25 +3263,17 @@ Object.assign(d1GameDebug, {
   dockSelectedId: () => dock.selectedId(),
   dockAdd: (item) => { const id = dock.add(item); render(); return id; },
   dockSelect: (id) => dock.select(id),
-  d3TorchView: () => d3Grill.job(D3_TORCH_JOB_ID),
-  d3TorchStage: () => {
-    const result = d3Grill.job(D3_TORCH_JOB_ID)
-      ? { ok: true }
-      : d3Grill.stageCookedItem({ id: D3_TORCH_JOB_ID, menuId: 'momo', seasoning: 'tare', bothFacesCooked: true });
-    d3TorchSlotKey ??= SLOT_KEYS[0];
-    persistFirstOrderRuntime();
+  cookSelectRecipe: (menuId) => { const result = cook.selectRecipe(menuId); render(); return result; },
+  cookClickIngredient: (ingredientId) => { const result = cook.clickIngredient(ingredientId); render(); return result; },
+  cookSelectAssemblySeasoning: (seasoning) => { const result = cook.selectAssemblySeasoning(seasoning); render(); return result; },
+  cookBrushAssemblyTare: (coverage = 1) => { const result = cook.brushAssemblyTare(coverage); render(); return result; },
+  cookAssemblyProgress: () => cook.assemblyProgress(),
+  assemblyTareTargetBounds,
+  cookFillAssembly: (menuId, seasoning = 'salt') => {
+    const result = cook.debugFillAssembly(menuId, seasoning);
     render();
     return result;
   },
-  d3TorchApplyTare: () => { const result = d3Grill.applyTare(D3_TORCH_JOB_ID); persistFirstOrderRuntime(); render(); return result; },
-  d3TorchBegin: () => { const result = d3Grill.beginTorch(D3_TORCH_JOB_ID); persistFirstOrderRuntime(); render(); return result; },
-  d3TorchSweep: (position, deltaMs) => { const result = d3Grill.sweepTorch(D3_TORCH_JOB_ID, { position, deltaMs }); persistFirstOrderRuntime(); render(); return result; },
-  d3TorchFinish: () => { const result = d3Grill.finishTorch(D3_TORCH_JOB_ID); persistFirstOrderRuntime(); render(); return result; },
-  cookSelectRecipe: (menuId) => { const result = cook.selectRecipe(menuId); render(); return result; },
-  cookClickIngredient: (ingredientId) => { const result = cook.clickIngredient(ingredientId); render(); return result; },
-  assemblyTareTargetBounds,
-  d3TorchTargetBounds,
-  cookFillAssembly: (menuId) => { const result = cook.debugFillAssembly(menuId); render(); return result; },
   cookAssemblyIndex: () => cook.assemblyIndex(),
   cookWaiting: () => cook.waitingCount(),
   cookSlots: () => cook.slotViews(performance.now()),
@@ -3391,9 +3298,9 @@ Object.assign(d1GameDebug, {
     ariaLabel: button.getAttribute('aria-label'),
   })),
   audioState: () => gameAudio()?.state() ?? null,
-  cookPlace: (menuId = null) => {
+  cookPlace: (menuId = null, seasoning = 'salt') => {
     const now = performance.now();
-    const result = cook.placeToGrill(now, menuId);
+    const result = cook.placeToGrill(now, menuId, seasoning);
     syncRiskCount(now);
     render();
     return result;
@@ -3408,25 +3315,46 @@ Object.assign(d1GameDebug, {
     render();
     return views;
   },
-  cookTransferAssembly: () => cook.transferAssembly(),
+  cookTransferAssembly: () => {
+    const result = cook.transferAssembly();
+    if (result.ok) persistFirstOrderRuntime();
+    render();
+    return result;
+  },
+  cookWaitingProducts: () => cook.waitingProducts(),
   grillContract: () => ({
-    slots: computeGrillSlots(D1_PUBLIC_GRILL_LAYOUT),
-    initialPlacementSlots: D1_PUBLIC_GRILL_LAYOUT.initialPlacementSlots,
+    contractId: activeGrillLayout.contractId,
+    slots: computeGrillSlots(activeGrillLayout),
+    initialPlacementSlots: activeGrillLayout.initialPlacementSlots,
     finishedTray: D1_GRILL_FINISHED_TRAY,
   }),
   grillWaitingControl: () => ({
     hidden: grillInventory.hidden,
-    disabled: grillWaitingNegima.disabled,
+    disabled: grillWaitingActions.negima.salt.disabled,
     waitingCount: grillWaitingNegima.dataset.waitingCount,
     hasEmptySlot: grillWaitingNegima.dataset.hasEmptySlot,
-    ariaLabel: grillWaitingNegima.getAttribute('aria-label'),
+    ariaLabel: grillWaitingActions.negima.salt.getAttribute('aria-label'),
+    saltWaitingCount: grillWaitingActions.negima.salt.dataset.waitingCount,
+    tare: {
+      hidden: grillWaitingActions.negima.tare.hidden,
+      disabled: grillWaitingActions.negima.tare.disabled,
+      ariaLabel: grillWaitingActions.negima.tare.getAttribute('aria-label'),
+      waitingCount: grillWaitingActions.negima.tare.dataset.waitingCount,
+    },
     rect: grillWaitingNegima.getBoundingClientRect().toJSON(),
     momo: {
       hidden: grillWaitingMomo.hidden,
-      disabled: grillWaitingMomo.disabled,
+      disabled: grillWaitingActions.momo.salt.disabled,
       waitingCount: grillWaitingMomo.dataset.waitingCount,
       hasEmptySlot: grillWaitingMomo.dataset.hasEmptySlot,
-      ariaLabel: grillWaitingMomo.getAttribute('aria-label'),
+      ariaLabel: grillWaitingActions.momo.salt.getAttribute('aria-label'),
+      saltWaitingCount: grillWaitingActions.momo.salt.dataset.waitingCount,
+      tare: {
+        hidden: grillWaitingActions.momo.tare.hidden,
+        disabled: grillWaitingActions.momo.tare.disabled,
+        ariaLabel: grillWaitingActions.momo.tare.getAttribute('aria-label'),
+        waitingCount: grillWaitingActions.momo.tare.dataset.waitingCount,
+      },
       rect: grillWaitingMomo.getBoundingClientRect().toJSON(),
     },
   }),

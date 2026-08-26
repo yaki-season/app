@@ -161,6 +161,8 @@ test('D4 후일담의 마지막 장면에서 실제 D5 토리카와 영업으로
 
   await expect(page).toHaveURL(/\/src\/d1-game\.html\?day=d5$/);
   await page.getByRole('button', { name: '조립', exact: true }).click();
-  await expect(page.getByRole('button', { name: '소금 토리카와', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '타레 토리카와', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '토리카와', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '그릴', exact: true }).click();
+  await expect(page.getByRole('button', { name: /소금 토리카와/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /타레 토리카와/ })).toBeVisible();
 });

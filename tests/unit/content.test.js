@@ -12,7 +12,10 @@ const read = (rel) => JSON.parse(readFileSync(fileURLToPath(new URL(rel, root)),
 function loadBundle() {
   return {
     processes: [read('content/processes/grill.json')],
-    recipes: [read('content/recipes/negima.json')],
+    recipes: [
+      read('content/recipes/negima.json'),
+      read('content/recipes/momo.json'),
+    ],
     menus: read('content/menus/early-campaign.json'),
     customers: read('content/customers/types.json'),
     campaignCharacters: read('content/campaign/characters.json'),
@@ -125,6 +128,31 @@ describe('교차 규칙 거부 (런타임 공유)', () => {
     b.processes[0].faceThresholdsSec = { under: 0, perfect: 6, over: 5, burnt: 7 }; // perfect>over
     expect(checkContentRules(b).errors.join()).toMatch(/구간 순서/);
   });
+
+  it('꼬치 양념은 조립대에서 정하고 타레만 한 번 칠한 뒤 양념별 재고로 보낸다', () => {
+    const bundle = loadBundle();
+    for (const recipe of bundle.recipes) {
+      expect(recipe.seasoningPolicy).toEqual({
+        selectionStage: 'assembly',
+        options: ['salt', 'tare'],
+        saltTransferMode: 'direct',
+        inventoryPartition: 'menu-and-seasoning',
+        tareApplication: {
+          station: 'assembly',
+          afterAssemblyCompleted: true,
+          brushPasses: 1,
+          minimumCoverage: 0.8,
+          torchEnabled: false,
+        },
+      });
+    }
+
+    const obsolete = loadBundle();
+    obsolete.recipes[0].seasoningPolicy.selectionStage = 'grill-placement';
+    obsolete.recipes[0].seasoningPolicy.tareApplication.brushPasses = 2;
+    obsolete.recipes[0].seasoningPolicy.tareApplication.torchEnabled = true;
+    expect(checkContentRules(obsolete).errors.join('\n')).toMatch(/조립 완료.*1회 붓질.*토치/);
+  });
 });
 
 describe('성장·직원·시나리오 데이터', () => {
@@ -165,6 +193,20 @@ describe('성장·직원·시나리오 데이터', () => {
     const first = b.scenarios.find((s) => s.prevDay === null);
     expect(first).toBeTruthy();
     expect(checkContentRules(b).valid).toBe(true);
+  });
+
+  it('D3~D5 시나리오는 조립대 타레 command만 허용하고 그릴 타레·토치를 거부한다', () => {
+    const bundle = loadBundle();
+    const d5 = bundle.scenarios.find(({ id }) => id === 'd5');
+    expect(d5.gameplayCommandIds).toEqual(expect.arrayContaining([
+      'select-assembly-seasoning',
+      'brush-assembly-tare',
+    ]));
+
+    d5.gameplayCommandIds = d5.gameplayCommandIds
+      .filter((commandId) => commandId !== 'brush-assembly-tare')
+      .concat('brush-grill-tare', 'finish-tare', 'sweep-torch');
+    expect(checkContentRules(bundle).errors.join('\n')).toMatch(/그릴 도포·토치·구형 마감/);
   });
 });
 

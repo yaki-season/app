@@ -2,6 +2,7 @@ import {
   CAMPAIGN_PHASE,
   CampaignRuntime,
   CampaignSaveRepository,
+  DEFAULT_CLAIMED_GRILL_SLOTS,
   LocalStorageAdapter,
   PERSISTENCE_ERROR_CODE,
   assertD4CampaignDefinition,
@@ -74,40 +75,52 @@ export function campaignPresentationPosition(state) {
 
 // 구 버전에서 D3 완료를 종착점으로 저장한 상태는 D4 영업 전으로 자연스럽게 이어 준다.
 export function normalizeLegacyCampaignState(state) {
-  if (state?.campaign?.nodeId === ['d5', 'preview'].join('-')) {
-    return {
+  let normalized = state;
+  if (state && (!Number.isInteger(state.progression?.claimedGrillSlots)
+    || state.progression.claimedGrillSlots < DEFAULT_CLAIMED_GRILL_SLOTS)) {
+    normalized = {
       ...state,
+      progression: {
+        ...state.progression,
+        claimedGrillSlots: DEFAULT_CLAIMED_GRILL_SLOTS,
+      },
+    };
+  }
+
+  if (normalized?.campaign?.nodeId === ['d5', 'preview'].join('-')) {
+    return {
+      ...normalized,
       campaign: {
-        ...state.campaign,
+        ...normalized.campaign,
         nodeId: 'd5',
         nodeKind: 'day',
         dayId: 'd5',
         phase: CAMPAIGN_PHASE.PRE_OPEN,
         unlockedNodeIds: [...new Set([
-          ...(state.campaign.unlockedNodeIds ?? []).filter((id) => id !== ['d5', 'preview'].join('-')),
+          ...(normalized.campaign.unlockedNodeIds ?? []).filter((id) => id !== ['d5', 'preview'].join('-')),
           'd5',
         ])],
       },
     };
   }
-  if (state?.campaign?.nodeId !== ['d4', 'preview'].join('-')) return state;
+  if (normalized?.campaign?.nodeId !== ['d4', 'preview'].join('-')) return normalized;
   return {
-    ...state,
+    ...normalized,
     campaign: {
-      ...state.campaign,
+      ...normalized.campaign,
       nodeId: 'd4',
       nodeKind: 'day',
       dayId: 'd4',
       phase: CAMPAIGN_PHASE.PRE_OPEN,
       unlockedNodeIds: [...new Set([
-        ...(state.campaign.unlockedNodeIds ?? []).filter((id) => id !== ['d4', 'preview'].join('-')),
+        ...(normalized.campaign.unlockedNodeIds ?? []).filter((id) => id !== ['d4', 'preview'].join('-')),
         'd4',
       ])],
     },
     progression: {
-      ...state.progression,
+      ...normalized.progression,
       unlockIds: [...new Set([
-        ...(state.progression?.unlockIds ?? []).filter((id) => id !== ['d4', 'preview'].join('-')),
+        ...(normalized.progression?.unlockIds ?? []).filter((id) => id !== ['d4', 'preview'].join('-')),
         'day-d4',
       ])],
     },
@@ -173,6 +186,14 @@ export class S0D3CampaignBridge {
 
   startDay() {
     return this.runtime.startDay();
+  }
+
+  getGrillSlotUpgradeState(config = {}) {
+    return this.runtime.getGrillSlotUpgradeState(config);
+  }
+
+  claimGrillSlots(config = {}) {
+    return this.runtime.claimGrillSlots(config);
   }
 
   enterSettlement() {

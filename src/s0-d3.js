@@ -71,6 +71,9 @@ let dayId = 'S0';
 let epilogueIndex = 0;
 let campaignBridge = null;
 let approvedRuntimeAssets = new Map();
+let grillSlotConfig = null;
+let grillSlotConfigError = null;
+let dayPrepFeedback = '';
 const playedStoryAudio = new Set();
 
 function syncStoryAudio(dialogueId) {
@@ -197,6 +200,18 @@ async function loadRuntimeAssets() {
     approvedRuntimeAssets = indexApprovedRuntimeAssets(await response.json());
   } catch {
     approvedRuntimeAssets = new Map();
+  }
+}
+
+async function loadGrillSlotConfig() {
+  try {
+    const response = await fetch('/content/progression/grill-slots.json');
+    if (!response.ok) throw new Error(`그릴 업그레이드 데이터 응답 오류: ${response.status}`);
+    grillSlotConfig = await response.json();
+    grillSlotConfigError = null;
+  } catch (error) {
+    grillSlotConfig = null;
+    grillSlotConfigError = error;
   }
 }
 
@@ -354,15 +369,15 @@ function renderStory() {
   syncStoryAudio(line.dialogueId);
   dayId = story.dayId;
   const storyHeadings = {
-    S0: '다시 불을 켜는 밤',
-    'D1-pre-open': '첫날, 문을 열기 전에',
-    'D1-post-settlement': '첫날의 불을 끄며',
-    'D2-pre-open': '둘째 날, 조금 익숙해진 손',
-    'D2-post-settlement': '둘째 날의 문을 닫으며',
-    'D3-pre-open': '셋째 날, 가게에 밴 온기',
-    'D3-post-settlement': '셋째 날의 불빛',
-    'D4-pre-open': '넷째 날, 넓어진 카운터',
-    'D4-post-settlement': '넷째 날의 리듬',
+    S0: '가게 문을 다시 열다',
+    'D1-pre-open': '첫째 날 영업 준비',
+    'D1-post-settlement': '첫째 날 영업을 마치고',
+    'D2-pre-open': '둘째 날 영업 준비',
+    'D2-post-settlement': '둘째 날 영업을 마치고',
+    'D3-pre-open': '셋째 날, 타레 메뉴 추가',
+    'D3-post-settlement': '셋째 날 영업을 마치고',
+    'D4-pre-open': '넷째 날, 사라다와 하이볼 추가',
+    'D4-post-settlement': '넷째 날 영업을 마치고',
   };
   heading.textContent = storyHeadings[story.dayId === 'S0' ? 'S0' : `${story.dayId}-${story.timing}`];
   for (const name of [
@@ -402,7 +417,7 @@ function renderStory() {
     D1: '첫 손님 맞이하기',
     D2: '둘째 영업 시작',
     D3: '셋째 영업 시작',
-    D4: '넷째 영업 시작',
+    D4: '영업 준비',
   };
   const nextLabel = lastLine && story.timing === 'pre-open'
     ? dayStartLabels[story.dayId]
@@ -426,6 +441,11 @@ async function advanceAfterStory(story) {
     return;
   }
   if (story.timing === 'pre-open') {
+    if (story.dayId === 'D4') {
+      dayPrepFeedback = '';
+      mode = 'day-prep';
+      return;
+    }
     const started = await campaignBridge.startDay();
     if (!started.ok) throw new Error(started.error.message);
     navigateToBusinessDay(story.dayId);
@@ -450,6 +470,107 @@ async function advanceAfterStory(story) {
   else storyIndex += 1;
 }
 
+function renderDayPrep() {
+  heading.textContent = '넷째 날 영업 준비';
+  hideStoryPortrait();
+  hideStoryIllustration();
+  renderStoryBackground('D4');
+  setIds({
+    screen: 'SCR-DAY-BRIEFING',
+    state: 'D4-pre-open-upgrade',
+    scene: 'SCN-D4-DAY-PREP',
+    dialogue: 'none',
+  });
+
+  const campaignState = campaignBridge.getState();
+  const reputation = campaignState.economy.reputation;
+  const claimedSlots = campaignState.progression.claimedGrillSlots;
+  const tier = grillSlotConfig?.tiers?.find((item) => item.slots === 3) ?? null;
+  const upgrade = grillSlotConfig
+    ? campaignBridge.getGrillSlotUpgradeState(grillSlotConfig)
+    : null;
+  const alreadyClaimed = claimedSlots >= 3;
+  const cardState = grillSlotConfigError
+    ? 'unavailable'
+    : alreadyClaimed
+      ? 'claimed'
+      : upgrade?.pending
+        ? 'claimable'
+        : 'locked';
+
+  const article = document.createElement('article');
+  article.className = 'day-prep-card';
+  article.dataset.testid = 'd4-grill-upgrade-card';
+  article.dataset.upgradeState = cardState;
+
+  const copy = document.createElement('div');
+  copy.className = 'day-prep-copy';
+  copy.innerHTML = `
+    <p class="day-prep-kicker">명성 업그레이드</p>
+    <h2>그릴 한 칸 확장</h2>
+    <p>동시에 구울 수 있는 꼬치가 두 개에서 세 개로 늘어납니다.</p>
+    <p class="day-prep-no-spend">명성과 골드는 조건 확인에만 사용되며 차감되지 않습니다.</p>
+  `;
+
+  const details = document.createElement('div');
+  details.className = 'day-prep-details';
+  details.innerHTML = `
+    <div class="grill-slot-flow" aria-label="그릴 칸 2개에서 3개로 확장">
+      <strong data-testid="d4-grill-current-slots">${claimedSlots}칸</strong>
+      <span aria-hidden="true">→</span>
+      <strong>${alreadyClaimed ? claimedSlots : tier?.slots ?? 3}칸</strong>
+    </div>
+    <dl class="upgrade-requirements">
+      <div><dt>현재 명성</dt><dd data-testid="d4-current-reputation">${reputation}</dd></div>
+      <div><dt>필요 명성</dt><dd data-testid="d4-required-reputation">${tier?.reputation ?? 10}</dd></div>
+    </dl>
+  `;
+
+  const status = document.createElement('p');
+  status.className = 'day-prep-status';
+  status.dataset.testid = 'd4-grill-upgrade-status';
+  status.setAttribute('role', 'status');
+  if (dayPrepFeedback) status.textContent = dayPrepFeedback;
+  else if (grillSlotConfigError) {
+    status.textContent = '업그레이드 정보를 불러오지 못했습니다. 현재 칸으로 영업을 시작할 수 있습니다.';
+  } else if (alreadyClaimed) status.textContent = '그릴 3칸 확장이 적용되었습니다.';
+  else if (upgrade?.pending) status.textContent = '지금 확장할 수 있습니다.';
+  else if (upgrade?.blockedBy === 'reputation') {
+    status.textContent = `명성 ${Math.max(0, (upgrade.requiredReputation ?? 10) - reputation)}이 더 필요합니다.`;
+  } else if (upgrade?.blockedBy === 'unlock') {
+    status.textContent = '넷째 날 해금 조건을 먼저 완료해야 합니다.';
+  } else status.textContent = '현재 적용할 수 있는 확장이 없습니다.';
+
+  article.append(copy, details, status);
+  content.replaceChildren(article);
+
+  const claimButton = button('3칸 확장 적용', async () => {
+    const result = await campaignBridge.claimGrillSlots(grillSlotConfig);
+    if (!result.ok) {
+      dayPrepFeedback = `저장하지 못했습니다. 확장은 적용되지 않았습니다. ${result.error?.message ?? ''}`.trim();
+    } else if (result.applied) {
+      dayPrepFeedback = '그릴을 3칸으로 확장했습니다. 명성과 골드는 그대로입니다.';
+    } else {
+      dayPrepFeedback = '현재는 확장을 적용할 수 없습니다.';
+    }
+    renderDayPrep();
+  }, true);
+  claimButton.dataset.testid = 'd4-claim-grill-upgrade';
+  claimButton.disabled = !upgrade?.pending;
+
+  const startButton = button(`${claimedSlots}칸으로 넷째 영업 시작`, async () => {
+    const started = await campaignBridge.startDay();
+    if (!started.ok) {
+      dayPrepFeedback = `영업 시작 상태를 저장하지 못했습니다. ${started.error?.message ?? ''}`.trim();
+      renderDayPrep();
+      return;
+    }
+    navigateToBusinessDay('D4');
+  });
+  startButton.dataset.testid = 'd4-start-business-day';
+  actions.replaceChildren(claimButton, startButton);
+}
+
 function renderSummary() {
   const story = S0_D4_STORY_SCENES[storyIndex];
   heading.textContent = '잠시 돌아보며';
@@ -471,7 +592,7 @@ function renderBusiness() {
   hideStoryIllustration();
   hideStoryBackground();
   setIds({ screen: 'SCR-SVC-CUSTOMERS', state: `${dayId}-business-placeholder`, scene: 'none', dialogue: 'none' });
-  content.innerHTML = '<p class="scene-narration">문을 연 동안 있었던 일들을 천천히 되짚어 본다.</p>';
+  content.innerHTML = '<p class="scene-narration">오늘 영업 결과를 확인합니다.</p>';
   actions.replaceChildren(button('영업 결과 보기', () => {
     campaignBridge.enterSettlement();
     mode = 'settlement';
@@ -485,7 +606,7 @@ function renderSettlement() {
   renderStoryBackground(dayId);
   renderStoryPortrait(FIXED_CHARACTER.AKI, 'DLG-D1-POST-002');
   setIds({ screen: 'SCR-POST-SETTLEMENT', state: `${dayId}-settlement-placeholder`, scene: 'none', dialogue: 'none' });
-  content.innerHTML = '<p class="scene-narration">불을 낮추고 가게를 정리한다. 숯 향이 밴 하루가 조용히 저물어 간다.</p>';
+  content.innerHTML = '<p class="scene-narration">영업이 끝났습니다. 가게를 정리하고 정산을 시작합니다.</p>';
   actions.replaceChildren(button('정산 후 이야기', () => {
     storyIndex += 1;
     lineIndex = 0;
@@ -496,7 +617,7 @@ function renderSettlement() {
 
 function renderEpilogue() {
   const page = D4_EPILOGUE_PAGES[epilogueIndex];
-  heading.textContent = '넷째 밤, 이어 갈 리듬';
+  heading.textContent = '넷째 날 마감 후';
   hideStoryPortrait();
   hideStoryIllustration();
   renderStoryBackground('D4');
@@ -605,11 +726,12 @@ function render() {
   else if (mode === 'summary') renderSummary();
   else if (mode === 'business') renderBusiness();
   else if (mode === 'settlement') renderSettlement();
+  else if (mode === 'day-prep') renderDayPrep();
   else renderEpilogue();
 }
 
 async function initialize() {
-  await loadRuntimeAssets();
+  await Promise.all([loadRuntimeAssets(), loadGrillSlotConfig()]);
   campaignBridge = new S0D3CampaignBridge({ browserStorage: window.localStorage });
   const params = new URLSearchParams(window.location.search);
   const forceNew = params.get('new') === '1';
@@ -627,5 +749,8 @@ await initialize();
 window.__s0d3Debug = {
   getState: () => ({ mode, s0Index, storyIndex, lineIndex, dayId, epilogueIndex }),
   campaignState: () => campaignBridge?.getState() ?? null,
+  grillUpgradeState: () => grillSlotConfig
+    ? campaignBridge?.getGrillSlotUpgradeState(grillSlotConfig) ?? null
+    : null,
   contentErrors: errors,
 };

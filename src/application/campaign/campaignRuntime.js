@@ -1,9 +1,11 @@
 import {
   beginBusinessDay,
+  claimCampaignGrillSlots,
   completeBusinessDay,
   completePrologue,
   createCampaignState,
   enterSettlement,
+  getCampaignGrillSlotUpgradeState,
 } from '../../domain/campaign/campaign.js';
 import { CHECKPOINT_TYPE } from '../persistence/saveEnvelope.js';
 
@@ -85,6 +87,48 @@ export class CampaignRuntime {
     this.state = beginBusinessDay(this.state);
     this.lastError = null;
     return { ok: true, value: this.getState(), save: saved.value };
+  }
+
+  getGrillSlotUpgradeState(config = {}) {
+    this.ensureState();
+    return getCampaignGrillSlotUpgradeState(this.state, config);
+  }
+
+  async claimGrillSlots(config = {}) {
+    this.ensureState();
+    const readOnly = this.readOnlyPreviewError('claim-grill-slots');
+    if (readOnly) return readOnly;
+    const candidate = claimCampaignGrillSlots(this.state, config);
+    if (!candidate.applied) {
+      return {
+        ok: true,
+        applied: false,
+        reason: candidate.reason,
+        upgrade: candidate.upgrade,
+        value: this.getState(),
+      };
+    }
+
+    // claim 후보를 먼저 저장하고, 성공한 경우에만 메모리 상태를 교체한다.
+    const saved = await this.saveRepository.saveCheckpoint({
+      checkpointType: CHECKPOINT_TYPE.DAY_START,
+      state: candidate.state,
+      completedDayId: candidate.state.campaign.completedDayIds.at(-1) ?? null,
+    });
+    if (!saved.ok) {
+      this.lastError = saved.error;
+      return saved;
+    }
+    this.state = candidate.state;
+    this.lastError = null;
+    return {
+      ok: true,
+      applied: true,
+      reason: null,
+      upgrade: candidate.upgrade,
+      value: this.getState(),
+      save: saved.value,
+    };
   }
 
   closeDayForSettlement() {
