@@ -1567,8 +1567,8 @@
       ],
       "reviewedAt": "2026-08-26",
       "url": "/assets/core/customer/in-game-mapping/developer-a-waiting-r9-b1.png",
-      "sha256": "a04ea963abe0eac62b2c2c36d7fcccaf9872d7506e1903aa5a43cc54d25f0c1b",
-      "bytes": 230411,
+      "sha256": "151a5e5b8750b7482e184b0560c7d467b032a306823b1900ae276e6522df81ab",
+      "bytes": 249404,
       "dimensions": {
         "width": 1920,
         "height": 1080
@@ -1578,8 +1578,8 @@
         {
           "role": "office-a-eating-negima",
           "url": "/assets/core/customer/in-game-mapping/developer-a-eating-negima-r9-b1.png",
-          "sha256": "0d28be9c0fd317b1fc8c724e132fdfcc7c85a152d3f6f894d16fe1275f67b2e8",
-          "bytes": 227383,
+          "sha256": "72f478252e23ca6d9a8ad1d0365b6aa2c843d4e3b8381b75f11593f87d5aede6",
+          "bytes": 261193,
           "dimensions": {
             "width": 1920,
             "height": 1080
@@ -1589,8 +1589,8 @@
         {
           "role": "office-a-drinking-beer",
           "url": "/assets/core/customer/in-game-mapping/developer-a-drinking-beer-r9-b1.png",
-          "sha256": "43cd467fe0d82491c15f1699abc5c10fab551e1b53d3ae673086ca0643e787af",
-          "bytes": 229353,
+          "sha256": "fca26c8fc3a67d5729cc5d0fc2943418ec88e8fd3f4744eb65d83eff6371c167",
+          "bytes": 258112,
           "dimensions": {
             "width": 1920,
             "height": 1080
@@ -1600,8 +1600,8 @@
         {
           "role": "office-b-waiting",
           "url": "/assets/core/customer/in-game-mapping/developer-b-waiting-r9-b1.png",
-          "sha256": "b62f3ba26ff86b5dc4dd5043087800fd727b9aefce14a2aa887929c77dafef7c",
-          "bytes": 187314,
+          "sha256": "94bd97983f1b0ce4d91eb72a69bd3e0e00c0c4063abf2e003b23fb6f6151a0ff",
+          "bytes": 253541,
           "dimensions": {
             "width": 1920,
             "height": 1080
@@ -1611,8 +1611,8 @@
         {
           "role": "office-b-eating-negima",
           "url": "/assets/core/customer/in-game-mapping/developer-b-eating-negima-r9-b1.png",
-          "sha256": "4e7ac52eb0a7932175286a3aa03030331cb3c4a60797a5a9fcae03aa7b1fc51b",
-          "bytes": 193351,
+          "sha256": "0575cb937bde837aeb007c00b314df8938e5b1fbc96d8dedc98fd4f8375ef030",
+          "bytes": 253176,
           "dimensions": {
             "width": 1920,
             "height": 1080
@@ -1622,8 +1622,8 @@
         {
           "role": "office-b-drinking-beer",
           "url": "/assets/core/customer/in-game-mapping/developer-b-drinking-beer-r9-b1.png",
-          "sha256": "ff16f73d90adac69e26a4cacf8fad04e45c728dad8b2f321ce28a81dd6594388",
-          "bytes": 194124,
+          "sha256": "1a1ed8734485b6e8d7ccf7cac5aff8996908618bf3f08b12b6ad921e1df34dfd",
+          "bytes": 253138,
           "dimensions": {
             "width": 1920,
             "height": 1080
