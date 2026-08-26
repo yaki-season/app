@@ -3,7 +3,7 @@ import {
   DEFAULT_PUBLIC_SETTINGS,
   DIAGNOSTIC_FORMAT,
   buildSafeDiagnostic,
-  isD4PreviewSave,
+  isCampaignCompleteSave,
   serializeSafeDiagnostic,
   validatePublicSettings,
   viewportBucket,
@@ -56,21 +56,21 @@ describe('public shell 설정과 진단 계약', () => {
   });
 });
 
-describe('D3 후일담 종착 저장 계약', () => {
-  it('기존 세이브와 호환되는 정확한 d4-preview·preview 저장만 허용한다', () => {
+describe('D4 후일담 종착 저장 계약', () => {
+  it('정확한 D5 preview 저장만 완료 상태로 허용한다', () => {
     const result = {
       ok: true,
       value: {
         envelope: {
-          payload: { campaign: { nodeId: 'd4-preview', phase: 'preview' } },
+          payload: { campaign: { nodeId: 'd5-preview', phase: 'preview' } },
         },
       },
     };
-    expect(isD4PreviewSave(result)).toBe(true);
-    expect(isD4PreviewSave({
+    expect(isCampaignCompleteSave(result)).toBe(true);
+    expect(isCampaignCompleteSave({
       ...result,
       value: { envelope: { payload: { campaign: { nodeId: 'd3', phase: 'pre-open' } } } },
     })).toBe(false);
-    expect(isD4PreviewSave({ ok: false })).toBe(false);
+    expect(isCampaignCompleteSave({ ok: false })).toBe(false);
   });
 });

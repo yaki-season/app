@@ -9,7 +9,7 @@ import {
 import { createD1BusinessDayBrowserSession } from '../../src/application/businessDay/d1BusinessDayBrowserSession.js';
 
 const read = (path) => JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8'));
-const definitions = ['d1', 'd2', 'd3'].map((dayId) => createBusinessDayDefinition(
+const definitions = ['d1', 'd2', 'd3', 'd4'].map((dayId) => createBusinessDayDefinition(
   read(dayId === 'd1' ? 'tests/fixtures/business-days/d1-full-day.json' : `content/releases/${dayId}-business-day-domain.v1.json`),
   { expectedId: dayId, requireD1GuidedOpening: dayId === 'd1' },
 ));
@@ -67,34 +67,34 @@ function playFullDay(port, definition) {
   expect(port.getViewModel()).toMatchObject({ phase: 'settlement', settlement: { ready: true } });
 }
 
-describe('D1→D3 전체 영업 종단', () => {
-  it('각 날짜의 마지막 정리 후 마감하고 D3 정산을 한 번만 저장해 D4-preview로 전환한다', async () => {
+describe('D1→D4 전체 영업 종단', () => {
+  it('D3 정산 뒤 D4로 이어지고 D4 정산을 한 번만 저장해 D5 미리보기로 전환한다', async () => {
     const storage = new MemoryStorageAdapter();
-    let d3Session;
+    let finalSession;
     for (const definition of definitions) {
       const session = await createD1BusinessDayBrowserSession({ definition, storagePort: storage });
       expect(session).toMatchObject({ ok: true, completed: false });
       playFullDay(session.port, definition);
       const completed = await session.port.finalize();
       expect(completed).toMatchObject({ ok: true, duplicate: false });
-      if (definition.id === 'd3') d3Session = session;
+      if (definition.id === 'd4') finalSession = session;
     }
 
-    expect(d3Session.bridge.getState()).toMatchObject({
+    expect(finalSession.bridge.getState()).toMatchObject({
       campaign: {
-        nodeId: 'd4-preview',
+        nodeId: 'd5-preview',
         phase: 'preview',
-        completedDayIds: ['d1', 'd2', 'd3'],
+        completedDayIds: ['d1', 'd2', 'd3', 'd4'],
       },
-      story: { flagIds: expect.arrayContaining(['d3-complete', 'tare-introduced']) },
+      story: { flagIds: expect.arrayContaining(['d3-complete', 'tare-introduced', 'd4-complete']) },
     });
-    const settlementsBefore = d3Session.bridge.getState().economy.settlements.length;
-    expect(await d3Session.port.finalize()).toMatchObject({ ok: true, duplicate: true });
-    expect(d3Session.bridge.getState().economy.settlements).toHaveLength(settlementsBefore);
+    const settlementsBefore = finalSession.bridge.getState().economy.settlements.length;
+    expect(await finalSession.port.finalize()).toMatchObject({ ok: true, duplicate: true });
+    expect(finalSession.bridge.getState().economy.settlements).toHaveLength(settlementsBefore);
 
-    const resumed = await createD1BusinessDayBrowserSession({ definition: definitions[2], storagePort: storage });
+    const resumed = await createD1BusinessDayBrowserSession({ definition: definitions[3], storagePort: storage });
     expect(resumed).toMatchObject({ ok: true, completed: true, resumed: true });
-    expect(resumed.campaign.campaign.nodeId).toBe('d4-preview');
+    expect(resumed.campaign.campaign.nodeId).toBe('d5-preview');
 
     const beforePreviewCommands = storage.snapshot();
     expect(await resumed.bridge.startDay()).toMatchObject({
@@ -113,6 +113,6 @@ describe('D1→D3 전체 영업 종단', () => {
       error: { code: 'CAMPAIGN_PREVIEW_READ_ONLY' },
     });
     expect(storage.snapshot()).toEqual(beforePreviewCommands);
-    expect(resumed.bridge.getState()).toEqual(d3Session.bridge.getState());
+    expect(resumed.bridge.getState()).toEqual(finalSession.bridge.getState());
   });
 });

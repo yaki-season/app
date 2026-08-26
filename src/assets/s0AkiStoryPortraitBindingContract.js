@@ -1,4 +1,4 @@
-import { S0_D3_STORY_SCENES } from '../scenario/s0-d3-content.js';
+import { S0_D4_STORY_SCENES } from '../scenario/s0-d3-content.js';
 import {
   ART_BINDING_LOGICAL_VIEWPORT,
   ART_BINDING_VIEWPORTS,
@@ -103,6 +103,8 @@ export const S0_AKI_STORY_ALLOWED_PRESENTATIONS = Object.freeze([
   storyState('D2-post-settlement', 'SCN-D2-POST'),
   storyState('D3-pre-open', 'SCN-D3-PREOPEN'),
   storyState('D3-post-settlement', 'SCN-D3-POST'),
+  storyState('D4-pre-open', 'SCN-D4-PREOPEN'),
+  storyState('D4-post-settlement', 'SCN-D4-POST'),
   Object.freeze({
     screenId: 'SCR-POST-SETTLEMENT',
     stateId: 'D1-settlement-placeholder',
@@ -121,6 +123,12 @@ export const S0_AKI_STORY_ALLOWED_PRESENTATIONS = Object.freeze([
     sceneId: null,
     presentationRole: 'post-settlement-story-portrait',
   }),
+  Object.freeze({
+    screenId: 'SCR-POST-SETTLEMENT',
+    stateId: 'D4-settlement-placeholder',
+    sceneId: null,
+    presentationRole: 'post-settlement-story-portrait',
+  }),
 ]);
 
 export const S0_AKI_STORY_DIALOGUE_VARIANTS = Object.freeze({
@@ -135,6 +143,9 @@ export const S0_AKI_STORY_DIALOGUE_VARIANTS = Object.freeze({
   'DLG-D3-PRE-001': 'focus',
   'DLG-D3-PRE-003': 'focus',
   'DLG-D3-POST-002': 'relief',
+  'DLG-D4-PRE-001': 'focus',
+  'DLG-D4-PRE-003': 'focus',
+  'DLG-D4-POST-002': 'relief',
 });
 
 export const S0_AKI_STORY_PORTRAIT_BINDING = Object.freeze({
@@ -264,7 +275,7 @@ export function validateS0AkiStoryPortraitBindingContract() {
   if (new Set(variants).size !== variants.length) {
     errors.push('AKI expression variants must be unique');
   }
-  const currentAkiDialogueIds = S0_D3_STORY_SCENES.flatMap(
+  const currentAkiDialogueIds = S0_D4_STORY_SCENES.flatMap(
     (scene) => scene.lines
       .filter(({ speakerId }) => speakerId === binding.actorId)
       .map(({ dialogueId }) => dialogueId),
@@ -280,7 +291,7 @@ export function validateS0AkiStoryPortraitBindingContract() {
       errors.push(`unknown AKI dialogue stateVariant: ${stateVariant}`);
     }
   }
-  const currentStoryPresentations = S0_D3_STORY_SCENES.map((scene) => (
+  const currentStoryPresentations = S0_D4_STORY_SCENES.map((scene) => (
     `${scene.screenId}/${scene.dayId}-${scene.timing}/${scene.sceneId}`
   ));
   const contractStoryPresentations = S0_AKI_STORY_ALLOWED_PRESENTATIONS

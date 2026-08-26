@@ -14,7 +14,7 @@ import {
   validateCampaignState,
 } from '../../src/campaign-runtime.js';
 
-const fixtureUrl = new URL('../fixtures/campaign/s0-d4-preview.json', import.meta.url);
+const fixtureUrl = new URL('../fixtures/campaign/s0-d5-preview.json', import.meta.url);
 const records = JSON.parse(readFileSync(fileURLToPath(fixtureUrl), 'utf8'));
 
 function definition() {
@@ -30,11 +30,11 @@ function initialState() {
   });
 }
 
-describe('S0~D4-preview 캠페인 도메인', () => {
+describe('S0~D4 캠페인 도메인', () => {
   it('콘텐츠 ID chain을 검증한다', () => {
     const graph = definition();
-    expect(graph.ids).toEqual(['s0', 'd1', 'd2', 'd3', 'd4-preview']);
-    expect(graph.get('d4-preview').kind).toBe(CAMPAIGN_NODE_KIND.PREVIEW);
+    expect(graph.ids).toEqual(['s0', 'd1', 'd2', 'd3', 'd4', 'd5-preview']);
+    expect(graph.get('d5-preview').kind).toBe(CAMPAIGN_NODE_KIND.PREVIEW);
   });
 
   it('S0부터 D1 영업 전으로 전이한다', () => {
@@ -48,10 +48,10 @@ describe('S0~D4-preview 캠페인 도메인', () => {
     });
   });
 
-  it('D1→D2→D3→D4-preview를 결정적으로 순회한다', () => {
+  it('D1→D2→D3→D4→D5-preview를 결정적으로 순회한다', () => {
     const graph = definition();
     let state = completePrologue(initialState(), graph);
-    for (const [index, dayId] of ['d1', 'd2', 'd3'].entries()) {
+    for (const [index, dayId] of ['d1', 'd2', 'd3', 'd4'].entries()) {
       state = beginBusinessDay(state);
       state = enterSettlement(state);
       const completed = completeBusinessDay(state, graph, {
@@ -68,14 +68,14 @@ describe('S0~D4-preview 캠페인 도메인', () => {
       state = completed.state;
     }
     expect(state.campaign).toMatchObject({
-      nodeId: 'd4-preview',
+      nodeId: 'd5-preview',
       nodeKind: CAMPAIGN_NODE_KIND.PREVIEW,
       dayId: null,
       phase: CAMPAIGN_PHASE.PREVIEW,
-      completedDayIds: ['d1', 'd2', 'd3'],
+      completedDayIds: ['d1', 'd2', 'd3', 'd4'],
     });
     expect(() => beginBusinessDay(state)).toThrow('영업일 node');
-    expect(state.economy.balance).toBe(303);
+    expect(state.economy.balance).toBe(406);
     expect(validateCampaignState(state, graph)).toEqual({ valid: true, errors: [] });
   });
 
@@ -100,7 +100,7 @@ describe('S0~D4-preview 캠페인 도메인', () => {
 
   it('끊긴 초기 캠페인 chain을 거부한다', () => {
     const broken = records.map((record) => (
-      record.id === 'd2' ? { ...record, nextId: 'd4-preview' } : record
+      record.id === 'd2' ? { ...record, nextId: 'd4' } : record
     ));
     expect(() => assertEarlyCampaignDefinition(createCampaignDefinition(broken)))
       .toThrow('초기 캠페인 연결');

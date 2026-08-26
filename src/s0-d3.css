@@ -45,7 +45,7 @@ h1,h2,p { margin-top:0; } h1 { margin-bottom:0; font-size:clamp(1.4rem,3vw,2.2re
 .summary { margin:0; padding-left:1.4rem; display:grid; gap:8px; }
 .actions { width:min(1280px,100%); margin-inline:auto; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; }
 .primary { background:var(--accent); border-color:#f08a58; font-weight:800; }
-/* D3 종착 저장은 기존 세이브 호환성을 유지하되 공개 화면에서는 산문형 후일담으로 닫는다. */
+/* D4 완료 저장은 산문형 후일담으로 닫고, 구 버전 D3 종착 저장은 D4 프리오픈으로 복구한다. */
 .epilogue-visual { display:none; position:relative; z-index:3; width:min(760px,82%); padding:clamp(26px,5vw,56px); text-align:center; }
 body[data-screen-id="SCR-POST-EPILOGUE"] .epilogue-visual { display:grid; justify-items:center; gap:22px; }
 .epilogue-visual p { margin:0; max-width:36em; color:#f8e6c7; font-family:Georgia,"Noto Serif KR","Batang",serif; font-size:clamp(1.05rem,2.2vw,1.5rem); line-height:1.9; text-wrap:balance; text-shadow:0 3px 14px #000; }

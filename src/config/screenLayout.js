@@ -165,6 +165,13 @@ export const OBJECTS = {
     color: 0x6f5437,
   },
 
+  // D4 사이드 메뉴 스테이션. 내부 runtime ID는 instant를 유지하되 플레이어에게는
+  // 음식 분류인 '사이드 메뉴'로 노출한다. 메뉴별 art slot을 같은 작업대에 추가할 수 있다.
+  instantBg: { rect: { x: 0, y: 0, width: 1, height: 1 }, layer: 'background', color: 0x201a14, kind: 'fullframe' },
+  instantCounter: { rect: { x: 0.08, y: 0.35, width: 0.84, height: 0.49 }, layer: 'fixture', color: 0x6a4932, kind: 'plane' },
+  instantCabbageBin: { rect: { x: 0.14, y: 0.43, width: 0.29, height: 0.28 }, layer: 'interactive', color: 0x9dbf62, kind: 'plane', decorative: true },
+  instantPlateSlot: { rect: { x: 0.57, y: 0.46, width: 0.25, height: 0.18 }, layer: 'interactive', color: 0xe8dfc8, kind: 'plane', decorative: true },
+
   // 드링크 화면 (단일 레버: 위=거품, 아래=맥주. 잔 채움은 DOM 패널)
   drinkTower: { rect: { x: 0.44, y: 0.30, width: 0.12, height: 0.24 }, layer: 'fixture', color: 0x6b6f72, kind: 'plane' },
   // 빈잔을 선택해 노즐 아래에 놓는 실제 클릭 슬롯. 승인 머신의 중앙 노즐과 정렬한다.
@@ -244,6 +251,13 @@ export const SCREENS = [
     look: { x: 0.0, y: -2.4, z: -3.0 }, // 아래 그릴 (더 가까이)
     // BG-WORKSPACE-GRILL R2가 중앙 석쇠까지 포함한다. 좌우 tray는 DOM 재고 카드가 대체한다.
     objects: ['grillBg', ...D1_GRILL_SLOT_KEYS, ...GRILL_SLOT_KEYS],
+  },
+  {
+    id: 'SCR-SVC-INSTANT',
+    name: '사이드 메뉴',
+    introducedOn: 'd4',
+    look: { x: -1.6, y: -1.6, z: -4.1 },
+    objects: ['instantBg', 'instantCounter', 'instantCabbageBin', 'instantPlateSlot'],
   },
   {
     id: 'SCR-SVC-DRINK',

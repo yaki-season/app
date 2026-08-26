@@ -479,11 +479,43 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     return anchorToWorld(cam, c.x + c.width / 2, c.y + c.height / 2, LAYER_Z[def.layer]);
   }
 
-  // 월드 좌표 → 화면 픽셀 (라이브 카메라 기준). DOM 오버레이(말풍선·게이지) 배치용.
-  function projectToScreen(world) {
-    const v = world.clone().project(camera);
+  function projectWithCamera(world, targetCamera) {
+    const v = world.clone().project(targetCamera);
     const rect = canvas.getBoundingClientRect();
     return { x: rect.left + (v.x * 0.5 + 0.5) * rect.width, y: rect.top + (-v.y * 0.5 + 0.5) * rect.height };
+  }
+
+  // 월드 좌표 → 화면 픽셀 (라이브 카메라 기준). DOM 오버레이(말풍선·게이지) 배치용.
+  function projectToScreen(world) {
+    return projectWithCamera(world, camera);
+  }
+
+  // 특정 화면 프리셋의 정규화 좌표를 월드에 고정한 뒤 라이브 카메라로 투영한다.
+  // Three.js 장면 위 DOM 조작물을 전환 중에도 같은 깊이의 장면 소품과 함께 움직일 때 쓴다.
+  function projectScreenPointAtPreset(screenId, xRatio, yRatio, layer = 'interactive') {
+    const sourceCamera = presetCam[screenId];
+    const z = LAYER_Z[layer];
+    if (!sourceCamera || !Number.isFinite(z)) return null;
+    return projectToScreen(worldAtScreen(sourceCamera, xRatio, yRatio, z));
+  }
+
+  // 승인 아트 내부의 정규화 좌표를 해당 화면의 도착 카메라 기준 픽셀로 변환한다.
+  // DOM 작업대를 Three.js 아트의 실제 시각 기준선에 붙일 때 전환 중 카메라 위치에 흔들리지 않는다.
+  function projectArtUvAtPreset(key, xRatio, yRatio) {
+    const mesh = artMesh[key];
+    const screen = SCREENS.find((item) => item.objects.includes(key));
+    const targetCamera = screen ? presetCam[screen.id] : null;
+    if (!mesh || !targetCamera) return null;
+    if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+    const bounds = mesh.geometry.boundingBox;
+    const point = bounds.min.clone();
+    point.set(
+      lerp(bounds.min.x, bounds.max.x, xRatio),
+      lerp(bounds.max.y, bounds.min.y, yRatio),
+      0,
+    );
+    mesh.localToWorld(point);
+    return projectWithCamera(point, targetCamera);
   }
 
   setSeatCapacity(DEFAULT_SEAT_CAP); // 초기 좌석 배치(기본 6석). activeId 정의 후 호출.
@@ -606,6 +638,8 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     textureErrors: () => textureErrorCount,
     anchorFor,
     projectToScreen,
+    projectScreenPointAtPreset,
+    projectArtUvAtPreset,
     quaternionFor: (screenId) => presetCam[screenId].quaternion.clone(),
     dispose: () => renderer.dispose(),
   };

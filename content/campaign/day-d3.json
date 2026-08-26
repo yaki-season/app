@@ -101,8 +101,8 @@
   "settlement": {
     "goalId": "goal-d3-complete-tare-cross-station",
     "bonusGoalIds": ["goal-d3-no-timeout"],
-    "growthResultIds": ["d4-preview"],
-    "nextNodeId": "d4-preview",
+    "growthResultIds": ["day-d4", "menu-cabbage-salad", "menu-highball"],
+    "nextNodeId": "d4",
     "rewardSource": "settlement-ledger"
   }
 }

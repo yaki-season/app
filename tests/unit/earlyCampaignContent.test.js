@@ -25,16 +25,17 @@ function bundle() {
   };
 }
 
-describe('Developer 3 S0~D3 stable data contract', () => {
-  it('S0→D1→D2→D3→D4-preview chain과 읽기 전용 preview를 검증한다', () => {
+describe('S0~D4 stable data contract', () => {
+  it('S0→D1→D2→D3→D4→D5-preview chain과 읽기 전용 preview를 검증한다', () => {
     const content = bundle();
     expect(checkContentRules(content)).toEqual({ valid: true, errors: [] });
     expect(content.scenarios.map(({ id, nextDay }) => [id, nextDay])).toEqual([
       ['s0', 'd1'],
       ['d1', 'd2'],
       ['d2', 'd3'],
-      ['d3', 'd4-preview'],
-      ['d4-preview', null],
+      ['d3', 'd4'],
+      ['d4', 'd5-preview'],
+      ['d5-preview', null],
     ]);
     expect(content.scenarios.at(-1)).toMatchObject({
       kind: 'preview',
@@ -71,7 +72,7 @@ describe('Developer 3 S0~D3 stable data contract', () => {
       .toMatchObject([
         { dayId: 'd1', nextNodeId: 'd2', customers: 4, orders: 4, items: 8, peakActiveOrders: 2, peakRiskProcesses: 1 },
         { dayId: 'd2', nextNodeId: 'd3', customers: 6, orders: 5, items: 10, peakActiveOrders: 2, peakRiskProcesses: 2 },
-        { dayId: 'd3', nextNodeId: 'd4-preview', customers: 8, orders: 7, items: 16, peakActiveOrders: 2, peakRiskProcesses: 2 },
+        { dayId: 'd3', nextNodeId: 'd4', customers: 8, orders: 7, items: 16, peakActiveOrders: 2, peakRiskProcesses: 2 },
       ]);
     expect(simulateEarlyCampaignPlan(content, 'd3')).toEqual(simulateEarlyCampaignPlan(content, 'd3'));
   });
@@ -99,7 +100,7 @@ describe('Developer 3 S0~D3 stable data contract', () => {
 
   it('끊긴 날짜, 중복 고정 인물, 범위 위반, D4 command를 거부한다', () => {
     const brokenChain = bundle();
-    brokenChain.scenarios.find(({ id }) => id === 'd2').nextDay = 'd4-preview';
+    brokenChain.scenarios.find(({ id }) => id === 'd2').nextDay = 'd4';
     expect(checkContentRules(brokenChain).errors.join('\n')).toMatch(/chain|이전 참조/);
 
     const duplicateFixed = bundle();

@@ -58,6 +58,7 @@ export class CampaignSaveRepository {
     clock = () => new Date(),
     schemaVersion = FIRST_PUBLIC_SAVE_SCHEMA_VERSION,
     migrations = {},
+    normalizePayload,
     validatePayload,
     acceptsContentVersion,
   }) {
@@ -67,6 +68,7 @@ export class CampaignSaveRepository {
       currentVersion: schemaVersion,
       migrations,
     });
+    this.normalizePayload = normalizePayload;
     this.validatePayload = validatePayload;
     this.acceptsContentVersion = acceptsContentVersion;
   }
@@ -74,6 +76,7 @@ export class CampaignSaveRepository {
   validate(text) {
     return validateSerializedSave(text, {
       migrationRegistry: this.migrationRegistry,
+      normalizePayload: this.normalizePayload,
       validatePayload: this.validatePayload,
       acceptsContentVersion: this.acceptsContentVersion,
     });

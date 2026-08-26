@@ -18,6 +18,8 @@ export const MENU_LABEL = Object.freeze({
   negima: '네기마',
   momo: '모모',
   beer: '생맥주',
+  highball: '하이볼',
+  'cabbage-salad': '양배추 사라다',
 });
 
 const round1 = (value) => Number(value.toFixed(1));
@@ -59,8 +61,34 @@ function beerEntry(drink) {
     steps: ['빈 잔', '맥주', '거품'],
     lines: [
       '빈 잔을 노즐 아래에 놓고 레버를 내려 맥주를, 올려 거품을 받습니다.',
-      `맥주 ${beerLow}~${beerHigh}초(목표 3.0) · 거품 ${foamLow}~${foamHigh}초(목표 1.0)`,
+      `맥주 ${beerLow}~${beerHigh}초(목표 ${drink.beerTargetSec.toFixed(1)}) · 거품 ${foamLow}~${foamHigh}초(목표 ${drink.foamTargetSec.toFixed(1)})`,
       `합쳐서 ${drink.totalCap}초를 넘기면 넘칩니다.`,
+    ],
+  };
+}
+
+function highballEntry() {
+  return {
+    menuId: 'highball',
+    label: MENU_LABEL.highball,
+    steps: ['빈 잔', '얼음', '위스키', '탄산수', '레몬'],
+    lines: [
+      '빈 잔에 얼음을 넣고 위스키와 탄산수를 병을 눌러 직접 따릅니다.',
+      '위스키 1 : 탄산수 3의 비율을 감으로 맞춘 뒤 레몬을 올립니다.',
+      '넘치기 직전에는 낮은 품질로 계속하거나 잔을 폐기할 수 있습니다.',
+    ],
+  };
+}
+
+function cabbageSaladEntry() {
+  return {
+    menuId: 'cabbage-salad',
+    label: MENU_LABEL['cabbage-salad'],
+    steps: ['접시', '양배추 사라다'],
+    lines: [
+      '사이드 메뉴 스테이션에서 사라다 카드를 2.5초 동안 누릅니다.',
+      '한 번 완성할 때 한 접시가 공용 준비 목록에 추가됩니다.',
+      '사라다는 무료지만 주문 수량만큼 반드시 제공해야 합니다.',
     ],
   };
 }
@@ -74,6 +102,8 @@ export function recipeBookEntries({
   return menuIds
     .map((menuId) => {
       if (menuId === 'beer') return beerEntry(drink);
+      if (menuId === 'highball') return highballEntry();
+      if (menuId === 'cabbage-salad') return cabbageSaladEntry();
       const recipe = recipes[menuId];
       return recipe ? skewerEntry(menuId, recipe, thresholds) : null;
     })

@@ -15,7 +15,7 @@ import {
   COOK_SLOT_NEXT_ACTION,
   createD1CookStations,
 } from './render/cookStations.js';
-import { createDrinkPour, DRINK } from './render/drinkStation.js';
+import { createDrinkPour, drinkVisualFill, DRINK } from './render/drinkStation.js';
 import { drinkLeverZoneForDelta } from './render/drinkLeverDrag.js';
 import { createBeerLiquidMaterial } from './render/beerLiquidMaterial.js';
 import { createBeerCoreVfxMaterial } from './render/beerCoreVfxMaterial.js';
@@ -24,6 +24,8 @@ import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { createGrillSmokeVfx } from './render/grillSmokeVfx.js';
 import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createPreparedDock } from './render/preparedDock.js';
+import { createInstantServiceStation } from './application/stations/instantServiceStation.js';
+import { createHighballStation } from './application/stations/highballStation.js';
 import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
 import { D3_TORCH_RULES, torchReadiness } from './domain/cooking/d3TorchFinish.js';
 import { gameAudio, installGameAudio, setBgm, sfx, sfxOff, sfxOnce, loopOn, loopOff, loopRate } from './audio/gameAudio.js';
@@ -89,6 +91,10 @@ import {
   D3_BUSINESS_DAY_DEFINITION_URL,
   loadD3BusinessDayDefinition,
 } from './application/ports/d3BusinessDayDefinition.js';
+import {
+  D4_BUSINESS_DAY_DEFINITION_URL,
+  loadD4BusinessDayDefinition,
+} from './application/ports/d4BusinessDayDefinition.js';
 
 // 정적 진입점의 module graph가 평가된 직후부터 동일 객체를 유지한다. manifest fetch와 영업 세션
 // 복구가 끝나기 전에도 reload/E2E consumer는 readiness를 안전하게 읽을 수 있고, 준비되지 않은
@@ -109,22 +115,33 @@ loopOn('AMB-SHOP-INTERIOR');
 
 const runtimeParams = new URLSearchParams(window.location.search);
 const requestedDayId = runtimeParams.get('day');
-const ACTIVE_DAY_ID = ['d2', 'd3'].includes(requestedDayId) ? requestedDayId : 'd1';
+const ACTIVE_DAY_ID = ['d2', 'd3', 'd4'].includes(requestedDayId) ? requestedDayId : 'd1';
 // unlockLabels는 정산 5단계에서 "오늘 뭘 얻었나"를 보여주는 용도다. 보상 자체는
 // buildBusinessDayCampaignReward가 완료 시점에 계산하므로(그때는 이미 화면이 넘어간다)
 // 읽을거리로 쓸 이름만 여기 둔다.
 const DAY_META = Object.freeze({
   d1: { label: 'D1', nextLabel: 'D2', nextNodeLabel: '둘째 날 이야기', unlockLabels: ['모모 레시피'] },
   d2: { label: 'D2', nextLabel: 'D3', nextNodeLabel: '셋째 날 이야기', unlockLabels: [] },
-  d3: { label: 'D3', nextLabel: '후일담', nextNodeLabel: '사흘째 밤의 후일담', unlockLabels: [] },
+  d3: { label: 'D3', nextLabel: 'D4', nextNodeLabel: '넷째 날 이야기', unlockLabels: ['양배추 사라다', '하이볼'] },
+  d4: { label: 'D4', nextLabel: 'D5 미리보기', nextNodeLabel: '다섯째 날 미리보기', unlockLabels: ['카와 레시피'] },
 });
 const ACTIVE_DAY = DAY_META[ACTIVE_DAY_ID];
 document.title = `YAKI SEASON — ${ACTIVE_DAY.label} 영업`;
-const MENU_ID_BY_LABEL = Object.freeze({ '생맥주': 'beer', '네기마': 'negima', '모모': 'momo' });
+const MENU_ID_BY_LABEL = Object.freeze({
+  '생맥주': 'beer',
+  '네기마': 'negima',
+  '모모': 'momo',
+  '타레 모모': 'momo',
+  '양배추 사라다': 'cabbage-salad',
+  '사라다': 'cabbage-salad',
+  '하이볼': 'highball',
+});
 const menuIdForLabel = (label) => MENU_ID_BY_LABEL[label] ?? null;
 const MENU_META = Object.freeze({
   negima: { label: '네기마' },
   momo: { label: '모모' },
+  'cabbage-salad': { label: '양배추 사라다' },
+  highball: { label: '하이볼' },
 });
 const skewerLabel = (menuId, seasoning = 'none') => (
   menuId === 'momo' && seasoning === 'tare' ? '타레 모모' : MENU_META[menuId]?.label ?? '꼬치'
@@ -148,14 +165,19 @@ document.getElementById('dockShelf')?.style.setProperty(
 document.body.dataset.assetPlaceholderCount = String(runtimeAssets.readiness.placeholderCount);
 document.body.dataset.runtimeAssetsReady = String(runtimeAssets.readiness.ready);
 document.body.dataset.runtimeContractValid = String(runtimeAssets.readiness.contractAudit.valid);
+const activeDayNumber = Number(ACTIVE_DAY_ID.slice(1));
+const ACTIVE_SCREENS = SCREENS.filter((screen) => (
+  !screen.introducedOn || activeDayNumber >= Number(screen.introducedOn.slice(1))
+));
+const ACTIVE_SCREEN_IDS = ACTIVE_SCREENS.map((screen) => screen.id);
 const R = createProductionRenderer(canvas, { runtimeAssets });
-const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
+const director = createStationDirector({ screens: ACTIVE_SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
 
 // 새로고침은 진행 중 영업일을 복구한다(PM 001·002 "새로고침 복구" 완료 기준, 공개 S0→D1 인계).
 // 깨끗한 시작이 필요하면 ?reset=1로 명시한다.
 const resetFirstOrderRuntime = runtimeParams.get('reset') === '1';
 const developmentStartDay = runtimeParams.get('devUnlock') === '1'
-  && ['d2', 'd3'].includes(ACTIVE_DAY_ID)
+  && ['d2', 'd3', 'd4'].includes(ACTIVE_DAY_ID)
   ? ACTIVE_DAY_ID
   : null;
 const developmentTestFlow = runtimeParams.get('testFlow');
@@ -346,6 +368,10 @@ grillWaitingNegima.addEventListener('click', () => invokeLockedControl('grillWai
 grillWaitingMomo.addEventListener('click', () => invokeLockedControl('grillWaitMomo'));
 const dockShelf = el('dockShelf');
 const dock = createPreparedDock({ container: dockShelf });
+let instantStation = createInstantServiceStation();
+let highballStation = createHighballStation({ snapshot: restoredFirstOrderRuntime?.highball });
+// D4부터 두 음료 공정을 같은 장면에 상시 노출한다. 이전 graybox의 tab 상태는 읽지 않는다.
+const drinkMode = ACTIVE_DAY_ID === 'd4' ? 'combined' : 'beer';
 const assemblyRecipePicker = el('assemblyRecipePicker');
 for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
   button.addEventListener('click', () => {
@@ -468,7 +494,7 @@ function renderD3Torch() {
   const job = d3Grill.job(D3_TORCH_JOB_ID);
   const d3FeatureOpen = businessSession?.ok === true
     && businessSession.completed !== true
-    && businessView()?.dayId === 'D3';
+    && ['D3', 'D4'].includes(businessView()?.dayId);
   d3TorchPanel.hidden = !d3FeatureOpen || !job;
   if (!job) {
     d3TorchCursor.hidden = true;
@@ -680,7 +706,7 @@ el('d3RetrieveMomo').addEventListener('click', () => {
   const result = d3Grill.retrieve(D3_TORCH_JOB_ID);
   if (!result.ok) return;
   d3TorchSlotKey = null;
-  dock.add({ menu: '타레 모모', seasoning: result.item.seasoning, label: result.item.quality.grade, good: result.item.quality.good });
+  dock.add({ menuId: 'momo', menu: '타레 모모', seasoning: result.item.seasoning, quality: result.item.quality.grade, good: result.item.quality.good });
   D3_TORCH_JOB_ID = d3Grill.views()[0]?.id ?? 'D3-MOMO-TARE-DEBUG';
   if (d3Grill.job(D3_TORCH_JOB_ID)) d3TorchSlotKey = SLOT_KEYS[0];
   persistFirstOrderRuntime();
@@ -721,6 +747,8 @@ function persistFirstOrderRuntime() {
       d3TorchSlotKey,
       dock: dock.snapshot(),
       glassPlaced,
+      highball: highballStation.snapshot(),
+      drinkMode,
       daySeed,
     }));
   } catch {
@@ -753,6 +781,8 @@ const ORDER_ICON = {
   '생맥주': '/assets/core/ui/order-icon-draft-beer-r1-b1.png',
   '네기마': '/assets/core/ui/order-icon-negima-r1-b1.png',
   '모모': D2_MOMO_RUNTIME_URLS.order,
+  '소금 모모': D2_MOMO_RUNTIME_URLS.order,
+  '타레 모모': D2_MOMO_RUNTIME_URLS.order,
 };
 const PHASE_LABEL = {
   open: '영업 중',
@@ -865,7 +895,7 @@ function seatView(seatId) {
 }
 
 function seatCanReceiveSelected(seat, selected = dock.selected()) {
-  return Boolean(selected && canServeD1MenuToSeat(seat, selected.menu));
+  return Boolean(selected && canServeD1MenuToSeat(seat, selected));
 }
 
 function openServeQuantity(seatId) {
@@ -899,22 +929,31 @@ function confirmServe(all) {
     render();
     return;
   }
-  const menuId = menuIdForLabel(selected.menu);
-  const remaining = seat.remainingItems.find((item) => item.menuId === menuId)?.remaining ?? 0;
-  const available = dock.items().filter((item) => item.menu === selected.menu).length;
+  const menuId = selected.menuId ?? menuIdForLabel(selected.menu);
+  const matchingLine = seat.remainingItems.find((item) => (
+    item.menuId === menuId
+    && (item.seasoning === 'tare' ? selected.seasoning === 'tare' : selected.seasoning !== 'tare')
+  ));
+  const remaining = matchingLine?.remaining ?? 0;
+  const available = dock.items().filter((item) => (
+    item.menuId === menuId && item.seasoning === selected.seasoning
+  )).length;
   const count = all ? Math.min(remaining, available) : Math.min(1, remaining, available);
   let applied = 0;
   let lastResult = null;
   for (let index = 0; index < count; index += 1) {
-    const item = dock.items().find((candidate) => candidate.menu === selected.menu);
+    const item = dock.items().find((candidate) => (
+      candidate.menuId === menuId && candidate.seasoning === selected.seasoning
+    ));
     if (!item) break;
     lastResult = dispatchBusiness(D1_UI_INTENT.SERVE_ITEM, {
       seatId: pendingServeSeatId,
-      menu: item.menu,
-      quality: item.label,
+      menuId: item.menuId,
+      seasoning: item.seasoning ?? null,
+      quality: item.quality,
     });
     if (!lastResult.ok || !lastResult.applied) break;
-    dock.consumeMenu(item.menu, 1);
+    dock.consumeMenuId(item.menuId, 1, item.seasoning);
     applied += 1;
   }
   persistFirstOrderRuntime();
@@ -1108,7 +1147,7 @@ const serveTargetButtons = new Map(SEAT_IDS.map((seatId, index) => {
 function renderPreparedSelection() {
   const selected = dock.selected();
   selectedPreparedItem.textContent = selected
-    ? `선택 완성품 · ${selected.menu} · ${selected.label}`
+    ? `선택 완성품 · ${selected.menu}${selected.label ? ` · ${selected.label}` : ''}`
     : '완성품을 먼저 선택하세요';
   for (const card of el('dockShelf').querySelectorAll('.dock-card')) {
     const selectedCard = card.dataset.testid === `dock-item-${dock.selectedId()}`;
@@ -1209,7 +1248,7 @@ function syncRiskCount(now = performance.now()) {
 const OBJECT_LABELS = {
   workbench: '조립대', binChicken: '닭', binLeek: '파', jigSkewer: '완성 꼬치',
   grillBody: '숯불 그릴', grillWaitTray: '대기', grillFinishedTray: '완료 트레이 (개발)',
-  drinkTower: '맥주 타워', glassRack: '빈잔 놓기',
+  drinkTower: '맥주 타워', glassRack: '빈 잔',
   drinkLeverDrag: '레버',
 };
 const LABEL_UP = { workbench: 74, grillBody: 74, drinkTower: 46, glassRack: 24 };
@@ -1245,30 +1284,278 @@ const foamEl = drinkPanel.querySelector('.foam');
 const stampEl = drinkPanel.querySelector('.stamp');
 const finishBtn = drinkPanel.querySelector('[data-act="finish"]');
 const overflowEl = drinkPanel.querySelector('.drink-overflow');
+const beerHint = el('beerHint');
 const GLASS_PX = 150;
 drinkPanel.querySelector('.target-line').style.bottom = `${GLASS_PX}px`;
+const beerPanel = el('beerPanel');
+const highballPanel = el('highballPanel');
+const highballGuide = el('highballGuide');
+const highballWorktop = highballPanel.querySelector('.highball-worktop');
+const highballVisual = el('highballVisual');
+const highballLiquid = el('highballLiquid');
+const highballHint = el('highballHint');
+const highballOverflow = el('highballOverflow');
+const highballBottleButtons = [...highballPanel.querySelectorAll('[data-liquid]')];
+const HIGHBALL_ART_URLS = [
+  '/assets/campaign/d4/prop-highball-workstation-base-draft-r8.png',
+  '/assets/campaign/d4/prop-highball-glass-draft-r3.png',
+  '/assets/campaign/d4/prop-highball-ice-fill-draft-r2.png',
+  '/assets/campaign/d4/prop-highball-bottles-draft-r1.png',
+];
+const BEER_GLASS_DECK_ALPHA_BOTTOM = 796 / 941;
+const HIGHBALL_WORKTOP_ALPHA_BOTTOM = 901 / 1024;
 
-function updateDrinkPanel(activeScreen) {
-  const show = activeScreen === 'SCR-SVC-DRINK';
+Promise.allSettled(HIGHBALL_ART_URLS.map((src) => {
+  const image = new Image();
+  image.decoding = 'sync';
+  image.fetchPriority = 'high';
+  image.src = src;
+  return image.decode();
+})).then(() => {
+  highballPanel.classList.add('is-art-ready');
+  render();
+});
+
+function beerGlassDeckBaselinePx() {
+  return R.projectArtUvAtPreset?.(
+    'drinkGlassDeck',
+    0.5,
+    BEER_GLASS_DECK_ALPHA_BOTTOM,
+  )?.y ?? window.innerHeight * 0.71;
+}
+
+function alignHighballPanelToBeerGlassDeck() {
+  const worktopHeight = highballWorktop.getBoundingClientRect().height;
+  const top = beerGlassDeckBaselinePx()
+    - (worktopHeight * HIGHBALL_WORKTOP_ALPHA_BOTTOM);
+  highballPanel.style.setProperty('--highball-panel-top', `${top.toFixed(3)}px`);
+}
+
+function highballActionMessage(reason) {
+  return {
+    'glass-required': '빈 잔을 먼저 놓으세요',
+    'ice-required': '얼음을 먼저 넣으세요',
+    'both-liquids-required': '위스키와 탄산수를 모두 따라 주세요',
+    'overflow-decision-required': '넘친 잔을 계속 쓸지 먼저 정하세요',
+  }[reason] ?? '지금은 그 조작을 할 수 없어요';
+}
+
+el('highballGlass').addEventListener('click', () => {
+  const result = highballStation.placeGlass();
+  showHint(result.ok ? '오른쪽 보관대에서 하이볼 잔을 가져왔어요' : '이미 잔이 놓여 있어요');
+  persistFirstOrderRuntime();
+  render();
+});
+el('highballIce').addEventListener('click', () => {
+  const result = highballStation.addIce();
+  showHint(result.ok ? '얼음을 채웠어요' : highballActionMessage(result.reason));
+  persistFirstOrderRuntime();
+  render();
+});
+
+function beginHighballPour(button, now = performance.now()) {
+  const result = highballStation.press(button.dataset.liquid, now);
+  if (!result.ok) {
+    showHint(highballActionMessage(result.reason));
+    return false;
+  }
+  button.classList.add('is-pouring');
+  render();
+  return true;
+}
+
+function releaseHighballPour(now = performance.now()) {
+  const released = highballStation.release(now);
+  highballBottleButtons.forEach((button) => button.classList.remove('is-pouring'));
+  if (released) persistFirstOrderRuntime();
+  return released;
+}
+
+for (const button of highballBottleButtons) {
+  button.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 || !beginHighballPour(button)) return;
+    button.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  });
+  button.addEventListener('keydown', (event) => {
+    if (!['Enter', ' '].includes(event.key) || event.repeat) return;
+    if (beginHighballPour(button)) event.preventDefault();
+  });
+  button.addEventListener('keyup', (event) => {
+    if (!['Enter', ' '].includes(event.key)) return;
+    event.preventDefault();
+    releaseHighballPour();
+  });
+}
+window.addEventListener('pointerup', () => releaseHighballPour());
+window.addEventListener('pointercancel', () => releaseHighballPour());
+
+el('highballLemon').addEventListener('click', () => {
+  const result = highballStation.addLemon();
+  if (!result.ok) {
+    showHint(highballActionMessage(result.reason));
+    return;
+  }
+  const quality = result.completed.quality;
+  dock.add({
+    menuId: 'highball',
+    menu: '하이볼',
+    quality,
+    good: quality === 'Perfect' || quality === 'Good',
+    zone: 'drink',
+  });
+  persistFirstOrderRuntime();
+  showHint('하이볼을 음료 픽업대에 올렸어요');
+  render();
+});
+highballOverflow.querySelector('[data-highball-act="serve-low"]').addEventListener('click', () => {
+  highballStation.acceptOverflow();
+  persistFirstOrderRuntime();
+  showHint('낮은 품질로 계속합니다 · 레몬을 올려 마무리하세요');
+  render();
+});
+highballOverflow.querySelector('[data-highball-act="discard"]').addEventListener('click', () => {
+  highballStation.discard();
+  persistFirstOrderRuntime();
+  showHint('하이볼 잔을 폐기했어요');
+  render();
+});
+
+function updateHighballPanel(show) {
+  const state = highballStation.view();
+  highballPanel.hidden = !show;
+  highballGuide.hidden = !show || !highballPanel.classList.contains('is-art-ready');
+  if (!show) {
+    highballGuide.classList.remove('is-overflow');
+    return;
+  }
+  alignHighballPanelToBeerGlassDeck();
+  const hasWhiskey = state.whiskeyUnits > 0.001;
+  const hasSoda = state.sodaUnits > 0.001;
+  const fillPercent = Math.min(85, state.fillRatio * 85);
+  highballVisual.hidden = !state.glassPlaced;
+  highballVisual.classList.toggle('has-ice', state.iceAdded);
+  highballVisual.classList.toggle('has-whiskey', hasWhiskey);
+  highballVisual.classList.toggle('has-soda', hasSoda);
+  highballVisual.classList.toggle('is-mixed', hasWhiskey && hasSoda);
+  highballVisual.classList.toggle('is-pouring-whiskey', state.activeLiquid === 'whiskey');
+  highballVisual.classList.toggle('is-pouring-soda', state.activeLiquid === 'soda');
+  highballVisual.classList.toggle('is-overflow', state.overflow);
+  highballVisual.classList.toggle('is-overflow-accepted', state.overflowAccepted);
+  highballWorktop.classList.toggle('is-pouring-whiskey', state.activeLiquid === 'whiskey');
+  highballWorktop.classList.toggle('is-pouring-soda', state.activeLiquid === 'soda');
+  highballBottleButtons.forEach((button) => {
+    button.classList.toggle('is-pouring', button.dataset.liquid === state.activeLiquid);
+  });
+  highballLiquid.style.height = `${fillPercent}%`;
+  highballVisual.style.setProperty('--highball-fill', state.fillRatio.toFixed(4));
+  highballVisual.style.setProperty(
+    '--highball-whiskey-share',
+    state.totalUnits > 0 ? (state.whiskeyUnits / state.totalUnits).toFixed(4) : '0',
+  );
+  highballVisual.style.setProperty(
+    '--highball-soda-share',
+    state.totalUnits > 0 ? (state.sodaUnits / state.totalUnits).toFixed(4) : '0',
+  );
+  highballVisual.setAttribute(
+    'aria-label',
+    `하이볼 잔 ${Math.round(state.fillRatio * 100)}% · 위스키 ${state.whiskeyUnits.toFixed(1)} · 탄산수 ${state.sodaUnits.toFixed(1)}`,
+  );
+  highballOverflow.hidden = !state.overflow;
+  highballGuide.classList.toggle('is-overflow', state.overflow);
+  highballHint.hidden = state.overflow;
+  el('highballGlass').disabled = state.glassPlaced;
+  el('highballIce').disabled = !state.glassPlaced || state.iceAdded;
+  el('highballLemon').disabled = !state.canAddLemon;
+  highballHint.textContent = state.activeLiquid === 'whiskey'
+    ? '위스키 따르는 중'
+    : state.activeLiquid === 'soda'
+      ? '탄산수 따르는 중'
+      : !state.glassPlaced
+        ? '빈 잔을 가져오세요'
+        : !state.iceAdded
+          ? '얼음을 넣으세요'
+          : state.canAddLemon
+            ? '비율을 살피고 레몬으로 마무리하세요'
+            : '위스키와 탄산수 병을 눌러 따르세요';
+}
+
+function updateHighballSceneMotion(activeScreen, now = performance.now()) {
+  const drinkScreen = 'SCR-SVC-DRINK';
+  const fromScreen = director.fromScreenId();
+  const transitioning = director.isTransitioning();
+  const entering = transitioning && activeScreen === drinkScreen && fromScreen !== drinkScreen;
+  let x = 0;
+  let y = 0;
+  let scale = 1;
+  if (entering && R.projectScreenPointAtPreset) {
+    const panelWidth = highballPanel.offsetWidth;
+    const panelHeight = highballPanel.offsetHeight;
+    const centerX = highballPanel.offsetLeft + (panelWidth / 2);
+    const centerY = highballPanel.offsetTop + (panelHeight / 2);
+    const canvasRect = canvas.getBoundingClientRect();
+    const normalizedX = (centerX - canvasRect.left) / canvasRect.width;
+    const normalizedY = (centerY - canvasRect.top) / canvasRect.height;
+    const halfWidth = (panelWidth / canvasRect.width) / 2;
+    const center = R.projectScreenPointAtPreset(drinkScreen, normalizedX, normalizedY);
+    const left = R.projectScreenPointAtPreset(drinkScreen, normalizedX - halfWidth, normalizedY);
+    const right = R.projectScreenPointAtPreset(drinkScreen, normalizedX + halfWidth, normalizedY);
+    if (center && left && right) {
+      x = center.x - (canvasRect.left + centerX);
+      y = center.y - (canvasRect.top + centerY);
+      scale = Math.max(0.72, Math.min(1.16, Math.abs(right.x - left.x) / panelWidth));
+    }
+  }
+  highballPanel.style.setProperty('--highball-scene-x', `${x.toFixed(3)}px`);
+  highballPanel.style.setProperty('--highball-scene-y', `${y.toFixed(3)}px`);
+  highballPanel.style.setProperty('--highball-scene-scale', scale.toFixed(4));
+  highballPanel.classList.toggle('is-scene-moving', entering);
+  drinkPanel.classList.toggle('is-scene-moving', entering);
+  highballPanel.classList.remove('is-scene-leaving');
+}
+
+function beerGuideMessage(state, combined) {
+  if (!combined) return '중립 레버를 아래로 드래그=맥주 · 위로 드래그=거품';
+  if (!glassPlaced) return '빈 잔을 놓으세요';
+  if (state.active === 'beer') return '맥주 따르는 중';
+  if (state.active === 'foam') return '거품 올리는 중';
+  if (state.phase === 'ready') return '비율이 맞았어요 · 완성하세요';
+  return '레버로 비율을 맞추세요';
+}
+
+function updateDrinkPanel(activeScreen, now = performance.now()) {
+  const onDrinkScreen = activeScreen === 'SCR-SVC-DRINK';
+  const combined = ACTIVE_DAY_ID === 'd4';
+  drinkPanel.classList.toggle('is-d4', combined);
+  R.setObjectEnabled?.('drinkStation', true);
+  R.setObjectEnabled?.('drinkGlassDeck', true);
+  R.setObjectEnabled?.('glassRack', true);
+  R.setObjectEnabled?.('drinkLeverDrag', true);
   R.setObjectEnabled?.('drinkPlacedGlass', glassPlaced);
   R.setObjectEnabled?.('drinkBeerLiquid', glassPlaced);
   R.setObjectEnabled?.('drinkBeerVfx', glassPlaced);
-  drinkPanel.hidden = !show;
+  drinkPanel.hidden = !onDrinkScreen;
+  beerPanel.hidden = combined && !onDrinkScreen;
+  updateHighballPanel(onDrinkScreen && combined);
+  if (combined) updateHighballSceneMotion(activeScreen, now);
   const s = pour.state();
+  const visualFill = drinkVisualFill(s);
+  beerHint.textContent = beerGuideMessage(s, combined);
+  beerPanel.classList.toggle('is-overflow', s.phase === 'overflow');
   beerLiquid?.setState({
-    beerFill: s.beerSec / DRINK.glassCapacity,
-    foamFill: s.foamSec / DRINK.glassCapacity,
+    beerFill: visualFill.beerFill,
+    foamFill: visualFill.foamFill,
     overflow: s.phase === 'overflow',
   });
   beerCoreVfx?.setState({
     active: s.active,
-    foamFill: s.foamSec / DRINK.glassCapacity,
+    foamFill: visualFill.foamFill,
     overflow: s.phase === 'overflow',
     finished: s.phase === 'ready' && s.beerOk && s.foamOk,
   });
-  if (!show) return;
-  const beerH = Math.min(1, s.beerSec / DRINK.glassCapacity) * GLASS_PX;
-  const foamH = Math.min(1 - beerH / GLASS_PX, s.foamSec / DRINK.glassCapacity) * GLASS_PX;
+  if (!onDrinkScreen) return;
+  const beerH = visualFill.beerFill * GLASS_PX;
+  const foamH = visualFill.foamFill * GLASS_PX;
   beerEl.style.height = `${beerH}px`;
   foamEl.style.height = `${foamH}px`;
   foamEl.style.bottom = `${beerH}px`;
@@ -1280,7 +1567,7 @@ function updateDrinkPanel(activeScreen) {
 function finishDrink() {
   const q = pour.finish();
   if (q) {
-    dock.add({ menu: '생맥주', label: q, good: q === 'Perfect' || q === 'Good' });
+    dock.add({ menuId: 'beer', menu: '생맥주', quality: q, good: q === 'Perfect' || q === 'Good', zone: 'drink' });
     glassPlaced = false;
     persistFirstOrderRuntime();
     showHint('생맥주를 음료 픽업대에 올렸어요');
@@ -1291,7 +1578,7 @@ function finishDrink() {
 function serveOverflowLow() {
   const q = pour.serveOverflow();
   if (q) {
-    dock.add({ menu: '생맥주', label: q, good: false });
+    dock.add({ menuId: 'beer', menu: '생맥주', quality: q, good: false, zone: 'drink' });
     glassPlaced = false;
     persistFirstOrderRuntime();
   }
@@ -1302,6 +1589,63 @@ function discardDrink() { pour.discard(); pour.reset(); glassPlaced = false; per
 finishBtn.addEventListener('click', finishDrink);
 drinkPanel.querySelector('[data-act="serve-low"]').addEventListener('click', serveOverflowLow);
 drinkPanel.querySelector('[data-act="discard"]').addEventListener('click', discardDrink);
+
+const instantPanel = el('instantPanel');
+const instantArtScene = el('instantArtScene');
+const cabbageSaladPrepare = el('cabbageSaladPrepare');
+const cabbageSaladProgress = el('cabbageSaladProgress');
+const instantMessage = el('instantMessage');
+
+function beginInstantPreparation(now = performance.now()) {
+  if (ACTIVE_DAY_ID !== 'd4' || director.activeScreenId() !== 'SCR-SVC-INSTANT') return false;
+  if (!instantStation.begin(now)) return false;
+  instantMessage.textContent = '사라다 담는 중';
+  cabbageSaladPrepare.classList.add('is-holding');
+  render();
+  return true;
+}
+
+function releaseInstantPreparation() {
+  const completed = instantStation.release();
+  cabbageSaladPrepare.classList.remove('is-holding');
+  if (!completed) instantMessage.textContent = '접시에 담으려면 2.5초 동안 계속 누르세요';
+  render();
+  return completed;
+}
+
+function cancelInstantPreparation() {
+  const changed = instantStation.cancel();
+  cabbageSaladPrepare.classList.remove('is-holding');
+  if (changed) instantMessage.textContent = '담기를 취소했습니다 · 처음부터 다시 누르세요';
+  return changed;
+}
+
+cabbageSaladPrepare.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0 || !beginInstantPreparation()) return;
+  cabbageSaladPrepare.setPointerCapture?.(event.pointerId);
+  event.preventDefault();
+});
+cabbageSaladPrepare.addEventListener('pointerup', releaseInstantPreparation);
+cabbageSaladPrepare.addEventListener('pointercancel', releaseInstantPreparation);
+cabbageSaladPrepare.addEventListener('keydown', (event) => {
+  if (!['Enter', ' '].includes(event.key) || event.repeat) return;
+  if (beginInstantPreparation()) event.preventDefault();
+});
+cabbageSaladPrepare.addEventListener('keyup', (event) => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  event.preventDefault();
+  releaseInstantPreparation();
+});
+
+function updateInstantPanel(activeScreen) {
+  const show = ACTIVE_DAY_ID === 'd4' && activeScreen === 'SCR-SVC-INSTANT';
+  instantPanel.hidden = !show;
+  instantArtScene.hidden = !show;
+  const state = instantStation.view();
+  cabbageSaladProgress.style.setProperty('--instant-progress', `${state.ratio * 360}deg`);
+  cabbageSaladProgress.setAttribute('aria-valuenow', String(Math.round(state.ratio * 100)));
+  cabbageSaladPrepare.classList.toggle('is-holding', state.phase === 'holding');
+}
 
 // ── 상태 → 장면·HUD ──────────────────────────────────────────
 const slotIndexOf = (key) => SLOT_KEYS.indexOf(key);
@@ -1314,17 +1658,19 @@ function shouldShow(key) {
 }
 
 function extraKind(customerId) {
-  if (/^D[1-3]-(OFFICE|COMMUTER)/.test(customerId ?? '')) return 'office';
-  if (/^D[1-3]-SOLO/.test(customerId ?? '')) return 'solo';
+  if (/^D[1-4]-(OFFICE|COMMUTER)/.test(customerId ?? '')) return 'office';
+  if (/^D[1-4]-SOLO/.test(customerId ?? '')) return 'solo';
   return null;
 }
 
 function tsukiokaArtFor(seat, nowMs) {
   if (!seat) return runtimeAssets.TSUKIOKA_WAITING;
   const view = businessView();
-  const servedBeer = seatHasServedMenu(view, seat, 'beer');
+  const servedBeer = seatHasServedMenu(view, seat, 'beer')
+    || seatHasServedMenu(view, seat, 'highball');
   const servedSkewer = seatHasServedMenu(view, seat, 'negima')
-    || seatHasServedMenu(view, seat, 'momo');
+    || seatHasServedMenu(view, seat, 'momo')
+    || seatHasServedMenu(view, seat, 'cabbage-salad');
   if (seat.phase === 'eating' || seat.phase === 'done') {
     if (servedBeer && servedSkewer) return resolveD1ReceivedEatingFrame(runtimeAssets, nowMs);
     if (servedBeer) return runtimeAssets.TSUKIOKA_PARTIAL_BEER;
@@ -1358,7 +1704,9 @@ function updateTsukiokaArt(nowMs = visualNowMs(), resolvedArt = null) {
     || art.frameRole === 'drink-frame';
   // actor 프레임은 매 rAF마다 바뀐다. 같은 프레임에서 테이블 잔도 함께 숨겨
   // 손과 테이블에 잔이 한 프레임이라도 중복되는 현상을 막는다.
-  R.setSeatBeerVisible(seat.seatId, seatHasServedMenu(view, seat, 'beer') && !holdingBeer);
+  R.setSeatBeerVisible(seat.seatId, (
+    seatHasServedMenu(view, seat, 'beer') || seatHasServedMenu(view, seat, 'highball')
+  ) && !holdingBeer);
   const genericActor = R.seatActorMesh[seat.seatId];
   if (genericActor) genericActor.visible = false;
   return art;
@@ -1394,8 +1742,10 @@ function syncCustomers() {
     const seat = seats.find((item) => item.seatId === seatId);
     const servedNegima = seatHasServedMenu(view, seat, 'negima');
     const servedMomo = seatHasServedMenu(view, seat, 'momo');
-    const servedSkewer = servedNegima || servedMomo;
-    const servedBeer = seatHasServedMenu(view, seat, 'beer');
+    const servedSalad = seatHasServedMenu(view, seat, 'cabbage-salad');
+    const servedSkewer = servedNegima || servedMomo || servedSalad;
+    const servedBeer = seatHasServedMenu(view, seat, 'beer')
+      || seatHasServedMenu(view, seat, 'highball');
     const kind = extraKind(seat?.customerId);
     const officeArt = kind === 'office'
       ? resolveD1OfficeCustomerFrame(runtimeAssets.COMMUTER_CUSTOMER, {
@@ -1501,6 +1851,8 @@ function render() {
   renderOrderHud();
   renderBusiness();
   renderD3Torch();
+  updateDrinkPanel(director.activeScreenId());
+  updateInstantPanel(director.activeScreenId());
   syncCustomers();
   renderServeTargets();
   for (const btn of document.querySelectorAll('.quick-nav button')) btn.classList.toggle('active', btn.dataset.screen === director.activeScreenId());
@@ -1723,11 +2075,11 @@ function renderBusiness() {
     && businessSession.completed !== true
     && view?.dayId?.toLowerCase() === ACTIVE_DAY_ID;
   const recipePickerOpen = activeDayFeatureOpen
-    && ['d2', 'd3'].includes(ACTIVE_DAY_ID)
+    && ['d2', 'd3', 'd4'].includes(ACTIVE_DAY_ID)
     && director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
   assemblyRecipePicker.hidden = !recipePickerOpen;
   for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
-    button.hidden = button.dataset.d3Only === 'true' && ACTIVE_DAY_ID !== 'd3';
+    button.hidden = button.dataset.d3Only === 'true' && !['d3', 'd4'].includes(ACTIVE_DAY_ID);
     const selected = button.dataset.menuId === cook.selectedMenuId()
       && (button.dataset.seasoning ?? 'none') === cook.selectedSeasoning();
     button.setAttribute('aria-pressed', String(selected));
@@ -1806,9 +2158,7 @@ function renderBusiness() {
   if (completed) {
     const campaign = businessSession?.bridge?.getState?.();
     el('resultMessage').textContent = `${ACTIVE_DAY.label} 완료 · 보상 ${campaign?.economy?.balance ?? 44} · 명성 ${campaign?.economy?.reputation ?? 12} · ${ACTIVE_DAY.nextLabel} 저장 완료`;
-    el('continueButton').textContent = ACTIVE_DAY_ID === 'd3'
-      ? '후일담으로 계속'
-      : `${ACTIVE_DAY.nextLabel}로 계속`;
+    el('continueButton').textContent = `${ACTIVE_DAY.nextLabel}로 계속`;
     el('continueButton').href = `./s0-d3.html?post=${ACTIVE_DAY_ID}`;
   }
 }
@@ -1817,7 +2167,10 @@ function renderBusiness() {
 function renderRecipeBook() {
   const container = el('recipeBookEntries');
   container.replaceChildren();
-  for (const entry of recipeBookEntries()) {
+  const menuIds = ACTIVE_DAY_ID === 'd4'
+    ? ['negima', 'momo', 'beer', 'cabbage-salad', 'highball']
+    : ['negima', 'momo', 'beer'];
+  for (const entry of recipeBookEntries({ menuIds })) {
     const article = document.createElement('article');
     article.className = 'recipe-book-entry';
     article.dataset.testid = `recipe-book-${entry.menuId}`;
@@ -1970,6 +2323,8 @@ function setRuntimeSuspended(reason, suspended) {
 
   const now = performance.now();
   if (isSuspended) {
+    cancelInstantPreparation();
+    releaseHighballPour(now);
     releasePointers();
     cook.pause(now);
     pour.pause(now);
@@ -2098,7 +2453,7 @@ function clickGrillSlot(i, now) {
     const label = skewerLabel(menuId);
     sfx('SFX-GRILL-RETRIEVE');
     sfx(r.quality?.good ? 'SFX-JUDGE-PERFECT' : 'SFX-JUDGE-FAIL');
-    if (ACTIVE_DAY_ID === 'd3' && menuId === 'momo' && r.seasoning === 'tare') {
+    if (['d3', 'd4'].includes(ACTIVE_DAY_ID) && menuId === 'momo' && r.seasoning === 'tare') {
       d3Grill.stageCookedItem({
         id: r.id,
         menuId: 'momo',
@@ -2111,10 +2466,10 @@ function clickGrillSlot(i, now) {
         d3TorchSlotKey = SLOT_KEYS[i];
       }
     } else {
-      dock.add({ menu: label, label: r.quality.grade, good: r.quality.good });
+      dock.add({ menuId, menu: label, seasoning: r.seasoning ?? null, quality: r.quality.grade, good: r.quality.good, zone: 'food' });
     }
     persistFirstOrderRuntime();
-    showHint(ACTIVE_DAY_ID === 'd3' && menuId === 'momo' && r.seasoning === 'tare'
+    showHint(['d3', 'd4'].includes(ACTIVE_DAY_ID) && menuId === 'momo' && r.seasoning === 'tare'
       ? '구운 타레 모모를 도포·재가열 마감대로 옮겼어요'
       : `완성 ${label}가 오른쪽 종류·품질별 목록에 추가됐어요`);
   }
@@ -2409,7 +2764,7 @@ for (const key of SLOT_KEYS) {
 // ── 화면 전환 ────────────────────────────────────────────────
 function buildQuickNav() {
   const nav = el('quickNav');
-  for (const s of SCREENS) {
+  for (const s of ACTIVE_SCREENS) {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = s.name;
@@ -2469,7 +2824,9 @@ el('postBusinessAction').addEventListener('click', handlePostBusinessAction);
 
 async function bootBusinessDay() {
   try {
-    const consumed = ACTIVE_DAY_ID === 'd3'
+    const consumed = ACTIVE_DAY_ID === 'd4'
+      ? await loadD4BusinessDayDefinition({ url: D4_BUSINESS_DAY_DEFINITION_URL })
+      : ACTIVE_DAY_ID === 'd3'
       ? await loadD3BusinessDayDefinition({ url: D3_BUSINESS_DAY_DEFINITION_URL, seed: daySeed })
       : ACTIVE_DAY_ID === 'd2'
         ? await loadD2BusinessDayDefinition({ url: D2_BUSINESS_DAY_DEFINITION_URL, seed: daySeed })
@@ -2479,6 +2836,19 @@ async function bootBusinessDay() {
       businessRenderDue = true;
       render();
       return;
+    }
+    if (ACTIVE_DAY_ID === 'd4') {
+      const instantDefinition = consumed.definition.stationProcesses?.instant
+        ?.items?.['cabbage-salad'];
+      const highballDefinition = consumed.definition.stationProcesses?.drink
+        ?.workSurfaces?.highball;
+      instantStation = createInstantServiceStation({
+        holdMs: instantDefinition?.prepareHoldMs,
+      });
+      highballStation = createHighballStation({
+        config: highballDefinition,
+        snapshot: restoredFirstOrderRuntime?.highball,
+      });
     }
     const resetDevelopment = resetFirstOrderRuntime;
     businessSession = await createD1BusinessDayBrowserSession({
@@ -2538,7 +2908,13 @@ function loop(now) {
   }
   director.tick(now);
   const active = director.activeScreenId();
-  if (active !== lastActive) { R.goToScreen(active, now, SCREEN_TRANSITION_MS); lastActive = active; render(); }
+  if (active !== lastActive) {
+    cancelInstantPreparation();
+    releaseHighballPour(now);
+    R.goToScreen(active, now, SCREEN_TRANSITION_MS);
+    lastActive = active;
+    render();
+  }
   if (cook.waitingCount() !== lastWaiting) { lastWaiting = cook.waitingCount(); render(); }
   if (businessPort && lastBusinessFrameAt !== null) {
     businessDeltaMs += Math.max(0, Math.min(1_000, now - lastBusinessFrameAt));
@@ -2557,10 +2933,30 @@ function loop(now) {
   R.setCleanupOverlayFrame(Math.floor(visualNow / 180));
   updateGrillStatus(now);
   pour.tick(now);
+  const highballTick = highballStation.tick(now);
+  if (highballTick.overflowed) {
+    persistFirstOrderRuntime();
+    showHint('잔이 넘쳤어요 · 낮은 품질로 계속하거나 폐기하세요');
+  }
+  const instantTick = instantStation.tick(now);
+  if (instantTick.completed) {
+    dock.add({
+      menuId: 'cabbage-salad',
+      menu: '양배추 사라다',
+      quality: null,
+      qualityMode: 'none',
+      good: null,
+      zone: 'food',
+    });
+    instantMessage.textContent = '사라다 한 접시를 준비 목록에 올렸어요';
+    persistFirstOrderRuntime();
+    showHint('양배추 사라다 한 접시 완성');
+  }
   updateDrinkAudio(pour.state());
   beerLiquid?.setTime(visualNow / 1000);
   beerCoreVfx?.setTime(visualNow / 1000);
-  updateDrinkPanel(active);
+  updateDrinkPanel(active, now);
+  updateInstantPanel(active);
   updateLabels();
   customers.tick(active);
   positionServeTargets();

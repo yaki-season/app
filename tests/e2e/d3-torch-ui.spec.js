@@ -165,7 +165,7 @@ test('조립대 타레는 붓을 꼬치 전체에 직접 움직여야 도포된�
   await expect(brush).toBeHidden();
 });
 
-test('D3 8명·7주문은 마지막 정리 뒤 정산하고 후일담 종착 저장으로 전환한다', async ({ page }) => {
+test('D3 8명·7주문은 마지막 정리 뒤 정산하고 D4 프리오픈으로 전환한다', async ({ page }) => {
   await installD3Save(page);
   await page.goto('/src/d1-game.html?day=d3');
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
@@ -208,10 +208,10 @@ test('D3 8명·7주문은 마지막 정리 뒤 정산하고 후일담 종착 저
     return { view: D.businessView(), campaign: D.campaignState() };
   });
   expect(result.view.phase).toBe('complete');
-  expect(result.campaign.campaign).toMatchObject({ nodeId: 'd4-preview', phase: 'preview' });
+  expect(result.campaign.campaign).toMatchObject({ nodeId: 'd4', phase: 'pre-open' });
 
   await expect(page.getByTestId('result-overlay')).toBeVisible();
-  await expect(page.getByTestId('continue-button')).toHaveText('후일담으로 계속');
+  await expect(page.getByTestId('continue-button')).toHaveText('D4로 계속');
   await page.getByTestId('continue-button').click();
   await expect(page).toHaveURL(/\/src\/s0-d3\.html\?post=d3$/);
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D3-POST');
@@ -219,19 +219,19 @@ test('D3 8명·7주문은 마지막 정리 뒤 정산하고 후일담 종착 저
   for (let line = 0; line < 3; line += 1) {
     await page.locator('#actions .primary').click();
   }
-  await expect(page.locator('body')).toHaveAttribute('data-state-id', 'D3-epilogue-1');
-  await expect(page.getByRole('heading', { name: '불은 금세 식지 않았다' })).toBeVisible();
-
-  for (let pageIndex = 1; pageIndex < 4; pageIndex += 1) {
-    await page.getByRole('button', { name: '다음 장면' }).click();
-  }
-  await expect(page.locator('body')).toHaveAttribute('data-state-id', 'D3-epilogue-4');
-  await expect(page.getByText('YAKI SEASON의 다음 이야기는 차후 공개됩니다.')).toBeVisible();
-
-  await page.getByRole('button', { name: '메인 화면으로' }).click();
-  await expect(page).toHaveURL(/\/src\/public-shell\.html$/);
-  await expect(page.getByRole('button', { name: '후일담 다시 보기' })).toBeVisible();
-  await expect(page.getByText('사흘의 영업을 마쳤습니다')).toBeVisible();
+  await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D4-PREOPEN');
+  await expect(page.getByText('양배추 사라다를 준비해 두자', { exact: false })).toBeVisible();
+  await expect(page.locator('body')).toHaveAttribute(
+    'data-story-illustration-asset-id',
+    'IL-D4-PREOPEN-PIXEL',
+  );
+  await expect(page.locator('#story-illustration')).toHaveAttribute(
+    'src',
+    '/public/assets/core/s0/story/d4-preopen-full-scene-r4-b1.png',
+  );
+  await expect(page.locator('#story-illustration')).toBeVisible();
+  await expect(page.locator('#story-portrait')).toBeHidden();
+  await expect(page.locator('#story-background')).toBeHidden();
 });
 
 test('D3가 개방되지 않은 저장에서는 직접 URL로 기능 UI를 열 수 없다', async ({ page }) => {

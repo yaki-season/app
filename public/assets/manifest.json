@@ -2167,6 +2167,44 @@
       "format": "png"
     },
     {
+      "id": "IL-D4-PREOPEN-PIXEL",
+      "sourceRevision": 4,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d4-preopen"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D4-PREOPEN-PIXEL:R4",
+      "provenance": "PROV:IL-D4-PREOPEN-PIXEL:R4",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "SCN-D4-PREOPEN",
+        "User approved D4 pre-open story candidate R4 2026-08-26"
+      ],
+      "reviewedAt": "2026-08-26",
+      "url": "/assets/core/s0/story/d4-preopen-full-scene-r4-b1.png",
+      "sha256": "d11bb3aa56eb404733421746482e19be49d66c2e0135d5da3ee14416ea6a65e2",
+      "bytes": 2721996,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
+    },
+    {
       "id": "BG-WORKSPACE-GRILL",
       "sourceRevision": 2,
       "runtimeBuild": 1,

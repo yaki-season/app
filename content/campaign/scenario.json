@@ -165,9 +165,9 @@
     "stage": "D3",
     "emotionKey": "화면 밖의 불",
     "prevDay": "d2",
-    "nextDay": "d4-preview",
+    "nextDay": "d4",
     "dayDataId": "d3",
-    "unlocks": ["d4-preview"],
+    "unlocks": ["day-d4", "menu-cabbage-salad", "menu-highball"],
     "fallbackNote": "타레 주문은 유지하며 특수 엑스트라가 없으면 기본 엑스트라 유형으로 대체한다.",
     "entryConditionId": "d2-settlement-complete",
     "completionConditionId": "d3-settlement-complete",
@@ -187,51 +187,101 @@
         "skipSummary": [
           "타레와 교차 작업을 안전하게 마쳤다.",
           "가게를 소개해도 되는지 묻는 손님이 생겼다.",
-          "다음 목표: D4의 즉시 제공 메뉴를 준비한다."
+          "다음 목표: D4의 사이드 메뉴를 준비한다."
         ]
       }
     ],
     "skipSummary": [
       "타레 붓 공정을 안전하게 배운다.",
       "그릴과 생맥주 교차 위험을 복습한다.",
-      "정산 뒤 사흘간의 영업을 닫는 읽기 전용 후일담을 연다."
+      "정산 뒤 양배추 사라다와 하이볼을 준비하는 D4를 연다."
     ],
     "interactions": [],
     "readOnly": false,
     "gameplayCommandIds": ["begin-day", "accept-order", "apply-tare", "serve-item", "cleanup-seat", "complete-settlement"],
     "economyCommandIds": ["record-sale", "record-tip", "apply-settlement"],
     "reward": {
-      "growthResultIds": ["d4-preview"],
+      "growthResultIds": ["day-d4", "menu-cabbage-salad", "menu-highball"],
       "storyFlagIds": ["d3-complete", "tare-introduced"]
     }
   },
   {
-    "id": "d4-preview",
+    "id": "d4",
     "schemaVersion": 2,
-    "displayKey": "scenario.d4-preview",
+    "displayKey": "scenario.d4",
     "active": true,
     "status": "approved",
-    "kind": "preview",
-    "stage": "D3 후일담",
-    "emotionKey": "남겨 둔 불빛",
+    "kind": "business-day",
+    "stage": "D4",
+    "emotionKey": "넓어진 카운터",
     "prevDay": "d3",
-    "nextDay": null,
-    "unlocks": [],
-    "fallbackNote": "후일담을 닫고 메인 화면으로 돌아가도 D3 정산과 저장 상태는 그대로 유지한다.",
+    "nextDay": "d5-preview",
+    "releaseDataId": "d4-business-day-domain.v1",
+    "unlocks": ["day-d5", "menu-kawa"],
+    "fallbackNote": "사라다와 하이볼은 D4 release definition을 기준으로 제공하며 전용 아트가 없을 때도 동일한 스테이션 조작과 주문 완료 조건을 유지한다.",
     "entryConditionId": "d3-settlement-complete",
-    "completionConditionId": "preview-dismissed",
+    "completionConditionId": "d4-settlement-complete",
     "scenes": [
       {
-        "id": "SCN-D3-EPILOGUE",
-        "timing": "preview",
+        "id": "SCN-D4-PREOPEN",
+        "timing": "pre-open",
         "skipSummary": [
-          "사흘 동안 남은 불빛과 손님들의 기억을 돌아본다.",
-          "다음 계절의 이야기는 차후 공개된다."
+          "기다리는 손님에게 먼저 내어 줄 양배추 사라다를 준비한다.",
+          "츠키오카의 주문으로 하이볼 제작을 시작한다.",
+          "D4 목표: 사이드 메뉴·그릴·드링크를 함께 운영한다."
+        ]
+      },
+      {
+        "id": "SCN-D4-POST",
+        "timing": "post-settlement",
+        "skipSummary": [
+          "양배추 사라다와 하이볼을 처음 손님상에 올렸다.",
+          "늘어난 주문 속에서 세 스테이션을 끝까지 운영했다.",
+          "가게에 이어 갈 리듬이 생기기 시작했다."
         ]
       }
     ],
     "skipSummary": [
-      "D3 후일담은 읽기 전용 종착 장면이다.",
+      "양배추 사라다를 무료 사이드 메뉴로 제공한다.",
+      "하이볼을 직접 만들어 제공한다.",
+      "정산 뒤 D5 미리보기와 카와 레시피를 연다."
+    ],
+    "interactions": [],
+    "readOnly": false,
+    "gameplayCommandIds": ["begin-day", "accept-order", "prepare-side-menu", "pour-highball", "serve-item", "cleanup-seat", "complete-settlement"],
+    "economyCommandIds": ["record-sale", "record-tip", "apply-settlement"],
+    "reward": {
+      "growthResultIds": ["day-d5", "menu-kawa"],
+      "storyFlagIds": ["d4-complete", "cabbage-salad-introduced", "highball-introduced"]
+    }
+  },
+  {
+    "id": "d5-preview",
+    "schemaVersion": 2,
+    "displayKey": "scenario.d5-preview",
+    "active": true,
+    "status": "approved",
+    "kind": "preview",
+    "stage": "D4 후일담",
+    "emotionKey": "이어 갈 리듬",
+    "prevDay": "d4",
+    "nextDay": null,
+    "unlocks": [],
+    "fallbackNote": "후일담을 닫고 메인 화면으로 돌아가도 D4 정산과 저장 상태는 그대로 유지한다.",
+    "entryConditionId": "d4-settlement-complete",
+    "completionConditionId": "preview-dismissed",
+    "scenes": [
+      {
+        "id": "SCN-D4-EPILOGUE",
+        "timing": "preview",
+        "skipSummary": [
+          "나흘 동안 생긴 가게의 리듬을 돌아본다.",
+          "다음 이야기는 차후 공개된다."
+        ]
+      }
+    ],
+    "skipSummary": [
+      "D4 후일담은 읽기 전용 종착 장면이다.",
       "메인 화면으로 돌아가도 게임플레이와 경제 상태를 바꾸지 않는다."
     ],
     "interactions": [],

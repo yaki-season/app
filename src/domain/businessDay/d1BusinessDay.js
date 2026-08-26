@@ -153,6 +153,20 @@ export function createBusinessDayDefinition(record, {
   if (Object.keys(economy.menuPrices ?? {}).length === 0) {
     throw new TypeError('D1 메뉴 기본 판매가가 필요합니다.');
   }
+  const menuPolicies = definition.menuPolicies ?? {};
+  for (const [menuId, policy] of Object.entries(menuPolicies)) {
+    if (!(menuId in economy.menuPrices)) {
+      throw new TypeError(`메뉴 정책에 대응하는 가격이 없습니다: ${menuId}`);
+    }
+    if (!['graded', 'none'].includes(policy?.qualityMode ?? 'graded')) {
+      throw new TypeError(`지원하지 않는 품질 정책입니다: ${menuId}`);
+    }
+    assertFinite(policy?.satisfactionWeight ?? 1, `menuPolicies.${menuId}.satisfactionWeight`);
+    assertFinite(policy?.waitRecoveryMs ?? timing.waitRecovery, `menuPolicies.${menuId}.waitRecoveryMs`);
+    if (policy?.saleLedger != null && typeof policy.saleLedger !== 'boolean') {
+      throw new TypeError(`menuPolicies.${menuId}.saleLedger는 boolean이어야 합니다.`);
+    }
+  }
 
   if (!Array.isArray(definition.waves) || definition.waves.length === 0) {
     throw new TypeError('D1 손님 파동이 필요합니다.');
@@ -196,6 +210,9 @@ export function createBusinessDayDefinition(record, {
         if (!(line.menuId in economy.menuPrices)) {
           throw new TypeError(`${customer.order.id} 메뉴 가격이 없습니다: ${line.menuId}`);
         }
+      }
+      if (customer.order.lines.every((line) => economy.menuPrices[line.menuId] === 0)) {
+        throw new TypeError(`${customer.order.id} 무료 메뉴는 단독 주문할 수 없습니다.`);
       }
     }
   }
@@ -341,6 +358,7 @@ function spawnCustomer(state, definition, customerSpec, seat, waveId) {
     lines: customerSpec.order.lines.map((line, index) => ({
       id: `${customerSpec.order.id}:line:${index + 1}`,
       menuId: line.menuId,
+      seasoning: line.seasoning ?? null,
       quantity: line.quantity,
       servedQualities: [],
     })),
@@ -435,14 +453,38 @@ function salePrice(definition, menuId, quality) {
   return quality === D1_QUALITY.FAIL ? Math.max(1, calculated) : calculated;
 }
 
-function remainingForMenu(order, menuId) {
+function menuPolicy(definition, menuId) {
+  const configured = definition.menuPolicies?.[menuId] ?? {};
+  return {
+    qualityMode: configured.qualityMode ?? 'graded',
+    satisfactionWeight: configured.satisfactionWeight ?? 1,
+    saleLedger: configured.saleLedger ?? true,
+    waitRecoveryMs: configured.waitRecoveryMs ?? definition.timingMs.waitRecovery,
+  };
+}
+
+function seasoningMatches(line, seasoning) {
+  // 이전 D1~D3 port는 양념 필드를 보내지 않았다. null은 호환용 wildcard로 두고,
+  // D4 prepared item처럼 값이 명시된 경우에만 타레/기본을 엄격히 구분한다.
+  if (seasoning == null) return true;
+  if (line.seasoning === 'tare') return seasoning === 'tare';
+  return seasoning !== 'tare';
+}
+
+function remainingForMenu(order, menuId, seasoning = null) {
   return order.lines
-    .filter((line) => line.menuId === menuId)
+    .filter((line) => line.menuId === menuId && seasoningMatches(line, seasoning))
     .reduce((sum, line) => sum + line.quantity - line.servedQualities.length, 0);
 }
 
-function orderQualities(order) {
-  return order.lines.flatMap((line) => line.servedQualities);
+function orderQualitySamples(order, definition) {
+  return order.lines.flatMap((line) => {
+    const policy = menuPolicy(definition, line.menuId);
+    if (policy.qualityMode === 'none' || policy.satisfactionWeight === 0) return [];
+    return line.servedQualities
+      .filter((quality) => quality != null)
+      .map((quality) => ({ quality, weight: policy.satisfactionWeight }));
+  });
 }
 
 function rewardCompletedOrder(state, definition, order) {
@@ -483,8 +525,14 @@ function finalizeGroupIfReady(state, definition, groupId) {
 }
 
 function completeReceivedOrder(state, definition, customer, order) {
-  const scores = orderQualities(order).map((quality) => QUALITY_SCORE[quality]);
-  order.satisfaction = Math.floor(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+  const samples = orderQualitySamples(order, definition);
+  const totalWeight = samples.reduce((sum, sample) => sum + sample.weight, 0);
+  order.satisfaction = totalWeight > 0
+    ? Math.floor(samples.reduce(
+      (sum, sample) => sum + QUALITY_SCORE[sample.quality] * sample.weight,
+      0,
+    ) / totalWeight)
+    : 100;
   order.completedAtMs = state.clock.elapsedMs;
   if ((order.customerIds?.length ?? 1) > 1) {
     order.status = D1_ORDER_STATUS.COMPLETED;
@@ -743,36 +791,42 @@ export function dispatchD1Command(state, definition, command) {
     return { state: next, applied: true, duplicate: false };
   }
   if (command.type === 'serve-item') {
-    if (!Object.values(D1_QUALITY).includes(command.quality)) {
-      return commandError(state, 'invalid-quality');
-    }
     const customer = next.customers[command.customerId];
     const order = customer ? next.orders[customer.orderId] : null;
     if (!customer || !order) return commandError(state, 'customer-not-found');
     if (customer.phase !== D1_CUSTOMER_PHASE.WAITING) {
       return commandError(state, 'customer-not-waiting');
     }
-    if (remainingForMenu(order, command.menuId) <= 0) {
+    if (remainingForMenu(order, command.menuId, command.seasoning) <= 0) {
       return commandError(state, 'menu-mismatch');
     }
     const line = order.lines.find(
-      (item) => item.menuId === command.menuId && item.servedQualities.length < item.quantity,
+      (item) => item.menuId === command.menuId
+        && seasoningMatches(item, command.seasoning)
+        && item.servedQualities.length < item.quantity,
     );
-    line.servedQualities.push(command.quality);
+    const policy = menuPolicy(definition, command.menuId);
+    const quality = policy.qualityMode === 'none' ? null : command.quality;
+    if (policy.qualityMode === 'graded' && !Object.values(D1_QUALITY).includes(quality)) {
+      return commandError(state, 'invalid-quality');
+    }
+    line.servedQualities.push(quality);
     order.status = D1_ORDER_STATUS.PARTIAL;
     next.metrics.servedItems += 1;
-    next.metrics.quality[command.quality] += 1;
+    if (quality != null) next.metrics.quality[quality] += 1;
     next.metrics.waitSampleTotalMs += Math.max(0, customer.patienceMs - customer.waitRemainingMs);
-    ledgerEntry(next, {
-      id: `sale:${command.eventId}`,
-      type: 'sale',
-      amount: salePrice(definition, command.menuId, command.quality),
-      orderId: order.id,
-      customerId: customer.id,
-      menuId: command.menuId,
-      quality: command.quality,
-    });
-    if (command.quality === D1_QUALITY.FAIL) {
+    if (policy.saleLedger && definition.economy.menuPrices[command.menuId] > 0) {
+      ledgerEntry(next, {
+        id: `sale:${command.eventId}`,
+        type: 'sale',
+        amount: salePrice(definition, command.menuId, quality),
+        orderId: order.id,
+        customerId: customer.id,
+        menuId: command.menuId,
+        quality,
+      });
+    }
+    if (quality === D1_QUALITY.FAIL) {
       failCustomers(next, definition, customer, 'fail-quality');
       return { state: next, applied: true, duplicate: false, left: true };
     }
@@ -783,7 +837,7 @@ export function dispatchD1Command(state, definition, command) {
     }
     customer.waitRemainingMs = Math.min(
       customer.patienceMs,
-      customer.waitRemainingMs + definition.timingMs.waitRecovery,
+      customer.waitRemainingMs + policy.waitRecoveryMs,
     );
     return {
       state: next,

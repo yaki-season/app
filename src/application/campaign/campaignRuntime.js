@@ -56,7 +56,7 @@ export class CampaignRuntime {
       ok: false,
       error: {
         code: 'CAMPAIGN_PREVIEW_READ_ONLY',
-        message: `D4 preview에서는 ${command} 명령을 실행할 수 없습니다.`,
+        message: `미리보기에서는 ${command} 명령을 실행할 수 없습니다.`,
         recoverable: true,
       },
     };

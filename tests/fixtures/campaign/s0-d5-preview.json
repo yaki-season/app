@@ -20,13 +20,19 @@
   {
     "id": "d3",
     "kind": "day",
-    "nextId": "d4-preview",
+    "nextId": "d4",
     "contentId": "campaign.day.d3"
   },
   {
-    "id": "d4-preview",
+    "id": "d4",
+    "kind": "day",
+    "nextId": "d5-preview",
+    "contentId": "campaign.day.d4"
+  },
+  {
+    "id": "d5-preview",
     "kind": "preview",
     "nextId": null,
-    "contentId": "campaign.preview.d4"
+    "contentId": "campaign.preview.d5"
   }
 ]

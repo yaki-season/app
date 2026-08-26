@@ -57,7 +57,7 @@ const scene = ({
   skipSummary: Object.freeze(summary),
 });
 
-export const S0_D3_STORY_SCENES = Object.freeze([
+export const S0_D4_STORY_SCENES = Object.freeze([
   scene({
     sceneId: 'SCN-S0-DECISION',
     dayId: 'S0',
@@ -141,55 +141,57 @@ export const S0_D3_STORY_SCENES = Object.freeze([
     ],
     summary: ['달큰한 타레 냄새가 가게 안에 오래 남았다.', '누군가에게 이곳을 소개하고 싶다는 손님도 생겼다.', '아직 서툴지만, 내일도 돌아올 자리를 정성껏 남겨 두고 싶다.'],
   }),
+  scene({
+    sceneId: 'SCN-D4-PREOPEN',
+    dayId: 'D4',
+    timing: 'pre-open',
+    sourceMasterId: 'CM-PREOPEN-PLANNING-R1',
+    lines: [
+      { dialogueId: 'DLG-D4-PRE-001', speakerId: 'CHAR-AKI', text: '어젯밤 손님이 가게를 소개하고 싶다고 했다. 오늘은 기다리는 동안 먼저 내어 드릴 양배추 사라다를 준비해 두자.' },
+      { dialogueId: 'DLG-D4-PRE-002', speakerId: 'CHAR-TSUKIOKA', text: '손님이 늘면 불만 보다가 잔을 놓치기 쉽지. 오늘은 하이볼도 한 잔 부탁하겠네.' },
+      { dialogueId: 'DLG-D4-PRE-003', speakerId: 'CHAR-AKI', text: '네. 작은 한 접시부터 꼬치와 잔까지, 한 흐름으로 놓치지 않고 내어 보겠습니다.' },
+    ],
+    summary: ['손님이 기다리는 동안 먼저 내어 줄 양배추 사라다를 준비했다.', '츠키오카 씨의 주문으로 하이볼 제작을 시작한다.', 'D4 목표: 사이드 메뉴·그릴·드링크를 한 흐름으로 운영한다.'],
+  }),
+  scene({
+    sceneId: 'SCN-D4-POST',
+    dayId: 'D4',
+    timing: 'post-settlement',
+    sourceMasterId: 'CM-SETTLEMENT-R1',
+    lines: [
+      { dialogueId: 'DLG-D4-POST-001', speakerId: 'EXTRA-COMMUTER', text: '사라다 한 접시가 먼저 나오니까 기다리는 시간도 좋았어요. 하이볼도 또 생각날 것 같고요.' },
+      { dialogueId: 'DLG-D4-POST-002', speakerId: 'CHAR-AKI', text: '오늘은 가게 전체가 한꺼번에 움직이는 것 같았어요. 바빴지만 어느 자리도 비워 두지 않았네요.' },
+      { dialogueId: 'DLG-D4-POST-003', speakerId: 'CHAR-TSUKIOKA', text: '이제 불을 지키는 데서 한 걸음 더 나아갔군. 이 가게만의 리듬이 생기기 시작했어.' },
+    ],
+    summary: ['양배추 사라다와 하이볼이 처음으로 손님상에 올랐다.', '늘어난 주문 속에서도 세 스테이션을 끝까지 운영했다.', '가게에는 버티는 하루가 아니라 이어 갈 리듬이 생기기 시작했다.'],
+  }),
 ]);
 
-// D3 뒤의 저장 node 이름은 기존 세이브 호환성을 위해 d4-preview로 남겨 두지만,
-// 공개 화면에서는 아직 만들어지지 않은 D4를 예고하지 않고 사흘간의 영업을 닫는 후일담을 보여 준다.
-export const D3_EPILOGUE_PAGES = Object.freeze([
+export const D4_EPILOGUE_PAGES = Object.freeze([
   Object.freeze({
-    pageId: 'D3-EPILOGUE-01',
+    pageId: 'D4-EPILOGUE-01',
     kicker: '후일담 · 문을 닫은 뒤에도',
-    title: '불은 금세 식지 않았다',
-    visualLine: '빈 가게에는 오늘 건넨 말과 웃음이 숯불의 잔열처럼 남아 있었다.',
+    title: '가게의 리듬이 남아 있었다',
+    visualLine: '빈 접시와 잔을 거둔 뒤에도 오늘 오간 발걸음이 카운터 사이에 남아 있었다.',
     paragraphs: Object.freeze([
-      '마지막 잔을 엎어 물기를 빼고, 타레가 묻은 붓을 천천히 씻었다. 문을 잠근 뒤에도 손끝에는 달큰한 냄새와 숯의 온기가 오래 머물렀다.',
-      '사흘 전에는 낯설기만 했던 카운터가 이제는 하루의 표정을 기억하는 자리처럼 보였다. 서툰 손이 지나간 곳마다 작고 분명한 생활의 자국이 생겨 있었다.',
+      '양배추가 담겼던 접시를 씻고, 레몬 향이 남은 하이볼 잔을 엎어 물기를 뺐다. 화로와 잔 사이를 셀 수 없이 오간 발걸음은 이제 낯선 동선이 아니었다.',
+      '가게는 더 이상 불을 꺼뜨리지 않기 위해 버티는 곳만은 아니었다. 기다리는 손님에게 먼저 건넬 한 접시와 다음 주문을 내다보는 작은 리듬이 생겼다.',
     ]),
   }),
   Object.freeze({
-    pageId: 'D3-EPILOGUE-02',
-    kicker: '후일담 · 골목 끝의 불빛',
-    title: '가게를 기억하는 사람이 생겼다',
-    visualLine: '셔터 아래로 새어 나온 한 줄기 빛 앞에서 누군가가 잠시 걸음을 늦추었다.',
+    pageId: 'D4-EPILOGUE-02',
+    kicker: 'YAKI SEASON · 다음 장을 준비하며',
+    title: '노트의 빈칸은 조금 넓어졌다',
+    visualLine: '새로 적힌 두 메뉴 옆에는 아직 이름 없는 다음 저녁을 위한 자리가 남아 있었다.',
     paragraphs: Object.freeze([
-      '골목은 다시 조용해졌지만 완전히 처음의 밤으로 돌아가지는 않았다. 퇴근길에 들른 사람과 혼자 잔을 기울이던 사람은 저마다의 집으로 작은 가게 이야기를 가져갔다.',
-      '좋은 가게는 큰 소문으로 시작되지 않는다고 츠키오카는 말했다. 다시 와도 좋겠다고 생각하는 한 사람, 그 사람을 위해 내일도 같은 자리를 닦아 두는 마음에서 시작된다고.',
-    ]),
-  }),
-  Object.freeze({
-    pageId: 'D3-EPILOGUE-03',
-    kicker: '후일담 · 아직 쓰이지 않은 날들',
-    title: '노트의 다음 장은 비어 있었다',
-    visualLine: '빈칸은 끝이 아니라, 아직 불리지 않은 이름과 아직 굽지 않은 맛을 위한 자리였다.',
-    paragraphs: Object.freeze([
-      '할아버지의 노트에는 모르는 글씨와 오래된 얼룩이 아직 많이 남아 있었다. 언젠가는 새로운 꼬치를 굽고, 낯선 주문 앞에서 다시 허둥대고, 오늘보다 능숙한 손으로 누군가의 저녁을 내어 줄 것이다.',
-      '그날이 언제인지는 알 수 없었다. 다만 아키는 빈 페이지를 덮지 않았다. 다음 계절이 올 때까지 이야기가 머물 자리를 조심스럽게 남겨 두었다.',
-    ]),
-  }),
-  Object.freeze({
-    pageId: 'D3-EPILOGUE-04',
-    kicker: 'YAKI SEASON · 다음 계절을 기다리며',
-    title: '이야기는 여기서 잠시 불을 낮춘다',
-    visualLine: '문을 닫은 것이 아니다. 다시 불을 켤 저녁을 기약하며 잠시 숨을 고르는 것이다.',
-    paragraphs: Object.freeze([
-      '사흘 동안 켜 둔 작은 불은 이제 기억 속에서 천천히 익어 갈 것이다. 새로운 손님과 새로운 메뉴, 아직 만나지 못한 밤의 이야기는 다음 계절을 준비하고 있다.',
-      '아키는 열쇠를 주머니에 넣고 골목을 돌아보았다. 다시 돌아올 수 있는 불빛이 있다는 것만으로, 내일은 어제와 조금 다른 날이 될 것 같았다.',
+      '아키는 비법 노트에 양배추 사라다와 하이볼을 적고 그 옆을 비워 두었다. 더 많은 손님과 메뉴가 들어와도 오늘 만든 흐름을 잃지 않기 위해서였다.',
+      '불을 낮추고 문을 잠근 뒤, 골목을 한 번 돌아보았다. 내일도 돌아와 같은 자리를 닦고 다시 불을 켤 수 있다는 확신이 처음으로 생겼다.',
     ]),
     releaseNote: 'YAKI SEASON의 다음 이야기는 차후 공개됩니다.',
   }),
 ]);
 
-export function validateS0D3Content() {
+export function validateS0D4Content() {
   const errors = [];
   const ids = new Set();
   const knownSpeakers = new Set([
@@ -202,7 +204,7 @@ export function validateS0D3Content() {
       ids.add(id);
     }
   }
-  for (const storyScene of S0_D3_STORY_SCENES) {
+  for (const storyScene of S0_D4_STORY_SCENES) {
     if (ids.has(storyScene.sceneId)) errors.push(`중복 ID: ${storyScene.sceneId}`);
     ids.add(storyScene.sceneId);
     if (storyScene.skipSummary.length > 3) errors.push(`${storyScene.sceneId} 요약은 3줄을 넘습니다.`);

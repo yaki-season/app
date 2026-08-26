@@ -13,16 +13,16 @@ test('D1 맥주·거품 양이 GPU 액체 셰이더 uniform에 연결된다', as
 
   await page.evaluate(() => window.__d1GameDebug.pourExact(1.5, 0.5));
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug.beerLiquidState()?.beerFill))
-    .toBeCloseTo(1.5 / 4, 5);
+    .toBeCloseTo(0.35, 5);
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug.beerLiquidState()?.foamFill))
-    .toBeCloseTo(0.5 / 4, 5);
+    .toBeCloseTo(0.15, 5);
 
   await page.evaluate(() => window.__d1GameDebug.pourExact(3, 1));
 
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug.beerLiquidState()?.beerFill))
-    .toBeCloseTo(3 / 4, 5);
+    .toBeCloseTo(0.7, 5);
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug.beerLiquidState()?.foamFill))
-    .toBeCloseTo(1 / 4, 5);
+    .toBeCloseTo(0.3, 5);
   expect(await page.evaluate(() => window.__d1GameDebug.beerLiquidState()?.overflow)).toBe(false);
   const rendererState = await page.evaluate(() => {
     const mesh = window.__d1GameDebug.renderer.objectMesh.drinkBeerLiquid;

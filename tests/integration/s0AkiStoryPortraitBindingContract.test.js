@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { S0_D3_STORY_SCENES } from '../../src/scenario/s0-d3-content.js';
+import { S0_D4_STORY_SCENES } from '../../src/scenario/s0-d3-content.js';
 import {
   S0_AKI_STORY_ALLOWED_PRESENTATIONS,
   S0_AKI_STORY_DIALOGUE_VARIANTS,
@@ -61,13 +61,13 @@ describe(`CH-AKI-STORY portrait binding v${S0_AKI_STORY_PORTRAIT_BINDING_CONTRAC
       screenId,
       stateId,
       sceneId,
-    }))).toEqual(S0_D3_STORY_SCENES.map((scene) => ({
+    }))).toEqual(S0_D4_STORY_SCENES.map((scene) => ({
       screenId: scene.screenId,
       stateId: `${scene.dayId}-${scene.timing}`,
       sceneId: scene.sceneId,
     })));
     expect(Object.keys(S0_AKI_STORY_DIALOGUE_VARIANTS)).toEqual(
-      S0_D3_STORY_SCENES.flatMap(
+      S0_D4_STORY_SCENES.flatMap(
         (scene) => scene.lines
           .filter(({ speakerId }) => speakerId === 'CHAR-AKI')
           .map(({ dialogueId }) => dialogueId),

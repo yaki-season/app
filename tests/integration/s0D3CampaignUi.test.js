@@ -2,18 +2,22 @@ import { describe, expect, it } from 'vitest';
 import {
   CAMPAIGN_PHASE,
   MemoryStorageAdapter,
+  SAVE_STORAGE_KEYS,
+  sealSaveEnvelope,
+  serializeSaveEnvelope,
 } from '../../src/campaign-runtime.js';
 import {
+  S0_D3_CONTENT_VERSION,
   S0D3CampaignBridge,
   S0_D3_STORAGE_PREFIX,
   campaignPresentationPosition,
   createS0D3CampaignDefinition,
 } from '../../src/scenario/s0-d3-campaign.js';
 
-describe('S0~D3 campaign presentation bridge', () => {
+describe('S0~D4 campaign presentation bridge', () => {
   it('공개 campaign node chain만 소비한다', () => {
     const definition = createS0D3CampaignDefinition();
-    expect(definition.ids).toEqual(['s0', 'd1', 'd2', 'd3', 'd4-preview']);
+    expect(definition.ids).toEqual(['s0', 'd1', 'd2', 'd3', 'd4', 'd5-preview']);
     expect(S0_D3_STORAGE_PREFIX).toBe('yaki-season.dev2-scenario.');
   });
 
@@ -31,13 +35,13 @@ describe('S0~D3 campaign presentation bridge', () => {
     expect(reloaded.getState().campaign.phase).toBe(CAMPAIGN_PHASE.PRE_OPEN);
   });
 
-  it('정산 완료 뒤 다음 날짜를 저장하고 D3 뒤에는 UI를 종료한다', async () => {
+  it('D3 뒤 D4를 열고 D4 정산 뒤에만 UI를 종료한다', async () => {
     const storage = new MemoryStorageAdapter();
     const bridge = new S0D3CampaignBridge({ storagePort: storage });
     await bridge.loadOrStart();
     bridge.finishPrologue();
 
-    for (const dayId of ['D1', 'D2', 'D3']) {
+    for (const dayId of ['D1', 'D2', 'D3', 'D4']) {
       await bridge.startDay();
       bridge.enterSettlement();
       const completed = await bridge.completeDay(dayId);
@@ -46,7 +50,7 @@ describe('S0~D3 campaign presentation bridge', () => {
 
     expect(campaignPresentationPosition(bridge.getState())).toEqual({
       kind: 'epilogue',
-      dayId: 'D3',
+      dayId: 'D4',
     });
     expect(bridge.getState().economy).toMatchObject({
       balance: 0,
@@ -68,6 +72,49 @@ describe('S0~D3 campaign presentation bridge', () => {
       campaign: { nodeId: 'd2' },
       economy: { balance: 300, reputation: 2 },
       story: { flagIds: ['d1-cleared'] },
+    });
+  });
+
+  it('구 버전의 D3 종착 저장을 D4 영업 전 상태로 호환 변환한다', async () => {
+    const storage = new MemoryStorageAdapter();
+    const bridge = new S0D3CampaignBridge({ storagePort: storage });
+    await bridge.loadOrStart();
+    bridge.finishPrologue();
+    for (const dayId of ['D1', 'D2', 'D3']) {
+      await bridge.startDay();
+      bridge.enterSettlement();
+      await bridge.completeDay(dayId);
+    }
+    const legacyNodeId = ['d4', 'preview'].join('-');
+    const legacyState = bridge.getState();
+    legacyState.campaign = {
+      ...legacyState.campaign,
+      nodeId: legacyNodeId,
+      nodeKind: 'preview',
+      dayId: null,
+      phase: 'preview',
+      unlockedNodeIds: legacyState.campaign.unlockedNodeIds.map((id) => (
+        id === 'd4' ? legacyNodeId : id
+      )),
+    };
+    await storage.set(SAVE_STORAGE_KEYS.ACTIVE, serializeSaveEnvelope(sealSaveEnvelope({
+      saveSchemaVersion: 1,
+      contentVersion: S0_D3_CONTENT_VERSION,
+      writtenAt: '2026-08-26T00:00:00.000Z',
+      checkpointType: 'day-complete',
+      campaignId: legacyState.meta.campaignId,
+      completedDayId: 'd3',
+      payload: legacyState,
+    })));
+
+    const reloaded = new S0D3CampaignBridge({ storagePort: storage });
+    const loaded = await reloaded.loadOrStart();
+    expect(loaded).toMatchObject({ ok: true, resumed: true, save: { migrated: true } });
+    expect(reloaded.getState().campaign).toMatchObject({
+      nodeId: 'd4',
+      nodeKind: 'day',
+      dayId: 'd4',
+      phase: CAMPAIGN_PHASE.PRE_OPEN,
     });
   });
 });

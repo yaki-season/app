@@ -1,10 +1,10 @@
 import {
-  D3_EPILOGUE_PAGES,
+  D4_EPILOGUE_PAGES,
   FIXED_CHARACTER,
-  S0_D3_STORY_SCENES,
+  S0_D4_STORY_SCENES,
   S0_INTERACTIONS,
   speakerById,
-  validateS0D3Content,
+  validateS0D4Content,
 } from './scenario/s0-d3-content.js';
 import { S0D3CampaignBridge } from './scenario/s0-d3-campaign.js';
 import { S0_ART_BINDING_INVENTORY } from './assets/s0D1ArtBindingContract.js';
@@ -47,9 +47,9 @@ function scheduleS0AmbientOneShot() {
 }
 scheduleS0AmbientOneShot();
 
-const errors = validateS0D3Content();
+const errors = validateS0D4Content();
 errors.push(...validateS0ExteriorBackgroundBindingContract());
-if (errors.length) throw new Error(`S0~D3 콘텐츠 오류:\n${errors.join('\n')}`);
+if (errors.length) throw new Error(`S0~D4 콘텐츠 오류:\n${errors.join('\n')}`);
 
 const heading = document.querySelector('#screen-heading');
 const storyPortrait = document.querySelector('#story-portrait');
@@ -348,7 +348,7 @@ function renderS0() {
 }
 
 function renderStory() {
-  const story = S0_D3_STORY_SCENES[storyIndex];
+  const story = S0_D4_STORY_SCENES[storyIndex];
   const line = story.lines[lineIndex];
   const speaker = speakerById(line.speakerId);
   syncStoryAudio(line.dialogueId);
@@ -361,6 +361,8 @@ function renderStory() {
     'D2-post-settlement': '둘째 날의 문을 닫으며',
     'D3-pre-open': '셋째 날, 가게에 밴 온기',
     'D3-post-settlement': '셋째 날의 불빛',
+    'D4-pre-open': '넷째 날, 넓어진 카운터',
+    'D4-post-settlement': '넷째 날의 리듬',
   };
   heading.textContent = storyHeadings[story.dayId === 'S0' ? 'S0' : `${story.dayId}-${story.timing}`];
   for (const name of [
@@ -396,8 +398,14 @@ function renderStory() {
   setIds({ screen: story.screenId, state: `${story.dayId}-${story.timing}`, scene: story.sceneId, dialogue: line.dialogueId });
   content.innerHTML = `<p class="speaker">${speaker.displayName}</p><p class="dialogue">${line.text}</p>`;
   const lastLine = lineIndex === story.lines.length - 1;
-  const nextLabel = lastLine && story.dayId === 'D1' && story.timing === 'pre-open'
-    ? '첫 손님 맞이하기'
+  const dayStartLabels = {
+    D1: '첫 손님 맞이하기',
+    D2: '둘째 영업 시작',
+    D3: '셋째 영업 시작',
+    D4: '넷째 영업 시작',
+  };
+  const nextLabel = lastLine && story.timing === 'pre-open'
+    ? dayStartLabels[story.dayId]
     : '다음 이야기';
   actions.replaceChildren(
     button('이 장면 건너뛰기', () => { mode = 'summary'; returnMode = 'story'; render(); }),
@@ -426,7 +434,7 @@ async function advanceAfterStory(story) {
   const alreadyCompleted = campaignBridge.getState()?.campaign?.completedDayIds
     ?.includes(story.dayId.toLowerCase());
   if (story.timing === 'post-settlement' && alreadyCompleted) {
-    if (story.dayId === 'D3') {
+    if (story.dayId === 'D4') {
       epilogueIndex = 0;
       mode = 'epilogue';
     }
@@ -435,7 +443,7 @@ async function advanceAfterStory(story) {
   }
   const completed = await campaignBridge.completeDay(story.dayId);
   if (!completed.ok) throw new Error(completed.error.message);
-  if (story.dayId === 'D3') {
+  if (story.dayId === 'D4') {
     epilogueIndex = 0;
     mode = 'epilogue';
   }
@@ -443,7 +451,7 @@ async function advanceAfterStory(story) {
 }
 
 function renderSummary() {
-  const story = S0_D3_STORY_SCENES[storyIndex];
+  const story = S0_D4_STORY_SCENES[storyIndex];
   heading.textContent = '잠시 돌아보며';
   hideStoryPortrait();
   hideStoryIllustration();
@@ -491,15 +499,15 @@ function navigateToMainScreen() {
 }
 
 function renderEpilogue() {
-  const page = D3_EPILOGUE_PAGES[epilogueIndex];
-  heading.textContent = '사흘째 밤, 남겨 둔 불빛';
+  const page = D4_EPILOGUE_PAGES[epilogueIndex];
+  heading.textContent = '넷째 밤, 이어 갈 리듬';
   hideStoryPortrait();
   hideStoryIllustration();
-  renderStoryBackground('D3');
+  renderStoryBackground('D4');
   setIds({
     screen: 'SCR-POST-EPILOGUE',
-    state: `D3-epilogue-${epilogueIndex + 1}`,
-    scene: 'SCN-D3-EPILOGUE',
+    state: `D4-epilogue-${epilogueIndex + 1}`,
+    scene: 'SCN-D4-EPILOGUE',
     dialogue: page.pageId,
   });
   document.querySelector('#epilogue-visual-line').textContent = page.visualLine;
@@ -527,7 +535,7 @@ function renderEpilogue() {
   }
   const progress = document.createElement('p');
   progress.className = 'epilogue-progress';
-  progress.textContent = `${epilogueIndex + 1} / ${D3_EPILOGUE_PAGES.length}`;
+  progress.textContent = `${epilogueIndex + 1} / ${D4_EPILOGUE_PAGES.length}`;
   article.append(progress);
   content.replaceChildren(article);
 
@@ -538,7 +546,7 @@ function renderEpilogue() {
       render();
     }));
   }
-  const lastPage = epilogueIndex === D3_EPILOGUE_PAGES.length - 1;
+  const lastPage = epilogueIndex === D4_EPILOGUE_PAGES.length - 1;
   epilogueActions.push(button(lastPage ? '메인 화면으로' : '다음 장면', () => {
     if (lastPage) {
       navigateToMainScreen();
@@ -569,7 +577,7 @@ function restorePresentationPosition(position, { postDayId = null } = {}) {
     const normalizedDayId = postDayId.toUpperCase();
     const alreadyCompleted = campaignBridge.getState()?.campaign?.completedDayIds
       ?.includes(postDayId.toLowerCase());
-    const postIndex = S0_D3_STORY_SCENES.findIndex((story) => (
+    const postIndex = S0_D4_STORY_SCENES.findIndex((story) => (
       story.dayId === normalizedDayId && story.timing === 'post-settlement'
     ));
     if (alreadyCompleted && postIndex >= 0) {
@@ -583,12 +591,12 @@ function restorePresentationPosition(position, { postDayId = null } = {}) {
   if (position.kind === 'prologue') return;
   if (position.kind === 'epilogue') {
     mode = 'epilogue';
-    dayId = 'D3';
+    dayId = 'D4';
     epilogueIndex = 0;
     return;
   }
   dayId = position.dayId;
-  storyIndex = S0_D3_STORY_SCENES.findIndex((story) => (
+  storyIndex = S0_D4_STORY_SCENES.findIndex((story) => (
     story.dayId === position.dayId && story.timing === 'pre-open'
   ));
   lineIndex = 0;

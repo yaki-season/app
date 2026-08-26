@@ -10,11 +10,12 @@ import {
   S0_D3_CONTENT_VERSION,
   createS0D3CampaignDefinition,
   createS0D3StoragePort,
+  normalizeLegacyCampaignState,
 } from './scenario/s0-d3-campaign.js';
 import {
   DEFAULT_PUBLIC_SETTINGS,
   buildSafeDiagnostic,
-  isD4PreviewSave,
+  isCampaignCompleteSave,
   saveSummary,
   serializeSafeDiagnostic,
   validatePublicSettings,
@@ -205,7 +206,7 @@ function summaryDefinition(summary) {
 function renderStart(extraStatus = null) {
   setScreen(SCREEN.START);
   const valid = Boolean(loadResult?.ok);
-  const campaignComplete = isD4PreviewSave(loadResult);
+  const campaignComplete = isCampaignCompleteSave(loadResult);
   const missing = loadResult?.error?.code === PERSISTENCE_ERROR_CODE.SAVE_MISSING;
   const summary = saveSummary(loadResult);
   const intro = element('div');
@@ -221,7 +222,7 @@ function renderStart(extraStatus = null) {
   else if (valid) {
     const card = operationStatus(
       'success',
-      campaignComplete ? '사흘의 영업을 마쳤습니다' : '돌아갈 자리가 남아 있습니다',
+      campaignComplete ? '나흘의 영업을 마쳤습니다' : '돌아갈 자리가 남아 있습니다',
       campaignComplete ? '다음 이야기를 기다리는 동안 후일담을 다시 읽을 수 있습니다.' : summary.dayLabel,
     );
     card.append(summaryDefinition(summary));
@@ -403,6 +404,7 @@ export async function bootPublicShell() {
   storagePort = createS0D3StoragePort(window.localStorage);
   const repository = new CampaignSaveRepository({
     storage: storagePort,
+    normalizePayload: normalizeLegacyCampaignState,
     validatePayload: (payload) => validateCampaignState(payload, definition),
     acceptsContentVersion: (version) => version === S0_D3_CONTENT_VERSION,
   });

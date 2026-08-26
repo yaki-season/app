@@ -17,8 +17,11 @@ export const EARLY_CAMPAIGN_NODE_IDS = Object.freeze([
   'd1',
   'd2',
   'd3',
-  'd4-preview',
+  'd4',
+  'd5-preview',
 ]);
+
+export const D4_CAMPAIGN_NODE_IDS = EARLY_CAMPAIGN_NODE_IDS;
 
 function inferKind(id) {
   if (id === 's0') return CAMPAIGN_NODE_KIND.PROLOGUE;
@@ -96,15 +99,19 @@ export function assertEarlyCampaignDefinition(definition) {
   if (definition.get('s0').kind !== CAMPAIGN_NODE_KIND.PROLOGUE) {
     throw new TypeError('s0는 prologue여야 합니다.');
   }
-  for (const id of ['d1', 'd2', 'd3']) {
+  for (const id of ['d1', 'd2', 'd3', 'd4']) {
     if (definition.get(id).kind !== CAMPAIGN_NODE_KIND.DAY) {
       throw new TypeError(`${id}는 영업일이어야 합니다.`);
     }
   }
-  if (definition.get('d4-preview').kind !== CAMPAIGN_NODE_KIND.PREVIEW) {
-    throw new TypeError('d4-preview는 읽기 전용 preview여야 합니다.');
+  if (definition.get('d5-preview').kind !== CAMPAIGN_NODE_KIND.PREVIEW) {
+    throw new TypeError('d5-preview는 읽기 전용 preview여야 합니다.');
   }
   return definition;
+}
+
+export function assertD4CampaignDefinition(definition) {
+  return assertEarlyCampaignDefinition(definition);
 }
 
 export function createCampaignState({

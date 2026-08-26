@@ -8,6 +8,10 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/yaki-season-icon-r3-192.png">
 <link rel="apple-touch-icon" href="/yaki-season-icon-r3-512.png">
 <link rel="manifest" href="/manifest.webmanifest">
+<link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-workstation-base-draft-r8.png">
+<link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-glass-draft-r3.png">
+<link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-ice-fill-draft-r2.png">
+<link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-bottles-draft-r1.png">
 <link rel="stylesheet" href="./game.css">
 <link rel="stylesheet" href="./d1-game.css">
 <script type="importmap">
@@ -132,24 +136,92 @@
     </article>
   </section>
 
-  <!-- 드링크: 잔 채움·기준선·결과 -->
+  <!-- 드링크: D4부터 생맥주 설비와 하이볼 작업대를 한 화면에 함께 둔다. -->
   <div id="drinkPanel" class="drink-panel" data-testid="drink-panel" hidden>
-    <div class="glass" data-testid="drink-glass">
-      <span class="foam" data-testid="drink-foam"></span>
-      <span class="beer" data-testid="drink-beer"></span>
-      <span class="target-line"></span>
-      <span class="stamp" data-testid="drink-stamp" hidden></span>
-    </div>
-    <p class="drink-hint">중립 레버를 <b>아래로 드래그</b>=맥주 · <b>위로 드래그</b>=거품</p>
-    <div class="drink-actions">
-      <button data-act="finish" data-testid="drink-finish">완성</button>
-    </div>
-    <div class="drink-overflow" data-testid="drink-overflow" hidden>
-      <span>잔이 넘쳤어요</span>
-      <button data-act="serve-low" data-testid="drink-serve-low">낮은 품질로 제공</button>
-      <button data-act="discard" data-testid="drink-discard">폐기</button>
-    </div>
+    <section id="beerPanel" class="beer-panel" aria-labelledby="beerStationTitle">
+      <div class="drink-guide-heading">
+        <strong id="beerStationTitle" class="drink-station-title">생맥주</strong>
+        <span class="drink-guide-recipe">빈 잔 → 맥주 7 : 거품 3</span>
+      </div>
+      <div class="glass" data-testid="drink-glass">
+        <span class="foam" data-testid="drink-foam"></span>
+        <span class="beer" data-testid="drink-beer"></span>
+        <span class="target-line"></span>
+        <span class="stamp" data-testid="drink-stamp" hidden></span>
+      </div>
+      <p id="beerHint" class="drink-hint drink-guide-status" aria-live="polite">빈 잔을 놓으세요</p>
+      <div class="drink-actions">
+        <button data-act="finish" data-testid="drink-finish">완성</button>
+      </div>
+      <div class="drink-overflow" data-testid="drink-overflow" hidden>
+        <strong>잔이 넘쳤어요 · 낮은 품질</strong>
+        <div class="drink-overflow-actions">
+          <button data-act="serve-low" data-testid="drink-serve-low">계속 만들기</button>
+          <button data-act="discard" data-testid="drink-discard">폐기</button>
+        </div>
+      </div>
+    </section>
+    <section id="highballPanel" class="highball-panel" data-testid="highball-panel" aria-labelledby="highballStationTitle" hidden>
+      <div class="highball-worktop" data-testid="highball-worktop">
+        <img
+          class="highball-worktop-art"
+          src="/assets/campaign/d4/prop-highball-workstation-base-draft-r8.png"
+          alt=""
+          aria-hidden="true"
+          decoding="sync"
+          fetchpriority="high"
+        >
+        <span id="highballPourStream" class="highball-pour-stream" aria-hidden="true"></span>
+        <button id="highballGlass" type="button" class="highball-glass" data-testid="highball-glass">하이볼 잔 가져오기</button>
+        <button id="highballIce" type="button" class="highball-ice" data-testid="highball-ice">얼음 넣기</button>
+        <div id="highballVisual" class="highball-visual" aria-label="하이볼 잔 상태" hidden>
+          <span id="highballLiquid" class="highball-liquid" aria-hidden="true">
+            <span class="highball-liquid-body"></span>
+            <span id="highballCarbonation" class="highball-carbonation"></span>
+            <span class="highball-liquid-surface"></span>
+          </span>
+          <span id="highballIceVisual" class="highball-ice-visual" aria-hidden="true"></span>
+          <span id="highballOverflowSpill" class="highball-overflow-spill" aria-hidden="true"></span>
+        </div>
+        <div class="highball-bottles">
+          <button id="highballWhiskey" type="button" class="highball-bottle whiskey" data-liquid="whiskey" data-testid="highball-whiskey">위스키<br><small>누르고 있기</small></button>
+          <button id="highballSoda" type="button" class="highball-bottle soda" data-liquid="soda" data-testid="highball-soda">탄산수<br><small>누르고 있기</small></button>
+        </div>
+        <button id="highballLemon" type="button" class="highball-lemon" data-testid="highball-lemon">레몬 올리기</button>
+      </div>
+    </section>
+    <section id="highballGuide" class="highball-guide" data-testid="highball-guide" aria-labelledby="highballStationTitle" hidden>
+      <div class="drink-guide-heading">
+        <strong id="highballStationTitle" class="drink-station-title">하이볼</strong>
+        <span class="drink-guide-recipe">빈 잔 → 얼음 → 위스키 1 : 탄산수 3 → 레몬</span>
+      </div>
+      <p id="highballHint" class="highball-hint" aria-live="polite">빈 잔을 가져오세요</p>
+      <div id="highballOverflow" class="highball-overflow" data-testid="highball-overflow" hidden>
+        <strong>잔이 넘쳤어요 · 낮은 품질</strong>
+        <div class="drink-overflow-actions">
+          <button type="button" data-highball-act="serve-low">계속 만들기</button>
+          <button type="button" data-highball-act="discard">폐기</button>
+        </div>
+      </div>
+    </section>
   </div>
+
+  <!-- D4 사이드 메뉴 스테이션. 메뉴 카드를 추가할 수 있는 공용 grid로 구성한다. -->
+  <div id="instantArtScene" class="instant-art-scene" aria-hidden="true" hidden></div>
+  <section id="instantPanel" class="instant-panel" data-testid="instant-panel" aria-labelledby="instantTitle" hidden>
+    <header>
+      <span>바로 담아 내는 메뉴</span>
+      <strong id="instantTitle">사이드 메뉴</strong>
+    </header>
+    <div class="instant-menu-grid">
+      <button id="cabbageSaladPrepare" class="instant-menu-card" type="button" data-menu-id="cabbage-salad" data-testid="cabbage-salad-prepare">
+        <span class="instant-menu-art" aria-hidden="true"></span>
+        <span class="instant-menu-copy"><strong>양배추 사라다</strong><small>누르고 담기</small></span>
+        <span id="cabbageSaladProgress" class="instant-progress" role="progressbar" aria-label="사라다 담기 진행" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></span>
+      </button>
+    </div>
+    <p id="instantMessage" class="instant-message" aria-live="polite">접시에 담을 메뉴를 길게 누르세요</p>
+  </section>
 
   <!-- 공용 완성품 목록. 조작은 하나로 유지하고 요리/음료의 접지 구역만 분리한다. -->
   <div id="dockShelf" class="dock-shelf" data-testid="dock-shelf" aria-label="요리 서빙대와 음료 픽업대" hidden></div>

@@ -88,7 +88,7 @@ export function checkContentRules(bundle) {
     }
   }
 
-  const earlyChain = ['s0', 'd1', 'd2', 'd3', 'd4-preview'];
+  const earlyChain = ['s0', 'd1', 'd2', 'd3', 'd4', 'd5-preview'];
   if (earlyChain.every((id) => has('scenarios', id))) {
     earlyChain.forEach((id, index) => {
       const record = (bundle.scenarios || []).find((scenario) => scenario.id === id);
@@ -107,7 +107,7 @@ export function checkContentRules(bundle) {
       .sort();
     const expected = ['CHAR-AKI', 'CHAR-TSUKIOKA'];
     if (fixedIds.length !== expected.length || fixedIds.some((id, index) => id !== expected[index])) {
-      errors.push('[campaignCharacters] S0~D3 고정 인물은 CHAR-AKI·CHAR-TSUKIOKA만 허용됨');
+      errors.push('[campaignCharacters] S0~D4 고정 인물은 CHAR-AKI·CHAR-TSUKIOKA만 허용됨');
     }
     for (const character of bundle.campaignCharacters || []) {
       if (

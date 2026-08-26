@@ -3,7 +3,9 @@
 export {
   CAMPAIGN_NODE_KIND,
   CAMPAIGN_PHASE,
+  D4_CAMPAIGN_NODE_IDS,
   EARLY_CAMPAIGN_NODE_IDS,
+  assertD4CampaignDefinition,
   assertEarlyCampaignDefinition,
   beginBusinessDay,
   completeBusinessDay,

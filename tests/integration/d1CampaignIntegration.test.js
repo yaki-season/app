@@ -19,7 +19,7 @@ import {
 } from '../../src/campaign-runtime.js';
 
 const campaignRecords = JSON.parse(readFileSync(fileURLToPath(
-  new URL('../fixtures/campaign/s0-d4-preview.json', import.meta.url),
+  new URL('../fixtures/campaign/s0-d5-preview.json', import.meta.url),
 ), 'utf8'));
 const d1Record = JSON.parse(readFileSync(fileURLToPath(
   new URL('../fixtures/business-days/d1-full-day.json', import.meta.url),

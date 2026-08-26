@@ -143,7 +143,7 @@ test('검증된 저장을 다운로드하고 호환 파일 교체 전 기존 act
   expect(stored.backup).toBe(existing);
 });
 
-test('이어하기는 공개 S0~D3 화면에서 정상 체크포인트를 재개한다', async ({ page }) => {
+test('이어하기는 공개 S0~D4 화면에서 정상 체크포인트를 재개한다', async ({ page }) => {
   const existing = await makeSave({ campaignId: 'continue-reader' });
   await installStorage(page, { [SAVE_STORAGE_KEYS.ACTIVE]: existing });
   await openShell(page);
@@ -231,15 +231,14 @@ test('손상 active에서 검증된 백업을 복원하고 원본을 복구 영�
   expect(stored.recovery).toBe(broken);
 });
 
-test('D3 완료 뒤 메인 화면은 미출시 D4 대신 후일담 재진입만 제공한다', async ({ page }) => {
-  const d4Save = await makeSave({ campaignId: 'd4-reader', completedDays: 3, balance: 42 });
+test('D4 완료 뒤 메인 화면은 읽기 전용 후일담 재진입을 제공한다', async ({ page }) => {
+  const d4Save = await makeSave({ campaignId: 'd4-reader', completedDays: 4, balance: 42 });
   await installStorage(page, { [SAVE_STORAGE_KEYS.ACTIVE]: d4Save });
   await openShell(page);
 
   const before = await page.evaluate(() => JSON.stringify(localStorage));
-  await expect(page.getByRole('button', { name: 'D4 개발 예고' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '후일담 다시 보기' })).toBeVisible();
-  await expect(page.getByText('사흘의 영업을 마쳤습니다')).toBeVisible();
+  await expect(page.getByText('나흘의 영업을 마쳤습니다')).toBeVisible();
   await expect(page.getByText('PUBLIC WEB SHELL')).toHaveCount(0);
   await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-SYS-START');
   const after = await page.evaluate(() => JSON.stringify(localStorage));
