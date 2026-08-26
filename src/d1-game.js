@@ -170,6 +170,8 @@ const skewerLabel = (menuId, seasoning = 'none') => {
 const el = (id) => document.getElementById(id);
 const canvas = el('scene');
 const runtimeAssets = await loadD1RuntimeAssets();
+const servedBeerCounterUrl = runtimeAssets.SERVING_PLATE.companions
+  .find(({ role }) => role === 'served-beer')?.url;
 document.getElementById('dockShelf')?.style.setProperty(
   '--dock-food-art',
   `url("${runtimeAssets.ORDER_NEGIMA.url}")`,
@@ -1796,8 +1798,8 @@ function syncCustomers() {
     const servedGrilledFood = servedNegima || servedMomo || servedKawa;
     // 손님 자세는 구운 꼬치를 받았을 때만 먹는 그림으로 바뀐다. 사라다는 접시만 놓인다.
     const servedSkewer = servedGrilledFood;
-    const servedBeer = seatHasServedMenu(view, seat, 'beer')
-      || seatHasServedMenu(view, seat, 'highball');
+    const servedHighball = seatHasServedMenu(view, seat, 'highball');
+    const servedBeer = seatHasServedMenu(view, seat, 'beer') || servedHighball;
     const kind = extraKind(seat?.customerId);
     const officeArt = kind === 'office'
       ? resolveD1OfficeCustomerFrame(runtimeAssets.COMMUTER_CUSTOMER, {
@@ -1835,6 +1837,10 @@ function syncCustomers() {
     R.setSeatFoodLayout(seatId, { grilled: servedGrilledFood, salad: servedSalad });
     R.setSeatPlateVisible(seatId, onCustomers && customerPresent && servedGrilledFood);
     R.setSeatSaladVisible(seatId, onCustomers && customerPresent && servedSalad);
+    R.setSeatBeerUrl(
+      seatId,
+      servedHighball ? D4_MENU_ART_URLS.servedHighball : servedBeerCounterUrl,
+    );
     R.setSeatBeerVisible(seatId, onCustomers && customerPresent
       && servedBeer && !tsukiokaHoldingBeer && !officeHoldingBeer && !soloHoldingBeer);
     R.setSeatEmptyDishesVisible(seatId, onCustomers && dirtyTable);

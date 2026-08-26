@@ -56,12 +56,19 @@ test('사라다는 단독일 때 작게 놓이고 꼬치와 동시 제공되면 
   expect(singleSalad.width / singleSalad.viewportWidth).toBeGreaterThan(120 / 1920);
   expect(singleSalad.width / singleSalad.viewportWidth).toBeLessThan(140 / 1920);
 
-  const pairSeatId = await page.evaluate(() => {
-    const debug = window.__d1GameDebug;
-    debug.businessDispatch({
+  await page.evaluate(() => {
+    window.__d1GameDebug.businessDispatch({
       type: 'serve-item', intentId: 'd4:layout:3',
       customerId: 'REGULAR_TSUKIOKA', menuId: 'highball', quality: 'Perfect',
     });
+  });
+  await expect.poll(() => page.evaluate((seatId) => {
+    const mesh = window.__d1GameDebug.renderer.seatBeerMesh[seatId];
+    return mesh?.material?.map?.image?.currentSrc || mesh?.material?.map?.image?.src || '';
+  }, firstSeatId)).toContain('/assets/campaign/d4/pr-served-highball-glass-r1-b1.png');
+
+  const pairSeatId = await page.evaluate(() => {
+    const debug = window.__d1GameDebug;
     debug.businessAdvance(90_000);
     const view = debug.businessView();
     const seat = view.seats.find((item) => item.orderId === 'D4-ORDER-002');

@@ -664,6 +664,18 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       const beer = seatBeerMesh[seatId];
       if (beer) beer.visible = visible && !inactiveSeats.has(seatId);
     },
+    setSeatBeerUrl: (seatId, url) => {
+      const beer = seatBeerMesh[seatId];
+      if (!beer?.material || !url) return false;
+      const next = texture(url);
+      if (beer.material.map === next) return false;
+      beer.material.map = next;
+      beer.material.opacity = 1;
+      beer.material.color.setHex(0xffffff);
+      beer.material.colorWrite = true;
+      beer.material.needsUpdate = true;
+      return true;
+    },
     setSeatEmptyDishesVisible: (seatId, visible) => {
       const dishes = seatEmptyDishMesh[seatId];
       if (dishes) dishes.visible = visible && !inactiveSeats.has(seatId);
