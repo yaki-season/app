@@ -44,9 +44,9 @@ function engineWith({ present = () => true } = {}) {
 }
 
 describe('오디오 카탈로그', () => {
-  it('AUD-002의 76개 자산을 중복 없는 ID로 담는다', () => {
-    expect(AUDIO_CATALOG).toHaveLength(76);
-    expect(new Set(AUDIO_CATALOG.map((entry) => entry.id)).size).toBe(76);
+  it('활성 공정의 70개 오디오 자산을 중복 없는 ID로 담는다', () => {
+    expect(AUDIO_CATALOG).toHaveLength(70);
+    expect(new Set(AUDIO_CATALOG.map((entry) => entry.id)).size).toBe(70);
   });
 
   it('손님이 한 명이면 군중음을 재생하지 않는다', () => {
@@ -79,9 +79,9 @@ describe('오디오 카탈로그', () => {
     const readme = readFileSync(new URL('../../public/assets/audio/README.md', import.meta.url), 'utf8');
     const listed = new Set([...readme.matchAll(/`([a-z0-9-]+-r\d+-b\d+\.ogg)`/g)].map((m) => m[1]));
     const catalogFiles = new Set(AUDIO_CATALOG.map((entry) => entry.url.split('/').pop()));
-    // 76개 자산이지만 파일은 70개다. BGM 6종이 main 한 곡을 공유하고, complete-r1-b1.ogg가
+    // 70개 자산이지만 파일 이름은 64개다. BGM 6종이 main 한 곡을 공유하고, complete-r1-b1.ogg가
     // 조립과 생맥주에 각각 있으나 폴더가 달라 충돌하지 않는다.
-    expect(catalogFiles.size).toBe(70);
+    expect(catalogFiles.size).toBe(64);
     for (const file of catalogFiles) expect(listed, file).toContain(file);
     for (const file of listed) expect(catalogFiles, file).toContain(file);
   });
@@ -92,10 +92,10 @@ describe('오디오 카탈로그', () => {
     }
   });
 
-  it('경고 4종만 warning 버스를 쓰고 우선순위를 갖는다', () => {
+  it('활성 경고 3종만 warning 버스를 쓰고 우선순위를 갖는다', () => {
     const warnings = audioIdsByBus(AUDIO_BUS.WARNING);
     expect(warnings.sort()).toEqual([
-      'SFX-TORCH-OVERHEAT', 'SFX-WARN-CUSTOMER-LEAVE', 'SFX-WARN-T1', 'SFX-WARN-T3',
+      'SFX-WARN-CUSTOMER-LEAVE', 'SFX-WARN-T1', 'SFX-WARN-T3',
     ]);
     for (const id of warnings) expect(audioEntry(id).priority, id).toBeGreaterThan(0);
     // 조리 실패 임박이 손님 이탈 임박보다 급하다.
@@ -103,10 +103,11 @@ describe('오디오 카탈로그', () => {
       .toBeGreaterThan(audioEntry('SFX-WARN-CUSTOMER-LEAVE').priority);
   });
 
-  it('굽기 루프와 흐름음은 루프로 선언한다', () => {
-    for (const id of ['SFX-GRILL-COOK-LOOP', 'SFX-DRINK-BEER-FLOW', 'SFX-TORCH-LOOP']) {
+  it('굽기 루프와 흐름음은 루프로 선언하고 조립 타래는 단발음만 남긴다', () => {
+    for (const id of ['SFX-GRILL-COOK-LOOP', 'SFX-DRINK-BEER-FLOW']) {
       expect(audioEntry(id).loop, id).toBe(true);
     }
+    expect(audioEntry('SFX-TARE-BRUSH')).toMatchObject({ loop: false, bus: AUDIO_BUS.SFX });
     expect(audioEntry('SFX-UI-SELECT').loop).toBe(false);
     expect(audioEntry('SFX-INGAME-SELECT').loop).toBe(false);
     expect(audioEntry('SFX-ASM-PICK-CHICKEN')).toBeNull();
