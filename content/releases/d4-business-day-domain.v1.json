@@ -1,6 +1,6 @@
 {
   "id": "d4",
-  "nextNodeId": "d5-preview",
+  "nextNodeId": "d5",
   "sessionTargetMs": 420000,
   "arrivalPolicy": {
     "maxAllSeatsEmptyWaitSec": 13,

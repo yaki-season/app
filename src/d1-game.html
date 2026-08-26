@@ -65,6 +65,8 @@
     <button type="button" data-menu-id="negima" data-seasoning="none" aria-pressed="true">네기마</button>
     <button type="button" data-menu-id="momo" data-seasoning="none" aria-pressed="false">모모</button>
     <button type="button" data-menu-id="momo" data-seasoning="tare" data-d3-only="true" aria-pressed="false">타레 모모</button>
+    <button type="button" data-menu-id="kawa" data-seasoning="salt" data-d5-only="true" aria-pressed="false">소금 토리카와</button>
+    <button type="button" data-menu-id="kawa" data-seasoning="tare" data-d5-only="true" aria-pressed="false">타레 토리카와</button>
   </nav>
   <section id="assemblyTarePanel" class="assembly-tare-panel" data-testid="assembly-tare-panel" hidden>
     <strong>타레 양념장</strong>
@@ -116,6 +118,23 @@
             <span id="grillWaitingMomoCount" class="grill-inventory-count">× 0</span>
           </span>
           <span id="grillWaitingMomoHint">대기 중인 꼬치가 없습니다</span>
+        </span>
+      </button>
+      <button
+        id="grillWaitingKawa"
+        class="grill-waiting-card grill-waiting-kawa"
+        type="button"
+        data-testid="grill-waiting-kawa"
+        aria-describedby="grillWaitingKawaHint"
+        hidden
+      >
+        <img src="/assets/campaign/d5/order-icon-kawa-r1-b1.png" alt="" aria-hidden="true">
+        <span class="grill-inventory-card-copy">
+          <span class="grill-inventory-card-title">
+            <strong>토리카와</strong>
+            <span id="grillWaitingKawaCount" class="grill-inventory-count">× 0</span>
+          </span>
+          <span id="grillWaitingKawaHint">대기 중인 꼬치가 없습니다</span>
         </span>
       </button>
     </article>

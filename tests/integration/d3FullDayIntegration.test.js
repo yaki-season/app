@@ -68,7 +68,7 @@ function playFullDay(port, definition) {
 }
 
 describe('D1→D4 전체 영업 종단', () => {
-  it('D3 정산 뒤 D4로 이어지고 D4 정산을 한 번만 저장해 D5 미리보기로 전환한다', async () => {
+  it('D3 정산 뒤 D4로 이어지고 D4 정산을 한 번만 저장해 D5로 전환한다', async () => {
     const storage = new MemoryStorageAdapter();
     let finalSession;
     for (const definition of definitions) {
@@ -82,8 +82,8 @@ describe('D1→D4 전체 영업 종단', () => {
 
     expect(finalSession.bridge.getState()).toMatchObject({
       campaign: {
-        nodeId: 'd5-preview',
-        phase: 'preview',
+        nodeId: 'd5',
+        phase: 'pre-open',
         completedDayIds: ['d1', 'd2', 'd3', 'd4'],
       },
       story: { flagIds: expect.arrayContaining(['d3-complete', 'tare-introduced', 'd4-complete']) },
@@ -94,25 +94,9 @@ describe('D1→D4 전체 영업 종단', () => {
 
     const resumed = await createD1BusinessDayBrowserSession({ definition: definitions[3], storagePort: storage });
     expect(resumed).toMatchObject({ ok: true, completed: true, resumed: true });
-    expect(resumed.campaign.campaign.nodeId).toBe('d5-preview');
+    expect(resumed.campaign.campaign.nodeId).toBe('d5');
 
-    const beforePreviewCommands = storage.snapshot();
-    expect(await resumed.bridge.startDay()).toMatchObject({
-      ok: false,
-      error: { code: 'CAMPAIGN_PREVIEW_READ_ONLY' },
-    });
-    expect(resumed.bridge.enterSettlement()).toMatchObject({
-      ok: false,
-      error: { code: 'CAMPAIGN_PREVIEW_READ_ONLY' },
-    });
-    expect(await resumed.bridge.completeDay('D4', {
-      completionId: 'forbidden-d4',
-      reward: { balance: 999, reputation: 999, unlockIds: ['forbidden'] },
-    })).toMatchObject({
-      ok: false,
-      error: { code: 'CAMPAIGN_PREVIEW_READ_ONLY' },
-    });
-    expect(storage.snapshot()).toEqual(beforePreviewCommands);
-    expect(resumed.bridge.getState()).toEqual(finalSession.bridge.getState());
+    expect(await resumed.bridge.startDay()).toMatchObject({ ok: true });
+    expect(resumed.bridge.getState().campaign).toMatchObject({ nodeId: 'd5', phase: 'business' });
   });
 });

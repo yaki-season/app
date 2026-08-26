@@ -231,14 +231,14 @@ test('손상 active에서 검증된 백업을 복원하고 원본을 복구 영�
   expect(stored.recovery).toBe(broken);
 });
 
-test('D4 완료 뒤 메인 화면은 읽기 전용 후일담 재진입을 제공한다', async ({ page }) => {
-  const d4Save = await makeSave({ campaignId: 'd4-reader', completedDays: 4, balance: 42 });
-  await installStorage(page, { [SAVE_STORAGE_KEYS.ACTIVE]: d4Save });
+test('D5 완료 뒤 메인 화면은 완료 저장을 유지하고 새 게임 진입을 제공한다', async ({ page }) => {
+  const d5Save = await makeSave({ campaignId: 'd5-complete-reader', completedDays: 5, balance: 42 });
+  await installStorage(page, { [SAVE_STORAGE_KEYS.ACTIVE]: d5Save });
   await openShell(page);
 
   const before = await page.evaluate(() => JSON.stringify(localStorage));
-  await expect(page.getByRole('button', { name: '후일담 다시 보기' })).toBeVisible();
-  await expect(page.getByText('나흘의 영업을 마쳤습니다')).toBeVisible();
+  await expect(page.getByRole('button', { name: '처음부터 다시 보기' })).toBeVisible();
+  await expect(page.getByText('닷새의 영업을 마쳤습니다')).toBeVisible();
   await expect(page.getByText('PUBLIC WEB SHELL')).toHaveCount(0);
   await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-SYS-START');
   const after = await page.evaluate(() => JSON.stringify(localStorage));

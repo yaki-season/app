@@ -26,7 +26,7 @@ function bundle() {
 }
 
 describe('S0~D4 stable data contract', () => {
-  it('S0→D1→D2→D3→D4→D5-preview chain과 읽기 전용 preview를 검증한다', () => {
+  it('S0→D1→D2→D3→D4→D5→완료 chain과 읽기 전용 완료 상태를 검증한다', () => {
     const content = bundle();
     expect(checkContentRules(content)).toEqual({ valid: true, errors: [] });
     expect(content.scenarios.map(({ id, nextDay }) => [id, nextDay])).toEqual([
@@ -34,8 +34,9 @@ describe('S0~D4 stable data contract', () => {
       ['d1', 'd2'],
       ['d2', 'd3'],
       ['d3', 'd4'],
-      ['d4', 'd5-preview'],
-      ['d5-preview', null],
+      ['d4', 'd5'],
+      ['d5', 'd5-complete'],
+      ['d5-complete', null],
     ]);
     expect(content.scenarios.at(-1)).toMatchObject({
       kind: 'preview',

@@ -12,11 +12,13 @@ import { DRINK } from './drinkStation.js';
 export const INGREDIENT_LABEL = Object.freeze({
   chicken: '닭다리살',
   leek: '대파',
+  foldedChickenSkin: '접은 닭껍질',
 });
 
 export const MENU_LABEL = Object.freeze({
   negima: '네기마',
   momo: '모모',
+  kawa: '토리카와',
   beer: '생맥주',
   highball: '하이볼',
   'cabbage-salad': '양배추 사라다',
@@ -48,6 +50,19 @@ function skewerEntry(menuId, recipe, thresholds) {
         ? `${steps[0]} ${steps.length}조각을 차례로 끼웁니다.`
         : `끼우는 순서 · ${steps.join(' → ')}`,
       ...grillLines(thresholds),
+    ],
+  };
+}
+
+function kawaEntry(recipe) {
+  return {
+    menuId: 'kawa',
+    label: MENU_LABEL.kawa,
+    steps: recipe.map(() => INGREDIENT_LABEL.foldedChickenSkin),
+    lines: [
+      '접은 닭껍질 5조각을 빈 자리부터 차례로 끼웁니다.',
+      '소금은 양면을 구운 뒤 회수합니다. 닭껍질은 모모보다 빨리 타므로 색을 더 자주 살피세요.',
+      '타레는 양면을 먼저 굽고 타레 도포와 재가열을 두 번 반복합니다. 토치는 선택입니다.',
     ],
   };
 }
@@ -105,6 +120,7 @@ export function recipeBookEntries({
       if (menuId === 'highball') return highballEntry();
       if (menuId === 'cabbage-salad') return cabbageSaladEntry();
       const recipe = recipes[menuId];
+      if (menuId === 'kawa' && recipe) return kawaEntry(recipe);
       return recipe ? skewerEntry(menuId, recipe, thresholds) : null;
     })
     .filter(Boolean);

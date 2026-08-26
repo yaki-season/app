@@ -14,7 +14,7 @@ const record = JSON.parse(readFileSync(new URL(
 const definition = createBusinessDayDefinition(record, { expectedId: 'd4' });
 
 describe('D4 전체 영업 정의와 무료 사라다 정책', () => {
-  it('8명·8주문·19항목과 D5 미리보기 전이를 고정한다', () => {
+  it('8명·8주문·19항목과 D5 영업 전이를 고정한다', () => {
     const customers = definition.waves.flatMap((wave) => wave.customers);
     const orders = new Map(customers.map((customer) => [customer.order.id, customer.order]));
     const items = [...orders.values()].reduce((sum, order) => (
@@ -23,7 +23,7 @@ describe('D4 전체 영업 정의와 무료 사라다 정책', () => {
     expect(customers).toHaveLength(8);
     expect(orders.size).toBe(8);
     expect(items).toBe(19);
-    expect(definition.nextNodeId).toBe('d5-preview');
+    expect(definition.nextNodeId).toBe('d5');
     expect(orders.get('D4-ORDER-008').lines[0]).toMatchObject({
       menuId: 'cabbage-salad', quantity: 2,
     });

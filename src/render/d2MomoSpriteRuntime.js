@@ -15,7 +15,7 @@ export const D2_MOMO_RUNTIME_URLS = Object.freeze({
   )),
 });
 
-function spriteInstance(textures, slotMesh, sourceTransform, initialStage) {
+function spriteInstance(textures, slotMesh, sourceTransform, initialStage, assetId) {
   const holder = new THREE.Group();
   holder.name = `d2MomoSprite:${slotMesh.userData.objectKey}`;
   holder.userData.objectKey = slotMesh.userData.objectKey;
@@ -23,7 +23,7 @@ function spriteInstance(textures, slotMesh, sourceTransform, initialStage) {
 
   const root = new THREE.Group();
   root.name = 'd2MomoSpriteRoot';
-  root.userData.assetId = 'MDL-MOMO-GRILL-R1-CANDIDATE';
+  root.userData.assetId = assetId;
   root.rotation.set(
     sourceTransform.rootRotationRadians.x,
     sourceTransform.rootRotationRadians.y,
@@ -102,13 +102,18 @@ async function loadTexture(loader, url) {
   return texture;
 }
 
-export async function loadD2MomoSpriteRuntime({ textureLoader = new THREE.TextureLoader() } = {}) {
+export async function loadSkewerSpriteRuntime({
+  urls,
+  status = 'approved',
+  assetId,
+  textureLoader = new THREE.TextureLoader(),
+} = {}) {
   const [stageEntries, assemblyEntries] = await Promise.all([
     Promise.all(['raw', 'cooking', 'proper', 'overcooked', 'burnt'].map(async (stage) => [
       stage,
-      await loadTexture(textureLoader, D2_MOMO_RUNTIME_URLS[stage]),
+      await loadTexture(textureLoader, urls[stage]),
     ])),
-    Promise.all(D2_MOMO_RUNTIME_URLS.assemblyProgress.map(async (url, index) => [
+    Promise.all(urls.assemblyProgress.map(async (url, index) => [
       String(index),
       await loadTexture(textureLoader, url),
     ])),
@@ -116,13 +121,13 @@ export async function loadD2MomoSpriteRuntime({ textureLoader = new THREE.Textur
   const stageTextures = Object.freeze(Object.fromEntries(stageEntries));
   const assemblyTextures = Object.freeze(Object.fromEntries(assemblyEntries));
   return Object.freeze({
-    status: 'approved',
-    urls: D2_MOMO_RUNTIME_URLS,
+    status,
+    urls,
     createGrillInstance: (slotMesh, sourceTransform) => (
-      spriteInstance(stageTextures, slotMesh, sourceTransform, 'raw')
+      spriteInstance(stageTextures, slotMesh, sourceTransform, 'raw', assetId)
     ),
     createAssemblyInstance: (slotMesh, sourceTransform) => {
-      const instance = spriteInstance(assemblyTextures, slotMesh, sourceTransform, '0');
+      const instance = spriteInstance(assemblyTextures, slotMesh, sourceTransform, '0', assetId);
       return {
         ...instance,
         setIngredientCount: (count) => instance.setStage(Math.max(0, Math.min(5, Math.trunc(Number(count) || 0)))),
@@ -130,8 +135,23 @@ export async function loadD2MomoSpriteRuntime({ textureLoader = new THREE.Textur
       };
     },
     createTrayInstance: (slotMesh, sourceTransform) => {
-      const instance = spriteInstance({ raw: stageTextures.raw }, slotMesh, sourceTransform, 'raw');
+      const instance = spriteInstance(
+        { raw: stageTextures.raw },
+        slotMesh,
+        sourceTransform,
+        'raw',
+        assetId,
+      );
       return { ...instance, ingredientCount: () => 5 };
     },
+  });
+}
+
+export async function loadD2MomoSpriteRuntime({ textureLoader = new THREE.TextureLoader() } = {}) {
+  return loadSkewerSpriteRuntime({
+    urls: D2_MOMO_RUNTIME_URLS,
+    status: 'approved',
+    assetId: 'MDL-MOMO-GRILL-R1-CANDIDATE',
+    textureLoader,
   });
 }

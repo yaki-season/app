@@ -2321,8 +2321,8 @@
         {
           "role": "assembly-progress-0",
           "url": "/assets/campaign/d2/spr-momo-assembly-progress-0-r1-b1.png",
-          "sha256": "483d5aaf19ecac086b173409b9a7fb1d8f88f4518f68a50057cceb5d7d11ff50",
-          "bytes": 10157,
+          "sha256": "f1943dbb0a05115e788808f1fbca2e1162d393500e64033508b62deeb44e4c0c",
+          "bytes": 2742,
           "dimensions": {
             "width": 109,
             "height": 494
@@ -2332,8 +2332,8 @@
         {
           "role": "assembly-progress-1",
           "url": "/assets/campaign/d2/spr-momo-assembly-progress-1-r1-b1.png",
-          "sha256": "68feb944bca914c249fda225da4fb362ccb9a36c3fa5857d2368b1e201a1480b",
-          "bytes": 23255,
+          "sha256": "9004ca36666979ea58d97f9a58787228aa19a327de02f0a9044c4c6d5e405d3d",
+          "bytes": 16453,
           "dimensions": {
             "width": 109,
             "height": 494
@@ -2343,8 +2343,8 @@
         {
           "role": "assembly-progress-2",
           "url": "/assets/campaign/d2/spr-momo-assembly-progress-2-r1-b1.png",
-          "sha256": "811431a616f6e48a211580534bfa8d2726ab1eb1ffff17d93b6d0d2d6c46b8ad",
-          "bytes": 35990,
+          "sha256": "882481dfd1ff0be43bf6178fcd6945f4267a20f215934d0f78e7e7262a8e9f38",
+          "bytes": 29237,
           "dimensions": {
             "width": 109,
             "height": 494
@@ -2354,8 +2354,8 @@
         {
           "role": "assembly-progress-3",
           "url": "/assets/campaign/d2/spr-momo-assembly-progress-3-r1-b1.png",
-          "sha256": "b807961bd571b46a07a575bee63c74fa5d2269f4bacef52090d8191d0eecf0ac",
-          "bytes": 48621,
+          "sha256": "e92d2adec0c922aabed105524095af6cfdf20aa47b8196e7e0e552d92110b7f0",
+          "bytes": 42104,
           "dimensions": {
             "width": 109,
             "height": 494
@@ -2365,8 +2365,8 @@
         {
           "role": "assembly-progress-4",
           "url": "/assets/campaign/d2/spr-momo-assembly-progress-4-r1-b1.png",
-          "sha256": "618cc3ef69bae9e7046ea113a118322f508666becfc5121e10240bf7b8ac08c5",
-          "bytes": 61469,
+          "sha256": "c603b8252bec561c483f34c816ce155c2d3de13284e807a29be8d343cc5216b0",
+          "bytes": 54771,
           "dimensions": {
             "width": 109,
             "height": 494
@@ -2376,8 +2376,8 @@
         {
           "role": "assembly-progress-5",
           "url": "/assets/campaign/d2/spr-momo-assembly-progress-5-r1-b1.png",
-          "sha256": "91a3d0f8263b98af2394af93f9afc6f39d465b41a2c093e1249e6073c215ddf8",
-          "bytes": 73887,
+          "sha256": "57f214495172f13521ef5c13b789a64fe20f0a2a1bc8e2d8d3f6224044c795b0",
+          "bytes": 67329,
           "dimensions": {
             "width": 109,
             "height": 494

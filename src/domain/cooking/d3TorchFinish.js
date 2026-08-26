@@ -131,6 +131,7 @@ export function torchQuality(state) {
 }
 
 export function canRetrieveTorchMenu(state) {
+  if (state.torchState === TORCH_STATE.ACTIVE) return { ok: false, reason: 'torch-active' };
   if ((state.tareCoatCount ?? 0) === 0) return { ok: false, reason: 'tare-required' };
   return Math.min(state.tareCoatCount ?? 0, state.tareReheatCount ?? 0) >= 2
     ? { ok: true }

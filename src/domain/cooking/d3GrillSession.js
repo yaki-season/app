@@ -11,7 +11,24 @@ import {
 } from './d3TorchFinish.js';
 
 const clone = (value) => structuredClone(value);
-const requiresTareFinish = ({ menuId, seasoning }) => menuId === 'momo' && seasoning === 'tare';
+const requiresTareFinish = ({ menuId, seasoning }) => ['momo', 'kawa'].includes(menuId) && seasoning === 'tare';
+const QUALITY_ORDER = Object.freeze(['Perfect', 'Good', 'OK', 'Fail']);
+
+function lowerQuality(baseQuality, finishQuality) {
+  if (!baseQuality) return clone(finishQuality);
+  if (!finishQuality) return clone(baseQuality);
+  const baseIndex = QUALITY_ORDER.indexOf(baseQuality.grade);
+  const finishIndex = QUALITY_ORDER.indexOf(finishQuality.grade);
+  const lower = (baseIndex < 0 ? QUALITY_ORDER.length : baseIndex)
+    >= (finishIndex < 0 ? QUALITY_ORDER.length : finishIndex)
+    ? baseQuality
+    : finishQuality;
+  return {
+    ...clone(lower),
+    servable: baseQuality.servable !== false && finishQuality.servable !== false,
+    smokyBonus: finishQuality.smokyBonus === true,
+  };
+}
 
 export function createD3GrillSession(saved = null) {
   const jobs = new Map();
@@ -32,7 +49,14 @@ export function createD3GrillSession(saved = null) {
     return { ok: true };
   }
 
-  function stageCookedItem({ id, menuId, seasoning = 'none', bothFacesCooked = false, tarePrepared = false }) {
+  function stageCookedItem({
+    id,
+    menuId,
+    seasoning = 'none',
+    bothFacesCooked = false,
+    tarePrepared = false,
+    baseQuality = { grade: 'Perfect', good: true, servable: true },
+  }) {
     if (!id || !menuId) return { ok: false, reason: 'invalid-item' };
     if (jobs.has(id)) return { ok: false, reason: 'duplicate-item' };
     if (!bothFacesCooked) return { ok: false, reason: 'both-faces-required' };
@@ -49,6 +73,7 @@ export function createD3GrillSession(saved = null) {
       seasoning,
       bothFacesCooked,
       torchRequired,
+      baseQuality: clone(baseQuality),
       finish,
     };
     jobs.set(id, job);
@@ -94,16 +119,20 @@ export function createD3GrillSession(saved = null) {
     return finishTorch(job.finish);
   }
 
-  function retrieve(id, baseQuality = { grade: 'Perfect', good: true, servable: true }) {
+  function retrieve(id, baseQuality = null) {
     const job = jobFor(id);
     if (!job) return { ok: false, reason: 'unknown-item' };
     if (job.torchRequired) {
       const allowed = canRetrieveTorchMenu(job.finish);
       if (!allowed.ok) return allowed;
     }
-    const quality = job.torchRequired
+    const resolvedBaseQuality = baseQuality ?? job.baseQuality ?? { grade: 'Perfect', good: true, servable: true };
+    const finishQuality = job.torchRequired
       ? (job.finish.torchCompleted ? torchQuality(job.finish) : tareQuality(job.finish))
-      : clone(baseQuality);
+      : null;
+    const quality = job.torchRequired
+      ? lowerQuality(resolvedBaseQuality, finishQuality)
+      : clone(resolvedBaseQuality);
     jobs.delete(id);
     return {
       ok: true,

@@ -11,6 +11,10 @@ import {
   loadD2MomoSpriteRuntime,
 } from './render/d2MomoSpriteRuntime.js';
 import {
+  D5_KAWA_RUNTIME_URLS,
+  loadD5KawaSpriteRuntime,
+} from './render/d5KawaSpriteRuntime.js';
+import {
   ASSEMBLY_TARE_COATS,
   COOK_SLOT_NEXT_ACTION,
   createD1CookStations,
@@ -96,6 +100,10 @@ import {
   D4_BUSINESS_DAY_DEFINITION_URL,
   loadD4BusinessDayDefinition,
 } from './application/ports/d4BusinessDayDefinition.js';
+import {
+  D5_BUSINESS_DAY_DEFINITION_URL,
+  loadD5BusinessDayDefinition,
+} from './application/ports/d5BusinessDayDefinition.js';
 
 // 정적 진입점의 module graph가 평가된 직후부터 동일 객체를 유지한다. manifest fetch와 영업 세션
 // 복구가 끝나기 전에도 reload/E2E consumer는 readiness를 안전하게 읽을 수 있고, 준비되지 않은
@@ -116,7 +124,7 @@ loopOn('AMB-SHOP-INTERIOR');
 
 const runtimeParams = new URLSearchParams(window.location.search);
 const requestedDayId = runtimeParams.get('day');
-const ACTIVE_DAY_ID = ['d2', 'd3', 'd4'].includes(requestedDayId) ? requestedDayId : 'd1';
+const ACTIVE_DAY_ID = ['d2', 'd3', 'd4', 'd5'].includes(requestedDayId) ? requestedDayId : 'd1';
 // unlockLabels는 정산 5단계에서 "오늘 뭘 얻었나"를 보여주는 용도다. 보상 자체는
 // buildBusinessDayCampaignReward가 완료 시점에 계산하므로(그때는 이미 화면이 넘어간다)
 // 읽을거리로 쓸 이름만 여기 둔다.
@@ -124,7 +132,8 @@ const DAY_META = Object.freeze({
   d1: { label: 'D1', nextLabel: 'D2', nextNodeLabel: '둘째 날 이야기', unlockLabels: ['모모 레시피'] },
   d2: { label: 'D2', nextLabel: 'D3', nextNodeLabel: '셋째 날 이야기', unlockLabels: [] },
   d3: { label: 'D3', nextLabel: 'D4', nextNodeLabel: '넷째 날 이야기', unlockLabels: ['양배추 사라다', '하이볼'] },
-  d4: { label: 'D4', nextLabel: 'D5 미리보기', nextNodeLabel: '다섯째 날 미리보기', unlockLabels: ['카와 레시피'] },
+  d4: { label: 'D4', nextLabel: 'D5', nextNodeLabel: '다섯째 날 영업', unlockLabels: ['토리카와 레시피'] },
+  d5: { label: 'D5', nextLabel: 'D5 완료', nextNodeLabel: '영업 완료', unlockLabels: [] },
 });
 const ACTIVE_DAY = DAY_META[ACTIVE_DAY_ID];
 document.title = `YAKI SEASON — ${ACTIVE_DAY.label} 영업`;
@@ -133,6 +142,9 @@ const MENU_ID_BY_LABEL = Object.freeze({
   '네기마': 'negima',
   '모모': 'momo',
   '타레 모모': 'momo',
+  '토리카와': 'kawa',
+  '소금 토리카와': 'kawa',
+  '타레 토리카와': 'kawa',
   '양배추 사라다': 'cabbage-salad',
   '사라다': 'cabbage-salad',
   '하이볼': 'highball',
@@ -141,12 +153,15 @@ const menuIdForLabel = (label) => MENU_ID_BY_LABEL[label] ?? null;
 const MENU_META = Object.freeze({
   negima: { label: '네기마' },
   momo: { label: '모모' },
+  kawa: { label: '토리카와' },
   'cabbage-salad': { label: '양배추 사라다' },
   highball: { label: '하이볼' },
 });
-const skewerLabel = (menuId, seasoning = 'none') => (
-  menuId === 'momo' && seasoning === 'tare' ? '타레 모모' : MENU_META[menuId]?.label ?? '꼬치'
-);
+const skewerLabel = (menuId, seasoning = 'none') => {
+  if (menuId === 'momo' && seasoning === 'tare') return '타레 모모';
+  if (menuId === 'kawa') return seasoning === 'tare' ? '타레 토리카와' : '소금 토리카와';
+  return MENU_META[menuId]?.label ?? '꼬치';
+};
 
 const el = (id) => document.getElementById(id);
 const canvas = el('scene');
@@ -162,6 +177,10 @@ document.getElementById('dockShelf')?.style.setProperty(
 document.getElementById('dockShelf')?.style.setProperty(
   '--dock-momo-art',
   `url("${D2_MOMO_RUNTIME_URLS.order}")`,
+);
+document.getElementById('dockShelf')?.style.setProperty(
+  '--dock-kawa-art',
+  `url("${D5_KAWA_RUNTIME_URLS.order}")`,
 );
 document.getElementById('dockShelf')?.style.setProperty(
   '--dock-cabbage-salad-art',
@@ -184,7 +203,7 @@ const director = createStationDirector({ screens: ACTIVE_SCREEN_IDS, initial: IN
 // 깨끗한 시작이 필요하면 ?reset=1로 명시한다.
 const resetFirstOrderRuntime = runtimeParams.get('reset') === '1';
 const developmentStartDay = runtimeParams.get('devUnlock') === '1'
-  && ['d2', 'd3', 'd4'].includes(ACTIVE_DAY_ID)
+  && ['d2', 'd3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
   ? ACTIVE_DAY_ID
   : null;
 const developmentTestFlow = runtimeParams.get('testFlow');
@@ -227,11 +246,21 @@ const momoInstances = {
   build: null,
   tray: [],
 };
+const kawaInstances = {
+  grill: {},
+  build: null,
+  tray: [],
+};
 const momoRuntime = {
   status: ACTIVE_DAY_ID === 'd1' ? 'disabled' : 'loading',
   error: null,
 };
+const kawaRuntime = {
+  status: ACTIVE_DAY_ID === 'd5' ? 'loading' : 'disabled',
+  error: null,
+};
 document.body.dataset.d2MomoBindingStatus = momoRuntime.status;
+document.body.dataset.d5KawaBindingStatus = kawaRuntime.status;
 let rawNegimaReadiness = runtimeAssets.readiness;
 const rawNegimaRuntime = {
   status: runtimeAssets.GRILL_RAW_BUNDLE ? 'loading' : 'unavailable',
@@ -343,6 +372,46 @@ async function bootMomoRuntime() {
   }
 }
 void bootMomoRuntime();
+
+async function bootKawaRuntime() {
+  if (ACTIVE_DAY_ID !== 'd5') return;
+  try {
+    const runtime = await loadD5KawaSpriteRuntime();
+    for (const key of SLOT_KEYS) {
+      const slotMesh = R.objectMesh[key];
+      if (!slotMesh) throw new Error(`토리카와 그릴 slot mesh 누락: ${key}`);
+      const instance = runtime.createGrillInstance(
+        slotMesh,
+        D1_GRILL_FOOD_FOOTPRINT.sourceModelTransform,
+      );
+      kawaInstances.grill[key] = instance;
+      R.scene.add(instance.holder);
+    }
+    const buildMesh = R.objectMesh[D1_ASSEMBLY_BUILD_SLOT.key];
+    if (!buildMesh) throw new Error('토리카와 조립 지그 mesh 누락');
+    kawaInstances.build = runtime.createAssemblyInstance(
+      buildMesh,
+      D1_ASSEMBLY_BUILD_SLOT.sourceModelTransform,
+    );
+    R.scene.add(kawaInstances.build.holder);
+    for (const slot of D1_ASSEMBLY_TRAY_SLOTS) {
+      const trayMesh = R.objectMesh[slot.key];
+      if (!trayMesh) throw new Error(`토리카와 조립 트레이 mesh 누락: ${slot.key}`);
+      const instance = runtime.createTrayInstance(trayMesh, slot.sourceModelTransform);
+      kawaInstances.tray.push(instance);
+      R.scene.add(instance.holder);
+    }
+    kawaRuntime.status = runtime.status;
+    document.body.dataset.d5KawaBindingStatus = kawaRuntime.status;
+    render();
+  } catch (error) {
+    kawaRuntime.status = 'failed';
+    kawaRuntime.error = error;
+    document.body.dataset.d5KawaBindingStatus = 'failed';
+    console.error('D5 토리카와 아트 로드 실패:', error);
+  }
+}
+void bootKawaRuntime();
 const grillStatusLayer = el('grillStatusLayer');
 const grillInventory = el('grillInventory');
 const grillWaitingNegima = el('grillWaitingNegima');
@@ -351,6 +420,9 @@ const grillWaitingNegimaCount = el('grillWaitingNegimaCount');
 const grillWaitingMomo = el('grillWaitingMomo');
 const grillWaitingMomoHint = el('grillWaitingMomoHint');
 const grillWaitingMomoCount = el('grillWaitingMomoCount');
+const grillWaitingKawa = el('grillWaitingKawa');
+const grillWaitingKawaHint = el('grillWaitingKawaHint');
+const grillWaitingKawaCount = el('grillWaitingKawaCount');
 const grillFinishedInventoryCount = el('grillFinishedInventoryCount');
 const grillFinishedQualityList = el('grillFinishedQualityList');
 const customerServePanel = el('customerServePanel');
@@ -373,12 +445,13 @@ function invokeLockedControl(key, now = performance.now()) {
 }
 grillWaitingNegima.addEventListener('click', () => invokeLockedControl('grillWaitTray'));
 grillWaitingMomo.addEventListener('click', () => invokeLockedControl('grillWaitMomo'));
+grillWaitingKawa.addEventListener('click', () => invokeLockedControl('grillWaitKawa'));
 const dockShelf = el('dockShelf');
 const dock = createPreparedDock({ container: dockShelf });
 let instantStation = createInstantServiceStation();
 let highballStation = createHighballStation({ snapshot: restoredFirstOrderRuntime?.highball });
 // D4부터 두 음료 공정을 같은 장면에 상시 노출한다. 이전 graybox의 tab 상태는 읽지 않는다.
-const drinkMode = ACTIVE_DAY_ID === 'd4' ? 'combined' : 'beer';
+const drinkMode = ['d4', 'd5'].includes(ACTIVE_DAY_ID) ? 'combined' : 'beer';
 const assemblyRecipePicker = el('assemblyRecipePicker');
 for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
   button.addEventListener('click', () => {
@@ -501,7 +574,7 @@ function renderD3Torch() {
   const job = d3Grill.job(D3_TORCH_JOB_ID);
   const d3FeatureOpen = businessSession?.ok === true
     && businessSession.completed !== true
-    && ['D3', 'D4'].includes(businessView()?.dayId);
+    && ['D3', 'D4', 'D5'].includes(businessView()?.dayId);
   d3TorchPanel.hidden = !d3FeatureOpen || !job;
   if (!job) {
     d3TorchCursor.hidden = true;
@@ -509,6 +582,8 @@ function renderD3Torch() {
     return;
   }
   const finish = job.finish;
+  const finishLabel = skewerLabel(job.menuId, job.seasoning);
+  el('d3TorchTitle').textContent = `${finishLabel} · 도포·재가열 마감`;
   const tareCycles = Math.min(finish.tareCoatCount ?? 0, finish.tareReheatCount ?? 0);
   const tareComplete = tareCycles >= 2;
   const percent = Math.round(torchReadiness(finish) * 100);
@@ -713,11 +788,12 @@ el('d3RetrieveMomo').addEventListener('click', () => {
   const result = d3Grill.retrieve(D3_TORCH_JOB_ID);
   if (!result.ok) return;
   d3TorchSlotKey = null;
-  dock.add({ menuId: 'momo', menu: '타레 모모', seasoning: result.item.seasoning, quality: result.item.quality.grade, good: result.item.quality.good });
+  const itemLabel = skewerLabel(result.item.menuId, result.item.seasoning);
+  dock.add({ menuId: result.item.menuId, menu: itemLabel, seasoning: result.item.seasoning, quality: result.item.quality.grade, good: result.item.quality.good });
   D3_TORCH_JOB_ID = d3Grill.views()[0]?.id ?? 'D3-MOMO-TARE-DEBUG';
   if (d3Grill.job(D3_TORCH_JOB_ID)) d3TorchSlotKey = SLOT_KEYS[0];
   persistFirstOrderRuntime();
-  showHint(result.item.quality.smokyBonus ? '불향 모모 완성 · 준비 목록에 올렸어요' : '모모 완성품을 준비 목록에 올렸어요');
+  showHint(result.item.quality.smokyBonus ? `불향 ${itemLabel} 완성 · 준비 목록에 올렸어요` : `${itemLabel} 완성품을 준비 목록에 올렸어요`);
   render();
 });
 if (restoredFirstOrderRuntime?.dock) dock.restore(restoredFirstOrderRuntime.dock);
@@ -790,6 +866,9 @@ const ORDER_ICON = {
   '모모': D2_MOMO_RUNTIME_URLS.order,
   '소금 모모': D2_MOMO_RUNTIME_URLS.order,
   '타레 모모': D2_MOMO_RUNTIME_URLS.order,
+  '토리카와': D5_KAWA_RUNTIME_URLS.order,
+  '소금 토리카와': D5_KAWA_RUNTIME_URLS.order,
+  '타레 토리카와': D5_KAWA_RUNTIME_URLS.order,
 };
 const PHASE_LABEL = {
   open: '영업 중',
@@ -1532,7 +1611,7 @@ function beerGuideMessage(state, combined) {
 
 function updateDrinkPanel(activeScreen, now = performance.now()) {
   const onDrinkScreen = activeScreen === 'SCR-SVC-DRINK';
-  const combined = ACTIVE_DAY_ID === 'd4';
+  const combined = ['d4', 'd5'].includes(ACTIVE_DAY_ID);
   drinkPanel.classList.toggle('is-d4', combined);
   R.setObjectEnabled?.('drinkStation', true);
   R.setObjectEnabled?.('drinkGlassDeck', true);
@@ -1604,7 +1683,7 @@ const cabbageSaladProgress = el('cabbageSaladProgress');
 const instantMessage = el('instantMessage');
 
 function beginInstantPreparation(now = performance.now()) {
-  if (ACTIVE_DAY_ID !== 'd4' || director.activeScreenId() !== 'SCR-SVC-INSTANT') return false;
+  if (!['d4', 'd5'].includes(ACTIVE_DAY_ID) || director.activeScreenId() !== 'SCR-SVC-INSTANT') return false;
   if (!instantStation.begin(now)) return false;
   instantMessage.textContent = '사라다 담는 중';
   cabbageSaladPrepare.classList.add('is-holding');
@@ -1645,7 +1724,7 @@ cabbageSaladPrepare.addEventListener('keyup', (event) => {
 });
 
 function updateInstantPanel(activeScreen) {
-  const show = ACTIVE_DAY_ID === 'd4' && activeScreen === 'SCR-SVC-INSTANT';
+  const show = ['d4', 'd5'].includes(ACTIVE_DAY_ID) && activeScreen === 'SCR-SVC-INSTANT';
   instantPanel.hidden = !show;
   instantArtScene.hidden = !show;
   const state = instantStation.view();
@@ -1665,8 +1744,8 @@ function shouldShow(key) {
 }
 
 function extraKind(customerId) {
-  if (/^D[1-4]-(OFFICE|COMMUTER)/.test(customerId ?? '')) return 'office';
-  if (/^D[1-4]-SOLO/.test(customerId ?? '')) return 'solo';
+  if (/^D[1-5]-(OFFICE|COMMUTER)/.test(customerId ?? '')) return 'office';
+  if (/^D[1-5]-SOLO/.test(customerId ?? '')) return 'solo';
   return null;
 }
 
@@ -1677,6 +1756,7 @@ function tsukiokaArtFor(seat, nowMs) {
     || seatHasServedMenu(view, seat, 'highball');
   const servedSkewer = seatHasServedMenu(view, seat, 'negima')
     || seatHasServedMenu(view, seat, 'momo')
+    || seatHasServedMenu(view, seat, 'kawa')
     || seatHasServedMenu(view, seat, 'cabbage-salad');
   if (seat.phase === 'eating' || seat.phase === 'done') {
     if (servedBeer && servedSkewer) return resolveD1ReceivedEatingFrame(runtimeAssets, nowMs);
@@ -1749,9 +1829,10 @@ function syncCustomers() {
     const seat = seats.find((item) => item.seatId === seatId);
     const servedNegima = seatHasServedMenu(view, seat, 'negima');
     const servedMomo = seatHasServedMenu(view, seat, 'momo');
+    const servedKawa = seatHasServedMenu(view, seat, 'kawa');
     const servedSalad = seatHasServedMenu(view, seat, 'cabbage-salad');
-    const servedSkewer = servedNegima || servedMomo || servedSalad;
-    const servedGrilledFood = servedNegima || servedMomo;
+    const servedSkewer = servedNegima || servedMomo || servedKawa || servedSalad;
+    const servedGrilledFood = servedNegima || servedMomo || servedKawa;
     const servedBeer = seatHasServedMenu(view, seat, 'beer')
       || seatHasServedMenu(view, seat, 'highball');
     const kind = extraKind(seat?.customerId);
@@ -1782,8 +1863,10 @@ function syncCustomers() {
     const dirtyTable = Boolean(seat?.cleanupNeeded || seat?.phase === 'leaving');
     R.setSeatPlateUrl(
       seatId,
-      servedMomo && !servedNegima
-        ? D2_MOMO_RUNTIME_URLS.servedPlate
+      servedKawa && !servedNegima
+        ? D5_KAWA_RUNTIME_URLS.servedPlate
+        : servedMomo && !servedNegima
+          ? D2_MOMO_RUNTIME_URLS.servedPlate
         : '/assets/core/customer/pr-served-negima-plate-r2-b1.png',
     );
     R.setSeatFoodLayout(seatId, { grilled: servedGrilledFood, salad: servedSalad });
@@ -1876,14 +1959,24 @@ function syncAssemblyVisual() {
   const selectedMenuId = cook.selectedMenuId();
   const negimaReady = rawNegimaRuntime.status === 'ready';
   const momoReady = momoRuntime.status === 'approved';
+  const kawaReady = kawaRuntime.status === 'approved';
   const progress = cook.assemblyProgress();
   if (assemblyNegimaInstances.build) {
-    assemblyNegimaInstances.build.setIngredientCount(progress.index);
-    assemblyNegimaInstances.build.holder.visible = onAssembly && negimaReady && selectedMenuId === 'negima';
+    // 네기마 조립 compositor가 가진 온전한 3D 대나무 꼬치를 모든 꼬치 메뉴의 공통
+    // 베이스로 유지한다. 모모·토리카와 단계 PNG는 재료만 얹고 자체 막대는 그리지 않는다.
+    const usesCommonSkewerBase = ['negima', 'momo', 'kawa'].includes(selectedMenuId);
+    assemblyNegimaInstances.build.setIngredientCount(
+      selectedMenuId === 'negima' ? progress.index : 0,
+    );
+    assemblyNegimaInstances.build.holder.visible = onAssembly && negimaReady && usesCommonSkewerBase;
   }
   if (momoInstances.build) {
     momoInstances.build.setIngredientCount(progress.index);
     momoInstances.build.holder.visible = onAssembly && momoReady && selectedMenuId === 'momo';
+  }
+  if (kawaInstances.build) {
+    kawaInstances.build.setIngredientCount(progress.index);
+    kawaInstances.build.holder.visible = onAssembly && kawaReady && selectedMenuId === 'kawa';
   }
   const waitingItems = cook.waitingItems();
   assemblyNegimaInstances.tray.forEach((instance, index) => {
@@ -1891,6 +1984,9 @@ function syncAssemblyVisual() {
   });
   momoInstances.tray.forEach((instance, index) => {
     instance.holder.visible = onAssembly && momoReady && waitingItems[index] === 'momo';
+  });
+  kawaInstances.tray.forEach((instance, index) => {
+    instance.holder.visible = onAssembly && kawaReady && waitingItems[index] === 'kawa';
   });
 }
 
@@ -1917,6 +2013,7 @@ function renderGrillWaitingControl(slotViews) {
   const waitingByMenu = {
     negima: cook.waitingCount('negima'),
     momo: cook.waitingCount('momo'),
+    kawa: cook.waitingCount('kawa'),
   };
   const hasEmptySlot = slotViews.some((slot) => slot.status === 'empty');
   grillInventory.hidden = !onGrill;
@@ -1927,7 +2024,9 @@ function renderGrillWaitingControl(slotViews) {
   const syncCard = (menuId, card, countEl, hintEl) => {
     const count = waitingByMenu[menuId];
     const label = skewerLabel(menuId);
-    card.hidden = menuId === 'momo' && ACTIVE_DAY_ID === 'd1';
+    card.hidden = menuId === 'kawa'
+      ? ACTIVE_DAY_ID !== 'd5'
+      : menuId === 'momo' && ACTIVE_DAY_ID === 'd1';
     card.disabled = !onGrill || count === 0 || !hasEmptySlot;
     card.dataset.waitingCount = String(count);
     card.dataset.hasEmptySlot = String(hasEmptySlot);
@@ -1948,6 +2047,7 @@ function renderGrillWaitingControl(slotViews) {
   };
   syncCard('negima', grillWaitingNegima, grillWaitingNegimaCount, grillWaitingNegimaHint);
   syncCard('momo', grillWaitingMomo, grillWaitingMomoCount, grillWaitingMomoHint);
+  syncCard('kawa', grillWaitingKawa, grillWaitingKawaCount, grillWaitingKawaHint);
 }
 
 const GRILL_QUALITY_ORDER = Object.freeze(['Perfect', 'Good', 'OK', 'Fail']);
@@ -1959,7 +2059,7 @@ const GRILL_QUALITY_LABEL = Object.freeze({
 });
 
 function renderGrillFinishedInventory() {
-  const skewerItems = dock.items().filter((item) => ['네기마', '모모'].includes(item.menu));
+  const skewerItems = dock.items().filter((item) => ['negima', 'momo', 'kawa'].includes(item.menuId));
   grillFinishedInventoryCount.textContent = `총 ${skewerItems.length}개`;
   grillFinishedQualityList.innerHTML = '';
 
@@ -2017,22 +2117,33 @@ function renderReceipts() {
   ol.innerHTML = '';
   const idx = cook.assemblyIndex();
   // 단계 안내는 처음 만드는 메뉴에만. 익힌 뒤에는 비법노트에서 찾아본다.
-  const tutorial = shouldShowAssemblyTutorial(cook.selectedMenuId(), cook.learnedMenuIds());
+  const selectedMenuId = cook.selectedMenuId();
+  const tutorial = selectedMenuId !== 'kawa'
+    && shouldShowAssemblyTutorial(selectedMenuId, cook.learnedMenuIds());
   ol.dataset.tutorial = String(tutorial);
   if (tutorial) {
     cook.currentRecipe().forEach((ing, i) => {
       const li = document.createElement('li');
-      li.textContent = ing === 'chicken' ? '닭' : '파';
+      li.textContent = ing === 'chicken' ? '닭' : ing === 'foldedChickenSkin' ? '닭껍질' : '파';
       li.dataset.testid = `order-slot-${i}`;
       if (i < idx) li.classList.add('done');
       else if (i === idx) li.classList.add('next');
       ol.appendChild(li);
     });
   }
+  if (selectedMenuId === 'kawa') {
+    const progress = document.createElement('li');
+    progress.textContent = `토리카와 ${idx}/5`;
+    progress.dataset.testid = 'kawa-assembly-progress';
+    progress.style.width = 'auto';
+    progress.style.padding = '0 8px';
+    ol.appendChild(progress);
+  }
   const w = document.createElement('li');
   const waiting = [
     ['네기마', cook.waitingCount('negima')],
     ['모모', cook.waitingCount('momo')],
+    ['토리카와', cook.waitingCount('kawa')],
   ].filter(([, count]) => count > 0);
   w.textContent = waiting.length
     ? waiting.map(([label, count]) => `${label} ${count}`).join(' · ')
@@ -2085,11 +2196,12 @@ function renderBusiness() {
     && businessSession.completed !== true
     && view?.dayId?.toLowerCase() === ACTIVE_DAY_ID;
   const recipePickerOpen = activeDayFeatureOpen
-    && ['d2', 'd3', 'd4'].includes(ACTIVE_DAY_ID)
+    && ['d2', 'd3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
     && director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
   assemblyRecipePicker.hidden = !recipePickerOpen;
   for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
-    button.hidden = button.dataset.d3Only === 'true' && !['d3', 'd4'].includes(ACTIVE_DAY_ID);
+    button.hidden = (button.dataset.d3Only === 'true' && !['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID))
+      || (button.dataset.d5Only === 'true' && ACTIVE_DAY_ID !== 'd5');
     const selected = button.dataset.menuId === cook.selectedMenuId()
       && (button.dataset.seasoning ?? 'none') === cook.selectedSeasoning();
     button.setAttribute('aria-pressed', String(selected));
@@ -2169,7 +2281,9 @@ function renderBusiness() {
     const campaign = businessSession?.bridge?.getState?.();
     el('resultMessage').textContent = `${ACTIVE_DAY.label} 완료 · 보상 ${campaign?.economy?.balance ?? 44} · 명성 ${campaign?.economy?.reputation ?? 12} · ${ACTIVE_DAY.nextLabel} 저장 완료`;
     el('continueButton').textContent = `${ACTIVE_DAY.nextLabel}로 계속`;
-    el('continueButton').href = `./s0-d3.html?post=${ACTIVE_DAY_ID}`;
+    el('continueButton').href = ACTIVE_DAY_ID === 'd5'
+      ? './public-shell.html'
+      : `./s0-d3.html?post=${ACTIVE_DAY_ID}`;
   }
 }
 
@@ -2177,8 +2291,10 @@ function renderBusiness() {
 function renderRecipeBook() {
   const container = el('recipeBookEntries');
   container.replaceChildren();
-  const menuIds = ACTIVE_DAY_ID === 'd4'
-    ? ['negima', 'momo', 'beer', 'cabbage-salad', 'highball']
+  const menuIds = ACTIVE_DAY_ID === 'd5'
+    ? ['negima', 'momo', 'kawa', 'beer', 'cabbage-salad', 'highball']
+    : ACTIVE_DAY_ID === 'd4'
+      ? ['negima', 'momo', 'beer', 'cabbage-salad', 'highball']
     : ['negima', 'momo', 'beer'];
   for (const entry of recipeBookEntries({ menuIds })) {
     const article = document.createElement('article');
@@ -2402,7 +2518,10 @@ function handle(key, now) {
       break;
     case 'binChicken':
     case 'binLeek': {
-      const r = cook.clickIngredient(key === 'binChicken' ? 'chicken' : 'leek');
+      const ingredient = key === 'binChicken'
+        ? cook.selectedMenuId() === 'kawa' ? 'foldedChickenSkin' : 'chicken'
+        : 'leek';
+      const r = cook.clickIngredient(ingredient);
       if (!r.ok) {
         sfx('SFX-ASM-REJECT');
         showHint(r.reason === 'transfer-required' ? '완성 꼬치를 먼저 옮기세요' : '순서가 달라요');
@@ -2429,8 +2548,9 @@ function handle(key, now) {
       break;
     }
     case 'grillWaitTray':
-    case 'grillWaitMomo': {
-      const menuId = key === 'grillWaitMomo' ? 'momo' : 'negima';
+    case 'grillWaitMomo':
+    case 'grillWaitKawa': {
+      const menuId = key === 'grillWaitMomo' ? 'momo' : key === 'grillWaitKawa' ? 'kawa' : 'negima';
       const r = cook.placeToGrill(now, menuId);
       if (!r.ok) {
         const noWaiting = ['no-waiting', 'no-menu-waiting'].includes(r.reason);
@@ -2463,13 +2583,17 @@ function clickGrillSlot(i, now) {
     const label = skewerLabel(menuId);
     sfx('SFX-GRILL-RETRIEVE');
     sfx(r.quality?.good ? 'SFX-JUDGE-PERFECT' : 'SFX-JUDGE-FAIL');
-    if (['d3', 'd4'].includes(ACTIVE_DAY_ID) && menuId === 'momo' && r.seasoning === 'tare') {
+    const needsTareFinish = ['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
+      && ['momo', 'kawa'].includes(menuId)
+      && r.seasoning === 'tare';
+    if (needsTareFinish) {
       d3Grill.stageCookedItem({
         id: r.id,
-        menuId: 'momo',
+        menuId,
         seasoning: r.seasoning,
         bothFacesCooked: true,
         tarePrepared: r.tarePrepared,
+        baseQuality: r.quality,
       });
       if (!d3Grill.job(D3_TORCH_JOB_ID)) {
         D3_TORCH_JOB_ID = r.id;
@@ -2479,8 +2603,8 @@ function clickGrillSlot(i, now) {
       dock.add({ menuId, menu: label, seasoning: r.seasoning ?? null, quality: r.quality.grade, good: r.quality.good, zone: 'food' });
     }
     persistFirstOrderRuntime();
-    showHint(['d3', 'd4'].includes(ACTIVE_DAY_ID) && menuId === 'momo' && r.seasoning === 'tare'
-      ? '구운 타레 모모를 도포·재가열 마감대로 옮겼어요'
+    showHint(needsTareFinish
+      ? `구운 ${label}를 도포·재가열 마감대로 옮겼어요`
       : `완성 ${label}가 오른쪽 종류·품질별 목록에 추가됐어요`);
   }
   else if (r.flipped) {
@@ -2530,6 +2654,7 @@ function d3TorchMomoStage(job) {
 // 화면·회귀 모두에서 단계가 깜빡인다. 마지막으로 확정된 단계를 들고 있는다.
 const rawNegimaStageBySlot = {};
 const momoStageBySlot = {};
+const kawaStageBySlot = {};
 
 function bindCookingMaterialToApprovedPlane(key) {
   const g = grillMats[key];
@@ -2681,14 +2806,14 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
   for (const key of SLOT_KEYS) {
     const slotView = views[slotIndexOf(key)];
     const d3TorchJob = key === d3TorchSlotKey ? d3Grill.job(D3_TORCH_JOB_ID) : null;
-    const stagedD3Momo = d3TorchJob != null;
-    // Tare and torch finishing happen on the grill. Keep the cooked momo visible
+    const stagedD3Skewer = d3TorchJob != null;
+    // Tare and torch finishing happen on the grill. Keep the cooked skewer visible
     // after the cook station hands it to the D3 finishing workflow.
-    const v = stagedD3Momo && (!slotView || slotView.status === 'empty')
+    const v = stagedD3Skewer && (!slotView || slotView.status === 'empty')
       ? {
           status: 'back',
           cooking: true,
-          menuId: 'momo',
+          menuId: d3TorchJob.menuId,
           doneness: 'perfect',
           faceElapsedSec: 3,
           visualRotationRad: 0,
@@ -2706,16 +2831,17 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
       g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
     }
     const visibleStage = grillNegimaStage(v);
-    const momoVisibleStage = stagedD3Momo ? d3TorchMomoStage(d3TorchJob) : visibleStage;
+    const skewerVisibleStage = stagedD3Skewer ? d3TorchMomoStage(d3TorchJob) : visibleStage;
     mesh.userData.grillBaseQuaternion ??= mesh.quaternion.clone();
     mesh.quaternion.copy(mesh.userData.grillBaseQuaternion).multiply(
       grillFlipQuaternion.setFromAxisAngle(GRILL_FLIP_AXIS, v?.visualRotationRad ?? 0),
     );
     const rawInstance = rawNegimaInstances[key];
     const momoInstance = momoInstances.grill[key];
+    const kawaInstance = kawaInstances.grill[key];
     const menuId = v?.menuId ?? 'negima';
-    // 네기마는 승인 원본(raw) 한 장에 GLSL 조리색을 적용한다. 모모는 승인된 단계별
-    // 래스터를 선택해 적정·과다·탄 상태의 국소 그을음과 살코기 디테일을 보존한다.
+    // 네기마는 승인 원본(raw) 한 장에 GLSL 조리색을 적용한다. 모모와 토리카와는
+    // 메뉴별 단계 래스터를 선택해 적정·과다·탄 상태의 국소 디테일을 보존한다.
     const shaderOnApprovedPlane = rawInstance?.usesCookingMaterial?.() === true;
     const showApprovedSprite = (
       rawNegimaRuntime.status === 'ready'
@@ -2749,16 +2875,34 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
     if (momoInstance) {
       momoInstance.holder.visible = showMomoSprite;
       if (!v?.flipping) {
-        momoStageBySlot[key] = momoVisibleStage;
-        momoInstance.setStage(momoVisibleStage);
+        momoStageBySlot[key] = skewerVisibleStage;
+        momoInstance.setStage(skewerVisibleStage);
         momoInstance.flipPivot.scale.x = v?.orientationFaceDown === 'back' ? -1 : 1;
       }
       momoInstance.flipPivot.rotation.y = 0;
     }
+    const showKawaSprite = (
+      kawaRuntime.status === 'approved'
+      && v != null
+      && v.status !== 'empty'
+      && menuId === 'kawa'
+      && director.activeScreenId() === 'SCR-SVC-GRILL'
+    );
+    if (kawaInstance) {
+      kawaInstance.holder.visible = showKawaSprite;
+      if (!v?.flipping) {
+        kawaStageBySlot[key] = skewerVisibleStage;
+        kawaInstance.setStage(skewerVisibleStage);
+        kawaInstance.flipPivot.scale.x = v?.orientationFaceDown === 'back' ? -1 : 1;
+      }
+      kawaInstance.flipPivot.rotation.y = 0;
+    }
     // public pgSlot은 visual과 raycast를 한 mesh가 맡으므로 visible=false로 숨기면 입력도 끊긴다.
     // mesh/raycast는 유지하고 color write만 막는다. 승인 평면이 셰이더를 소유한 뒤에는
     // mesh가 raycast 전용이라 항상 막아둔다.
-    if (mesh.material) mesh.material.colorWrite = !(showApprovedSprite || showMomoSprite);
+    if (mesh.material) {
+      mesh.material.colorWrite = !(showApprovedSprite || showMomoSprite || showKawaSprite);
+    }
   }
 }
 
@@ -2834,7 +2978,9 @@ el('postBusinessAction').addEventListener('click', handlePostBusinessAction);
 
 async function bootBusinessDay() {
   try {
-    const consumed = ACTIVE_DAY_ID === 'd4'
+    const consumed = ACTIVE_DAY_ID === 'd5'
+      ? await loadD5BusinessDayDefinition({ url: D5_BUSINESS_DAY_DEFINITION_URL })
+      : ACTIVE_DAY_ID === 'd4'
       ? await loadD4BusinessDayDefinition({ url: D4_BUSINESS_DAY_DEFINITION_URL })
       : ACTIVE_DAY_ID === 'd3'
       ? await loadD3BusinessDayDefinition({ url: D3_BUSINESS_DAY_DEFINITION_URL, seed: daySeed })
@@ -2847,7 +2993,7 @@ async function bootBusinessDay() {
       render();
       return;
     }
-    if (ACTIVE_DAY_ID === 'd4') {
+    if (['d4', 'd5'].includes(ACTIVE_DAY_ID)) {
       const instantDefinition = consumed.definition.stationProcesses?.instant
         ?.items?.['cabbage-salad'];
       const highballDefinition = consumed.definition.stationProcesses?.drink
@@ -2859,6 +3005,11 @@ async function bootBusinessDay() {
         config: highballDefinition,
         snapshot: restoredFirstOrderRuntime?.highball,
       });
+    }
+    if (ACTIVE_DAY_ID === 'd5') {
+      const kawaThresholds = consumed.definition.stationProcesses?.grill
+        ?.items?.kawa?.faceThresholdsSec;
+      cook.setMenuThresholds('kawa', kawaThresholds);
     }
     const resetDevelopment = resetFirstOrderRuntime;
     businessSession = await createD1BusinessDayBrowserSession({
@@ -3138,6 +3289,18 @@ Object.assign(d1GameDebug, {
       visualMirrorX: momoInstances.grill[key]?.flipPivot?.scale?.x ?? null,
     })),
   }),
+  kawaRuntime: () => ({
+    status: kawaRuntime.status,
+    error: kawaRuntime.error ? String(kawaRuntime.error.message ?? kawaRuntime.error) : null,
+    slots: SLOT_KEYS.map((key) => ({
+      key,
+      visible: kawaInstances.grill[key]?.holder.visible === true,
+      stage: kawaInstances.grill[key]?.stage?.() ?? null,
+      approvedStage: kawaStageBySlot[key]
+        ?? grillNegimaStage(cook.slotViews(performance.now())[slotIndexOf(key)]),
+      visualMirrorX: kawaInstances.grill[key]?.flipPivot?.scale?.x ?? null,
+    })),
+  }),
   assemblyArtRuntime: () => ({
     status: rawNegimaRuntime.status,
     selectedMenuId: cook.selectedMenuId(),
@@ -3160,6 +3323,19 @@ Object.assign(d1GameDebug, {
         geometry: assemblyInstanceGeometry(momoInstances.build),
       },
       tray: momoInstances.tray.map((instance) => ({
+        visible: instance.holder.visible === true,
+        ingredientCount: instance.ingredientCount(),
+        geometry: assemblyInstanceGeometry(instance),
+      })),
+    },
+    kawa: {
+      status: kawaRuntime.status,
+      build: {
+        visible: kawaInstances.build?.holder.visible === true,
+        ingredientCount: kawaInstances.build?.ingredientCount?.() ?? 0,
+        geometry: assemblyInstanceGeometry(kawaInstances.build),
+      },
+      tray: kawaInstances.tray.map((instance) => ({
         visible: instance.holder.visible === true,
         ingredientCount: instance.ingredientCount(),
         geometry: assemblyInstanceGeometry(instance),
@@ -3256,7 +3432,7 @@ Object.assign(d1GameDebug, {
   }),
   grillFinishedInventory: () => ({
     hidden: grillInventory.hidden,
-    total: dock.items().filter((item) => ['네기마', '모모'].includes(item.menu)).length,
+    total: dock.items().filter((item) => ['negima', 'momo', 'kawa'].includes(item.menuId)).length,
     groups: [...grillFinishedQualityList.querySelectorAll('[data-quality]')].map((card) => ({
       menu: card.dataset.menu,
       quality: card.dataset.quality,

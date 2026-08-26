@@ -8,6 +8,7 @@ import {
 
 const NEGIMA = ['chicken', 'leek', 'chicken', 'leek', 'chicken'];
 const MOMO = ['chicken', 'chicken', 'chicken', 'chicken', 'chicken'];
+const KAWA = ['foldedChickenSkin', 'foldedChickenSkin', 'foldedChickenSkin', 'foldedChickenSkin', 'foldedChickenSkin'];
 const assemble = (cook) => NEGIMA.forEach((ing) => cook.clickIngredient(ing));
 
 describe('createCookStations', () => {
@@ -64,6 +65,20 @@ describe('createCookStations', () => {
     expect(cook.waitingCount('momo')).toBe(1);
     expect(cook.waitingCount('negima')).toBe(0);
     expect(cook.waitingItems()).toEqual(['momo']);
+  });
+
+  it('D5 토리카와는 접은 닭껍질 다섯 조각과 메뉴별 빠른 그릴 판정을 사용한다', () => {
+    const cook = createD1CookStations({
+      thresholdsByMenu: { kawa: { under: 0, perfect: 10, over: 14, burnt: 18 } },
+    });
+    expect(cook.selectRecipe('kawa', 'salt')).toMatchObject({ ok: true, recipe: KAWA });
+    KAWA.forEach((ingredient) => expect(cook.clickIngredient(ingredient).ok).toBe(true));
+    expect(cook.transferAssembly()).toMatchObject({ ok: true, menuId: 'kawa' });
+    expect(cook.placeToGrill(0, 'kawa')).toMatchObject({ ok: true, menuId: 'kawa', seasoning: 'salt' });
+    expect(cook.slotViews(9_999)[0].doneness).toBe('under');
+    expect(cook.slotViews(10_000)[0].doneness).toBe('perfect');
+    expect(cook.slotViews(14_000)[0].doneness).toBe('over');
+    expect(cook.slotViews(18_000)[0].doneness).toBe('burnt');
   });
 
   it('네기마와 모모는 메뉴별로 선택 배치되고 슬롯·회수 결과에 메뉴가 따라간다', () => {

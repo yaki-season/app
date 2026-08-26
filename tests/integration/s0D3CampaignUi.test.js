@@ -17,7 +17,7 @@ import {
 describe('S0~D4 campaign presentation bridge', () => {
   it('공개 campaign node chain만 소비한다', () => {
     const definition = createS0D3CampaignDefinition();
-    expect(definition.ids).toEqual(['s0', 'd1', 'd2', 'd3', 'd4', 'd5-preview']);
+    expect(definition.ids).toEqual(['s0', 'd1', 'd2', 'd3', 'd4', 'd5', 'd5-complete']);
     expect(S0_D3_STORAGE_PREFIX).toBe('yaki-season.dev2-scenario.');
   });
 
@@ -48,10 +48,7 @@ describe('S0~D4 campaign presentation bridge', () => {
       expect(completed.ok).toBe(true);
     }
 
-    expect(campaignPresentationPosition(bridge.getState())).toEqual({
-      kind: 'epilogue',
-      dayId: 'D4',
-    });
+    expect(campaignPresentationPosition(bridge.getState())).toEqual({ kind: 'pre-open', dayId: 'D5' });
     expect(bridge.getState().economy).toMatchObject({
       balance: 0,
       reputation: 0,
@@ -114,6 +111,47 @@ describe('S0~D4 campaign presentation bridge', () => {
       nodeId: 'd4',
       nodeKind: 'day',
       dayId: 'd4',
+      phase: CAMPAIGN_PHASE.PRE_OPEN,
+    });
+  });
+
+  it('구 버전 D5 preview 저장을 실제 D5 영업 전 상태로 호환 변환한다', async () => {
+    const storage = new MemoryStorageAdapter();
+    const bridge = new S0D3CampaignBridge({ storagePort: storage });
+    await bridge.loadOrStart();
+    bridge.finishPrologue();
+    for (const dayId of ['D1', 'D2', 'D3', 'D4']) {
+      await bridge.startDay();
+      bridge.enterSettlement();
+      await bridge.completeDay(dayId);
+    }
+    const legacyState = bridge.getState();
+    legacyState.campaign = {
+      ...legacyState.campaign,
+      nodeId: 'd5-preview',
+      nodeKind: 'preview',
+      dayId: null,
+      phase: 'preview',
+      unlockedNodeIds: legacyState.campaign.unlockedNodeIds.map((id) => (
+        id === 'd5' ? 'd5-preview' : id
+      )),
+    };
+    await storage.set(SAVE_STORAGE_KEYS.ACTIVE, serializeSaveEnvelope(sealSaveEnvelope({
+      saveSchemaVersion: 1,
+      contentVersion: S0_D3_CONTENT_VERSION,
+      writtenAt: '2026-08-26T00:00:00.000Z',
+      checkpointType: 'day-complete',
+      campaignId: legacyState.meta.campaignId,
+      completedDayId: 'd4',
+      payload: legacyState,
+    })));
+
+    const reloaded = new S0D3CampaignBridge({ storagePort: storage });
+    expect(await reloaded.loadOrStart()).toMatchObject({ ok: true, resumed: true, save: { migrated: true } });
+    expect(reloaded.getState().campaign).toMatchObject({
+      nodeId: 'd5',
+      nodeKind: 'day',
+      dayId: 'd5',
       phase: CAMPAIGN_PHASE.PRE_OPEN,
     });
   });

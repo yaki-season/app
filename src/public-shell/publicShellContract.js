@@ -66,7 +66,7 @@ export function serializeSafeDiagnostic(diagnostic) {
 export function isCampaignCompleteSave(loadResult) {
   return Boolean(
     loadResult?.ok
-      && loadResult.value?.envelope?.payload?.campaign?.nodeId === 'd5-preview'
+      && loadResult.value?.envelope?.payload?.campaign?.nodeId === 'd5-complete'
       && loadResult.value.envelope.payload.campaign.phase === 'preview',
   );
 }
@@ -79,7 +79,7 @@ export function saveSummary(loadResult) {
     checkpointType: envelope.checkpointType,
     completedDayId: envelope.completedDayId,
     nodeId,
-    dayLabel: nodeId === 'd5-preview' ? 'D4 완료' : nodeId.toUpperCase(),
+    dayLabel: nodeId === 'd5-complete' ? 'D5 완료' : nodeId.toUpperCase(),
     writtenAt: envelope.writtenAt,
   });
 }

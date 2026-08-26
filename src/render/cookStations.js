@@ -54,12 +54,19 @@ export function createCookStations({
   recipes = null,
   defaultMenuId = 'negima',
   explicitAssemblyTransfer = false,
+  thresholdsByMenu = {},
 } = {}) {
   const normalizedSlotCount = Math.max(1, slots);
   const recipeBook = Object.freeze(recipes
     ? Object.fromEntries(Object.entries(recipes).map(([menuId, sequence]) => [menuId, [...sequence]]))
     : { [defaultMenuId]: [...recipe] });
   if (!recipeBook[defaultMenuId]) throw new Error(`기본 조립 레시피 누락: ${defaultMenuId}`);
+  const menuThresholds = Object.fromEntries(Object.entries(thresholdsByMenu).map(([menuId, thresholds]) => [
+    menuId,
+    { ...COOK_THRESHOLDS_SEC, ...thresholds },
+  ]));
+  const thresholdsFor = (menuId) => menuThresholds[menuId] ?? COOK_THRESHOLDS_SEC;
+  const classifyFor = (menuId, elapsedSec) => classifyDoneness(elapsedSec, thresholdsFor(menuId));
   let assembly = { menuId: defaultMenuId, seasoning: 'none', index: 0, complete: false, tareBrushCount: 0 };
   let assembledCount = 0;
   const learnedMenuIds = new Set();
@@ -109,7 +116,7 @@ export function createCookStations({
       const face = slot.contactFace;
       const before = slot.elapsedSec[face];
       slot.elapsedSec[face] += (now - cursor) / 1000;
-      const readySec = COOK_THRESHOLDS_SEC[DONENESS.PERFECT];
+      const readySec = thresholdsFor(slot.menuId)[DONENESS.PERFECT];
       if (slot.faceReadyAtMs?.[face] == null && before < readySec && slot.elapsedSec[face] >= readySec) {
         slot.faceReadyAtMs ??= { front: null, back: null };
         slot.faceReadyAtMs[face] = cursor + (readySec - before) * 1000;
@@ -218,8 +225,8 @@ export function createCookStations({
     ) {
       return COOK_SLOT_NEXT_ACTION.WAIT;
     }
-    const frontResult = classifyDoneness(slot.elapsedSec.front);
-    const backResult = classifyDoneness(slot.elapsedSec.back);
+    const frontResult = classifyFor(slot.menuId, slot.elapsedSec.front);
+    const backResult = classifyFor(slot.menuId, slot.elapsedSec.back);
     return frontResult === DONENESS.UNDER || backResult === DONENESS.UNDER
       ? COOK_SLOT_NEXT_ACTION.FLIP
       : COOK_SLOT_NEXT_ACTION.RETRIEVE;
@@ -230,7 +237,7 @@ export function createCookStations({
     if (!slot) return null;
     syncSlot(slot, now);
     if (!slot.contactFace) return null;
-    return classifyDoneness(currentElapsedSec(slot));
+    return classifyFor(slot.menuId, currentElapsedSec(slot));
   }
 
   function beginFlip(index, now) {
@@ -293,8 +300,8 @@ export function createCookStations({
       return { ok: false, reason: 'not-cooking' };
     }
 
-    const frontResult = classifyDoneness(slot.elapsedSec.front);
-    const backResult = classifyDoneness(slot.elapsedSec.back);
+    const frontResult = classifyFor(slot.menuId, slot.elapsedSec.front);
+    const backResult = classifyFor(slot.menuId, slot.elapsedSec.back);
     if (nextAction === COOK_SLOT_NEXT_ACTION.FLIP) {
       const result = beginFlip(index, now);
       return { ...result, flipped: result.ok };
@@ -342,8 +349,8 @@ export function createCookStations({
     grill.forEach((slot, index) => {
       syncSlot(slot, now);
       if (
-        classifyDoneness(slot.elapsedSec.front) === DONENESS.BURNT
-        && classifyDoneness(slot.elapsedSec.back) === DONENESS.BURNT
+        classifyFor(slot.menuId, slot.elapsedSec.front) === DONENESS.BURNT
+        && classifyFor(slot.menuId, slot.elapsedSec.back) === DONENESS.BURNT
       ) {
         grill[index] = emptySlot();
         discarded.push(index);
@@ -388,7 +395,7 @@ export function createCookStations({
         menuId: slot.menuId,
         id: slot.id,
         seasoning: slot.seasoning,
-        doneness: slot.contactFace ? classifyDoneness(faceElapsedSec) : null,
+        doneness: slot.contactFace ? classifyFor(slot.menuId, faceElapsedSec) : null,
         faceElapsedSec,
         frontElapsedSec: slot.elapsedSec.front,
         backElapsedSec: slot.elapsedSec.back,
@@ -537,6 +544,11 @@ export function createCookStations({
     slotDoneness,
     tickBurn,
     setSlots,
+    setMenuThresholds(menuId, thresholds) {
+      if (!recipeBook[menuId] || !thresholds) return false;
+      menuThresholds[menuId] = { ...COOK_THRESHOLDS_SEC, ...thresholds };
+      return true;
+    },
     slotViews,
     snapshot,
     restore,

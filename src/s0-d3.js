@@ -494,10 +494,6 @@ function renderSettlement() {
   }, true));
 }
 
-function navigateToMainScreen() {
-  window.location.assign(new URL('./public-shell.html', window.location.href));
-}
-
 function renderEpilogue() {
   const page = D4_EPILOGUE_PAGES[epilogueIndex];
   heading.textContent = '넷째 밤, 이어 갈 리듬';
@@ -547,9 +543,9 @@ function renderEpilogue() {
     }));
   }
   const lastPage = epilogueIndex === D4_EPILOGUE_PAGES.length - 1;
-  epilogueActions.push(button(lastPage ? '메인 화면으로' : '다음 장면', () => {
+  epilogueActions.push(button(lastPage ? 'D5 영업으로' : '다음 장면', () => {
     if (lastPage) {
-      navigateToMainScreen();
+      navigateToBusinessDay('D5');
       return;
     }
     epilogueIndex += 1;

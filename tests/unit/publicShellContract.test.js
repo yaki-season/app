@@ -56,13 +56,13 @@ describe('public shell 설정과 진단 계약', () => {
   });
 });
 
-describe('D4 후일담 종착 저장 계약', () => {
-  it('정확한 D5 preview 저장만 완료 상태로 허용한다', () => {
+describe('D5 완료 종착 저장 계약', () => {
+  it('정확한 D5 완료 저장만 완료 상태로 허용한다', () => {
     const result = {
       ok: true,
       value: {
         envelope: {
-          payload: { campaign: { nodeId: 'd5-preview', phase: 'preview' } },
+          payload: { campaign: { nodeId: 'd5-complete', phase: 'preview' } },
         },
       },
     };

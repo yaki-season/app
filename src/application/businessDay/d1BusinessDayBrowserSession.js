@@ -41,12 +41,13 @@ export async function createD1BusinessDayBrowserSession({
 
   let campaign = bridge.getState();
   if (developmentStartDay) {
-    if (!['d2', 'd3', 'd4'].includes(developmentStartDay)) {
+    if (!['d2', 'd3', 'd4', 'd5'].includes(developmentStartDay)) {
       throw new TypeError(`지원하지 않는 개발 시작 날짜입니다: ${developmentStartDay}`);
     }
     if (campaign.campaign.nodeId === 's0') bridge.finishPrologue();
-    const precedingDays = developmentStartDay === 'd4'
-      ? ['d1', 'd2', 'd3']
+    const precedingDays = developmentStartDay === 'd5'
+      ? ['d1', 'd2', 'd3', 'd4']
+      : developmentStartDay === 'd4' ? ['d1', 'd2', 'd3']
       : developmentStartDay === 'd3' ? ['d1', 'd2'] : ['d1'];
     for (const precedingDayId of precedingDays) {
       const startedDay = await bridge.startDay();

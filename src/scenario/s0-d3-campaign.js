@@ -44,8 +44,9 @@ export const S0_D4_CAMPAIGN_RECORDS = Object.freeze([
   Object.freeze({ id: 'd1', kind: 'day', nextId: 'd2', contentId: 'campaign.day.d1' }),
   Object.freeze({ id: 'd2', kind: 'day', nextId: 'd3', contentId: 'campaign.day.d2' }),
   Object.freeze({ id: 'd3', kind: 'day', nextId: 'd4', contentId: 'campaign.day.d3' }),
-  Object.freeze({ id: 'd4', kind: 'day', nextId: 'd5-preview', contentId: 'campaign.day.d4' }),
-  Object.freeze({ id: 'd5-preview', kind: 'preview', nextId: null, contentId: 'campaign.preview.d5' }),
+  Object.freeze({ id: 'd4', kind: 'day', nextId: 'd5', contentId: 'campaign.day.d4' }),
+  Object.freeze({ id: 'd5', kind: 'day', nextId: 'd5-complete', contentId: 'campaign.day.d5' }),
+  Object.freeze({ id: 'd5-complete', kind: 'preview', nextId: null, contentId: 'campaign.complete.d5' }),
 ]);
 
 // 공개 API 이름은 기존 소비자 호환을 위해 유지하되, 정의의 기준은 S0~D4다.
@@ -61,8 +62,8 @@ export function createS0D4CampaignDefinition() {
 
 export function campaignPresentationPosition(state) {
   if (state?.campaign?.nodeId === 's0') return Object.freeze({ kind: 'prologue', dayId: 'S0' });
-  if (state?.campaign?.nodeId === 'd5-preview') return Object.freeze({ kind: 'epilogue', dayId: 'D4' });
-  if (['d1', 'd2', 'd3', 'd4'].includes(state?.campaign?.nodeId)) {
+  if (state?.campaign?.nodeId === 'd5-complete') return Object.freeze({ kind: 'epilogue', dayId: 'D5' });
+  if (['d1', 'd2', 'd3', 'd4', 'd5'].includes(state?.campaign?.nodeId)) {
     return Object.freeze({
       kind: state.campaign.phase === CAMPAIGN_PHASE.PRE_OPEN ? 'pre-open' : state.campaign.phase,
       dayId: state.campaign.nodeId.toUpperCase(),
@@ -73,6 +74,22 @@ export function campaignPresentationPosition(state) {
 
 // 구 버전에서 D3 완료를 종착점으로 저장한 상태는 D4 영업 전으로 자연스럽게 이어 준다.
 export function normalizeLegacyCampaignState(state) {
+  if (state?.campaign?.nodeId === ['d5', 'preview'].join('-')) {
+    return {
+      ...state,
+      campaign: {
+        ...state.campaign,
+        nodeId: 'd5',
+        nodeKind: 'day',
+        dayId: 'd5',
+        phase: CAMPAIGN_PHASE.PRE_OPEN,
+        unlockedNodeIds: [...new Set([
+          ...(state.campaign.unlockedNodeIds ?? []).filter((id) => id !== ['d5', 'preview'].join('-')),
+          'd5',
+        ])],
+      },
+    };
+  }
   if (state?.campaign?.nodeId !== ['d4', 'preview'].join('-')) return state;
   return {
     ...state,

@@ -144,6 +144,13 @@ function diagnosticText() {
 }
 
 function navigateToScenario({ forceNew = false } = {}) {
+  const nodeId = loadResult?.value?.envelope?.payload?.campaign?.nodeId;
+  if (!forceNew && nodeId === 'd5') {
+    const target = new URL('./d1-game.html', window.location.href);
+    target.searchParams.set('day', 'd5');
+    window.location.assign(target);
+    return;
+  }
   const target = new URL('./s0-d3.html', window.location.href);
   if (forceNew) target.searchParams.set('new', '1');
   window.location.assign(target);
@@ -222,7 +229,7 @@ function renderStart(extraStatus = null) {
   else if (valid) {
     const card = operationStatus(
       'success',
-      campaignComplete ? '나흘의 영업을 마쳤습니다' : '돌아갈 자리가 남아 있습니다',
+      campaignComplete ? '닷새의 영업을 마쳤습니다' : '돌아갈 자리가 남아 있습니다',
       campaignComplete ? '다음 이야기를 기다리는 동안 후일담을 다시 읽을 수 있습니다.' : summary.dayLabel,
     );
     card.append(summaryDefinition(summary));
@@ -239,7 +246,7 @@ function renderStart(extraStatus = null) {
   });
   menu.append(
     actionButton('새 게임', requestNewGame, { primary: !valid, id: 'new-game-button' }),
-    actionButton(campaignComplete ? '후일담 다시 보기' : '이어하기', () => navigateToScenario(), {
+    actionButton(campaignComplete ? '처음부터 다시 보기' : '이어하기', () => navigateToScenario({ forceNew: campaignComplete }), {
       disabled: !valid,
       primary: valid,
       id: 'continue-button',

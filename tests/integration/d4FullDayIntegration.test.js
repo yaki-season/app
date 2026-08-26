@@ -25,7 +25,7 @@ function cleanupAll(port, prefix) {
 }
 
 describe('D4 전체 영업 종단', () => {
-  it('8개 주문을 모두 제공·정리·정산하고 D5 preview 및 카와를 한 번만 해금한다', async () => {
+  it('8개 주문을 모두 제공·정리·정산하고 D5 및 카와를 한 번만 해금한다', async () => {
     const storage = new MemoryStorageAdapter();
     const session = await createD1BusinessDayBrowserSession({
       definition,
@@ -86,8 +86,8 @@ describe('D4 전체 영업 종단', () => {
     });
     expect(session.bridge.getState()).toMatchObject({
       campaign: {
-        nodeId: 'd5-preview',
-        phase: 'preview',
+        nodeId: 'd5',
+        phase: 'pre-open',
         completedDayIds: ['d1', 'd2', 'd3', 'd4'],
       },
       progression: { unlockIds: expect.arrayContaining(['day-d5', 'menu-kawa']) },

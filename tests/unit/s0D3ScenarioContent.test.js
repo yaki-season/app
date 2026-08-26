@@ -46,11 +46,11 @@ describe('S0~D4 시나리오 콘텐츠', () => {
     expect(orderLine.text).toBe('불이 켜졌군. 기다린 보람이 있어. 네기마 둘하고 생맥주 하나 주겠나.');
   });
 
-  it('D4 종착 후일담은 두 장의 산문과 차후 공개 문구로 닫힌다', () => {
+  it('D4 후일담은 두 장의 산문으로 D5 토리카와 영업을 연다', () => {
     expect(D4_EPILOGUE_PAGES).toHaveLength(2);
     expect(new Set(D4_EPILOGUE_PAGES.map(({ pageId }) => pageId)).size).toBe(2);
     expect(D4_EPILOGUE_PAGES.every(({ paragraphs }) => paragraphs.length === 2)).toBe(true);
-    expect(D4_EPILOGUE_PAGES.at(-1).releaseNote).toContain('차후 공개');
+    expect(D4_EPILOGUE_PAGES.at(-1).releaseNote).toContain('토리카와');
   });
 
   it('정식 인물 설정을 안정 ID에 연결한다', () => {

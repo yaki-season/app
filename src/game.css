@@ -198,6 +198,7 @@ body {
 }
 .dock-item-art--food { background-image: var(--dock-food-art); }
 .dock-card[data-menu-id="momo"] .dock-item-art--food { background-image: var(--dock-momo-art); }
+.dock-card[data-menu-id="kawa"] .dock-item-art--food { background-image: var(--dock-kawa-art); }
 .dock-card[data-menu-id="cabbage-salad"] .dock-item-art--food {
   top: 7px;
   width: 60px;

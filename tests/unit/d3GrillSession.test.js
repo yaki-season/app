@@ -86,4 +86,35 @@ describe('D3 메뉴·그릴·저장 연결', () => {
     expect(restored.finishTorch(MOMO_TARE.id)).toMatchObject({ torchState: 'proper' });
     expect(restored.retrieve(MOMO_TARE.id).ok).toBe(true);
   });
+
+  it('타레 토리카와는 두 번 마감하며 최종 품질은 기본 그릴과 마감 중 낮은 쪽이다', () => {
+    const session = createD3GrillSession();
+    const kawa = {
+      id: 'D5-KAWA-001',
+      menuId: 'kawa',
+      seasoning: 'tare',
+      bothFacesCooked: true,
+      baseQuality: { grade: 'OK', good: false, servable: true },
+    };
+    expect(session.stageCookedItem(kawa).ok).toBe(true);
+    for (let cycle = 0; cycle < 2; cycle += 1) {
+      session.applyTare(kawa.id);
+      session.reheatTare(kawa.id);
+    }
+    expect(session.retrieve(kawa.id)).toMatchObject({
+      ok: true,
+      item: { menuId: 'kawa', quality: { grade: 'OK', good: false, smokyBonus: false } },
+    });
+  });
+
+  it('선택 토치를 시작한 뒤에는 토치 판정을 끝내기 전 회수할 수 없다', () => {
+    const session = createD3GrillSession();
+    session.stageCookedItem(MOMO_TARE);
+    for (let cycle = 0; cycle < 2; cycle += 1) {
+      session.applyTare(MOMO_TARE.id);
+      session.reheatTare(MOMO_TARE.id);
+    }
+    expect(session.beginTorch(MOMO_TARE.id)).toMatchObject({ ok: true });
+    expect(session.retrieve(MOMO_TARE.id)).toEqual({ ok: false, reason: 'torch-active' });
+  });
 });

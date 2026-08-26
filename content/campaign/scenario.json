@@ -215,7 +215,7 @@
     "stage": "D4",
     "emotionKey": "넓어진 카운터",
     "prevDay": "d3",
-    "nextDay": "d5-preview",
+    "nextDay": "d5",
     "releaseDataId": "d4-business-day-domain.v1",
     "unlocks": ["day-d5", "menu-kawa"],
     "fallbackNote": "사라다와 하이볼은 D4 release definition을 기준으로 제공하며 전용 아트가 없을 때도 동일한 스테이션 조작과 주문 완료 조건을 유지한다.",
@@ -244,7 +244,7 @@
     "skipSummary": [
       "양배추 사라다를 무료 사이드 메뉴로 제공한다.",
       "하이볼을 직접 만들어 제공한다.",
-      "정산 뒤 D5 미리보기와 카와 레시피를 연다."
+      "정산 뒤 D5 영업과 토리카와 레시피를 연다."
     ],
     "interactions": [],
     "readOnly": false,
@@ -256,34 +256,65 @@
     }
   },
   {
-    "id": "d5-preview",
+    "id": "d5",
     "schemaVersion": 2,
-    "displayKey": "scenario.d5-preview",
+    "displayKey": "scenario.d5",
     "active": true,
     "status": "approved",
-    "kind": "preview",
-    "stage": "D4 후일담",
-    "emotionKey": "이어 갈 리듬",
+    "kind": "business-day",
+    "stage": "D5",
+    "emotionKey": "닭껍질의 불맛",
     "prevDay": "d4",
-    "nextDay": null,
-    "unlocks": [],
-    "fallbackNote": "후일담을 닫고 메인 화면으로 돌아가도 D4 정산과 저장 상태는 그대로 유지한다.",
+    "nextDay": "d5-complete",
+    "releaseDataId": "d5-business-day-domain.v1",
+    "unlocks": ["day-d5-completed"],
+    "fallbackNote": "D5 토리카와는 사용자 제공 원본을 규격화한 전용 조립·그릴 에셋을 사용하며, 그을음 있는 두 번째 원본은 타레가 아닌 완벽 직전 굽기 단계로 적용한다.",
     "entryConditionId": "d4-settlement-complete",
-    "completionConditionId": "preview-dismissed",
+    "completionConditionId": "d5-settlement-complete",
     "scenes": [
       {
-        "id": "SCN-D4-EPILOGUE",
-        "timing": "preview",
+        "id": "SCN-D5-BUSINESS",
+        "timing": "pre-open",
         "skipSummary": [
-          "나흘 동안 생긴 가게의 리듬을 돌아본다.",
-          "다음 이야기는 차후 공개된다."
+          "접은 닭껍질 다섯 조각으로 토리카와를 조립한다.",
+          "소금과 타레 토리카와를 주문에 맞춰 구워 낸다."
         ]
       }
     ],
     "skipSummary": [
-      "D4 후일담은 읽기 전용 종착 장면이다.",
-      "메인 화면으로 돌아가도 게임플레이와 경제 상태를 바꾸지 않는다."
+      "토리카와를 최소 한 번 제공한다.",
+      "마감과 정산을 마치면 D5 완료 상태를 저장한다."
     ],
+    "interactions": [],
+    "readOnly": false,
+    "gameplayCommandIds": ["begin-day", "accept-order", "assemble-kawa", "grill-kawa", "finish-tare", "serve-item", "cleanup-seat", "complete-settlement"],
+    "economyCommandIds": ["record-sale", "record-tip", "apply-settlement"],
+    "reward": {
+      "growthResultIds": ["day-d5-completed"],
+      "storyFlagIds": ["d5-complete", "torikawa-introduced"]
+    }
+  },
+  {
+    "id": "d5-complete",
+    "schemaVersion": 2,
+    "displayKey": "scenario.d5-complete",
+    "active": true,
+    "status": "approved",
+    "kind": "preview",
+    "stage": "D5 완료",
+    "emotionKey": "닷새의 영업",
+    "prevDay": "d5",
+    "nextDay": null,
+    "unlocks": [],
+    "fallbackNote": "D6 이후 콘텐츠는 열지 않고 D5 완료 저장만 유지한다.",
+    "entryConditionId": "d5-settlement-complete",
+    "completionConditionId": "complete-state",
+    "scenes": [{
+      "id": "SCN-D5-COMPLETE",
+      "timing": "preview",
+      "skipSummary": ["D5 영업과 정산을 완료했다."]
+    }],
+    "skipSummary": ["D5 영업과 정산을 완료했다."],
     "interactions": [],
     "readOnly": true,
     "gameplayCommandIds": [],
