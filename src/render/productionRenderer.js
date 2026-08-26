@@ -110,9 +110,12 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
   }
 
   const seatBaseMesh = {}; // seatId → 서빙된 네기마 접시 mesh (legacy API 이름 유지)
+  const seatSaladMesh = {}; // seatId → 서빙된 양배추 사라다 접시 mesh
   const seatBeerMesh = {}; // seatId → 서빙된 생맥주잔 mesh
   const seatEmptyDishMesh = {}; // seatId → 퇴장 뒤 정리 대상 빈 식기 mesh
   const seatCleanupOverlayMesh = {}; // seatId → 3초 홀드 중 행주 왕복 overlay
+  const seatFoodAnchorX = {}; // seatId → 현재 좌석의 화면상 중심 x
+  const seatFoodLayoutKey = {}; // seatId → 음식 조합별 배치 캐시
   function buildInteraction(cam, key) {
     const def = OBJECTS[key];
     if (!def.hitRect) return null;
@@ -176,6 +179,19 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         base.userData.runtimeControlled = true;
         base.visible = false;
         scene.add(base); group.push(base); seatBaseMesh[seatId] = base;
+
+        // 사라다는 꼬치와 함께 주문될 수 있으므로 기존 음식 접시를 바꿔 끼우지 않고 독립 소품으로 둔다.
+        const salad = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.02 }, LAYER_Z.fixture - 0.004, new THREE.MeshBasicMaterial({
+          transparent: true,
+          opacity: 0,
+          colorWrite: false,
+          depthWrite: false,
+        }));
+        salad.renderOrder = 62;
+        salad.userData.seatId = seatId;
+        salad.userData.runtimeControlled = true;
+        salad.visible = false;
+        scene.add(salad); group.push(salad); seatSaladMesh[seatId] = salad;
 
         const beerUrl = servingCompanions.find(({ role }) => role === 'served-beer')?.url;
         const beer = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.05 }, LAYER_Z.fixture - 0.005, new THREE.MeshBasicMaterial({
@@ -278,6 +294,33 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     mesh.position.copy(center);
   }
 
+  // 사라다 이미지는 투명 여백 없이 접시 끝까지 차 있고 기존 꼬치 접시는 원본 내부 여백이 크다.
+  // 따라서 같은 plane 크기를 쓰지 않고, 단독/동시 제공 상태에 따라 체급과 위치를 함께 바꾼다.
+  // 동시 제공 시 두 접시를 비슷한 체급으로 줄여 왼쪽 세로축에 쌓는다.
+  // 좌우로 벌리면 오른쪽 맥주·하이볼 잔 공간을 침범하므로 음식은 세로로 쌓는다.
+  function setSeatFoodLayout(seatId, { grilled = false, salad = false } = {}) {
+    if (!seatCam || !Number.isFinite(seatFoodAnchorX[seatId])) return false;
+    const layoutKey = `${grilled ? 'grilled' : 'none'}:${salad ? 'salad' : 'none'}`;
+    if (seatFoodLayoutKey[seatId] === layoutKey) return false;
+
+    const anchorX = seatFoodAnchorX[seatId];
+    const combined = grilled && salad;
+    placeBillboard(seatBaseMesh[seatId], seatCam, {
+      x: anchorX - ((combined ? 123 : 130) / 1920),
+      y: (combined ? 751 : 710) / 1080,
+      width: (combined ? 155 : 260) / 1920,
+      height: (combined ? 93 : 156) / 1080,
+    }, LAYER_Z.fixture);
+    placeBillboard(seatSaladMesh[seatId], seatCam, {
+      x: anchorX - ((combined ? 100 : 65) / 1920),
+      y: (combined ? 824 : 784) / 1080,
+      width: (combined ? 110 : 130) / 1920,
+      height: (combined ? 39 : 46) / 1080,
+    }, LAYER_Z.fixture - 0.004);
+    seatFoodLayoutKey[seatId] = layoutKey;
+    return true;
+  }
+
   // 좌석 수(capacity)에 맞춰 활성 좌석을 카운터에 균등 재배치하고 나머지는 숨긴다(seatCap 업그레이드).
   function setSeatCapacity(cap, { layoutMode = seatLayoutMode } = {}) {
     if (!seatCam) return;
@@ -288,14 +331,11 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     SEAT_IDS.forEach((seatId, i) => {
       if (i < seats.length) {
         const seat = seats[i];
+        seatFoodAnchorX[seatId] = seat.bubble.x;
+        delete seatFoodLayoutKey[seatId];
         // 승인 R3 검토 좌표. 음식과 잔을 분리하고 좌석 중심을 기준으로 배치한다.
         // 잔은 165×165px 체급이며, 음용 프레임에서도 같은 잔으로 읽히도록 접지점을 고정한다.
-        placeBillboard(seatBaseMesh[seatId], seatCam, {
-          x: seat.bubble.x - (130 / 1920),
-          y: 710 / 1080,
-          width: 260 / 1920,
-          height: 156 / 1080,
-        }, LAYER_Z.fixture);
+        setSeatFoodLayout(seatId);
         placeBillboard(seatBeerMesh[seatId], seatCam, {
           x: seat.bubble.x - (20.7 / 1920),
           y: 705 / 1080,
@@ -555,6 +595,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     },
     seatActorMesh,
     seatBaseMesh,
+    seatSaladMesh,
     seatBeerMesh,
     seatEmptyDishMesh,
     seatCleanupOverlayMesh,
@@ -562,6 +603,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     seatCleanupWorld,
     setSeatCapacity,
     setSeatLayoutMode,
+    setSeatFoodLayout,
     setSeatPlateVisible: (seatId, visible) => {
       const plate = seatBaseMesh[seatId];
       if (plate) plate.visible = visible && !inactiveSeats.has(seatId);
@@ -575,6 +617,22 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       plate.material.color.setHex(0xffffff);
       plate.material.colorWrite = true;
       plate.material.needsUpdate = true;
+      return true;
+    },
+    setSeatSaladVisible: (seatId, visible) => {
+      const salad = seatSaladMesh[seatId];
+      if (salad) salad.visible = visible && !inactiveSeats.has(seatId);
+    },
+    setSeatSaladUrl: (seatId, url) => {
+      const salad = seatSaladMesh[seatId];
+      if (!salad?.material || !url) return false;
+      const next = texture(url);
+      if (salad.material.map === next) return false;
+      salad.material.map = next;
+      salad.material.opacity = 1;
+      salad.material.color.setHex(0xffffff);
+      salad.material.colorWrite = true;
+      salad.material.needsUpdate = true;
       return true;
     },
     setSeatBeerVisible: (seatId, visible) => {

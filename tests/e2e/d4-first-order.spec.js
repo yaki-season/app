@@ -35,6 +35,10 @@ test('D4 첫 주문은 실제 사라다 홀드와 하이볼 병 홀드로 완료
   const saladCard = page.locator('.dock-card[data-menu-id="cabbage-salad"]');
   await expect(saladCard).toHaveCount(1);
   await expect(saladCard.locator('.dock-quality')).toHaveCount(0);
+  await expect(saladCard.locator('.dock-item-art--food')).toHaveCSS(
+    'background-image',
+    /pr-cabbage-salad-plate-r1-b1\.png/,
+  );
 
   await page.getByTestId('quicknav-SCR-SVC-DRINK').click();
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug.activeScreen())).toBe('SCR-SVC-DRINK');
@@ -59,6 +63,16 @@ test('D4 첫 주문은 실제 사라다 홀드와 하이볼 병 홀드로 완료
   await saladCard.click();
   await page.getByTestId(`serve-target-${first.seatId}`).click();
   await page.getByTestId('serve-one').click();
+  await expect.poll(() => page.evaluate((seatId) => {
+    const salad = window.__d1GameDebug.renderer.seatSaladMesh[seatId];
+    return {
+      visible: salad?.visible === true,
+      textureUrl: salad?.material?.map?.image?.currentSrc ?? salad?.material?.map?.image?.src ?? null,
+    };
+  }, first.seatId)).toEqual({
+    visible: true,
+    textureUrl: expect.stringContaining('pr-cabbage-salad-plate-r1-b1.png'),
+  });
   await page.locator('.dock-card[data-menu-id="highball"]').click();
   await page.getByTestId(`serve-target-${first.seatId}`).click();
   await page.getByTestId('serve-one').click();

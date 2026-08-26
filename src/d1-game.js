@@ -24,6 +24,7 @@ import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { createGrillSmokeVfx } from './render/grillSmokeVfx.js';
 import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createPreparedDock } from './render/preparedDock.js';
+import { D4_MENU_ART_URLS } from './assets/d4MenuArt.js';
 import { createInstantServiceStation } from './application/stations/instantServiceStation.js';
 import { createHighballStation } from './application/stations/highballStation.js';
 import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
@@ -162,6 +163,10 @@ document.getElementById('dockShelf')?.style.setProperty(
   '--dock-momo-art',
   `url("${D2_MOMO_RUNTIME_URLS.order}")`,
 );
+document.getElementById('dockShelf')?.style.setProperty(
+  '--dock-cabbage-salad-art',
+  `url("${D4_MENU_ART_URLS.cabbageSaladPlate}")`,
+);
 document.body.dataset.assetPlaceholderCount = String(runtimeAssets.readiness.placeholderCount);
 document.body.dataset.runtimeAssetsReady = String(runtimeAssets.readiness.ready);
 document.body.dataset.runtimeContractValid = String(runtimeAssets.readiness.contractAudit.valid);
@@ -171,6 +176,8 @@ const ACTIVE_SCREENS = SCREENS.filter((screen) => (
 ));
 const ACTIVE_SCREEN_IDS = ACTIVE_SCREENS.map((screen) => screen.id);
 const R = createProductionRenderer(canvas, { runtimeAssets });
+R.warmTexture(D4_MENU_ART_URLS.cabbageSaladPlate);
+for (const seatId of SEAT_IDS) R.setSeatSaladUrl(seatId, D4_MENU_ART_URLS.cabbageSaladPlate);
 const director = createStationDirector({ screens: ACTIVE_SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
 
 // 새로고침은 진행 중 영업일을 복구한다(PM 001·002 "새로고침 복구" 완료 기준, 공개 S0→D1 인계).
@@ -1744,6 +1751,7 @@ function syncCustomers() {
     const servedMomo = seatHasServedMenu(view, seat, 'momo');
     const servedSalad = seatHasServedMenu(view, seat, 'cabbage-salad');
     const servedSkewer = servedNegima || servedMomo || servedSalad;
+    const servedGrilledFood = servedNegima || servedMomo;
     const servedBeer = seatHasServedMenu(view, seat, 'beer')
       || seatHasServedMenu(view, seat, 'highball');
     const kind = extraKind(seat?.customerId);
@@ -1778,7 +1786,9 @@ function syncCustomers() {
         ? D2_MOMO_RUNTIME_URLS.servedPlate
         : '/assets/core/customer/pr-served-negima-plate-r2-b1.png',
     );
-    R.setSeatPlateVisible(seatId, onCustomers && customerPresent && servedSkewer);
+    R.setSeatFoodLayout(seatId, { grilled: servedGrilledFood, salad: servedSalad });
+    R.setSeatPlateVisible(seatId, onCustomers && customerPresent && servedGrilledFood);
+    R.setSeatSaladVisible(seatId, onCustomers && customerPresent && servedSalad);
     R.setSeatBeerVisible(seatId, onCustomers && customerPresent
       && servedBeer && !tsukiokaHoldingBeer && !officeHoldingBeer && !soloHoldingBeer);
     R.setSeatEmptyDishesVisible(seatId, onCustomers && dirtyTable);
