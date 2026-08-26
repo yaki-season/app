@@ -20,7 +20,7 @@ import { buildSeatStates } from '../../src/render/customerAdapter.js';
 import { canServeD1MenuToSeat } from '../../src/application/businessDay/d1BusinessDayUiPort.js';
 
 const campaignRecords = JSON.parse(readFileSync(fileURLToPath(
-  new URL('../fixtures/campaign/s0-d4-preview.json', import.meta.url),
+  new URL('../fixtures/campaign/s0-d5-preview.json', import.meta.url),
 ), 'utf8'));
 const d1Record = JSON.parse(readFileSync(fileURLToPath(
   new URL('../fixtures/business-days/d1-full-day.json', import.meta.url),
@@ -212,6 +212,12 @@ describe('D1 영업일 UI port 경계 통합', () => {
 
     advanceTo(port, 100_000);
     port.advance(6_000);
+    expect(port.getViewModel().seats
+      .filter((seat) => seat.customerId?.startsWith('D1-OFFICE')))
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ groupId: 'D1-GROUP-OFFICE' }),
+        expect.objectContaining({ groupId: 'D1-GROUP-OFFICE' }),
+      ]));
     accept(port, 'D1-ORDER-002-A');
     accept(port, 'D1-ORDER-002-B');
     const provided = serve(port, 'D1-OFFICE-B', '네기마', 1);

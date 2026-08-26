@@ -1,0 +1,44 @@
+[
+  {
+    "id": "s0",
+    "kind": "prologue",
+    "nextId": "d1",
+    "contentId": "scenario.s0"
+  },
+  {
+    "id": "d1",
+    "kind": "day",
+    "nextId": "d2",
+    "contentId": "campaign.day.d1"
+  },
+  {
+    "id": "d2",
+    "kind": "day",
+    "nextId": "d3",
+    "contentId": "campaign.day.d2"
+  },
+  {
+    "id": "d3",
+    "kind": "day",
+    "nextId": "d4",
+    "contentId": "campaign.day.d3"
+  },
+  {
+    "id": "d4",
+    "kind": "day",
+    "nextId": "d5",
+    "contentId": "campaign.day.d4"
+  },
+  {
+    "id": "d5",
+    "kind": "day",
+    "nextId": "d5-complete",
+    "contentId": "campaign.day.d5"
+  },
+  {
+    "id": "d5-complete",
+    "kind": "preview",
+    "nextId": null,
+    "contentId": "campaign.complete.d5"
+  }
+]

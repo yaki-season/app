@@ -45,14 +45,26 @@ const MENU_LABEL = Object.freeze({
   beer: '생맥주',
   negima: '네기마',
   momo: '모모',
+  kawa: '토리카와',
+  'cabbage-salad': '양배추 사라다',
+  highball: '하이볼',
 });
 const MENU_ID = Object.freeze({
   beer: 'beer',
   negima: 'negima',
   momo: 'momo',
+  kawa: 'kawa',
+  'cabbage-salad': 'cabbage-salad',
+  highball: 'highball',
   생맥주: 'beer',
   네기마: 'negima',
   모모: 'momo',
+  토리카와: 'kawa',
+  '소금 토리카와': 'kawa',
+  '타레 토리카와': 'kawa',
+  '양배추 사라다': 'cabbage-salad',
+  사라다: 'cabbage-salad',
+  하이볼: 'highball',
 });
 const ERROR_BY_REASON = Object.freeze({
   'order-not-found': D1_UI_ERROR_CODE.ORDER_NOT_FOUND,
@@ -160,10 +172,17 @@ function orderLabel(order) {
     .filter((line) => line.servedQualities.length < line.quantity)
     .map((line) => (
       line.quantity > 1
-        ? `${MENU_LABEL[line.menuId] ?? line.menuId} ${line.servedQualities.length}/${line.quantity}`
-        : MENU_LABEL[line.menuId] ?? line.menuId
+        ? `${lineMenuLabel(line)} ${line.servedQualities.length}/${line.quantity}`
+        : lineMenuLabel(line)
     ))
     .join(' · ');
+}
+
+function lineMenuLabel(line) {
+  const base = MENU_LABEL[line.menuId] ?? line.menuId;
+  if (line.seasoning === 'tare') return `타레 ${base}`;
+  if (line.seasoning === 'salt') return `소금 ${base}`;
+  return base;
 }
 
 function remainingOrderItems(order) {
@@ -171,7 +190,8 @@ function remainingOrderItems(order) {
   return order.lines
     .map((line) => ({
       menuId: line.menuId,
-      menuLabel: MENU_LABEL[line.menuId] ?? line.menuId,
+      seasoning: line.seasoning ?? null,
+      menuLabel: lineMenuLabel(line),
       remaining: Math.max(0, line.quantity - line.servedQualities.length),
     }))
     .filter((line) => line.remaining > 0);
@@ -194,6 +214,7 @@ function seatView(state, definition, seat) {
       waitRatio: 0,
       urgent: false,
       group: false,
+      groupId: null,
       canOrder: false,
       canServe: false,
       cleanupNeeded: false,
@@ -230,6 +251,7 @@ function seatView(state, definition, seat) {
     waitRatio,
     urgent: waiting && customer.waitRemainingMs <= 15_000,
     group: customer.groupId !== null,
+    groupId: customer.groupId,
     canOrder: customer.phase === D1_CUSTOMER_PHASE.ORDER_READY
       && order?.status === D1_ORDER_STATUS.UNACCEPTED,
     canServe: waiting,
@@ -241,12 +263,18 @@ function seatView(state, definition, seat) {
   };
 }
 
-export function canServeD1MenuToSeat(seat, menu) {
-  const menuId = normalizeMenuId(menu);
+export function canServeD1MenuToSeat(seat, menu, seasoning = null) {
+  const menuId = normalizeMenuId(typeof menu === 'object' ? menu.menuId ?? menu.menu : menu);
+  const preparedSeasoning = typeof menu === 'object' ? menu.seasoning ?? seasoning : seasoning;
   return Boolean(
     menuId
     && seat?.canServe
-    && seat.remainingItems?.some((item) => item.menuId === menuId && item.remaining > 0),
+    && seat.remainingItems?.some((item) => (
+      item.menuId === menuId
+      && item.remaining > 0
+      && (preparedSeasoning == null
+        || (item.seasoning === 'tare' ? preparedSeasoning === 'tare' : preparedSeasoning !== 'tare'))
+    )),
   );
 }
 
@@ -261,7 +289,8 @@ function orderView(state, order) {
     completedAtMs: order.completedAtMs,
     lines: order.lines.map((line) => ({
       menuId: line.menuId,
-      menuLabel: MENU_LABEL[line.menuId] ?? line.menuId,
+      seasoning: line.seasoning ?? null,
+      menuLabel: lineMenuLabel(line),
       quantity: line.quantity,
       served: line.servedQualities.length,
       remaining: line.quantity - line.servedQualities.length,
@@ -371,6 +400,7 @@ function commandForIntent(state, intent) {
       type: 'serve-item',
       customerId: intent.customerId ?? findCustomerIdBySeat(state, intent.seatId),
       menuId: normalizeMenuId(intent.menuId ?? intent.menu),
+      seasoning: intent.seasoning ?? null,
       quality: normalizeQuality(intent.quality),
     };
   }

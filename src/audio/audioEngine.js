@@ -247,7 +247,7 @@ export function createAudioEngine(options = {}) {
       return true;
     },
 
-    // 채움 피치와 토치 훑기는 파일이 아니라 런타임이 변조한다.
+    // 액체 채움 피치는 별도 파일을 늘리지 않고 런타임이 변조한다.
     //
     // glideSec을 주면 목표값으로 미끄러진다. 매 프레임 값을 그대로 꽂으면 계단처럼 끊긴 피치가
     // 지직거리는 잡음(zipper noise)으로 들린다.

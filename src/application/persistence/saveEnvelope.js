@@ -138,6 +138,7 @@ export function createMigrationRegistry({
 
 export function validateSerializedSave(text, {
   migrationRegistry = createMigrationRegistry(),
+  normalizePayload = (payload) => payload,
   validatePayload = () => ({ valid: true, errors: [] }),
   acceptsContentVersion = () => true,
 } = {}) {
@@ -189,7 +190,24 @@ export function validateSerializedSave(text, {
   const migration = migrationRegistry.migrate(parsed);
   if (!migration.ok) return migration;
 
-  const payloadResult = validatePayload(migration.value.envelope.payload);
+  let normalizedPayload;
+  try {
+    normalizedPayload = normalizePayload(migration.value.envelope.payload);
+  } catch (cause) {
+    return {
+      ok: false,
+      error: createPersistenceError(
+        PERSISTENCE_ERROR_CODE.INVALID_PAYLOAD,
+        '저장 payload 호환 변환에 실패했습니다.',
+        { cause },
+      ),
+    };
+  }
+  const payloadNormalized = normalizedPayload !== migration.value.envelope.payload;
+  const normalizedEnvelope = payloadNormalized
+    ? sealSaveEnvelope({ ...migration.value.envelope, payload: normalizedPayload })
+    : migration.value.envelope;
+  const payloadResult = validatePayload(normalizedEnvelope.payload);
   if (!payloadResult?.valid) {
     return {
       ok: false,
@@ -200,5 +218,12 @@ export function validateSerializedSave(text, {
       ),
     };
   }
-  return migration;
+  return {
+    ...migration,
+    value: {
+      ...migration.value,
+      envelope: normalizedEnvelope,
+      migrated: migration.value.migrated || payloadNormalized,
+    },
+  };
 }

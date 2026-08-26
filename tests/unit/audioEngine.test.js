@@ -43,10 +43,92 @@ function engineWith({ present = () => true } = {}) {
   return { engine, context, requested };
 }
 
+// 납품 음원이 조작보다 길어도 단발음은 정해진 초에서 끊는다. 하이볼 얼음·병·레몬도
+// 생맥주 잔 덱과 같은 2초 규칙을 쓴다.
+function truncatingEngine(bufferSec) {
+  const scheduled = [];
+  const stops = [];
+  const context = {
+    state: 'running',
+    currentTime: 10,
+    destination: {},
+    createGain: () => ({
+      gain: {
+        value: 1,
+        setValueAtTime: (value, when) => scheduled.push(['set', value, when]),
+        linearRampToValueAtTime: (value, when) => scheduled.push(['ramp', value, when]),
+      },
+      connect() {},
+    }),
+    createBufferSource: () => ({
+      buffer: null,
+      loop: false,
+      playbackRate: { value: 1 },
+      connect() {},
+      start() {},
+      stop: (when) => stops.push(when),
+    }),
+    decodeAudioData: async () => ({ duration: bufferSec }),
+    resume: async () => {},
+  };
+  const engine = createAudioEngine({
+    createContext: () => context,
+    fetchImpl: async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) }),
+  });
+  return { engine, scheduled, stops, context };
+}
+
+describe('단발 효과음 길이 제한', () => {
+  it('음원이 더 길면 maxSec에서 페이드아웃하고 멈춘다', async () => {
+    const { engine, scheduled, stops, context } = truncatingEngine(12);
+    await engine.unlock();
+    await engine.play('SFX-DRINK-LEMON-DROP', { maxSec: 2 });
+
+    expect(stops).toEqual([context.currentTime + 2]);
+    // 뚝 끊기면 클릭음이 나므로 끝에서 짧게 줄인다.
+    expect(scheduled).toEqual([
+      ['set', 1, context.currentTime + 2 - 0.12],
+      ['ramp', 0, context.currentTime + 2],
+    ]);
+  });
+
+  it('음원이 이미 짧으면 건드리지 않는다', async () => {
+    const { engine, scheduled, stops } = truncatingEngine(0.8);
+    await engine.unlock();
+    await engine.play('SFX-DRINK-LEMON-DROP', { maxSec: 2 });
+
+    expect(stops).toEqual([]);
+    expect(scheduled).toEqual([]);
+  });
+});
+
 describe('오디오 카탈로그', () => {
-  it('AUD-002의 76개 자산을 중복 없는 ID로 담는다', () => {
+  it('활성 공정의 76개 오디오 자산을 중복 없는 ID로 담는다', () => {
     expect(AUDIO_CATALOG).toHaveLength(76);
     expect(new Set(AUDIO_CATALOG.map((entry) => entry.id)).size).toBe(76);
+  });
+
+  it('하이볼 작업대 소리는 잔 덱을 생맥주와 공유하고 탄산은 따르기 루프에 합쳐 둔다', () => {
+    // 빈 잔·픽업은 생맥주 잔 덱과 같은 조작이라 같은 소리를 쓴다. 전용 ID를 만들지 않는다.
+    expect(audioEntry('SFX-DRINK-GLASS-SET')).toBeTruthy();
+    expect(AUDIO_CATALOG.map((entry) => entry.id)).not.toContain('SFX-DRINK-HIGHBALL-GLASS-SET');
+    // 탄산 기포음은 별도 ID가 아니라 soda-pour 루프 한 장에 함께 굽는다.
+    expect(AUDIO_CATALOG.map((entry) => entry.id)).not.toContain('SFX-DRINK-CARBONATION');
+
+    for (const [id, file, loop] of [
+      ['SFX-DRINK-ICE-SCOOP', 'ice-scoop', false],
+      ['SFX-DRINK-ICE-SETTLE', 'ice-settle', false],
+      ['SFX-DRINK-WHISKEY-POUR', 'whiskey-pour', true],
+      ['SFX-DRINK-SODA-POUR', 'soda-pour', true],
+      ['SFX-DRINK-BOTTLE-SET', 'bottle-set', false],
+      ['SFX-DRINK-LEMON-DROP', 'lemon-drop', false],
+    ]) {
+      const entry = audioEntry(id);
+      expect(entry, id).toBeTruthy();
+      expect(entry.url, id).toBe(`/assets/audio/sfx/drink/${file}-r1-b1.ogg`);
+      expect(entry.loop, id).toBe(loop);
+      expect(entry.bus, id).toBe(AUDIO_BUS.SFX);
+    }
   });
 
   it('손님이 한 명이면 군중음을 재생하지 않는다', () => {
@@ -79,7 +161,7 @@ describe('오디오 카탈로그', () => {
     const readme = readFileSync(new URL('../../public/assets/audio/README.md', import.meta.url), 'utf8');
     const listed = new Set([...readme.matchAll(/`([a-z0-9-]+-r\d+-b\d+\.ogg)`/g)].map((m) => m[1]));
     const catalogFiles = new Set(AUDIO_CATALOG.map((entry) => entry.url.split('/').pop()));
-    // 76개 자산이지만 파일은 70개다. BGM 6종이 main 한 곡을 공유하고, complete-r1-b1.ogg가
+    // 76개 자산이지만 파일 이름은 70개다. BGM 6종이 main 한 곡을 공유하고, complete-r1-b1.ogg가
     // 조립과 생맥주에 각각 있으나 폴더가 달라 충돌하지 않는다.
     expect(catalogFiles.size).toBe(70);
     for (const file of catalogFiles) expect(listed, file).toContain(file);
@@ -92,10 +174,10 @@ describe('오디오 카탈로그', () => {
     }
   });
 
-  it('경고 4종만 warning 버스를 쓰고 우선순위를 갖는다', () => {
+  it('활성 경고 3종만 warning 버스를 쓰고 우선순위를 갖는다', () => {
     const warnings = audioIdsByBus(AUDIO_BUS.WARNING);
     expect(warnings.sort()).toEqual([
-      'SFX-TORCH-OVERHEAT', 'SFX-WARN-CUSTOMER-LEAVE', 'SFX-WARN-T1', 'SFX-WARN-T3',
+      'SFX-WARN-CUSTOMER-LEAVE', 'SFX-WARN-T1', 'SFX-WARN-T3',
     ]);
     for (const id of warnings) expect(audioEntry(id).priority, id).toBeGreaterThan(0);
     // 조리 실패 임박이 손님 이탈 임박보다 급하다.
@@ -103,10 +185,11 @@ describe('오디오 카탈로그', () => {
       .toBeGreaterThan(audioEntry('SFX-WARN-CUSTOMER-LEAVE').priority);
   });
 
-  it('굽기 루프와 흐름음은 루프로 선언한다', () => {
-    for (const id of ['SFX-GRILL-COOK-LOOP', 'SFX-DRINK-BEER-FLOW', 'SFX-TORCH-LOOP']) {
+  it('굽기 루프와 흐름음은 루프로 선언하고 조립 타래는 단발음만 남긴다', () => {
+    for (const id of ['SFX-GRILL-COOK-LOOP', 'SFX-DRINK-BEER-FLOW']) {
       expect(audioEntry(id).loop, id).toBe(true);
     }
+    expect(audioEntry('SFX-TARE-BRUSH')).toMatchObject({ loop: false, bus: AUDIO_BUS.SFX });
     expect(audioEntry('SFX-UI-SELECT').loop).toBe(false);
     expect(audioEntry('SFX-INGAME-SELECT').loop).toBe(false);
     expect(audioEntry('SFX-ASM-PICK-CHICKEN')).toBeNull();

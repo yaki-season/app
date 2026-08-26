@@ -6,15 +6,22 @@ import {
   CAMPAIGN_PHASE,
   assertEarlyCampaignDefinition,
   beginBusinessDay,
+  claimCampaignGrillSlots,
   completeBusinessDay,
   completePrologue,
   createCampaignDefinition,
   createCampaignState,
   enterSettlement,
+  getCampaignGrillSlotUpgradeState,
   validateCampaignState,
 } from '../../src/campaign-runtime.js';
 
-const fixtureUrl = new URL('../fixtures/campaign/s0-d4-preview.json', import.meta.url);
+const grillSlotConfig = JSON.parse(readFileSync(
+  new URL('../../content/progression/grill-slots.json', import.meta.url),
+  'utf8',
+));
+
+const fixtureUrl = new URL('../fixtures/campaign/s0-d5-preview.json', import.meta.url);
 const records = JSON.parse(readFileSync(fileURLToPath(fixtureUrl), 'utf8'));
 
 function definition() {
@@ -30,16 +37,17 @@ function initialState() {
   });
 }
 
-describe('S0~D4-preview 캠페인 도메인', () => {
+describe('S0~D5 캠페인 도메인', () => {
   it('콘텐츠 ID chain을 검증한다', () => {
     const graph = definition();
-    expect(graph.ids).toEqual(['s0', 'd1', 'd2', 'd3', 'd4-preview']);
-    expect(graph.get('d4-preview').kind).toBe(CAMPAIGN_NODE_KIND.PREVIEW);
+    expect(graph.ids).toEqual(['s0', 'd1', 'd2', 'd3', 'd4', 'd5', 'd5-complete']);
+    expect(graph.get('d5-complete').kind).toBe(CAMPAIGN_NODE_KIND.PREVIEW);
   });
 
   it('S0부터 D1 영업 전으로 전이한다', () => {
     const s0 = initialState();
     expect(s0.campaign.phase).toBe(CAMPAIGN_PHASE.PROLOGUE);
+    expect(s0.progression.claimedGrillSlots).toBe(2);
     const d1 = completePrologue(s0, definition());
     expect(d1.campaign).toMatchObject({
       nodeId: 'd1',
@@ -48,10 +56,54 @@ describe('S0~D4-preview 캠페인 도메인', () => {
     });
   });
 
-  it('D1→D2→D3→D4-preview를 결정적으로 순회한다', () => {
+  it('D4 영업 전 수동 claim은 2→3칸만 반영하고 명성과 골드를 소비하지 않는다', () => {
     const graph = definition();
     let state = completePrologue(initialState(), graph);
-    for (const [index, dayId] of ['d1', 'd2', 'd3'].entries()) {
+    for (const dayId of ['d1', 'd2', 'd3']) {
+      state = enterSettlement(beginBusinessDay(state));
+      state = completeBusinessDay(state, graph, {
+        dayId,
+        completionId: `${dayId}-upgrade-path`,
+        reward: dayId === 'd3'
+          ? { balance: 700, reputation: 10, unlockIds: ['day-d4'] }
+          : {},
+      }).state;
+    }
+
+    expect(getCampaignGrillSlotUpgradeState(state, grillSlotConfig)).toMatchObject({
+      claimed: 2,
+      available: 3,
+      pending: true,
+    });
+    const claimed = claimCampaignGrillSlots(state, grillSlotConfig);
+    expect(claimed).toMatchObject({ applied: true, reason: null });
+    expect(claimed.state.progression.claimedGrillSlots).toBe(3);
+    expect(claimed.state.economy).toEqual(state.economy);
+
+    const duplicate = claimCampaignGrillSlots(claimed.state, grillSlotConfig);
+    expect(duplicate).toMatchObject({
+      applied: false,
+      reason: 'already-claimed',
+    });
+    expect(duplicate.state).toBe(claimed.state);
+  });
+
+  it('영업 전이 아니거나 D4·명성 조건이 없으면 claim하지 않는다', () => {
+    const d1 = completePrologue(initialState(), definition());
+    expect(claimCampaignGrillSlots(d1, grillSlotConfig)).toMatchObject({
+      applied: false,
+      reason: 'unlock-required',
+    });
+    expect(claimCampaignGrillSlots(beginBusinessDay(d1), grillSlotConfig)).toMatchObject({
+      applied: false,
+      reason: 'pre-open-required',
+    });
+  });
+
+  it('D1→D2→D3→D4→D5→완료를 결정적으로 순회한다', () => {
+    const graph = definition();
+    let state = completePrologue(initialState(), graph);
+    for (const [index, dayId] of ['d1', 'd2', 'd3', 'd4', 'd5'].entries()) {
       state = beginBusinessDay(state);
       state = enterSettlement(state);
       const completed = completeBusinessDay(state, graph, {
@@ -68,14 +120,14 @@ describe('S0~D4-preview 캠페인 도메인', () => {
       state = completed.state;
     }
     expect(state.campaign).toMatchObject({
-      nodeId: 'd4-preview',
+      nodeId: 'd5-complete',
       nodeKind: CAMPAIGN_NODE_KIND.PREVIEW,
       dayId: null,
       phase: CAMPAIGN_PHASE.PREVIEW,
-      completedDayIds: ['d1', 'd2', 'd3'],
+      completedDayIds: ['d1', 'd2', 'd3', 'd4', 'd5'],
     });
     expect(() => beginBusinessDay(state)).toThrow('영업일 node');
-    expect(state.economy.balance).toBe(303);
+    expect(state.economy.balance).toBe(510);
     expect(validateCampaignState(state, graph)).toEqual({ valid: true, errors: [] });
   });
 
@@ -100,7 +152,7 @@ describe('S0~D4-preview 캠페인 도메인', () => {
 
   it('끊긴 초기 캠페인 chain을 거부한다', () => {
     const broken = records.map((record) => (
-      record.id === 'd2' ? { ...record, nextId: 'd4-preview' } : record
+      record.id === 'd2' ? { ...record, nextId: 'd4' } : record
     ));
     expect(() => assertEarlyCampaignDefinition(createCampaignDefinition(broken)))
       .toThrow('초기 캠페인 연결');

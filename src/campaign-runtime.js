@@ -3,16 +3,28 @@
 export {
   CAMPAIGN_NODE_KIND,
   CAMPAIGN_PHASE,
+  D4_CAMPAIGN_NODE_IDS,
   EARLY_CAMPAIGN_NODE_IDS,
+  assertD4CampaignDefinition,
   assertEarlyCampaignDefinition,
   beginBusinessDay,
+  claimCampaignGrillSlots,
   completeBusinessDay,
   completePrologue,
   createCampaignDefinition,
   createCampaignState,
   enterSettlement,
+  getCampaignGrillSlotUpgradeState,
+  GRILL_SLOT_CLAIM_REASON,
   validateCampaignState,
 } from './domain/campaign/campaign.js';
+export {
+  DEFAULT_CLAIMED_GRILL_SLOTS,
+  GRILL_SLOT_UPGRADE_BLOCK,
+  campaignGrillUpgradeState,
+  grillSlotsForReputation,
+  grillUnlockState,
+} from './domain/progression/grillSlots.js';
 export { CampaignRuntime } from './application/campaign/campaignRuntime.js';
 export {
   D1_BUSINESS_DAY_RELEASE_DEFINITION_URL,

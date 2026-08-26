@@ -59,6 +59,14 @@ async function projectedMeshRect(page, key) {
   }, key);
 }
 
+test('D1 그릴 생꼬치 재고에는 해금된 네기마만 표시한다', async ({ page }) => {
+  await bootAtGrill(page);
+
+  await expect(page.getByTestId('grill-waiting-negima')).toBeVisible();
+  await expect(page.getByTestId('grill-waiting-momo')).toBeHidden();
+  await expect(page.getByTestId('grill-waiting-kawa')).toBeHidden();
+});
+
 test('public D1 두 독립 칸과 semantic 네기마 제어가 승인 footprint·단일 입력 계약을 지킨다', async ({ page }) => {
   await bootAtGrill(page);
   await stageWaitingNegima(page);
@@ -84,11 +92,13 @@ test('public D1 두 독립 칸과 semantic 네기마 제어가 승인 footprint�
     window.__d1GameDebug.renderer.objectMesh[`grillSlot${index}`].visible
   )))).toEqual([false, false, false, false, false, false]);
 
-  const button = page.getByTestId('grill-waiting-negima');
-  await expect(button).toBeVisible();
+  const card = page.getByTestId('grill-waiting-negima');
+  const button = card.locator('#grillWaitingNegimaSalt');
+  await expect(card).toBeVisible();
   await expect(button).toBeEnabled();
-  await expect(button).toContainText('네기마');
-  await expect(button).toContainText('첫 빈 칸에 한 개 올리기');
+  await expect(card).toContainText('네기마');
+  await expect(card).toContainText('소금');
+  await expect(page.locator('#grillWaitingNegimaTare')).toBeHidden();
   const buttonRect = await button.boundingBox();
   expect(buttonRect.width).toBeGreaterThanOrEqual(44);
   expect(buttonRect.height).toBeGreaterThanOrEqual(44);
@@ -121,10 +131,11 @@ test('public D1 두 독립 칸과 semantic 네기마 제어가 승인 footprint�
 test('FHD/720에서 인게임 guide 없이 상단 HUD, 상태 카드, rack 제어, 하단 UI가 겹치지 않는다', async ({ page }) => {
   await bootAtGrill(page);
   await stageWaitingNegima(page);
-  const button = page.getByTestId('grill-waiting-negima');
+  const card = page.getByTestId('grill-waiting-negima');
+  const button = card.locator('#grillWaitingNegimaSalt');
   await expect(page.getByTestId('d1-guide')).toHaveCount(0);
 
-  const buttonRect = await button.boundingBox();
+  const buttonRect = await card.boundingBox();
   const viewport = page.viewportSize();
   expect(buttonRect.x).toBeGreaterThanOrEqual(0);
   expect(buttonRect.y).toBeGreaterThanOrEqual(0);

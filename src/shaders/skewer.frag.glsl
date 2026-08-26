@@ -5,7 +5,11 @@ precision highp float;
 // 익힘 셰이더 (TECH-REND-001 §2.1)
 //
 //   uDoneness   0 = 날것 → 0.5 = Perfect → 1 = 탄 상태
-//   uTareAmount 0~1, 타레(양념) 도포량 → 광택으로 표현
+//   uTareAmount  0~1, 굽기 연출용 타레 글레이즈 세기(광택·미세 틴트)
+//   uTareSeasoned 0/1, 이 꼬치에 실제로 타레를 발랐는가 (게임 상태)
+//                소금 꼬치와 한눈에 구분되는 간장 갈색 코팅을 이 값만 켠다.
+//   uTareRawCoat 굽기 전에도 남는 코팅 비율. 조립대에서 바른 직후부터
+//                색이 구분돼야 하므로 0이 아니다.
 //
 // 구현: 베이스 텍스처 → 익힘 색 lerp
 //       + 그을음 마스크(노이즈, doneness 임계로 확장)
@@ -59,6 +63,10 @@ uniform float uTareGloss;
 uniform float uTareNormalStrength;
 uniform vec3 uTareTint;
 uniform float uTareTintAmount;
+uniform float uTareSeasoned;
+uniform vec3 uTareCoatColor;
+uniform float uTareCoatAmount;
+uniform float uTareRawCoat;
 uniform vec3 uEmberColor;
 uniform vec2 uEmberFlickerSpeed;
 uniform vec2 uEmberRise;
@@ -237,13 +245,22 @@ void main() {
     // 왜곡된다. doneness가 올라가야 나타나게 한다.
     // 타레는 적정 구간에 가까워질수록 발린다. 0.06부터 올리면 올린 지 1~2초 만에 광택·틴트가
     // 최대로 들어와 생파의 녹색이 초반에 사라지고 '올리자마자 바뀐다'로 보인다.
-    float tareApplied = smoothstep(0.22, 0.55, uDoneness);
-    // 탄 부분은 광택이 죽는다
-    float gloss = uTareAmount * (1.0 - char * 0.75) * tareApplied;
+    // 타레는 조립대에서 바르는 순간부터 소금 꼬치와 구분돼야 한다. 굽기 전에는 uTareRawCoat
+    // 만큼 옅은 간장색으로 깔리고, 구우면서 캐러멜라이즈로 짙어지며, 다 구운 뒤에도 남는다.
+    // (예전에는 0.22 미만 doneness에서 코팅이 아예 0이라 생꼬치가 소금과 똑같이 보였다.)
+    float caramelised = smoothstep(0.22, 0.55, uDoneness);
+    float tareApplied = mix(uTareRawCoat, 1.0, caramelised);
+    // 탄 부분은 광택이 죽는다. 실제로 바른 꼬치는 굽기 전에도 소스가 젖어 있어 광택이 있다.
+    float glossPresence = max(uTareAmount, uTareSeasoned);
+    float gloss = glossPresence * (1.0 - char * 0.75) * tareApplied;
     col += uTareSheen * spec * gloss * uTareGloss;
 
-    // 타레 자체의 색(간장 베이스) — 도포량만큼 어둡고 붉게
-    col = mix(col, col * uTareTint, uTareAmount * uTareTintAmount * tareApplied);
+    // 굽기 연출용 미세 글레이즈(모든 꼬치 공통)
+    col = mix(col, col * uTareTint, uTareAmount * uTareTintAmount * caramelised);
+
+    // 양념 구분색: 타레를 실제로 바른 꼬치만 간장 갈색을 입는다. 바른 직후에는 옅게,
+    // 구우면서 캐러멜라이즈로 짙어지고, 다 구운 뒤에도 그대로 남는다.
+    col = mix(col, col * uTareCoatColor, uTareSeasoned * uTareCoatAmount * tareApplied);
 
     // ── 숯불 반사광 ───────────────────────────────────────────
     // 굽는 중일 때 아래쪽에서 주황빛이 흔들리며 올라온다.

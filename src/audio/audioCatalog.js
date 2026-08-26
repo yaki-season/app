@@ -1,4 +1,4 @@
-// AUD-002가 정한 76개 오디오 자산의 단일 출처.
+// 현재 플레이 가능한 공정이 사용하는 70개 오디오 자산의 단일 출처.
 //
 // 아트와 달리 오디오는 manifest를 거치지 않는다. 아트 manifest는 승인 증적과 SHA 대조가 목적인데,
 // 오디오는 "약속된 경로에 파일을 놓으면 울린다"가 요구사항이라 중간 등록 단계가 오히려 걸림돌이다.
@@ -102,21 +102,20 @@ const DRINK = group('sfx/drink', AUDIO_BUS.SFX, [
   ['SFX-DRINK-COMPLETE', 'complete'],
   ['SFX-DRINK-OVERFLOW', 'overflow'],
   ['SFX-DRINK-SERVE', 'serve'],
+  // 하이볼 작업대. 빈 잔 놓기·픽업은 생맥주 잔 덱과 같은 소리(GLASS-SET + TRAY-TAP)를 쓴다.
+  ['SFX-DRINK-ICE-SCOOP', 'ice-scoop'],
+  ['SFX-DRINK-ICE-SETTLE', 'ice-settle'],
+  ['SFX-DRINK-WHISKEY-POUR', 'whiskey-pour', { loop: true }],
+  // 탄산 기포음은 따로 두지 않고 이 루프 한 장에 함께 굽는다.
+  ['SFX-DRINK-SODA-POUR', 'soda-pour', { loop: true }],
+  ['SFX-DRINK-BOTTLE-SET', 'bottle-set'],
+  ['SFX-DRINK-LEMON-DROP', 'lemon-drop'],
 ]);
 
-const TARE = [
-  ...group('sfx/tare', AUDIO_BUS.SFX, [
-    ['SFX-TARE-BRUSH', 'brush'],
-    ['SFX-TARE-SIZZLE', 'sizzle'],
-    ['SFX-TORCH-IGNITE', 'torch-ignite'],
-    ['SFX-TORCH-LOOP', 'torch-loop', { loop: true }],
-    ['SFX-TORCH-SWEEP', 'torch-sweep', { loop: true }],
-    ['SFX-TORCH-EXTINGUISH', 'torch-extinguish'],
-  ]),
-  ...group('sfx/tare', AUDIO_BUS.WARNING, [
-    ['SFX-TORCH-OVERHEAT', 'torch-overheat', { priority: WARNING_PRIORITY.COOK_FAIL }],
-  ]),
-];
+// 타래는 조립대에서 한 번 붓질한다. 폐기된 그릴 재도포·토치 단계의 소리는 등록하지 않는다.
+const ASSEMBLY_TARE = group('sfx/tare', AUDIO_BUS.SFX, [
+  ['SFX-TARE-BRUSH', 'brush'],
+]);
 
 const SERVE = group('sfx/serve', AUDIO_BUS.SFX, [
   ['SFX-SERVE-PLATE-LIFT-LIGHT', 'plate-lift-light'],
@@ -152,7 +151,7 @@ const UI = [
 
 export const AUDIO_CATALOG = Object.freeze([
   ...BGM, ...AMBIENCE, ...S0, ...PREP, ...ASSEMBLY,
-  ...GRILL, ...DRINK, ...TARE, ...SERVE, ...UI,
+  ...GRILL, ...DRINK, ...ASSEMBLY_TARE, ...SERVE, ...UI,
 ]);
 
 const BY_ID = new Map(AUDIO_CATALOG.map((entry) => [entry.id, entry]));

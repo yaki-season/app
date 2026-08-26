@@ -182,8 +182,10 @@ export async function createGrillMaterial() {
     setDoneness: (d) => { uniforms.uDoneness.value = d; },
     /** 숯불 깜빡임용 경과 시간(초). */
     setTime: (sec) => { uniforms.uTime.value = sec; },
-    /** 타레 도포량 실시간 조정(선택). */
+    /** 타레 글레이즈(광택 연출) 세기 실시간 조정(선택). */
     setTare: (t) => { uniforms.uTareAmount.value = t; },
+    /** 이 꼬치에 타레를 발랐는가(0/1). 소금 꼬치와 구분되는 갈색 코팅을 켠다. */
+    setTareSeasoned: (on) => { uniforms.uTareSeasoned.value = on ? 1 : 0; },
     /** Keep the approved source image and let GLSL change only its cooking colour. */
     setTexture: (nextTexture) => {
       if (!nextTexture || uniforms.uTex.value === nextTexture) return;

@@ -18,6 +18,6 @@ describe('D3 전체 영업 정의', () => {
     expect(orders.size).toBe(7);
     expect(items).toBe(16);
     expect(orders.get('D3-ORDER-001').lines[0]).toMatchObject({ menuId: 'momo', seasoning: 'tare' });
-    expect(definition.nextNodeId).toBe('d4-preview');
+    expect(definition.nextNodeId).toBe('d4');
   });
 });

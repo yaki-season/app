@@ -3,12 +3,10 @@
   "schemaVersion": 1,
   "displayKey": "progression.grillSlots",
   "active": true,
-  "status": "candidate",
+  "status": "approved",
   "maxSlots": 8,
   "tiers": [
     { "reputation": 0, "slots": 2 },
-    { "reputation": 10, "slots": 4 },
-    { "reputation": 20, "slots": 6 },
-    { "reputation": 30, "slots": 8 }
+    { "reputation": 10, "slots": 3, "requiresUnlockId": "day-d4" }
   ]
 }

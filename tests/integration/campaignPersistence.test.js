@@ -21,7 +21,7 @@ import {
 } from '../../src/campaign-runtime.js';
 
 const campaignRecords = JSON.parse(readFileSync(
-  fileURLToPath(new URL('../fixtures/campaign/s0-d4-preview.json', import.meta.url)),
+  fileURLToPath(new URL('../fixtures/campaign/s0-d5-preview.json', import.meta.url)),
   'utf8',
 ));
 const definition = assertEarlyCampaignDefinition(createCampaignDefinition(campaignRecords));

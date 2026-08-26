@@ -6,6 +6,7 @@ import {
   D1_GRILL_LAYER_OWNERSHIP,
   D1_GRILL_MASTER_GRATE_SAFE_RECT,
   D1_PUBLIC_GRILL_LAYOUT,
+  D4_PUBLIC_GRILL_LAYOUT,
   D1_GRILL_SLOT_KEYS,
   D1_GRILL_SLOTS,
   createD1GrillObjects,
@@ -43,6 +44,34 @@ describe('D1 고정 6칸 그릴 레이아웃 계약', () => {
         slot.approvedVisualRect.y + slot.approvedVisualRect.height / 2,
         12,
       );
+    }
+  });
+
+  it('D4 명성 확장은 같은 석쇠 안에 세 꼬치를 겹치지 않게 배치한다', () => {
+    expect(D4_PUBLIC_GRILL_LAYOUT).toMatchObject({
+      contractId: 'D4-REPUTATION-THREE-SLOTS-R1',
+      initialPlacementSlots: [1, 2, 3],
+    });
+    const slots = computeGrillSlots(D4_PUBLIC_GRILL_LAYOUT);
+    expect(slots.map(({ key }) => key)).toEqual(['pgSlot0', 'pgSlot1', 'pgSlot2']);
+    const expectedRects = [
+      { x: 640, y: 278, width: 124, height: 412 },
+      { x: 896, y: 266, width: 128, height: 426 },
+      { x: 1152, y: 278, width: 124, height: 412 },
+    ];
+    slots.forEach(({ approvedVisualRect }, index) => {
+      const actual = rectAtViewport(approvedVisualRect, 1920, 1080);
+      for (const field of ['x', 'y', 'width', 'height']) {
+        expect(actual[field]).toBeCloseTo(expectedRects[index][field], 10);
+      }
+    });
+    const grate = rectAtViewport(D1_GRILL_MASTER_GRATE_SAFE_RECT, 1920, 1080);
+    for (const slot of slots) {
+      const rect = rectAtViewport(slot.approvedVisualRect, 1920, 1080);
+      expect(rect.x).toBeGreaterThanOrEqual(grate.x);
+      expect(rect.y).toBeGreaterThanOrEqual(grate.y);
+      expect(rect.x + rect.width).toBeLessThanOrEqual(grate.x + grate.width);
+      expect(rect.y + rect.height).toBeLessThanOrEqual(grate.y + grate.height);
     }
   });
 

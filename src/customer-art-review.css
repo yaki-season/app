@@ -1,0 +1,99 @@
+:root {
+  font-family: "Malgun Gothic", system-ui, sans-serif;
+  color: #fff0d2;
+  background: #120b08;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 1080px; min-height: 100vh; }
+button { font: inherit; }
+
+.review-stage {
+  position: relative;
+  min-height: 100vh;
+  padding: 28px 38px 34px;
+  overflow: hidden;
+  background:
+    linear-gradient(#160d08a8, #160d08c7),
+    url('/assets/core/customer/background-complete-r4-b1.png') center / cover fixed;
+}
+
+.review-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  max-width: 1600px;
+  margin: 0 auto 24px;
+  padding: 18px 22px;
+  border: 1px solid #c99054;
+  background: #1d120de8;
+  box-shadow: 0 10px 30px #0008;
+}
+
+.review-header p { margin: 0 0 5px; color: #cba87b; font-size: 14px; }
+.review-header h1 { margin: 0; font-size: 28px; }
+.review-header nav { display: flex; gap: 10px; }
+.review-header button {
+  min-height: 44px;
+  padding: 8px 17px;
+  border: 1px solid #b67b40;
+  border-radius: 4px;
+  color: #f9e4c1;
+  background: #342116;
+  cursor: pointer;
+}
+.review-header button.active { color: #211109; background: #e8b66f; font-weight: 800; }
+
+.customer-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(190px, 1fr));
+  gap: 14px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.customer-card {
+  min-width: 0;
+  border: 1px solid #8d5d38;
+  background: #120c09b8;
+  box-shadow: 0 14px 32px #0009;
+}
+
+.customer-viewport {
+  position: relative;
+  height: min(66vh, 700px);
+  overflow: hidden;
+  background: linear-gradient(#42291c55, #180f0a99);
+}
+
+.customer-viewport img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1920px;
+  height: 1080px;
+  max-width: none;
+  object-fit: contain;
+  transform: translate(-50%, -50%) scale(.72);
+  image-rendering: pixelated;
+}
+
+.customer-card footer {
+  min-height: 76px;
+  padding: 12px 14px;
+  border-top: 1px solid #8d5d38;
+  background: #1e130eeb;
+}
+.customer-card h2 { margin: 0 0 5px; font-size: 18px; }
+.customer-card p { margin: 0; color: #cda982; font-size: 13px; }
+.review-note { position: relative; z-index: 2; margin: 18px auto 0; max-width: 1600px; color: #d8b890; }
+
+@media (max-height: 820px) {
+  .customer-viewport { height: 520px; }
+  .customer-viewport img { transform: translate(-50%, -50%) scale(.6); }
+}

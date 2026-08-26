@@ -182,7 +182,7 @@
       { "menuId": "momo", "quantity": 1, "seasoning": "tare" },
       { "menuId": "beer", "quantity": 1, "seasoning": "none" }
     ],
-    "guidanceId": "d3-tare-brush",
+    "guidanceId": "d3-assembly-tare-brush",
     "memoryFlagIds": ["d3-tare-introduced"],
     "requiresOrderCompletionIds": []
   },

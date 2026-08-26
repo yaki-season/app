@@ -35,107 +35,182 @@ async function installD3Save(page) {
   }, { prefix: S0_D3_STORAGE_PREFIX, key: SAVE_STORAGE_KEYS.ACTIVE, value: save });
 }
 
-test('D3 타레 모모 토치 UI는 진행 상태를 저장하고 회수한다', async ({ page }) => {
+async function bootD3Grill(page) {
   await installD3Save(page);
   await page.goto('/src/d1-game.html?day=d3');
-  await expect.poll(() => page.evaluate(() => !!window.__d1GameDebug)).toBe(true);
-
-  await page.evaluate(() => window.__d1GameDebug.d3TorchStage());
-  await expect(page.getByTestId('d3-torch-panel')).toBeVisible();
-  await expect(page.getByTestId('d3-torch-cursor')).toBeHidden();
-  await page.getByTestId('d3-apply-tare').click();
-  await expect(page.getByTestId('d3-torch-state')).toContainText('토치 대기');
-
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
   await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-GRILL'));
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.activeScreen())).toBe('SCR-SVC-GRILL');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.isTransitioning())).toBe(false);
   await page.waitForTimeout(350);
-  await expect.poll(() => page.evaluate(() => (
-    window.__d1GameDebug.momoRuntime().slots.some((slot) => slot.visible && slot.stage === 'proper')
-  ))).toBe(true);
-  await expect(page.getByTestId('d3-torch-cursor')).toBeVisible();
-  const viewport = page.viewportSize();
-  await page.mouse.move(viewport.width * 0.29, viewport.height * 0.52);
-  await page.mouse.down({ button: 'left' });
-  await page.waitForTimeout(210);
-  for (const x of [0.38, 0.47, 0.56, 0.65, 0.71]) {
-    await page.waitForTimeout(210);
-    await page.mouse.move(viewport.width * x, viewport.height * 0.52);
-  }
-  await page.mouse.up({ button: 'left' });
-  await expect(page.getByTestId('d3-torch-state')).toContainText('Perfect');
-  const stationPreservation = await page.evaluate(async () => {
-    const debug = window.__d1GameDebug;
-    const torchBefore = debug.d3TorchView().finish.torchCoverage;
-    const drinkBefore = debug.pourExact(2.4, 0.8);
-    debug.requestScreen('SCR-SVC-DRINK');
-    await new Promise((resolve) => setTimeout(resolve, 350));
-    debug.requestScreen('SCR-SVC-GRILL');
-    await new Promise((resolve) => setTimeout(resolve, 350));
-    return {
-      torchBefore,
-      torchAfter: debug.d3TorchView().finish.torchCoverage,
-      drinkBefore,
-      drinkAfter: debug.drinkState(),
-    };
-  });
-  expect(stationPreservation.torchAfter).toBe(stationPreservation.torchBefore);
-  expect(stationPreservation.drinkAfter).toMatchObject({
-    beerSec: stationPreservation.drinkBefore.beerSec,
-    foamSec: stationPreservation.drinkBefore.foamSec,
-  });
-  await page.reload();
-  await expect.poll(() => page.evaluate(() => !!window.__d1GameDebug)).toBe(true);
-  await expect(page.getByTestId('d3-torch-panel')).toBeVisible();
-  await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-GRILL'));
-  await page.waitForTimeout(350);
-  await expect.poll(() => page.evaluate(() => (
-    window.__d1GameDebug.momoRuntime().slots.some((slot) => slot.visible && slot.stage === 'proper')
-  ))).toBe(true);
-  expect(await page.evaluate(() => window.__d1GameDebug.d3TorchView().finish.torchCoverage)).toBe(1);
+}
 
-  await expect(page.getByTestId('d3-torch-state')).toContainText('Perfect');
-  await page.getByTestId('d3-retrieve-momo').click();
-  await expect.poll(() => page.evaluate(() => (
-    window.__d1GameDebug.momoRuntime().slots.every((slot) => !slot.visible)
-  ))).toBe(true);
-  await expect(page.getByTestId('dock-shelf')).toContainText('모모');
+async function bootD3Assembly(page) {
+  await installD3Save(page);
+  await page.goto('/src/d1-game.html?day=d3');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
+  await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-ASSEMBLY'));
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.activeScreen())).toBe('SCR-SVC-ASSEMBLY');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.isTransitioning())).toBe(false);
+  await page.waitForTimeout(350);
+}
+
+async function assembleNegima(page) {
+  await page.evaluate(() => {
+    const D = window.__d1GameDebug;
+    for (const ingredient of ['chicken', 'leek', 'chicken', 'leek', 'chicken']) {
+      D.cookClickIngredient(ingredient);
+    }
+  });
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.cookAssemblyProgress())).toMatchObject({
+    menuId: 'negima',
+    complete: true,
+  });
+}
+
+test('D3 조립대에서만 소스통을 골라 한 번 좌우로 칠하면 타레 생꼬치가 된다', async ({ page }) => {
+  await bootD3Assembly(page);
+  const panel = page.getByTestId('assembly-tare-panel');
+  const pot = page.getByTestId('assembly-tare-pot');
+  await expect(panel).toBeVisible();
+  await expect(pot).toBeDisabled();
+  await assembleNegima(page);
+  await expect(pot).toBeEnabled();
+
+  await pot.click();
+  await expect(pot).toHaveAttribute('aria-pressed', 'true');
+  await expect(pot.locator('img')).toHaveAttribute('src', '/assets/campaign/d3/prop-tare-sauce-pot-open-r2-b1.png');
+  await expect(page.getByTestId('assembly-tare-cursor')).toBeVisible();
+
+  let bounds = await page.evaluate(() => window.__d1GameDebug.assemblyTareTargetBounds());
+  let y = (bounds.top + bounds.bottom) / 2;
+  await page.mouse.move(bounds.left + 4, y);
+  await page.mouse.down();
+  await page.mouse.move(bounds.left + (bounds.right - bounds.left) * 0.3, y, { steps: 4 });
+  await page.mouse.up();
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.cookAssemblyProgress().tarePrepared)).toBe(false);
+  await expect(pot).toHaveAttribute('aria-pressed', 'true');
+
+  bounds = await page.evaluate(() => window.__d1GameDebug.assemblyTareTargetBounds());
+  y = (bounds.top + bounds.bottom) / 2;
+  await page.mouse.move(bounds.left + 4, y);
+  await page.mouse.down();
+  await page.mouse.move(bounds.left + 4, bounds.top - 24);
+  await page.mouse.move(bounds.right - 4, bounds.top - 24, { steps: 14 });
+  await page.mouse.up();
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.cookAssemblyProgress().tarePrepared)).toBe(false);
+  await expect(pot).toHaveAttribute('aria-pressed', 'true');
+
+  bounds = await page.evaluate(() => window.__d1GameDebug.assemblyTareTargetBounds());
+  y = (bounds.top + bounds.bottom) / 2;
+  await page.mouse.move(bounds.left + 4, y);
+  await page.mouse.down();
+  await page.mouse.move(bounds.right - 4, y, { steps: 14 });
+  await page.mouse.up();
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.cookAssemblyProgress())).toMatchObject({
+    seasoning: 'tare',
+    tarePrepared: true,
+    tareCoverage: 1,
+  });
+  await expect(page.getByTestId('assembly-tare-cursor')).toBeHidden();
+  await expect(pot.locator('img')).toHaveAttribute('src', '/assets/campaign/d3/prop-tare-sauce-pot-r2-b1.png');
+
+  await page.evaluate(() => window.__d1GameDebug.cookTransferAssembly());
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.cookWaitingProducts())).toContainEqual(
+    expect.objectContaining({ menuId: 'negima', seasoning: 'tare', tarePrepared: true }),
+  );
 });
 
-test('D3 8명·7주문은 마지막 정리 뒤 정산하고 후일담 종착 저장으로 전환한다', async ({ page }) => {
+test('그릴은 한 행의 소금·타레 재고를 구분해 소비하고 별도 소스통·토치를 표시하지 않는다', async ({ page }) => {
+  await bootD3Assembly(page);
+  await assembleNegima(page);
+  await page.evaluate(() => window.__d1GameDebug.cookTransferAssembly());
+  await assembleNegima(page);
+  await page.evaluate(() => {
+    const D = window.__d1GameDebug;
+    D.cookSelectAssemblySeasoning('tare');
+    D.cookBrushAssemblyTare(1);
+    D.cookTransferAssembly();
+    D.requestScreen('SCR-SVC-GRILL');
+  });
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.activeScreen())).toBe('SCR-SVC-GRILL');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.isTransitioning())).toBe(false);
+  await page.waitForTimeout(350);
+
+  const row = page.getByTestId('grill-waiting-negima');
+  const salt = row.getByRole('button', { name: /소금 네기마/ });
+  const tare = row.getByRole('button', { name: /타레 네기마/ });
+  await expect(row).toBeVisible();
+  await expect(salt).toBeEnabled();
+  await expect(tare).toBeEnabled();
+  await expect(salt).toContainText('× 1');
+  await expect(tare).toContainText('× 1');
+  await expect(page.getByTestId('assembly-tare-panel')).toBeHidden();
+  await expect(page.locator('[data-testid="grill-tare-pot"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="grill-tare-cursor"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid^="d3-torch"]')).toHaveCount(0);
+
+  await tare.click();
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.cookSlots()[0])).toMatchObject({
+    menuId: 'negima', seasoning: 'tare', tarePrepared: true,
+  });
+  await expect(tare).toBeDisabled();
+  await expect(tare).toContainText('× 0');
+  await expect(salt).toBeEnabled();
+  await salt.click();
+  await expect(page.getByTestId('grill-status-0')).toContainText('타레 네기마');
+  await expect(page.getByTestId('grill-status-0')).toHaveAttribute('aria-label', /타레 네기마/);
+  await expect(page.getByTestId('grill-status-1')).toContainText('소금 네기마');
+  await expect(page.getByTestId('grill-status-1')).toHaveAttribute('aria-label', /소금 네기마/);
+});
+
+test('D3 8명·7주문은 마지막 정리 뒤 정산하고 D4 프리오픈으로 전환한다', async ({ page }) => {
   await installD3Save(page);
   await page.goto('/src/d1-game.html?day=d3');
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
 
   const result = await page.evaluate(async () => {
     const D = window.__d1GameDebug;
-    const waves = [
-      [0, [['D3-ORDER-001', 'REGULAR_TSUKIOKA', [['momo', 1], ['beer', 1]]]]],
-      [90000, [['D3-ORDER-002', 'D3-OFFICE-A', [['beer', 2], ['negima', 2]]]]],
-      [210000, [['D3-ORDER-003', 'D3-SOLO-A', [['momo', 1], ['beer', 1]]], ['D3-ORDER-004', 'D3-COMMUTER-A', [['negima', 2]]]]],
-      [270000, [['D3-ORDER-005', 'D3-SOLO-B', [['momo', 1], ['beer', 1]]]]],
-      [330000, [['D3-ORDER-006', 'D3-COMMUTER-B', [['negima', 1], ['beer', 1]]], ['D3-ORDER-007', 'D3-SOLO-C', [['momo', 1], ['negima', 1]]]]],
-    ];
     let event = 0;
-    for (const [atMs, orders] of waves) {
-      D.businessAdvanceTo(atMs);
-      D.businessAdvance(6000);
-      for (const [orderId, customerId, lines] of orders) {
-        D.businessDispatch({ type: 'accept-order', intentId: `e2e:${event++}`, orderId });
-        for (const [menu, quantity] of lines) for (let i = 0; i < quantity; i += 1) {
-          D.businessDispatch({ type: 'serve-item', intentId: `e2e:${event++}`, customerId, menuId: menu, quality: 'Perfect' });
+    const acceptAndServeVisibleOrders = () => {
+      let view = D.businessView();
+      for (const order of view.orders.filter(({ status }) => status === 'unaccepted')) {
+        D.businessDispatch({ type: 'accept-order', intentId: `e2e:${event++}`, orderId: order.orderId });
+      }
+      view = D.businessView();
+      for (const order of view.orders.filter(({ status }) => ['accepted', 'partial'].includes(status))) {
+        for (const line of order.lines) {
+          for (let i = 0; i < line.remaining; i += 1) {
+            D.businessDispatch({
+              type: 'serve-item',
+              intentId: `e2e:${event++}`,
+              customerId: order.customerId,
+              menuId: line.menuId,
+              seasoning: line.seasoning,
+              quality: 'Perfect',
+            });
+          }
         }
       }
-      D.businessAdvance(16000);
+    };
+    const cleanSeats = () => {
       while (D.businessView().seats.some((item) => item.cleanupNeeded)) {
         const seat = D.businessView().seats.find((item) => item.cleanupNeeded);
         D.businessBeginCleanup(seat.seatId);
         D.businessAdvance(3000);
       }
+    };
+    // 개인 손님은 도메인 내부 100ms step에서 최소 4초 간격으로 들어온다. 고정 고객·메뉴
+    // 순서를 가정하지 않고 현재 화면에 도착한 주문을 주기적으로 처리해 추첨 결과와 독립시킨다.
+    for (let guard = 0; guard < 30 && D.businessView().phase === 'open'; guard += 1) {
+      D.businessAdvance(20000);
+      acceptAndServeVisibleOrders();
+      cleanSeats();
     }
-    D.businessAdvanceTo(420000);
-    while (D.businessView().seats.some((item) => item.cleanupNeeded)) {
-      const seat = D.businessView().seats.find((item) => item.cleanupNeeded);
-      D.businessBeginCleanup(seat.seatId);
-      D.businessAdvance(3000);
+    for (let drain = 0; drain < 30 && D.businessView().phase === 'closing-drain'; drain += 1) {
+      acceptAndServeVisibleOrders();
+      D.businessAdvance(4000);
+      cleanSeats();
     }
     await D.businessPostAction();
     for (let i = 0; i < 5; i += 1) await D.businessPostAction();
@@ -143,52 +218,55 @@ test('D3 8명·7주문은 마지막 정리 뒤 정산하고 후일담 종착 저
     return { view: D.businessView(), campaign: D.campaignState() };
   });
   expect(result.view.phase).toBe('complete');
-  expect(result.campaign.campaign).toMatchObject({ nodeId: 'd4-preview', phase: 'preview' });
+  expect(result.campaign.campaign).toMatchObject({ nodeId: 'd4', phase: 'pre-open' });
 
   await expect(page.getByTestId('result-overlay')).toBeVisible();
-  await expect(page.getByTestId('continue-button')).toHaveText('후일담으로 계속');
+  await expect(page.getByTestId('continue-button')).toHaveText('D4로 계속');
   await page.getByTestId('continue-button').click();
   await expect(page).toHaveURL(/\/src\/s0-d3\.html\?post=d3$/);
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D3-POST');
 
-  for (let line = 0; line < 3; line += 1) {
-    await page.locator('#actions .primary').click();
-  }
-  await expect(page.locator('body')).toHaveAttribute('data-state-id', 'D3-epilogue-1');
-  await expect(page.getByRole('heading', { name: '불은 금세 식지 않았다' })).toBeVisible();
-
-  for (let pageIndex = 1; pageIndex < 4; pageIndex += 1) {
-    await page.getByRole('button', { name: '다음 장면' }).click();
-  }
-  await expect(page.locator('body')).toHaveAttribute('data-state-id', 'D3-epilogue-4');
-  await expect(page.getByText('YAKI SEASON의 다음 이야기는 차후 공개됩니다.')).toBeVisible();
-
-  await page.getByRole('button', { name: '메인 화면으로' }).click();
-  await expect(page).toHaveURL(/\/src\/public-shell\.html$/);
-  await expect(page.getByRole('button', { name: '후일담 다시 보기' })).toBeVisible();
-  await expect(page.getByText('사흘의 영업을 마쳤습니다')).toBeVisible();
+  for (let line = 0; line < 3; line += 1) await page.locator('#actions .primary').click();
+  await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D4-PREOPEN');
+  await expect(page.getByText('기다리는 동안 먼저 낼 사라다를 준비해 두자', { exact: false })).toBeVisible();
+  await expect(page.locator('body')).toHaveAttribute('data-story-illustration-asset-id', 'IL-D4-PREOPEN-PIXEL');
+  await expect(page.locator('#story-illustration')).toHaveAttribute('src', '/public/assets/core/s0/story/d4-preopen-full-scene-r4-b1.png');
+  await expect(page.locator('#story-illustration')).toBeVisible();
+  await expect(page.locator('#story-portrait')).toBeHidden();
+  await expect(page.locator('#story-background')).toBeHidden();
 });
 
-test('D3가 개방되지 않은 저장에서는 직접 URL로 기능 UI를 열 수 없다', async ({ page }) => {
+test('D3가 개방되지 않은 저장에서는 직접 URL로 타레 기능을 열 수 없다', async ({ page }) => {
   await page.goto('/src/d1-game.html');
   await page.evaluate(() => localStorage.clear());
   await page.goto('/src/d1-game.html?day=d3');
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady?.())).toBe(true);
   await expect(page.getByTestId('assembly-recipe-picker')).toBeHidden();
-  await expect(page.getByTestId('d3-torch-panel')).toBeHidden();
+  await expect(page.getByTestId('assembly-tare-panel')).toBeHidden();
+  await expect(page.locator('[data-testid^="d3-torch"]')).toHaveCount(0);
   expect(await page.evaluate(() => window.__d1GameDebug.businessSession().ok)).toBe(false);
 });
 
-test('개발용 링크는 저장 없이 D3 토치 영업을 바로 연다', async ({ page }) => {
+test('개발용 링크는 저장 없이 D3 영업과 새 타레 재고 UI를 연다', async ({ page }) => {
   await page.goto('/src/d1-game.html');
   await page.evaluate(() => localStorage.clear());
   await page.goto('/src/d1-game.html?day=d3&devUnlock=1&reset=1');
 
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
-  await expect(page.getByTestId('d3-torch-panel')).toBeVisible();
-  await expect.poll(() => page.evaluate(() => (
-    window.__d1GameDebug.momoRuntime().slots.some((slot) => slot.visible && slot.stage === 'proper')
-  ))).toBe(true);
+  await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-ASSEMBLY'));
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.activeScreen())).toBe('SCR-SVC-ASSEMBLY');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.isTransitioning())).toBe(false);
+  await page.waitForTimeout(350);
+  await expect(page.getByTestId('assembly-tare-panel')).toBeVisible();
+  await expect(page.getByTestId('assembly-tare-pot')).toBeDisabled();
+  await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-GRILL'));
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.activeScreen())).toBe('SCR-SVC-GRILL');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.isTransitioning())).toBe(false);
+  await page.waitForTimeout(350);
+  await expect(page.getByTestId('assembly-tare-panel')).toBeHidden();
+  await expect(page.locator('[data-testid="grill-tare-pot"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid^="d3-torch"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /타레 네기마/ })).toBeVisible();
   expect(await page.evaluate(() => window.__d1GameDebug.campaignState().campaign)).toMatchObject({
     nodeId: 'd3',
     phase: 'business',

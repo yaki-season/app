@@ -1,0 +1,255 @@
+{
+  "id": "d4",
+  "nextNodeId": "d5",
+  "sessionTargetMs": 420000,
+  "arrivalPolicy": {
+    "maxAllSeatsEmptyWaitSec": 13,
+    "autoCloseAfterFinalCustomer": true
+  },
+  "seatIds": [
+    "seat-01",
+    "seat-02",
+    "seat-03",
+    "seat-04",
+    "seat-05",
+    "seat-06"
+  ],
+  "timingMs": {
+    "thinkMin": 4000,
+    "thinkMax": 6000,
+    "eat": 15000,
+    "leave": 1000,
+    "cleanup": 3000,
+    "waitRecovery": 10000
+  },
+  "limits": {
+    "maxActiveOrders": 2,
+    "maxRiskProcesses": 2
+  },
+  "economy": {
+    "baseTip": 2,
+    "menuPrices": {
+      "beer": 6,
+      "negima": 3,
+      "momo": 4,
+      "cabbage-salad": 0,
+      "highball": 7
+    }
+  },
+  "menuPolicies": {
+    "beer": {
+      "qualityMode": "graded",
+      "satisfactionWeight": 1,
+      "saleLedger": true,
+      "waitRecoveryMs": 10000
+    },
+    "negima": {
+      "qualityMode": "graded",
+      "satisfactionWeight": 1,
+      "saleLedger": true,
+      "waitRecoveryMs": 10000
+    },
+    "momo": {
+      "qualityMode": "graded",
+      "satisfactionWeight": 1,
+      "saleLedger": true,
+      "waitRecoveryMs": 10000
+    },
+    "cabbage-salad": {
+      "qualityMode": "none",
+      "satisfactionWeight": 0,
+      "saleLedger": false,
+      "waitRecoveryMs": 10000,
+      "requiredForCompletion": true
+    },
+    "highball": {
+      "qualityMode": "graded",
+      "satisfactionWeight": 1,
+      "saleLedger": true,
+      "waitRecoveryMs": 10000
+    }
+  },
+  "stationProcesses": {
+    "instant": {
+      "screenId": "SCR-SVC-INSTANT",
+      "items": {
+        "cabbage-salad": {
+          "prepareHoldMs": 2500,
+          "completionQuantity": 1,
+          "autoRepeat": false,
+          "cancelPolicy": "reset-to-zero"
+        }
+      }
+    },
+    "drink": {
+      "screenId": "SCR-SVC-DRINK",
+      "workSurfaces": {
+        "highball": {
+          "manualSlotCount": 1,
+          "flowUnitsPerSec": 1,
+          "overflowThresholdUnits": 4.8,
+          "whiskeyPerfect": [0.8, 1.2],
+          "whiskeyGood": [0.6, 1.4],
+          "sodaPerfect": [2.55, 3.45],
+          "sodaGood": [2.1, 3.9],
+          "ratioPerfect": [2.7, 3.3],
+          "ratioGood": [2.4, 3.6]
+        }
+      }
+    }
+  },
+  "campaignReward": {
+    "unlockIds": ["day-d5", "menu-kawa"],
+    "storyFlagIds": ["d4-complete", "cabbage-salad-introduced", "highball-introduced"]
+  },
+  "waves": [
+    {
+      "id": "d4-open",
+      "atMs": 0,
+      "requiresOrderCompletionIds": [],
+      "customers": [
+        {
+          "id": "REGULAR_TSUKIOKA",
+          "typeId": "regular",
+          "groupId": null,
+          "patienceMs": 100000,
+          "order": {
+            "id": "D4-ORDER-001",
+            "guided": false,
+            "lines": [
+              { "menuId": "cabbage-salad", "quantity": 1, "seasoning": "none" },
+              { "menuId": "highball", "quantity": 1, "seasoning": "none" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "d4-pair",
+      "atMs": 90000,
+      "requiresOrderCompletionIds": ["D4-ORDER-001"],
+      "customers": [
+        {
+          "id": "D4-OFFICE-A",
+          "typeId": "office",
+          "groupId": "D4-GROUP-OFFICE",
+          "patienceMs": 80000,
+          "order": {
+            "id": "D4-ORDER-002",
+            "guided": false,
+            "lines": [
+              { "menuId": "momo", "quantity": 1, "seasoning": "salt" },
+              { "menuId": "beer", "quantity": 1, "seasoning": "none" },
+              { "menuId": "cabbage-salad", "quantity": 1, "seasoning": "none" }
+            ]
+          }
+        },
+        {
+          "id": "D4-OFFICE-B",
+          "typeId": "office",
+          "groupId": "D4-GROUP-OFFICE",
+          "patienceMs": 80000,
+          "order": {
+            "id": "D4-ORDER-003",
+            "guided": false,
+            "lines": [
+              { "menuId": "momo", "quantity": 1, "seasoning": "salt" },
+              { "menuId": "beer", "quantity": 1, "seasoning": "none" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "d4-cross",
+      "atMs": 180000,
+      "requiresOrderCompletionIds": ["D4-ORDER-002", "D4-ORDER-003"],
+      "customers": [
+        {
+          "id": "D4-SOLO-A",
+          "typeId": "solo",
+          "groupId": null,
+          "patienceMs": 70000,
+          "order": {
+            "id": "D4-ORDER-004",
+            "guided": false,
+            "lines": [
+              { "menuId": "negima", "quantity": 1, "seasoning": "salt" },
+              { "menuId": "highball", "quantity": 1, "seasoning": "none" }
+            ]
+          }
+        },
+        {
+          "id": "D4-COMMUTER-A",
+          "typeId": "commuter",
+          "groupId": null,
+          "patienceMs": 70000,
+          "order": {
+            "id": "D4-ORDER-005",
+            "guided": false,
+            "lines": [
+              { "menuId": "momo", "quantity": 1, "seasoning": "tare" },
+              { "menuId": "cabbage-salad", "quantity": 1, "seasoning": "none" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "d4-review",
+      "atMs": 270000,
+      "requiresOrderCompletionIds": ["D4-ORDER-004", "D4-ORDER-005"],
+      "customers": [
+        {
+          "id": "D4-SOLO-B",
+          "typeId": "solo",
+          "groupId": null,
+          "patienceMs": 70000,
+          "order": {
+            "id": "D4-ORDER-006",
+            "guided": false,
+            "lines": [
+              { "menuId": "negima", "quantity": 2, "seasoning": "salt" },
+              { "menuId": "beer", "quantity": 1, "seasoning": "none" }
+            ]
+          }
+        },
+        {
+          "id": "D4-COMMUTER-B",
+          "typeId": "commuter",
+          "groupId": null,
+          "patienceMs": 70000,
+          "order": {
+            "id": "D4-ORDER-007",
+            "guided": false,
+            "lines": [
+              { "menuId": "momo", "quantity": 1, "seasoning": "salt" },
+              { "menuId": "highball", "quantity": 1, "seasoning": "none" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "d4-late",
+      "atMs": 360000,
+      "requiresOrderCompletionIds": ["D4-ORDER-006", "D4-ORDER-007"],
+      "customers": [
+        {
+          "id": "D4-SOLO-C",
+          "typeId": "solo",
+          "groupId": null,
+          "patienceMs": 70000,
+          "order": {
+            "id": "D4-ORDER-008",
+            "guided": false,
+            "lines": [
+              { "menuId": "cabbage-salad", "quantity": 2, "seasoning": "none" },
+              { "menuId": "beer", "quantity": 1, "seasoning": "none" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const campaignRecords = JSON.parse(readFileSync(fileURLToPath(
-  new URL('../fixtures/campaign/s0-d4-preview.json', import.meta.url),
+  new URL('../fixtures/campaign/s0-d5-preview.json', import.meta.url),
 ), 'utf8'));
 const d1Record = JSON.parse(readFileSync(fileURLToPath(
   new URL('../fixtures/business-days/d1-full-day.json', import.meta.url),
@@ -133,4 +133,36 @@ test('브라우저 localStorage에서 D1 전체 영업·정산·D2 저장 복구
       reputation: 12,
     },
   });
+});
+
+test('D4 후일담의 마지막 장면에서 실제 D5 토리카와 영업으로 이어진다', async ({ page }) => {
+  await page.goto('/src/single-customer-harness.html');
+  await page.evaluate(async () => {
+    window.localStorage.clear();
+    const { S0D3CampaignBridge } = await import('/src/scenario/s0-d3-campaign.js');
+    const bridge = new S0D3CampaignBridge({ browserStorage: window.localStorage });
+    bridge.newCampaign();
+    bridge.finishPrologue();
+    await bridge.startDay();
+    for (let day = 1; day <= 4; day += 1) {
+      bridge.enterSettlement();
+      await bridge.completeDay(`D${day}`);
+      if (day < 4) await bridge.startDay();
+    }
+  });
+
+  await page.goto('/src/s0-d3.html?post=d4');
+  await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D4-POST');
+  await page.getByRole('button', { name: '이 장면 건너뛰기' }).click();
+  await page.getByRole('button', { name: '이어서' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-state-id', 'D4-epilogue-1');
+  await page.getByRole('button', { name: '다음 장면' }).click();
+  await page.getByRole('button', { name: 'D5 영업으로' }).click();
+
+  await expect(page).toHaveURL(/\/src\/d1-game\.html\?day=d5$/);
+  await page.getByRole('button', { name: '조립', exact: true }).click();
+  await expect(page.getByRole('button', { name: '토리카와', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '그릴', exact: true }).click();
+  await expect(page.getByRole('button', { name: /소금 토리카와/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /타레 토리카와/ })).toBeVisible();
 });

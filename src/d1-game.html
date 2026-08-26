@@ -8,6 +8,12 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/yaki-season-icon-r3-192.png">
 <link rel="apple-touch-icon" href="/yaki-season-icon-r3-512.png">
 <link rel="manifest" href="/manifest.webmanifest">
+<link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-workstation-base-draft-r8.png">
+<link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-glass-draft-r3.png">
+<link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-ice-fill-draft-r2.png">
+<link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-bottles-draft-r1.png">
+<link rel="preload" as="image" href="/assets/campaign/d3/prop-tare-sauce-pot-r2-b1.png">
+<link rel="preload" as="image" href="/assets/campaign/d3/prop-tare-sauce-pot-open-r2-b1.png">
 <link rel="stylesheet" href="./game.css">
 <link rel="stylesheet" href="./d1-game.css">
 <script type="importmap">
@@ -16,9 +22,9 @@
 </head>
 <body>
   <canvas id="scene" data-testid="scene-canvas"></canvas>
-  <div id="d3TorchCursor" class="d3-torch-cursor" data-testid="d3-torch-cursor" aria-hidden="true" hidden>
-    <span class="d3-torch-cursor-tool"></span>
-    <span class="d3-torch-cursor-flame"></span>
+  <div id="assemblyTareCursor" class="assembly-tare-cursor" data-testid="assembly-tare-cursor" aria-hidden="true" hidden>
+    <span class="assembly-tare-cursor-handle"></span>
+    <span class="assembly-tare-cursor-bristles"></span>
   </div>
 
   <!-- 더미 오브젝트 이름표 (아트 전 스테이션 식별용) -->
@@ -52,10 +58,32 @@
   <button id="navRight" class="side-nav right" data-testid="nav-right" aria-label="다음 화면">›</button>
 
   <nav id="assemblyRecipePicker" class="assembly-recipe-picker" data-testid="assembly-recipe-picker" aria-label="조립할 꼬치 선택" hidden>
-    <span>오늘의 꼬치</span>
+    <span>꼬치 종류</span>
     <button type="button" data-menu-id="negima" aria-pressed="true">네기마</button>
     <button type="button" data-menu-id="momo" aria-pressed="false">모모</button>
+    <button type="button" data-menu-id="kawa" data-d5-only="true" aria-pressed="false">토리카와</button>
   </nav>
+  <section id="assemblyTarePanel" class="assembly-tare-panel" data-testid="assembly-tare-panel" aria-label="타레 양념" hidden>
+    <button
+      id="assemblyTarePot"
+      class="assembly-tare-pot"
+      type="button"
+      data-testid="assembly-tare-pot"
+      aria-pressed="false"
+      aria-keyshortcuts="ArrowLeft ArrowRight"
+      disabled
+    >
+      <img id="assemblyTarePotArt" src="/assets/campaign/d3/prop-tare-sauce-pot-r2-b1.png" alt="">
+      <span><strong>타레 양념</strong><small>조립한 꼬치에 붓으로 바르기</small></span>
+    </button>
+    <div class="assembly-tare-guide">
+      <strong id="assemblyTareProgress" aria-live="polite">꼬치를 먼저 조립하세요</strong>
+      <small>소스통을 누른 뒤 꼬치 위를 한 번 좌우로 끝까지 칠하세요</small>
+      <div class="assembly-tare-meter" role="progressbar" aria-label="타레 도포 범위" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <span id="assemblyTareFill"></span>
+      </div>
+    </div>
+  </section>
 
   <!-- 그릴 전용 재고 UI. 생꼬치는 한 장의 카드로 배치하고 완성품은 공용 준비 목록을 읽기 전용으로 투영한다. -->
   <section
@@ -70,10 +98,9 @@
         <span>굽기 전</span>
         <strong id="grillRawInventoryTitle">생꼬치 재고</strong>
       </header>
-      <button
+      <article
         id="grillWaitingNegima"
         class="grill-waiting-card grill-waiting-negima"
-        type="button"
         data-testid="grill-waiting-negima"
         aria-describedby="grillWaitingNegimaHint"
       >
@@ -85,11 +112,14 @@
           </span>
           <span id="grillWaitingNegimaHint">대기 중인 꼬치가 없습니다</span>
         </span>
-      </button>
-      <button
+        <span class="grill-seasoning-actions" aria-label="네기마 양념 선택">
+          <button id="grillWaitingNegimaSalt" type="button" data-seasoning="salt"><span>소금</span><strong id="grillWaitingNegimaSaltCount">× 0</strong></button>
+          <button id="grillWaitingNegimaTare" type="button" data-seasoning="tare"><span>타레</span><strong id="grillWaitingNegimaTareCount">× 0</strong></button>
+        </span>
+      </article>
+      <article
         id="grillWaitingMomo"
         class="grill-waiting-card grill-waiting-momo"
-        type="button"
         data-testid="grill-waiting-momo"
         aria-describedby="grillWaitingMomoHint"
       >
@@ -101,7 +131,31 @@
           </span>
           <span id="grillWaitingMomoHint">대기 중인 꼬치가 없습니다</span>
         </span>
-      </button>
+        <span class="grill-seasoning-actions" aria-label="모모 양념 선택">
+          <button id="grillWaitingMomoSalt" type="button" data-seasoning="salt"><span>소금</span><strong id="grillWaitingMomoSaltCount">× 0</strong></button>
+          <button id="grillWaitingMomoTare" type="button" data-seasoning="tare"><span>타레</span><strong id="grillWaitingMomoTareCount">× 0</strong></button>
+        </span>
+      </article>
+      <article
+        id="grillWaitingKawa"
+        class="grill-waiting-card grill-waiting-kawa"
+        data-testid="grill-waiting-kawa"
+        aria-describedby="grillWaitingKawaHint"
+        hidden
+      >
+        <img src="/assets/campaign/d5/order-icon-kawa-r1-b1.png" alt="" aria-hidden="true">
+        <span class="grill-inventory-card-copy">
+          <span class="grill-inventory-card-title">
+            <strong>토리카와</strong>
+            <span id="grillWaitingKawaCount" class="grill-inventory-count">× 0</span>
+          </span>
+          <span id="grillWaitingKawaHint">대기 중인 꼬치가 없습니다</span>
+        </span>
+        <span class="grill-seasoning-actions" aria-label="토리카와 양념 선택">
+          <button id="grillWaitingKawaSalt" type="button" data-seasoning="salt"><span>소금</span><strong id="grillWaitingKawaSaltCount">× 0</strong></button>
+          <button id="grillWaitingKawaTare" type="button" data-seasoning="tare"><span>타레</span><strong id="grillWaitingKawaTareCount">× 0</strong></button>
+        </span>
+      </article>
     </article>
 
     <article class="grill-inventory-panel grill-inventory-panel--finished" aria-labelledby="grillFinishedInventoryTitle">
@@ -120,53 +174,110 @@
     </article>
   </section>
 
-  <!-- 드링크: 잔 채움·기준선·결과 -->
+  <!-- 드링크: D4부터 생맥주 설비와 하이볼 작업대를 한 화면에 함께 둔다. -->
   <div id="drinkPanel" class="drink-panel" data-testid="drink-panel" hidden>
-    <div class="glass" data-testid="drink-glass">
-      <span class="foam" data-testid="drink-foam"></span>
-      <span class="beer" data-testid="drink-beer"></span>
-      <span class="target-line"></span>
-      <span class="stamp" data-testid="drink-stamp" hidden></span>
-    </div>
-    <p class="drink-hint">중립 레버를 <b>아래로 드래그</b>=맥주 · <b>위로 드래그</b>=거품</p>
-    <div class="drink-actions">
-      <button data-act="finish" data-testid="drink-finish">완성</button>
-    </div>
-    <div class="drink-overflow" data-testid="drink-overflow" hidden>
-      <span>잔이 넘쳤어요</span>
-      <button data-act="serve-low" data-testid="drink-serve-low">낮은 품질로 제공</button>
-      <button data-act="discard" data-testid="drink-discard">폐기</button>
-    </div>
+    <section id="beerPanel" class="beer-panel" aria-labelledby="beerStationTitle">
+      <div class="drink-guide-heading">
+        <strong id="beerStationTitle" class="drink-station-title">생맥주</strong>
+        <span class="drink-guide-recipe">빈 잔 → 맥주 7 : 거품 3</span>
+      </div>
+      <div class="glass" data-testid="drink-glass">
+        <span class="foam" data-testid="drink-foam"></span>
+        <span class="beer" data-testid="drink-beer"></span>
+        <span class="target-line"></span>
+        <span class="stamp" data-testid="drink-stamp" hidden></span>
+      </div>
+      <p id="beerHint" class="drink-hint drink-guide-status" aria-live="polite">빈 잔을 놓으세요</p>
+      <div class="drink-actions">
+        <button data-act="finish" data-testid="drink-finish">완성</button>
+      </div>
+      <div class="drink-overflow" data-testid="drink-overflow" hidden>
+        <strong>잔이 넘쳤어요 · 낮은 품질</strong>
+        <div class="drink-overflow-actions">
+          <button data-act="serve-low" data-testid="drink-serve-low">계속 만들기</button>
+          <button data-act="discard" data-testid="drink-discard">폐기</button>
+        </div>
+      </div>
+    </section>
+    <section id="highballPanel" class="highball-panel" data-testid="highball-panel" aria-labelledby="highballStationTitle" hidden>
+      <div class="highball-worktop" data-testid="highball-worktop">
+        <img
+          class="highball-worktop-art"
+          src="/assets/campaign/d4/prop-highball-workstation-base-draft-r8.png"
+          alt=""
+          aria-hidden="true"
+          decoding="sync"
+          fetchpriority="high"
+        >
+        <span id="highballPourStream" class="highball-pour-stream" aria-hidden="true"></span>
+        <button id="highballGlass" type="button" class="highball-glass" data-testid="highball-glass">하이볼 잔 가져오기</button>
+        <button id="highballIce" type="button" class="highball-ice" data-testid="highball-ice">얼음 넣기</button>
+        <div id="highballVisual" class="highball-visual" aria-label="하이볼 잔 상태" hidden>
+          <span id="highballLiquid" class="highball-liquid" aria-hidden="true">
+            <span class="highball-liquid-body"></span>
+            <span id="highballCarbonation" class="highball-carbonation"></span>
+            <span class="highball-liquid-surface"></span>
+          </span>
+          <span id="highballIceVisual" class="highball-ice-visual" aria-hidden="true"></span>
+          <!-- 레몬을 올려 완성하면 잔 테두리에 레몬 조각이 걸린다. -->
+          <span id="highballLemonGarnish" class="highball-lemon-garnish" aria-hidden="true"></span>
+          <span id="highballOverflowSpill" class="highball-overflow-spill" aria-hidden="true"></span>
+        </div>
+        <!-- 완성된 잔 자체를 눌러 픽업대로 보낸다. 잔 그림과 같은 자리의 투명 버튼이다. -->
+        <button id="highballPickup" type="button" class="highball-pickup" data-testid="highball-pickup" hidden>완성 하이볼</button>
+        <div class="highball-bottles">
+          <button id="highballWhiskey" type="button" class="highball-bottle whiskey" data-liquid="whiskey" data-testid="highball-whiskey">위스키<br><small>누르고 있기</small></button>
+          <button id="highballSoda" type="button" class="highball-bottle soda" data-liquid="soda" data-testid="highball-soda">탄산수<br><small>누르고 있기</small></button>
+        </div>
+        <button id="highballLemon" type="button" class="highball-lemon" data-testid="highball-lemon">레몬 올리기</button>
+      </div>
+    </section>
+    <section id="highballGuide" class="highball-guide" data-testid="highball-guide" aria-labelledby="highballStationTitle" hidden>
+      <div class="drink-guide-heading">
+        <strong id="highballStationTitle" class="drink-station-title">하이볼</strong>
+        <span class="drink-guide-recipe">빈 잔 → 얼음 → 위스키 1 : 탄산수 3 → 레몬</span>
+        <!-- 지금까지 따라진 양. 생맥주 안내와 같은 두 줄 높이를 지키려고 제목 줄에 붙인다. -->
+        <p id="highballReadout" class="highball-readout" data-testid="highball-readout" aria-live="polite">위스키 0.0 · 탄산수 0.0</p>
+      </div>
+      <!-- 생맥주 잔 게이지와 같은 방식으로 지금까지 따라진 양을 보여준다.
+           아래가 위스키, 위가 탄산수, 가로선이 1:3 목표선이다. -->
+      <div class="highball-gauge" data-testid="highball-gauge">
+        <span class="highball-gauge-soda" data-testid="highball-gauge-soda"></span>
+        <span class="highball-gauge-whiskey" data-testid="highball-gauge-whiskey"></span>
+        <span class="highball-gauge-target"></span>
+        <span class="highball-gauge-whiskey-target"></span>
+        <span class="stamp" id="highballStamp" data-testid="highball-stamp" hidden></span>
+      </div>
+      <p id="highballHint" class="highball-hint" aria-live="polite">빈 잔을 가져오세요</p>
+      <div id="highballOverflow" class="highball-overflow" data-testid="highball-overflow" hidden>
+        <strong>잔이 넘쳤어요 · 낮은 품질</strong>
+        <div class="drink-overflow-actions">
+          <button type="button" data-highball-act="serve-low">계속 만들기</button>
+          <button type="button" data-highball-act="discard">폐기</button>
+        </div>
+      </div>
+    </section>
   </div>
+
+  <!-- D4 사이드 메뉴 스테이션. 메뉴 카드를 추가할 수 있는 공용 grid로 구성한다. -->
+  <div id="instantArtScene" class="instant-art-scene" aria-hidden="true" hidden></div>
+  <section id="instantPanel" class="instant-panel" data-testid="instant-panel" aria-labelledby="instantTitle" hidden>
+    <header>
+      <span>바로 담아 내는 메뉴</span>
+      <strong id="instantTitle">사이드 메뉴</strong>
+    </header>
+    <div class="instant-menu-grid">
+      <button id="cabbageSaladPrepare" class="instant-menu-card" type="button" data-menu-id="cabbage-salad" data-testid="cabbage-salad-prepare">
+        <span class="instant-menu-art" aria-hidden="true"></span>
+        <span class="instant-menu-copy"><strong>양배추 사라다</strong><small>누르고 담기</small></span>
+        <span id="cabbageSaladProgress" class="instant-progress" role="progressbar" aria-label="사라다 담기 진행" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></span>
+      </button>
+    </div>
+    <p id="instantMessage" class="instant-message" aria-live="polite">접시에 담을 메뉴를 길게 누르세요</p>
+  </section>
 
   <!-- 공용 완성품 목록. 조작은 하나로 유지하고 요리/음료의 접지 구역만 분리한다. -->
   <div id="dockShelf" class="dock-shelf" data-testid="dock-shelf" aria-label="요리 서빙대와 음료 픽업대" hidden></div>
-
-  <section id="d3TorchPanel" class="d3-torch-panel" data-testid="d3-torch-panel" data-state-id="D3-MOMO-TARE-READY" aria-labelledby="d3TorchTitle" hidden>
-    <div class="d3-torch-head">
-      <strong id="d3TorchTitle">타레 모모 · 토치 마감</strong>
-      <span id="d3TorchState" data-testid="d3-torch-state" data-component-id="grill.torchState" data-required-asset-id="UI-TORCH-STATE-D3" aria-live="polite">타레 대기</span>
-    </div>
-    <button id="d3ApplyTare" type="button" data-testid="d3-apply-tare" data-component-id="grill.tare.apply" data-required-asset-id="PROP-TARE-BRUSH-D3">타레 바르기</button>
-    <button
-      id="d3TorchTrack"
-      class="d3-torch-track"
-      type="button"
-      data-testid="d3-torch-track"
-      data-component-id="grill.torch"
-      data-required-asset-id="MDL-GRILL-TORCH"
-      aria-describedby="d3TorchHelp d3TorchWarning"
-    >
-      <span id="d3TorchFill" class="d3-torch-fill" data-component-id="grill.torch.flame" data-required-asset-id="VFX-TORCH-FLAME"></span>
-      <span class="d3-torch-label">그릴 위에서 왼쪽 버튼을 누른 채 좌우로 훑기</span>
-    </button>
-    <div class="d3-torch-meter" role="progressbar" aria-label="토치 적용 범위" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-      <span id="d3TorchCoverage" data-component-id="grill.torchCoverage" data-required-asset-id="UI-TORCH-COVERAGE-D3"></span>
-    </div>
-    <p id="d3TorchHelp">키보드: Space로 토치를 켠 채 ← →로 이동</p>
-    <p id="d3TorchWarning" class="d3-torch-warning" data-component-id="grill.torchFocusWarning" data-required-asset-id="UI-TORCH-FOCUS-WARN-D3" aria-live="assertive"></p>
-    <button id="d3RetrieveMomo" type="button" data-testid="d3-retrieve-momo" disabled>완성품 회수</button>
-  </section>
 
   <!-- 선택 완성품과 일치하는 모든 손님을 포인터·키보드 대상으로 제공 -->
   <section

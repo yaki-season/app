@@ -1,7 +1,7 @@
 {
   "$schema": "https://yaki-season.local/assets/manifest.schema.json",
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-10",
+  "generatedAt": "2026-08-27",
   "specRefs": [
     "ART-002 v3.6.1",
     "ART-003 v5.0.0",
@@ -300,8 +300,8 @@
     },
     {
       "id": "CH-EXTRA-SOLO-SERVICE",
-      "sourceRevision": 7,
-      "runtimeBuild": 2,
+      "sourceRevision": 9,
+      "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-SVC-CUSTOMERS",
       "profile": "standalone-raster",
@@ -326,43 +326,43 @@
         "drinking-beer"
       ],
       "mirrorSafe": false,
-      "source": "ARTSRC:CH-EXTRA-SOLO-SERVICE:R7",
-      "provenance": "PROV:CH-EXTRA-SOLO-SERVICE:R7",
+      "source": "ARTSRC:CH-EXTRA-SOLO-SERVICE:R9",
+      "provenance": "PROV:CH-EXTRA-SOLO-SERVICE:R9",
       "license": "YAKI SEASON internal approved artwork",
       "specRefs": [
         "ART-003 v5.0.0",
         "GPL-005 v2.23.0",
-        "Artist 3 task 025 CH-EXTRA-SOLO-SERVICE R7"
+        "User approval 2026-08-26: use the approved middle-aged woman three-state set for solo customers"
       ],
-      "reviewedAt": "2026-08-05",
-      "url": "/assets/core/customer/ch-extra-solo-service-r7-b1.png",
-      "sha256": "81ad4e50ef45d963829bd1ab981273c5a7e59e074c047598e6cba13a17e462e8",
-      "bytes": 1392381,
+      "reviewedAt": "2026-08-26",
+      "url": "/assets/core/customer/ch-extra-solo-service-r9-b1.png",
+      "sha256": "2e236f1e6c542b223a5388d48020f1e184fc327b6e67638f9f493b6c1d46122f",
+      "bytes": 333694,
       "dimensions": {
-        "width": 1121,
-        "height": 1403
+        "width": 1920,
+        "height": 1080
       },
       "format": "png",
       "companions": [
         {
           "role": "solo-eating-skewer",
-          "url": "/assets/core/customer/ch-extra-solo-service-eating-skewer-r7-b2.png",
-          "sha256": "ee0e108489c9454594a0ab5d47d0c07e00690d4c1203dad565737eaf49951ef5",
-          "bytes": 1482377,
+          "url": "/assets/core/customer/ch-extra-solo-service-eating-skewer-r9-b1.png",
+          "sha256": "a7c6dfa4c9f020926365a1f2c055047692285a643fb141eb5137feec60dc684e",
+          "bytes": 319518,
           "dimensions": {
-            "width": 1121,
-            "height": 1403
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "solo-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-solo-service-drinking-beer-r7-b2.png",
-          "sha256": "b38113dc48b438cdb9ce2830576d8aad04e7c26eb5a9369ae1025dbe81e18ec6",
-          "bytes": 1450741,
+          "url": "/assets/core/customer/ch-extra-solo-service-drinking-beer-r9-b1.png",
+          "sha256": "db34773f2be0778a9f40147766fb86721548975e66384226f5abf323bb6984a3",
+          "bytes": 327683,
           "dimensions": {
-            "width": 1121,
-            "height": 1403
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         }
@@ -693,6 +693,68 @@
       "url": "/assets/core/cooking/bg-workspace-assembly-r1-b1.png",
       "sha256": "4b8570a524ffd3edaebc6493c82ada46eb3eab5d933b2e2ff59bf2c66e1b4b34",
       "bytes": 2753220,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "D4-UI-HIGHBALL-PICKUP",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "standalone-raster",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": { "x": 0.5, "y": 0.5 },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": true,
+      "source": "ARTSRC:D4-UI-HIGHBALL-PICKUP:R1",
+      "provenance": "PROV:IMAGEGEN:2026-08-27:HIGHBALL-PICKUP-R1",
+      "license": "YAKI SEASON internal generated artwork",
+      "specRefs": ["D4 highball drink pickup UI"],
+      "reviewedAt": "2026-08-27",
+      "url": "/assets/campaign/d4/ui-highball-pickup-r1-b1.png",
+      "sha256": "6fa94bb3397b8df0211d94a727a40ecccae7471d83af3d43068312e559f72797",
+      "bytes": 70168,
+      "dimensions": { "width": 256, "height": 256 },
+      "format": "png"
+    },
+    {
+      "id": "D5-ASSEMBLY-STATION-TORIKAWA",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY",
+      "profile": "standalone-raster",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:D5-ASSEMBLY-STATION-TORIKAWA:R1",
+      "provenance": "PROV:SOURCE-PRESERVE-COMPOSITE:2026-08-27:TORIKAWA-STATION-R1",
+      "license": "YAKI SEASON internal generated artwork",
+      "specRefs": [
+        "D5 torikawa replaces loose skewer tray with chicken skin"
+      ],
+      "reviewedAt": "2026-08-27",
+      "url": "/assets/campaign/d5/st-assembly-torikawa-r1-b1.png",
+      "sha256": "49a99e81607c05d941ee0ec0a3bb4917c39c4469f68bc7cd0bb8c87409158191",
+      "bytes": 1326367,
       "dimensions": {
         "width": 1920,
         "height": 1080
@@ -1528,7 +1590,7 @@
     },
     {
       "id": "CH-EXTRA-COMMUTER-SERVICE",
-      "sourceRevision": 6,
+      "sourceRevision": 9,
       "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-SVC-CUSTOMERS",
@@ -1554,135 +1616,179 @@
         "drinking-beer"
       ],
       "mirrorSafe": false,
-      "source": "ARTSRC:CH-EXTRA-COMMUTER-SERVICE:R6",
-      "provenance": "PROV:CH-EXTRA-COMMUTER-SERVICE:R6",
+      "source": "ARTSRC:CH-EXTRA-COMMUTER-SERVICE:R9",
+      "provenance": "PROV:CH-EXTRA-COMMUTER-SERVICE:R9",
       "license": "YAKI SEASON internal user-approved artwork",
       "specRefs": [
         "ART-003 v5.0.0",
         "GPL-005 v2.23.0",
         "User approval 2026-08-09: five front-facing office customer variants with lowered resting hands",
-        "User approval 2026-08-10: office A/B replaced by early-30s male developer pixel-art variants with backpacks"
+        "User approval 2026-08-10: office A/B replaced by early-30s male developer pixel-art variants with backpacks",
+        "User approval 2026-08-26: replace all five customer identities and all three runtime states",
+        "User approval 2026-08-26: developer A/B alpha halo cleanup and developer B scaled to 90% seated height"
       ],
-      "reviewedAt": "2026-08-10",
-      "url": "/assets/core/customer/ch-extra-office-a-waiting-r6-b1.png",
-      "sha256": "cf1fb5a79d16813c895ed3c1b3e054a65088401caeba80066b28afcb4bc0f5d6",
-      "bytes": 668406,
+      "reviewedAt": "2026-08-26",
+      "url": "/assets/core/customer/in-game-mapping/developer-a-waiting-r9-b1.png",
+      "sha256": "151a5e5b8750b7482e184b0560c7d467b032a306823b1900ae276e6522df81ab",
+      "bytes": 249404,
       "dimensions": {
-        "width": 1182,
-        "height": 1330
+        "width": 1920,
+        "height": 1080
       },
       "format": "png",
       "companions": [
         {
           "role": "office-a-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-a-eating-negima-r6-b1.png",
-          "sha256": "88a628440a7f711a12e73a2c749be04d00089c7c97c8022e51fb24e6e04e12e8",
-          "bytes": 643353,
-          "dimensions": { "width": 1182, "height": 1330 },
+          "url": "/assets/core/customer/in-game-mapping/developer-a-eating-negima-r9-b1.png",
+          "sha256": "72f478252e23ca6d9a8ad1d0365b6aa2c843d4e3b8381b75f11593f87d5aede6",
+          "bytes": 261193,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-a-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-a-drinking-beer-r6-b1.png",
-          "sha256": "88ca90f12f32feaa814d847142921b61d395d4789d7481b5702dd5855b89479f",
-          "bytes": 650250,
-          "dimensions": { "width": 1182, "height": 1330 },
+          "url": "/assets/core/customer/in-game-mapping/developer-a-drinking-beer-r9-b1.png",
+          "sha256": "fca26c8fc3a67d5729cc5d0fc2943418ec88e8fd3f4744eb65d83eff6371c167",
+          "bytes": 258112,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-b-waiting",
-          "url": "/assets/core/customer/ch-extra-office-b-waiting-r6-b1.png",
-          "sha256": "1882832a9318f0388c7ce6dcebdeb143f13ee66eead6f4a969cfe3a7f898ce16",
-          "bytes": 584200,
-          "dimensions": { "width": 1024, "height": 1536 },
+          "url": "/assets/core/customer/in-game-mapping/developer-b-waiting-r9-b1.png",
+          "sha256": "94bd97983f1b0ce4d91eb72a69bd3e0e00c0c4063abf2e003b23fb6f6151a0ff",
+          "bytes": 253541,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-b-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-b-eating-negima-r6-b1.png",
-          "sha256": "3ef87daf316740ceb0c8b8022ce1fb74c057fce2ce599d3c74b1ae480cfceed6",
-          "bytes": 596941,
-          "dimensions": { "width": 1024, "height": 1536 },
+          "url": "/assets/core/customer/in-game-mapping/developer-b-eating-negima-r9-b1.png",
+          "sha256": "0575cb937bde837aeb007c00b314df8938e5b1fbc96d8dedc98fd4f8375ef030",
+          "bytes": 253176,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-b-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-b-drinking-beer-r6-b1.png",
-          "sha256": "76206895ff41eff8da7a2bb031a79bdcf5a6f5fe8e138bbc0140bb461f10c952",
-          "bytes": 618419,
-          "dimensions": { "width": 1024, "height": 1536 },
+          "url": "/assets/core/customer/in-game-mapping/developer-b-drinking-beer-r9-b1.png",
+          "sha256": "1a1ed8734485b6e8d7ccf7cac5aff8996908618bf3f08b12b6ad921e1df34dfd",
+          "bytes": 253138,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-c-waiting",
-          "url": "/assets/core/customer/ch-extra-office-c-waiting-r6-b1.png",
-          "sha256": "676c7d7f708babc3b2fae26bdd603a4a435d9fb85bc93f53d80126613f949dc2",
-          "bytes": 1793667,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/in-game-mapping/young-man-delivery-waiting-r9-b1.png",
+          "sha256": "90267fa5874a9493fd2b8035cd4735163320cf2262c2a1155c5590d07f217b05",
+          "bytes": 344605,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-c-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-c-eating-negima-r6-b1.png",
-          "sha256": "1b873248ec4dca6e27a929d2480a0a0c2496df7a0770ecc0b66ce098310751d9",
-          "bytes": 1787857,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/in-game-mapping/young-man-delivery-eating-negima-r9-b1.png",
+          "sha256": "3122d753ebb379a1caa130b38c8b0361a4e68771dcbaa61df20d98fcc06d11a0",
+          "bytes": 336452,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-c-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-c-drinking-beer-r6-b1.png",
-          "sha256": "fa31481ef527040cadcb02af6e1df90d4292879cf5cac304568de8447c5f927e",
-          "bytes": 1868596,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/in-game-mapping/young-man-delivery-drinking-beer-r9-b1.png",
+          "sha256": "8db5d1ab117624810d02f8a74c4e95a85bdff765879dfc8cb9158d37df259e8e",
+          "bytes": 335236,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-d-waiting",
-          "url": "/assets/core/customer/ch-extra-office-d-waiting-r6-b1.png",
-          "sha256": "e732afdf24b67fb401de331e17f6e90bf0d0d0d819ce45a8afeed9ea112431b7",
-          "bytes": 1790495,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/in-game-mapping/stocky-middle-aged-man-waiting-r9-b1.png",
+          "sha256": "25841e9f2fde9cecd602e7f3a8057d4acc9af231ee6b7f6625fbe2d9dc5fee80",
+          "bytes": 452995,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-d-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-d-eating-negima-r6-b1.png",
-          "sha256": "33c9d5fb5e52d9c7ffed625e5313ff005f847694fffc687349b85fa23ef28756",
-          "bytes": 1753364,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/in-game-mapping/stocky-middle-aged-man-eating-negima-r9-b1.png",
+          "sha256": "1e650c1c089431defebf14c562c098d8449f397da2d32f88cb924a1a69f41cff",
+          "bytes": 491460,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-d-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-d-drinking-beer-r6-b1.png",
-          "sha256": "03bf52c6ba4243fe7c578304e55c047c41bae870db2dba81fce14593606e0a4d",
-          "bytes": 1814957,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/in-game-mapping/stocky-middle-aged-man-drinking-beer-r9-b1.png",
+          "sha256": "b109e9f3c44dd2d673b82481d31f6c9daf8a740c8f18913ff62d3522604e998e",
+          "bytes": 444528,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-e-waiting",
-          "url": "/assets/core/customer/ch-extra-office-e-waiting-r6-b1.png",
-          "sha256": "fa75dc7e9d207e4f67cc3011d38058e088de69343b052edbb499f3ed635af374",
-          "bytes": 1460015,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/in-game-mapping/middle-aged-woman-waiting-r9-b1.png",
+          "sha256": "2e236f1e6c542b223a5388d48020f1e184fc327b6e67638f9f493b6c1d46122f",
+          "bytes": 333694,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-e-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-e-eating-negima-r6-b1.png",
-          "sha256": "27b3f1f2fa6491626fbc75989a71f910e3ca2c870d23d00861d4fda5566656e5",
-          "bytes": 1454049,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/in-game-mapping/middle-aged-woman-eating-negima-r9-b1.png",
+          "sha256": "a7c6dfa4c9f020926365a1f2c055047692285a643fb141eb5137feec60dc684e",
+          "bytes": 319518,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         },
         {
           "role": "office-e-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-e-drinking-beer-r6-b1.png",
-          "sha256": "d9ea1718ad923fdb8560a6596ef9a035850d080d892eda607fd71889775606d2",
-          "bytes": 1458201,
-          "dimensions": { "width": 1086, "height": 1448 },
+          "url": "/assets/core/customer/in-game-mapping/middle-aged-woman-drinking-beer-r9-b1.png",
+          "sha256": "db34773f2be0778a9f40147766fb86721548975e66384226f5abf323bb6984a3",
+          "bytes": 327683,
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          },
           "format": "png"
         }
       ]
@@ -1699,9 +1805,23 @@
       "colorSpace": "sRGB",
       "alpha": "straight",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0.5, "y": 1 },
-      "anchors": [{ "id": "bottom-center", "x": 0.5, "y": 1 }],
-      "clips": ["fatigue", "focus", "mistake", "relief"],
+      "pivot": {
+        "x": 0.5,
+        "y": 1
+      },
+      "anchors": [
+        {
+          "id": "bottom-center",
+          "x": 0.5,
+          "y": 1
+        }
+      ],
+      "clips": [
+        "fatigue",
+        "focus",
+        "mistake",
+        "relief"
+      ],
       "mirrorSafe": false,
       "source": "ARTSRC:CH-AKI-STORY:R5",
       "provenance": "PROV:CH-AKI-STORY:R5",
@@ -1715,7 +1835,10 @@
       "url": "/assets/core/s0/story/ch-aki-story-r5-b1.png",
       "sha256": "ffd1e6b2c2657ca9142fde57db462a591898b0ba39f79f6640c4efab9630619b",
       "bytes": 743505,
-      "dimensions": { "width": 991, "height": 1587 },
+      "dimensions": {
+        "width": 991,
+        "height": 1587
+      },
       "format": "png"
     },
     {
@@ -1730,9 +1853,21 @@
       "colorSpace": "sRGB",
       "alpha": "straight",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0.5, "y": 1 },
-      "anchors": [{ "id": "bottom-center", "x": 0.5, "y": 1 }],
-      "clips": ["calm", "supportive"],
+      "pivot": {
+        "x": 0.5,
+        "y": 1
+      },
+      "anchors": [
+        {
+          "id": "bottom-center",
+          "x": 0.5,
+          "y": 1
+        }
+      ],
+      "clips": [
+        "calm",
+        "supportive"
+      ],
       "mirrorSafe": false,
       "source": "ARTSRC:CH-TSUKIOKA-STORY:R2",
       "provenance": "PROV:CH-TSUKIOKA-STORY:R2",
@@ -1746,7 +1881,10 @@
       "url": "/assets/core/s0/story/ch-tsukioka-story-r2-b1.png",
       "sha256": "2683741d1016de8ff8c23cf3153bde753675f3d9a3280acd58229b6569fddb4f",
       "bytes": 863129,
-      "dimensions": { "width": 1024, "height": 1536 },
+      "dimensions": {
+        "width": 1024,
+        "height": 1536
+      },
       "format": "png"
     },
     {
@@ -1761,9 +1899,14 @@
       "colorSpace": "sRGB",
       "alpha": "none",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 },
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
       "anchors": [],
-      "clips": ["resolve"],
+      "clips": [
+        "resolve"
+      ],
       "mirrorSafe": false,
       "source": "ARTSRC:IL-S0-AKI-REOPENED-SHOP:R1",
       "provenance": "PROV:IL-S0-AKI-REOPENED-SHOP:R1",
@@ -1777,7 +1920,10 @@
       "url": "/assets/core/s0/story/s0-aki-reopened-shop-full-scene-r1-b1.png",
       "sha256": "251e5bcce8d3940762febc4762480f710d21a814ed7fea2096be73f2829fcdfa",
       "bytes": 2108350,
-      "dimensions": { "width": 1672, "height": 941 },
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
       "format": "png"
     },
     {
@@ -1792,9 +1938,14 @@
       "colorSpace": "sRGB",
       "alpha": "none",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 },
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
       "anchors": [],
-      "clips": ["d1-preopen"],
+      "clips": [
+        "d1-preopen"
+      ],
       "mirrorSafe": false,
       "source": "ARTSRC:IL-D1-PREOPEN-AKI:R1",
       "provenance": "PROV:IL-D1-PREOPEN-AKI:R1",
@@ -1808,7 +1959,10 @@
       "url": "/assets/core/s0/story/d1-preopen-aki-full-scene-r1-b1.png",
       "sha256": "360c223b30f797b14d8148df0d5fb7f4b5850e3144b9d1a4f120fc92fa0977a5",
       "bytes": 2234415,
-      "dimensions": { "width": 1672, "height": 941 },
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
       "format": "png"
     },
     {
@@ -1823,9 +1977,14 @@
       "colorSpace": "sRGB",
       "alpha": "none",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0, "y": 0 },
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
       "anchors": [],
-      "clips": ["d1-preopen"],
+      "clips": [
+        "d1-preopen"
+      ],
       "mirrorSafe": false,
       "source": "ARTSRC:IL-D1-PREOPEN-TSUKIOKA:R1",
       "provenance": "PROV:IL-D1-PREOPEN-TSUKIOKA:R1",
@@ -1839,7 +1998,388 @@
       "url": "/assets/core/s0/story/d1-preopen-tsukioka-full-scene-r1-b1.png",
       "sha256": "43542b98fdd068cc0ad059edcf98af3751964e45ff317ef81f525385208bd7b2",
       "bytes": 2073336,
-      "dimensions": { "width": 1672, "height": 941 },
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-S0-DECISION-PIXEL",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "s0-decision"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-S0-DECISION-PIXEL:R2",
+      "provenance": "PROV:IL-S0-DECISION-PIXEL:R2",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "SCN-S0-DECISION"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/s0-decision-full-scene-r2-b1.png",
+      "sha256": "1e83201f52a78ea0796b0ba84c08cd953d4bdbf337634154112205b944d4a41e",
+      "bytes": 2312078,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D1-PREOPEN-PIXEL",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d1-preopen"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D1-PREOPEN-PIXEL:R2",
+      "provenance": "PROV:IL-D1-PREOPEN-PIXEL:R2",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "SCN-D1-PREOPEN"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/d1-preopen-full-scene-r2-b1.png",
+      "sha256": "52ac015c1edffa0430c09a064425fd6d38c8a6c66319009d1eec9a5560c1f8f6",
+      "bytes": 2482680,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D1-POST-PIXEL",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d1-post"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D1-POST-PIXEL:R1",
+      "provenance": "PROV:IL-D1-POST-PIXEL:R1",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "SCN-D1-POST",
+        "User requested all cutscenes in D3 pixel style 2026-08-22"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/d1-post-full-scene-r1-b1.png",
+      "sha256": "ed471e41f1f8f0bfc7caa8f2b02460a07dadee82dc13996a01594cd018af79d7",
+      "bytes": 2360043,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D2-POST-PIXEL",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d2-post"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D2-POST-PIXEL:R1",
+      "provenance": "PROV:IL-D2-POST-PIXEL:R1",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "SCN-D2-POST",
+        "User requested all cutscenes in D3 pixel style 2026-08-22"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/d2-post-full-scene-r1-b1.png",
+      "sha256": "b4a6f3f156d109df7c76befd06a11ece116a71cf1cdcf985284318aade4bbe53",
+      "bytes": 2425658,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D3-PREOPEN-PIXEL",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d3-preopen"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D3-PREOPEN-PIXEL:R2",
+      "provenance": "PROV:IL-D3-PREOPEN-PIXEL:R2",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "SCN-D3-PREOPEN",
+        "User selected pixel-art R2 direction 2026-08-22"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/d3-preopen-aki-office-pair-full-scene-r2-b1.png",
+      "sha256": "c2ab5d47ddb22135b69e99ce89a265eae9ead5845c02082703e3282b191536e8",
+      "bytes": 2423444,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D3-POST-PIXEL",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d3-post"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D3-POST-PIXEL:R1",
+      "provenance": "PROV:IL-D3-POST-PIXEL:R1",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "SCN-D3-POST",
+        "User requested all cutscenes in D3 pixel style 2026-08-22"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/d3-post-full-scene-r1-b1.png",
+      "sha256": "94a17bcfcedb75a9b611b331d293a99ec0b0197006155a90fab6d8ad58f813cf",
+      "bytes": 2502341,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D4-PREOPEN-PIXEL",
+      "sourceRevision": 4,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d4-preopen"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D4-PREOPEN-PIXEL:R4",
+      "provenance": "PROV:IL-D4-PREOPEN-PIXEL:R4",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "SCN-D4-PREOPEN",
+        "User approved D4 pre-open story candidate R4 2026-08-26"
+      ],
+      "reviewedAt": "2026-08-26",
+      "url": "/assets/core/s0/story/d4-preopen-full-scene-r4-b1.png",
+      "sha256": "d11bb3aa56eb404733421746482e19be49d66c2e0135d5da3ee14416ea6a65e2",
+      "bytes": 2721996,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D4-POST-PIXEL",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d4-post"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D4-POST-PIXEL:R2",
+      "provenance": "PROV:IL-D4-POST-PIXEL:R2",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "SCN-D4-POST",
+        "User approved D4 post-closing cutscene R2 2026-08-27"
+      ],
+      "reviewedAt": "2026-08-27",
+      "url": "/assets/core/s0/story/d4-post-full-scene-r2-b1.png",
+      "sha256": "16583a3b3c33f940c03ea22d9a9c1455302aa793f30816e9831b48aba59fed03",
+      "bytes": 2763092,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D4-EPILOGUE-CLEANUP-PIXEL",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-POST-EPILOGUE",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d4-epilogue-01"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D4-EPILOGUE-CLEANUP-PIXEL:R1",
+      "provenance": "PROV:IL-D4-EPILOGUE-CLEANUP-PIXEL:R1",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "D4-EPILOGUE-01",
+        "User requested visual cutscene for D4 cleanup epilogue 2026-08-27"
+      ],
+      "reviewedAt": "2026-08-27",
+      "url": "/assets/core/s0/story/d4-epilogue-cleanup-full-scene-r1-b1.png",
+      "sha256": "6df08ad482823ee5cc54a56b869880308c87a3a77493347c87bd419fc73b6297",
+      "bytes": 2528902,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D4-EPILOGUE-TORIKAWA-PIXEL",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-POST-EPILOGUE",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d4-epilogue-02"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D4-EPILOGUE-TORIKAWA-PIXEL:R1",
+      "provenance": "PROV:IL-D4-EPILOGUE-TORIKAWA-PIXEL:R1",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "D4-EPILOGUE-02",
+        "User requested visual cutscene for D4 torikawa recipe epilogue 2026-08-27"
+      ],
+      "reviewedAt": "2026-08-27",
+      "url": "/assets/core/s0/story/d4-epilogue-torikawa-full-scene-r1-b1.png",
+      "sha256": "0003f9068c1678e3439f89ba934281a13f95fd37c72de7ef1332216fc841d251",
+      "bytes": 3179530,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
       "format": "png"
     },
     {
@@ -1959,8 +2499,8 @@
         {
           "role": "assembly-progress-0",
           "url": "/assets/campaign/d2/spr-momo-assembly-progress-0-r1-b1.png",
-          "sha256": "483d5aaf19ecac086b173409b9a7fb1d8f88f4518f68a50057cceb5d7d11ff50",
-          "bytes": 10157,
+          "sha256": "f1943dbb0a05115e788808f1fbca2e1162d393500e64033508b62deeb44e4c0c",
+          "bytes": 2742,
           "dimensions": {
             "width": 109,
             "height": 494
@@ -1970,8 +2510,8 @@
         {
           "role": "assembly-progress-1",
           "url": "/assets/campaign/d2/spr-momo-assembly-progress-1-r1-b1.png",
-          "sha256": "68feb944bca914c249fda225da4fb362ccb9a36c3fa5857d2368b1e201a1480b",
-          "bytes": 23255,
+          "sha256": "9004ca36666979ea58d97f9a58787228aa19a327de02f0a9044c4c6d5e405d3d",
+          "bytes": 16453,
           "dimensions": {
             "width": 109,
             "height": 494
@@ -1981,8 +2521,8 @@
         {
           "role": "assembly-progress-2",
           "url": "/assets/campaign/d2/spr-momo-assembly-progress-2-r1-b1.png",
-          "sha256": "811431a616f6e48a211580534bfa8d2726ab1eb1ffff17d93b6d0d2d6c46b8ad",
-          "bytes": 35990,
+          "sha256": "882481dfd1ff0be43bf6178fcd6945f4267a20f215934d0f78e7e7262a8e9f38",
+          "bytes": 29237,
           "dimensions": {
             "width": 109,
             "height": 494
@@ -1992,8 +2532,8 @@
         {
           "role": "assembly-progress-3",
           "url": "/assets/campaign/d2/spr-momo-assembly-progress-3-r1-b1.png",
-          "sha256": "b807961bd571b46a07a575bee63c74fa5d2269f4bacef52090d8191d0eecf0ac",
-          "bytes": 48621,
+          "sha256": "e92d2adec0c922aabed105524095af6cfdf20aa47b8196e7e0e552d92110b7f0",
+          "bytes": 42104,
           "dimensions": {
             "width": 109,
             "height": 494
@@ -2003,8 +2543,8 @@
         {
           "role": "assembly-progress-4",
           "url": "/assets/campaign/d2/spr-momo-assembly-progress-4-r1-b1.png",
-          "sha256": "618cc3ef69bae9e7046ea113a118322f508666becfc5121e10240bf7b8ac08c5",
-          "bytes": 61469,
+          "sha256": "c603b8252bec561c483f34c816ce155c2d3de13284e807a29be8d343cc5216b0",
+          "bytes": 54771,
           "dimensions": {
             "width": 109,
             "height": 494
@@ -2014,8 +2554,8 @@
         {
           "role": "assembly-progress-5",
           "url": "/assets/campaign/d2/spr-momo-assembly-progress-5-r1-b1.png",
-          "sha256": "91a3d0f8263b98af2394af93f9afc6f39d465b41a2c093e1249e6073c215ddf8",
-          "bytes": 73887,
+          "sha256": "57f214495172f13521ef5c13b789a64fe20f0a2a1bc8e2d8d3f6224044c795b0",
+          "bytes": 67329,
           "dimensions": {
             "width": 109,
             "height": 494
@@ -2061,6 +2601,153 @@
       "dimensions": {
         "width": 109,
         "height": 494
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D2-PREOPEN-PIXEL",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d2-preopen"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D2-PREOPEN-PIXEL:R2",
+      "provenance": "PROV:IL-D2-PREOPEN-PIXEL:R2",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "SCN-D2-PREOPEN",
+        "YAKI SEASON 아트 규칙 협의 초안 2026-08-24",
+        "User confirmed final R2 and requested runtime application 2026-08-24"
+      ],
+      "reviewedAt": "2026-08-24",
+      "url": "/assets/core/s0/story/d2-preopen-full-scene-r2-b1.png",
+      "sha256": "24050e71ff7d2878d511a609c050e7c54a082291c28c2bb0d17a0d47e04f6b81",
+      "bytes": 3613274,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "PROP-TARE-SAUCE-POT-D3",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY",
+      "profile": "standalone-raster",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0.5,
+        "y": 0.82
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:PROP-TARE-SAUCE-POT-D3:R2",
+      "provenance": "PROV:BUILTIN-IMAGEGEN-PROP-TARE-SAUCE-POT-D3:R2",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "GPL-006 D3-D5 tare assembly flow",
+        "User requested warmer lower-saturation pixel-art revision 2026-08-26"
+      ],
+      "reviewedAt": "2026-08-26",
+      "url": "/assets/campaign/d3/prop-tare-sauce-pot-r2-b1.png",
+      "sha256": "4499b039d50922bc6a6010182684e177a99346b9bff9ceeb322c6ee6765b960a",
+      "bytes": 642088,
+      "dimensions": {
+        "width": 1312,
+        "height": 1199
+      },
+      "format": "png"
+    },
+    {
+      "id": "PROP-TARE-SAUCE-POT-OPEN-D3",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY",
+      "profile": "standalone-raster",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0.5,
+        "y": 0.82
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:PROP-TARE-SAUCE-POT-OPEN-D3:R2",
+      "provenance": "PROV:BUILTIN-IMAGEGEN-PROP-TARE-SAUCE-POT-OPEN-D3:R2",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "GPL-006 D3-D5 tare assembly flow",
+        "Selected brush state for assembly station 2026-08-26"
+      ],
+      "reviewedAt": "2026-08-26",
+      "url": "/assets/campaign/d3/prop-tare-sauce-pot-open-r2-b1.png",
+      "sha256": "cdd32889ba0ab51c471ff3cf063d2b2060dca2a00c07bc9b71be210e77995728",
+      "bytes": 600408,
+      "dimensions": {
+        "width": 1306,
+        "height": 1205
+      },
+      "format": "png"
+    },
+    {
+      "id": "UI-RECIPE-BOOK-PAPER",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SYS-RECIPE-BOOK",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:UI-RECIPE-BOOK-PAPER:R2",
+      "provenance": "PROV:UI-RECIPE-BOOK-PAPER:R2",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "UI recipe book background",
+        "User approval 2026-08-27: 비법노트 종이 누끼 — 흰 배경과 펀치홀을 투명 처리"
+      ],
+      "reviewedAt": "2026-08-27",
+      "url": "/assets/core/ui/grandfather-secret-recipe-notebook-bg-r2-b1.png",
+      "sha256": "f0fd8b1561afe175e81b6da177ea55388e3bb831c6dfedf674e7137f52ff147e",
+      "bytes": 2401656,
+      "dimensions": {
+        "width": 1024,
+        "height": 1536
       },
       "format": "png"
     }
@@ -2373,6 +3060,44 @@
       "dimensions": {
         "width": 1024,
         "height": 1536
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D2-PREOPEN-PIXEL",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d2-preopen"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D2-PREOPEN-PIXEL:R1",
+      "provenance": "PROV:IL-D2-PREOPEN-PIXEL:R1",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "SCN-D2-PREOPEN",
+        "User requested all cutscenes in D3 pixel style 2026-08-22"
+      ],
+      "reviewedAt": "2026-08-22",
+      "url": "/assets/core/s0/story/d2-preopen-full-scene-r1-b1.png",
+      "sha256": "0fc472af0fe3e295256ed418826a451e16e97e0a86f23c86e319d1b9399dfb71",
+      "bytes": 2549723,
+      "dimensions": {
+        "width": 1672,
+        "height": 941
       },
       "format": "png"
     }

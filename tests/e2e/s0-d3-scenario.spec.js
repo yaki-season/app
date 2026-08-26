@@ -76,13 +76,13 @@ test('S0: 열쇠→대문 2클릭 뒤 점화 대사를 거쳐 D1로 이어진다
   await expect(page.locator('#story-illustration')).toBeVisible();
   await expect(page.locator('#story-illustration')).toHaveAttribute(
     'src',
-    '/public/assets/core/s0/story/s0-aki-reopened-shop-full-scene-r1-b1.png',
+    '/public/assets/core/s0/story/s0-decision-full-scene-r2-b1.png',
   );
   await expect(page.locator('#story-portrait')).toBeHidden();
   await expect(page.locator('#story-background')).toBeHidden();
   await expect(page.locator('body')).toHaveAttribute(
     'data-story-illustration-asset-id',
-    'IL-S0-AKI-REOPENED-SHOP',
+    'IL-S0-DECISION-PIXEL',
   );
   await expect(page.locator('#portrait-placeholder')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '숯불 점화' })).toHaveCount(0);
@@ -106,7 +106,7 @@ test('키보드만으로 S0 첫 상호작용을 진행한다', async ({ page }) 
   await expect(page.getByRole('button', { name: '문을 연다' })).toBeVisible();
 });
 
-test('D1 영업 전 세 대사에서 인물별 전체 장면을 표시한다', async ({ page }) => {
+test('D1 영업 전 세 대사에서 승인된 전체 장면을 일관되게 표시한다', async ({ page }) => {
   await page.goto('/src/s0-d3.html?new=1');
   await page.getByRole('button', { name: '열쇠를 집는다' }).click();
   await page.getByRole('button', { name: '문을 연다' }).click();
@@ -114,11 +114,11 @@ test('D1 영업 전 세 대사에서 인물별 전체 장면을 표시한다', a
   await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-D1-PRE-001');
   await expect(page.locator('#story-illustration')).toHaveAttribute(
     'src',
-    '/public/assets/core/s0/story/d1-preopen-aki-full-scene-r1-b1.png',
+    '/public/assets/core/s0/story/d1-preopen-full-scene-r2-b1.png',
   );
   await expect(page.locator('body')).toHaveAttribute(
     'data-story-illustration-asset-id',
-    'IL-D1-PREOPEN-AKI',
+    'IL-D1-PREOPEN-PIXEL',
   );
   await expect(page.locator('#story-portrait')).toBeHidden();
   await expect(page.locator('#story-background')).toBeHidden();
@@ -127,11 +127,11 @@ test('D1 영업 전 세 대사에서 인물별 전체 장면을 표시한다', a
   await expect(page.locator('#story-illustration')).toBeVisible();
   await expect(page.locator('#story-illustration')).toHaveAttribute(
     'src',
-    '/public/assets/core/s0/story/d1-preopen-tsukioka-full-scene-r1-b1.png',
+    '/public/assets/core/s0/story/d1-preopen-full-scene-r2-b1.png',
   );
   await expect(page.locator('body')).toHaveAttribute(
     'data-story-illustration-asset-id',
-    'IL-D1-PREOPEN-TSUKIOKA',
+    'IL-D1-PREOPEN-PIXEL',
   );
   await expect(page.locator('#story-portrait')).toBeHidden();
   await expect(page.locator('#story-background')).toBeHidden();
@@ -140,11 +140,11 @@ test('D1 영업 전 세 대사에서 인물별 전체 장면을 표시한다', a
   await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-D1-PRE-003');
   await expect(page.locator('#story-illustration')).toHaveAttribute(
     'src',
-    '/public/assets/core/s0/story/d1-preopen-aki-full-scene-r1-b1.png',
+    '/public/assets/core/s0/story/d1-preopen-full-scene-r2-b1.png',
   );
   await expect(page.locator('body')).toHaveAttribute(
     'data-story-illustration-asset-id',
-    'IL-D1-PREOPEN-AKI',
+    'IL-D1-PREOPEN-PIXEL',
   );
   await expect(page.locator('#story-portrait')).toBeHidden();
   await expect(page.locator('#story-background')).toBeHidden();

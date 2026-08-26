@@ -110,9 +110,12 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
   }
 
   const seatBaseMesh = {}; // seatId → 서빙된 네기마 접시 mesh (legacy API 이름 유지)
+  const seatSaladMesh = {}; // seatId → 서빙된 양배추 사라다 접시 mesh
   const seatBeerMesh = {}; // seatId → 서빙된 생맥주잔 mesh
   const seatEmptyDishMesh = {}; // seatId → 퇴장 뒤 정리 대상 빈 식기 mesh
   const seatCleanupOverlayMesh = {}; // seatId → 3초 홀드 중 행주 왕복 overlay
+  const seatFoodAnchorX = {}; // seatId → 현재 좌석의 화면상 중심 x
+  const seatFoodLayoutKey = {}; // seatId → 음식 조합별 배치 캐시
   function buildInteraction(cam, key) {
     const def = OBJECTS[key];
     if (!def.hitRect) return null;
@@ -177,6 +180,19 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         base.visible = false;
         scene.add(base); group.push(base); seatBaseMesh[seatId] = base;
 
+        // 사라다는 꼬치와 함께 주문될 수 있으므로 기존 음식 접시를 바꿔 끼우지 않고 독립 소품으로 둔다.
+        const salad = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.02 }, LAYER_Z.fixture - 0.004, new THREE.MeshBasicMaterial({
+          transparent: true,
+          opacity: 0,
+          colorWrite: false,
+          depthWrite: false,
+        }));
+        salad.renderOrder = 62;
+        salad.userData.seatId = seatId;
+        salad.userData.runtimeControlled = true;
+        salad.visible = false;
+        scene.add(salad); group.push(salad); seatSaladMesh[seatId] = salad;
+
         const beerUrl = servingCompanions.find(({ role }) => role === 'served-beer')?.url;
         const beer = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.05 }, LAYER_Z.fixture - 0.005, new THREE.MeshBasicMaterial({
           ...(beerUrl ? { map: texture(beerUrl), color: 0xffffff } : {}),
@@ -220,12 +236,20 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         cleanupOverlay.visible = false;
         scene.add(cleanupOverlay); group.push(cleanupOverlay); seatCleanupOverlayMesh[seatId] = cleanupOverlay;
 
-        const actorMat = new THREE.MeshBasicMaterial({ color: SEAT_ACTOR_MOOD.waiting });
+        // 좌석 손님도 츠키오카와 같은 풀프레임 레이어라 서로 완전히 겹친다. 깊이 버퍼를 쓰면
+        // 같은 z(=LAYER_Z.actor)에 놓인 투명 평면들이 매 프레임 정렬 순서가 뒤바뀌고, 투명 영역까지
+        // depth를 써서 옆 손님을 지웠다 살렸다 한다(지지직). 아트 레이어와 같은 계약으로 맞춘다.
+        const actorMat = new THREE.MeshBasicMaterial({
+          color: SEAT_ACTOR_MOOD.waiting,
+          depthTest: false,
+          depthWrite: false,
+        });
         if (SEAT_ACTOR_TEXTURE) { actorMat.map = texture(SEAT_ACTOR_TEXTURE); actorMat.transparent = true; actorMat.color.setHex(0xffffff); }
         const actor = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.05 }, LAYER_Z.actor, actorMat);
         // 손님은 의자 등받이(order 10) 앞에, 카운터 상판(order 50) 뒤에 선다.
         // z값만 사용하면 투명 좌석 PNG의 등받이가 손님을 다시 덮으므로 명시적으로 고정한다.
-        actor.renderOrder = OBJECTS.custTsukioka.order;
+        // 좌석마다 미세하게 다른 값을 줘서 손님끼리의 그리기 순서도 프레임과 무관하게 고정한다.
+        actor.renderOrder = OBJECTS.custTsukioka.order + (SEAT_IDS.indexOf(seatId) + 1) / 1000;
         actor.visible = false;
         actor.userData.seatId = seatId;
         actor.userData.runtimeControlled = true;
@@ -278,6 +302,33 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     mesh.position.copy(center);
   }
 
+  // 사라다 이미지는 투명 여백 없이 접시 끝까지 차 있고 기존 꼬치 접시는 원본 내부 여백이 크다.
+  // 따라서 같은 plane 크기를 쓰지 않고, 단독/동시 제공 상태에 따라 체급과 위치를 함께 바꾼다.
+  // 동시 제공 시 두 접시를 비슷한 체급으로 줄여 왼쪽 세로축에 쌓는다.
+  // 좌우로 벌리면 오른쪽 맥주·하이볼 잔 공간을 침범하므로 음식은 세로로 쌓는다.
+  function setSeatFoodLayout(seatId, { grilled = false, salad = false } = {}) {
+    if (!seatCam || !Number.isFinite(seatFoodAnchorX[seatId])) return false;
+    const layoutKey = `${grilled ? 'grilled' : 'none'}:${salad ? 'salad' : 'none'}`;
+    if (seatFoodLayoutKey[seatId] === layoutKey) return false;
+
+    const anchorX = seatFoodAnchorX[seatId];
+    const combined = grilled && salad;
+    placeBillboard(seatBaseMesh[seatId], seatCam, {
+      x: anchorX - ((combined ? 123 : 130) / 1920),
+      y: (combined ? 751 : 710) / 1080,
+      width: (combined ? 155 : 260) / 1920,
+      height: (combined ? 93 : 156) / 1080,
+    }, LAYER_Z.fixture);
+    placeBillboard(seatSaladMesh[seatId], seatCam, {
+      x: anchorX - ((combined ? 100 : 65) / 1920),
+      y: (combined ? 824 : 784) / 1080,
+      width: (combined ? 110 : 130) / 1920,
+      height: (combined ? 39 : 46) / 1080,
+    }, LAYER_Z.fixture - 0.004);
+    seatFoodLayoutKey[seatId] = layoutKey;
+    return true;
+  }
+
   // 좌석 수(capacity)에 맞춰 활성 좌석을 카운터에 균등 재배치하고 나머지는 숨긴다(seatCap 업그레이드).
   function setSeatCapacity(cap, { layoutMode = seatLayoutMode } = {}) {
     if (!seatCam) return;
@@ -288,14 +339,11 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     SEAT_IDS.forEach((seatId, i) => {
       if (i < seats.length) {
         const seat = seats[i];
+        seatFoodAnchorX[seatId] = seat.bubble.x;
+        delete seatFoodLayoutKey[seatId];
         // 승인 R3 검토 좌표. 음식과 잔을 분리하고 좌석 중심을 기준으로 배치한다.
         // 잔은 165×165px 체급이며, 음용 프레임에서도 같은 잔으로 읽히도록 접지점을 고정한다.
-        placeBillboard(seatBaseMesh[seatId], seatCam, {
-          x: seat.bubble.x - (130 / 1920),
-          y: 710 / 1080,
-          width: 260 / 1920,
-          height: 156 / 1080,
-        }, LAYER_Z.fixture);
+        setSeatFoodLayout(seatId);
         placeBillboard(seatBeerMesh[seatId], seatCam, {
           x: seat.bubble.x - (20.7 / 1920),
           y: 705 / 1080,
@@ -333,6 +381,23 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     if (layoutMode === seatLayoutMode) return false;
     setSeatCapacity(seatCapacity, { layoutMode });
     return true;
+  }
+
+  // 화면 안에서 오브젝트 묶음을 좌우로 통째로 옮긴다(시각면 + hit면 함께).
+  // D4에 하이볼 작업대가 오른쪽 절반을 차지하면서 맥주 세트를 왼쪽으로 비켜 줄 때 쓴다.
+  function setObjectOffsetX(keys, dx) {
+    for (const key of keys) {
+      const def = OBJECTS[key];
+      if (!def) continue;
+      const screen = SCREENS.find((item) => item.objects.includes(key));
+      const cam = screen ? presetCam[screen.id] : null;
+      if (!cam) continue;
+      const shift = (rect) => ({ ...rect, x: rect.x + dx });
+      const mesh = artMesh[key] ?? objectMesh[key];
+      if (mesh && def.rect) placeBillboard(mesh, cam, shift(def.rect), LAYER_Z[def.layer]);
+      const hit = interactionMesh[key];
+      if (hit && def.hitRect) placeBillboard(hit, cam, shift(def.hitRect), LAYER_Z.interactive + 0.01);
+    }
   }
 
   // game.html 프로덕션 그릴 칸 수(명성 해금)에 맞춰 pgSlot 칸을 그릴 바디에 균등 재배치한다.
@@ -479,11 +544,43 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     return anchorToWorld(cam, c.x + c.width / 2, c.y + c.height / 2, LAYER_Z[def.layer]);
   }
 
-  // 월드 좌표 → 화면 픽셀 (라이브 카메라 기준). DOM 오버레이(말풍선·게이지) 배치용.
-  function projectToScreen(world) {
-    const v = world.clone().project(camera);
+  function projectWithCamera(world, targetCamera) {
+    const v = world.clone().project(targetCamera);
     const rect = canvas.getBoundingClientRect();
     return { x: rect.left + (v.x * 0.5 + 0.5) * rect.width, y: rect.top + (-v.y * 0.5 + 0.5) * rect.height };
+  }
+
+  // 월드 좌표 → 화면 픽셀 (라이브 카메라 기준). DOM 오버레이(말풍선·게이지) 배치용.
+  function projectToScreen(world) {
+    return projectWithCamera(world, camera);
+  }
+
+  // 특정 화면 프리셋의 정규화 좌표를 월드에 고정한 뒤 라이브 카메라로 투영한다.
+  // Three.js 장면 위 DOM 조작물을 전환 중에도 같은 깊이의 장면 소품과 함께 움직일 때 쓴다.
+  function projectScreenPointAtPreset(screenId, xRatio, yRatio, layer = 'interactive') {
+    const sourceCamera = presetCam[screenId];
+    const z = LAYER_Z[layer];
+    if (!sourceCamera || !Number.isFinite(z)) return null;
+    return projectToScreen(worldAtScreen(sourceCamera, xRatio, yRatio, z));
+  }
+
+  // 승인 아트 내부의 정규화 좌표를 해당 화면의 도착 카메라 기준 픽셀로 변환한다.
+  // DOM 작업대를 Three.js 아트의 실제 시각 기준선에 붙일 때 전환 중 카메라 위치에 흔들리지 않는다.
+  function projectArtUvAtPreset(key, xRatio, yRatio) {
+    const mesh = artMesh[key];
+    const screen = SCREENS.find((item) => item.objects.includes(key));
+    const targetCamera = screen ? presetCam[screen.id] : null;
+    if (!mesh || !targetCamera) return null;
+    if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+    const bounds = mesh.geometry.boundingBox;
+    const point = bounds.min.clone();
+    point.set(
+      lerp(bounds.min.x, bounds.max.x, xRatio),
+      lerp(bounds.max.y, bounds.min.y, yRatio),
+      0,
+    );
+    mesh.localToWorld(point);
+    return projectWithCamera(point, targetCamera);
   }
 
   setSeatCapacity(DEFAULT_SEAT_CAP); // 초기 좌석 배치(기본 6석). activeId 정의 후 호출.
@@ -523,6 +620,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     },
     seatActorMesh,
     seatBaseMesh,
+    seatSaladMesh,
     seatBeerMesh,
     seatEmptyDishMesh,
     seatCleanupOverlayMesh,
@@ -530,6 +628,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     seatCleanupWorld,
     setSeatCapacity,
     setSeatLayoutMode,
+    setSeatFoodLayout,
     setSeatPlateVisible: (seatId, visible) => {
       const plate = seatBaseMesh[seatId];
       if (plate) plate.visible = visible && !inactiveSeats.has(seatId);
@@ -543,6 +642,22 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       plate.material.color.setHex(0xffffff);
       plate.material.colorWrite = true;
       plate.material.needsUpdate = true;
+      return true;
+    },
+    setSeatSaladVisible: (seatId, visible) => {
+      const salad = seatSaladMesh[seatId];
+      if (salad) salad.visible = visible && !inactiveSeats.has(seatId);
+    },
+    setSeatSaladUrl: (seatId, url) => {
+      const salad = seatSaladMesh[seatId];
+      if (!salad?.material || !url) return false;
+      const next = texture(url);
+      if (salad.material.map === next) return false;
+      salad.material.map = next;
+      salad.material.opacity = 1;
+      salad.material.color.setHex(0xffffff);
+      salad.material.colorWrite = true;
+      salad.material.needsUpdate = true;
       return true;
     },
     setSeatBeerVisible: (seatId, visible) => {
@@ -564,6 +679,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       }
     },
     setGrillSlots,
+    setObjectOffsetX,
     setObjectEnabled,
     setObjectTexture,
     hasSeatActorArt: () => !!SEAT_ACTOR_TEXTURE,
@@ -579,16 +695,23 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         a.material.needsUpdate = true;
       }
     },
-    setSeatActorFrame: (seatId, { scale = 1, offsetY = 0 } = {}) => {
+    setSeatActorFrame: (seatId, { scale = 1, offsetY = 0, offsetX = 0 } = {}) => {
       const actor = seatActorMesh[seatId];
       const seatIndex = SEAT_IDS.indexOf(seatId);
       if (!actor || seatIndex < 0 || seatIndex >= seatCapacity) return;
-      const frameKey = `${seatCapacity}:${seatLayoutMode}:${scale}:${offsetY}`;
+      const frameKey = `${seatCapacity}:${seatLayoutMode}:${scale}:${offsetY}:${offsetX}`;
       if (actor.userData.frameKey === frameKey) return;
       const seat = computeSeats(seatCapacity, { layoutMode: seatLayoutMode })[seatIndex];
+      const seatCenterX = seat.actor.x + seat.actor.width / 2;
+      // Approved customer states use the same complete 1920x1080 layer contract as
+      // Tsukioka. Move that complete layer horizontally to the assigned seat instead
+      // of squeezing it into the old portrait-shaped seat billboard. offsetX
+      // compensates rasters whose figure is not drawn at the canvas centre.
       placeBillboard(actor, seatCam, {
-        ...seat.actor,
-        y: seat.actor.y + offsetY,
+        x: seatCenterX - 0.5 + offsetX,
+        y: offsetY,
+        width: 1,
+        height: 1,
       }, LAYER_Z.actor);
       actor.scale.set(scale, scale, 1);
       actor.userData.frameKey = frameKey;
@@ -606,6 +729,8 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     textureErrors: () => textureErrorCount,
     anchorFor,
     projectToScreen,
+    projectScreenPointAtPreset,
+    projectArtUvAtPreset,
     quaternionFor: (screenId) => presetCam[screenId].quaternion.clone(),
     dispose: () => renderer.dispose(),
   };

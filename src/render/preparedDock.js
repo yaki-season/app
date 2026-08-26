@@ -9,8 +9,39 @@ export function qualityFromCook(frontResult, backResult) {
   return frontResult === 'over' || backResult === 'over' ? 'low' : 'good';
 }
 
+const LEGACY_MENU_ID = Object.freeze({
+  '생맥주': 'beer',
+  '네기마': 'negima',
+  '타레 네기마': 'negima',
+  '모모': 'momo',
+  '타레 모모': 'momo',
+  '토리카와': 'kawa',
+  '소금 토리카와': 'kawa',
+  '타레 토리카와': 'kawa',
+  '양배추 사라다': 'cabbage-salad',
+  '사라다': 'cabbage-salad',
+  '하이볼': 'highball',
+});
+
+function normalizePreparedItem(item) {
+  const menuId = item?.menuId ?? LEGACY_MENU_ID[item?.menu] ?? null;
+  const quality = item?.quality ?? item?.label ?? null;
+  const qualityMode = item?.qualityMode ?? (quality == null ? 'none' : 'graded');
+  return {
+    ...item,
+    menuId,
+    menu: item?.menu ?? menuId ?? '준비 메뉴',
+    quality,
+    label: item?.label ?? quality ?? '',
+    qualityMode,
+    good: qualityMode === 'none' ? null : Boolean(item?.good),
+    zone: preparedItemZone({ ...item, menuId }),
+  };
+}
+
 export function preparedItemZone(item) {
   if (item?.zone === 'drink' || item?.zone === 'food') return item.zone;
+  if (['beer', 'highball'].includes(item?.menuId)) return 'drink';
   return /맥주|술|사케|하이볼/.test(item?.menu ?? '') ? 'drink' : 'food';
 }
 
@@ -44,10 +75,13 @@ export function createPreparedDock({ container }) {
       card.type = 'button';
       card.className = `dock-card${it.id === selectedId ? ' selected' : ''}`;
       card.dataset.testid = `dock-item-${it.id}`;
-      card.dataset.good = it.good ? '1' : '0';
+      card.dataset.good = it.good == null ? '' : it.good ? '1' : '0';
       card.dataset.preparedZone = zoneId;
-      card.dataset.menuId = it.menu === '모모' ? 'momo' : it.menu === '네기마' ? 'negima' : 'beer';
-      card.innerHTML = `<span class="dock-item-art dock-item-art--${zoneId}" aria-hidden="true"></span><span class="dock-menu">${it.menu}</span><span class="dock-quality ${it.good ? 'q-good' : 'q-low'}">${it.label}</span>`;
+      card.dataset.menuId = it.menuId ?? '';
+      const quality = it.qualityMode === 'none'
+        ? ''
+        : `<span class="dock-quality ${it.good ? 'q-good' : 'q-low'}">${it.label}</span>`;
+      card.innerHTML = `<span class="dock-item-art dock-item-art--${zoneId}" aria-hidden="true"></span><span class="dock-menu">${it.menu}</span>${quality}`;
       card.addEventListener('click', () => select(it.id));
       zone.querySelector('.dock-zone-items').appendChild(card);
     }
@@ -57,9 +91,10 @@ export function createPreparedDock({ container }) {
     container.hidden = items.length === 0;
   }
 
-  // item: { menu, label, good } — 메뉴명, 품질 라벨, 손님 만족 여부.
+  // item: { menuId, menu, quality, qualityMode, good, zone }.
+  // menu/label만 가진 v1 호출과 저장 데이터도 normalizePreparedItem에서 이행한다.
   function add(item) {
-    const it = { id: `p${++seq}`, menu: item.menu, label: item.label, good: !!item.good, zone: preparedItemZone(item) };
+    const it = normalizePreparedItem({ id: `p${++seq}`, ...item });
     items.push(it);
     if (!selectedId) selectedId = it.id;
     render();
@@ -94,6 +129,23 @@ export function createPreparedDock({ container }) {
     render();
     return removed;
   }
+  function consumeMenuId(menuId, count = 1, seasoning = undefined) {
+    const removed = [];
+    for (const item of [...items]) {
+      if (
+        removed.length >= count
+        || item.menuId !== menuId
+        || (seasoning !== undefined && item.seasoning !== seasoning)
+      ) continue;
+      removed.push(item);
+      items = items.filter((candidate) => candidate.id !== item.id);
+    }
+    selectedId = items.some((item) => item.id === selectedId)
+      ? selectedId
+      : items[0]?.id ?? null;
+    render();
+    return removed;
+  }
   function clear() {
     items = [];
     selectedId = null;
@@ -101,7 +153,7 @@ export function createPreparedDock({ container }) {
   }
   function restore(saved) {
     if (saved?.stateVersion !== 1 || !Array.isArray(saved.items)) return { ok: false, reason: 'invalid-snapshot' };
-    items = saved.items.map((item) => ({ ...item }));
+    items = saved.items.map((item) => normalizePreparedItem(item));
     seq = Number.isInteger(saved.seq) ? saved.seq : items.length;
     selectedId = items.some((item) => item.id === saved.selectedId)
       ? saved.selectedId
@@ -116,6 +168,7 @@ export function createPreparedDock({ container }) {
     selected,
     consumeSelected,
     consumeMenu,
+    consumeMenuId,
     clear,
     snapshot: () => ({ stateVersion: 1, items: items.map((item) => ({ ...item })), selectedId, seq }),
     restore,

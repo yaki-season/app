@@ -48,6 +48,8 @@ export const BUSINESS_DAY_ARRIVAL_POLICY = Object.freeze({
   autoCloseAfterFinalCustomer: true,
 });
 
+const MIN_INDIVIDUAL_ARRIVAL_GAP_MS = 4_000;
+
 const TERMINAL_ORDER_STATUS = new Set([
   D1_ORDER_STATUS.COMPLETED,
   D1_ORDER_STATUS.FAILED,
@@ -153,6 +155,20 @@ export function createBusinessDayDefinition(record, {
   if (Object.keys(economy.menuPrices ?? {}).length === 0) {
     throw new TypeError('D1 메뉴 기본 판매가가 필요합니다.');
   }
+  const menuPolicies = definition.menuPolicies ?? {};
+  for (const [menuId, policy] of Object.entries(menuPolicies)) {
+    if (!(menuId in economy.menuPrices)) {
+      throw new TypeError(`메뉴 정책에 대응하는 가격이 없습니다: ${menuId}`);
+    }
+    if (!['graded', 'none'].includes(policy?.qualityMode ?? 'graded')) {
+      throw new TypeError(`지원하지 않는 품질 정책입니다: ${menuId}`);
+    }
+    assertFinite(policy?.satisfactionWeight ?? 1, `menuPolicies.${menuId}.satisfactionWeight`);
+    assertFinite(policy?.waitRecoveryMs ?? timing.waitRecovery, `menuPolicies.${menuId}.waitRecoveryMs`);
+    if (policy?.saleLedger != null && typeof policy.saleLedger !== 'boolean') {
+      throw new TypeError(`menuPolicies.${menuId}.saleLedger는 boolean이어야 합니다.`);
+    }
+  }
 
   if (!Array.isArray(definition.waves) || definition.waves.length === 0) {
     throw new TypeError('D1 손님 파동이 필요합니다.');
@@ -170,6 +186,17 @@ export function createBusinessDayDefinition(record, {
     }
     if (!Array.isArray(wave.customers) || wave.customers.length === 0) {
       throw new TypeError(`${wave.id} 손님이 필요합니다.`);
+    }
+    const groupIds = new Set(wave.customers.map((customer) => customer.groupId).filter(Boolean));
+    const groupedCustomerCount = wave.customers.filter((customer) => customer.groupId).length;
+    if (groupIds.size > 1 || (groupedCustomerCount > 0 && groupedCustomerCount !== wave.customers.length)) {
+      throw new TypeError(`${wave.id}에는 하나의 그룹 전체 또는 개별 손님만 배치할 수 있습니다.`);
+    }
+    const isAtomicGroup = groupIds.size === 1;
+    const finalScheduledArrivalAtMs = wave.atMs
+      + (isAtomicGroup ? 0 : MIN_INDIVIDUAL_ARRIVAL_GAP_MS * (wave.customers.length - 1));
+    if (finalScheduledArrivalAtMs >= definition.sessionTargetMs) {
+      throw new TypeError(`마감 전 모든 손님이 입장할 시간이 부족한 파동입니다: ${wave.id}`);
     }
     for (const customer of wave.customers) {
       assertString(customer.id, `${wave.id}.customer.id`);
@@ -196,6 +223,9 @@ export function createBusinessDayDefinition(record, {
         if (!(line.menuId in economy.menuPrices)) {
           throw new TypeError(`${customer.order.id} 메뉴 가격이 없습니다: ${line.menuId}`);
         }
+      }
+      if (customer.order.lines.every((line) => economy.menuPrices[line.menuId] === 0)) {
+        throw new TypeError(`${customer.order.id} 무료 메뉴는 단독 주문할 수 없습니다.`);
       }
     }
   }
@@ -238,6 +268,20 @@ function randomThinkMs(state, definition) {
   return Math.round(thinkMin + nextRandom(state) * (thinkMax - thinkMin));
 }
 
+// 동행은 말풍선·주문·접수가 모두 그룹 하나로 묶여 있다. 생각 시간까지 각자 굴리면
+// 먼저 준비된 쪽만 눌리는 것처럼 보이는데 접수는 그룹 전원이 준비돼야 되므로,
+// 최대 (thinkMax - thinkMin)만큼 "눌러도 안 되는" 구간이 생긴다. 그래서 그룹은
+// 먼저 앉은 동행의 생각 시간을 그대로 쓴다.
+function thinkMsFor(state, definition, groupId) {
+  if (groupId) {
+    const peer = Object.values(state.customers)
+      .find((customer) => customer.groupId === groupId
+        && customer.phase === D1_CUSTOMER_PHASE.THINKING);
+    if (peer) return peer.phaseRemainingMs;
+  }
+  return randomThinkMs(state, definition);
+}
+
 function makeSeat(id) {
   return {
     id,
@@ -262,6 +306,7 @@ export function createD1BusinessDayState({ definition, runId, seed = 1 }) {
       gameMinute: definition.businessWindow?.startMinute ?? (17 * 60 + 30),
       paused: false,
       arrivalsClosed: false,
+      nextIndividualArrivalAtMs: 0,
       // 다음 입장을 기다리기 시작한 시각. 자리가 비면(정리 완료·전원 퇴장) 켜지고, 실제 입장에
       // 다시 null이 된다. maxAllSeatsEmptyWaitSec만큼 지나면 예정 시각보다 먼저 손님이 온다.
       allSeatsEmptySinceMs: null,
@@ -271,7 +316,11 @@ export function createD1BusinessDayState({ definition, runId, seed = 1 }) {
       peakRiskProcesses: 0,
       peakActiveOrders: 0,
     },
-    waves: definition.waves.map((wave) => ({ id: wave.id, status: 'pending' })),
+    waves: definition.waves.map((wave) => ({
+      id: wave.id,
+      status: 'pending',
+      nextCustomerIndex: 0,
+    })),
     seats: definition.seatIds.map(makeSeat),
     customers: {},
     orders: {},
@@ -324,8 +373,8 @@ function findAdjacentSeats(state, count) {
   return null;
 }
 
-function orderIsComplete(state, orderId) {
-  return state.orders[orderId]?.status === D1_ORDER_STATUS.COMPLETED;
+function orderIsResolved(state, orderId) {
+  return TERMINAL_ORDER_STATUS.has(state.orders[orderId]?.status);
 }
 
 function spawnCustomer(state, definition, customerSpec, seat, waveId) {
@@ -341,6 +390,7 @@ function spawnCustomer(state, definition, customerSpec, seat, waveId) {
     lines: customerSpec.order.lines.map((line, index) => ({
       id: `${customerSpec.order.id}:line:${index + 1}`,
       menuId: line.menuId,
+      seasoning: line.seasoning ?? null,
       quantity: line.quantity,
       servedQualities: [],
     })),
@@ -358,7 +408,7 @@ function spawnCustomer(state, definition, customerSpec, seat, waveId) {
     seatId: seat.id,
     orderId: order.id,
     phase: D1_CUSTOMER_PHASE.THINKING,
-    phaseRemainingMs: randomThinkMs(state, definition),
+    phaseRemainingMs: thinkMsFor(state, definition, groupId),
     patienceMs: customerSpec.patienceMs,
     waitRemainingMs: null,
     departureCause: null,
@@ -388,41 +438,53 @@ function firstWaveStillSeated(state, definition) {
 
 function spawnEligibleWaves(state, definition) {
   if (state.clock.arrivalsClosed || state.phase !== D1_DAY_PHASE.OPEN) return;
-  if (firstWaveStillSeated(state, definition)) return;
   for (let index = 0; index < definition.waves.length; index += 1) {
     const waveSpec = definition.waves[index];
     const waveState = state.waves[index];
     if (waveState.status !== 'pending') continue;
+    if (index > 0 && firstWaveStillSeated(state, definition)) break;
     const emptyWaitLimitMs = definition.arrivalPolicy.maxAllSeatsEmptyWaitSec * 1000;
     const emptyDeadlineMs = state.clock.allSeatsEmptySinceMs != null && Number.isFinite(emptyWaitLimitMs)
       ? state.clock.allSeatsEmptySinceMs + emptyWaitLimitMs
       : Number.POSITIVE_INFINITY;
     if (state.clock.elapsedMs < Math.min(waveSpec.atMs, emptyDeadlineMs)) break;
-    if (!(waveSpec.requiresOrderCompletionIds ?? []).every((id) => orderIsComplete(state, id))) break;
-    const arrivingOrderCount = new Set(waveSpec.customers.map((customer) => customer.order.id)).size;
-    if (operationalOrderCount(state) + arrivingOrderCount > definition.limits.maxActiveOrders) break;
+    if (!(waveSpec.requiresOrderCompletionIds ?? []).every((id) => orderIsResolved(state, id))) break;
 
     const grouped = waveSpec.customers.length > 1
       && waveSpec.customers.every((customer) => customer.groupId === waveSpec.customers[0].groupId)
       && waveSpec.customers[0].groupId;
-    let seats;
     if (grouped) {
-      seats = findAdjacentSeats(state, waveSpec.customers.length);
-    } else {
-      const reserved = new Set();
-      seats = waveSpec.customers.map(() => {
-        const seat = findSingleSeat(state, reserved);
-        if (seat) reserved.add(seat.id);
-        return seat;
+      const arrivingOrderCount = new Set(waveSpec.customers.map((customer) => customer.order.id)).size;
+      if (operationalOrderCount(state) + arrivingOrderCount > definition.limits.maxActiveOrders) break;
+      const seats = findAdjacentSeats(state, waveSpec.customers.length);
+      if (!seats) break;
+      waveSpec.customers.forEach((customer, customerIndex) => {
+        spawnCustomer(state, definition, customer, seats[customerIndex], waveSpec.id);
       });
+      waveState.nextCustomerIndex = waveSpec.customers.length;
+      waveState.status = 'spawned';
+      state.clock.allSeatsEmptySinceMs = null;
+      state.limits.peakActiveOrders = Math.max(state.limits.peakActiveOrders, operationalOrderCount(state));
+      continue;
     }
-    if (!seats || seats.some((seat) => seat === null)) break;
-    waveSpec.customers.forEach((customer, customerIndex) => {
-      spawnCustomer(state, definition, customer, seats[customerIndex], waveSpec.id);
-    });
-    waveState.status = 'spawned';
+
+    if (state.clock.elapsedMs < (state.clock.nextIndividualArrivalAtMs ?? 0)) break;
+    const customerIndex = waveState.nextCustomerIndex ?? 0;
+    const customer = waveSpec.customers[customerIndex];
+    if (!customer) {
+      waveState.status = 'spawned';
+      continue;
+    }
+    if (operationalOrderCount(state) + 1 > definition.limits.maxActiveOrders) break;
+    const seat = findSingleSeat(state);
+    if (!seat) break;
+    spawnCustomer(state, definition, customer, seat, waveSpec.id);
+    waveState.nextCustomerIndex = customerIndex + 1;
+    if (waveState.nextCustomerIndex >= waveSpec.customers.length) waveState.status = 'spawned';
+    state.clock.nextIndividualArrivalAtMs = state.clock.elapsedMs + MIN_INDIVIDUAL_ARRIVAL_GAP_MS;
     state.clock.allSeatsEmptySinceMs = null;
     state.limits.peakActiveOrders = Math.max(state.limits.peakActiveOrders, operationalOrderCount(state));
+    return;
   }
 }
 
@@ -435,14 +497,38 @@ function salePrice(definition, menuId, quality) {
   return quality === D1_QUALITY.FAIL ? Math.max(1, calculated) : calculated;
 }
 
-function remainingForMenu(order, menuId) {
+function menuPolicy(definition, menuId) {
+  const configured = definition.menuPolicies?.[menuId] ?? {};
+  return {
+    qualityMode: configured.qualityMode ?? 'graded',
+    satisfactionWeight: configured.satisfactionWeight ?? 1,
+    saleLedger: configured.saleLedger ?? true,
+    waitRecoveryMs: configured.waitRecoveryMs ?? definition.timingMs.waitRecovery,
+  };
+}
+
+function seasoningMatches(line, seasoning) {
+  // 이전 D1~D3 port는 양념 필드를 보내지 않았다. null은 호환용 wildcard로 두고,
+  // D4 prepared item처럼 값이 명시된 경우에만 타레/기본을 엄격히 구분한다.
+  if (seasoning == null) return true;
+  if (line.seasoning === 'tare') return seasoning === 'tare';
+  return seasoning !== 'tare';
+}
+
+function remainingForMenu(order, menuId, seasoning = null) {
   return order.lines
-    .filter((line) => line.menuId === menuId)
+    .filter((line) => line.menuId === menuId && seasoningMatches(line, seasoning))
     .reduce((sum, line) => sum + line.quantity - line.servedQualities.length, 0);
 }
 
-function orderQualities(order) {
-  return order.lines.flatMap((line) => line.servedQualities);
+function orderQualitySamples(order, definition) {
+  return order.lines.flatMap((line) => {
+    const policy = menuPolicy(definition, line.menuId);
+    if (policy.qualityMode === 'none' || policy.satisfactionWeight === 0) return [];
+    return line.servedQualities
+      .filter((quality) => quality != null)
+      .map((quality) => ({ quality, weight: policy.satisfactionWeight }));
+  });
 }
 
 function rewardCompletedOrder(state, definition, order) {
@@ -483,8 +569,14 @@ function finalizeGroupIfReady(state, definition, groupId) {
 }
 
 function completeReceivedOrder(state, definition, customer, order) {
-  const scores = orderQualities(order).map((quality) => QUALITY_SCORE[quality]);
-  order.satisfaction = Math.floor(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+  const samples = orderQualitySamples(order, definition);
+  const totalWeight = samples.reduce((sum, sample) => sum + sample.weight, 0);
+  order.satisfaction = totalWeight > 0
+    ? Math.floor(samples.reduce(
+      (sum, sample) => sum + QUALITY_SCORE[sample.quality] * sample.weight,
+      0,
+    ) / totalWeight)
+    : 100;
   order.completedAtMs = state.clock.elapsedMs;
   if ((order.customerIds?.length ?? 1) > 1) {
     order.status = D1_ORDER_STATUS.COMPLETED;
@@ -743,36 +835,42 @@ export function dispatchD1Command(state, definition, command) {
     return { state: next, applied: true, duplicate: false };
   }
   if (command.type === 'serve-item') {
-    if (!Object.values(D1_QUALITY).includes(command.quality)) {
-      return commandError(state, 'invalid-quality');
-    }
     const customer = next.customers[command.customerId];
     const order = customer ? next.orders[customer.orderId] : null;
     if (!customer || !order) return commandError(state, 'customer-not-found');
     if (customer.phase !== D1_CUSTOMER_PHASE.WAITING) {
       return commandError(state, 'customer-not-waiting');
     }
-    if (remainingForMenu(order, command.menuId) <= 0) {
+    if (remainingForMenu(order, command.menuId, command.seasoning) <= 0) {
       return commandError(state, 'menu-mismatch');
     }
     const line = order.lines.find(
-      (item) => item.menuId === command.menuId && item.servedQualities.length < item.quantity,
+      (item) => item.menuId === command.menuId
+        && seasoningMatches(item, command.seasoning)
+        && item.servedQualities.length < item.quantity,
     );
-    line.servedQualities.push(command.quality);
+    const policy = menuPolicy(definition, command.menuId);
+    const quality = policy.qualityMode === 'none' ? null : command.quality;
+    if (policy.qualityMode === 'graded' && !Object.values(D1_QUALITY).includes(quality)) {
+      return commandError(state, 'invalid-quality');
+    }
+    line.servedQualities.push(quality);
     order.status = D1_ORDER_STATUS.PARTIAL;
     next.metrics.servedItems += 1;
-    next.metrics.quality[command.quality] += 1;
+    if (quality != null) next.metrics.quality[quality] += 1;
     next.metrics.waitSampleTotalMs += Math.max(0, customer.patienceMs - customer.waitRemainingMs);
-    ledgerEntry(next, {
-      id: `sale:${command.eventId}`,
-      type: 'sale',
-      amount: salePrice(definition, command.menuId, command.quality),
-      orderId: order.id,
-      customerId: customer.id,
-      menuId: command.menuId,
-      quality: command.quality,
-    });
-    if (command.quality === D1_QUALITY.FAIL) {
+    if (policy.saleLedger && definition.economy.menuPrices[command.menuId] > 0) {
+      ledgerEntry(next, {
+        id: `sale:${command.eventId}`,
+        type: 'sale',
+        amount: salePrice(definition, command.menuId, quality),
+        orderId: order.id,
+        customerId: customer.id,
+        menuId: command.menuId,
+        quality,
+      });
+    }
+    if (quality === D1_QUALITY.FAIL) {
       failCustomers(next, definition, customer, 'fail-quality');
       return { state: next, applied: true, duplicate: false, left: true };
     }
@@ -783,7 +881,7 @@ export function dispatchD1Command(state, definition, command) {
     }
     customer.waitRemainingMs = Math.min(
       customer.patienceMs,
-      customer.waitRemainingMs + definition.timingMs.waitRecovery,
+      customer.waitRemainingMs + policy.waitRecoveryMs,
     );
     return {
       state: next,

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YAKI SEASON 손님 인게임 검수</title>
+  <link rel="stylesheet" href="./customer-art-review.css">
+</head>
+<body>
+  <main class="review-stage">
+    <header class="review-header">
+      <div>
+        <p>SCR-SVC-CUSTOMERS · Tsukioka-size runtime r8</p>
+        <h1>손님 인게임 아트 검수</h1>
+      </div>
+      <nav aria-label="손님 상태 선택">
+        <button type="button" data-state="waiting" class="active">대기</button>
+        <button type="button" data-state="eating-negima">꼬치 먹는 중</button>
+        <button type="button" data-state="drinking-beer">생맥주 마시는 중</button>
+      </nav>
+    </header>
+
+    <section id="customer-grid" class="customer-grid" aria-live="polite"></section>
+    <p class="review-note">실제 앱 매니페스트에 등록된 투명 PNG를 손님 화면 배경 위에 표시합니다.</p>
+  </main>
+  <script type="module" src="./customer-art-review.js"></script>
+</body>
+</html>

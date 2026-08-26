@@ -36,6 +36,25 @@ export function checkContentRules(bundle) {
     if (r.processId && !has('processes', r.processId)) {
       errors.push(`[recipe:${r.id}] 미정의 공정 참조: ${r.processId}`);
     }
+    if (r.category === 'skewer') {
+      const policy = r.seasoningPolicy;
+      const options = policy?.options || [];
+      if (
+        policy?.selectionStage !== 'assembly'
+        || options.length !== 2
+        || !options.includes('salt')
+        || !options.includes('tare')
+        || policy?.saltTransferMode !== 'direct'
+        || policy?.inventoryPartition !== 'menu-and-seasoning'
+        || policy?.tareApplication?.station !== 'assembly'
+        || policy?.tareApplication?.afterAssemblyCompleted !== true
+        || policy?.tareApplication?.brushPasses !== 1
+        || policy?.tareApplication?.minimumCoverage !== 0.8
+        || policy?.tareApplication?.torchEnabled !== false
+      ) {
+        errors.push(`[recipe:${r.id}] 조립 완료 뒤 소금은 바로 전달하고 타레는 조립대에서 1회 붓질한 뒤 메뉴·양념별 재고로 분리하며 토치를 사용하지 않아야 함`);
+      }
+    }
   }
   for (const d of bundle.days || []) {
     for (const t of d.customerPool || []) {
@@ -88,7 +107,7 @@ export function checkContentRules(bundle) {
     }
   }
 
-  const earlyChain = ['s0', 'd1', 'd2', 'd3', 'd4-preview'];
+  const earlyChain = ['s0', 'd1', 'd2', 'd3', 'd4', 'd5', 'd5-complete'];
   if (earlyChain.every((id) => has('scenarios', id))) {
     earlyChain.forEach((id, index) => {
       const record = (bundle.scenarios || []).find((scenario) => scenario.id === id);
@@ -107,7 +126,7 @@ export function checkContentRules(bundle) {
       .sort();
     const expected = ['CHAR-AKI', 'CHAR-TSUKIOKA'];
     if (fixedIds.length !== expected.length || fixedIds.some((id, index) => id !== expected[index])) {
-      errors.push('[campaignCharacters] S0~D3 고정 인물은 CHAR-AKI·CHAR-TSUKIOKA만 허용됨');
+      errors.push('[campaignCharacters] S0~D4 고정 인물은 CHAR-AKI·CHAR-TSUKIOKA만 허용됨');
     }
     for (const character of bundle.campaignCharacters || []) {
       if (
@@ -157,7 +176,7 @@ export function checkContentRules(bundle) {
         if (!menu.seasoningOptions?.includes(item.seasoning)) {
           errors.push(`[order:${order.id}] 메뉴가 지원하지 않는 seasoning: ${item.menuId}/${item.seasoning}`);
         }
-        if (item.seasoning === 'tare' && order.dayId !== 'd3') {
+        if (item.seasoning === 'tare' && ['d1', 'd2'].includes(order.dayId)) {
           errors.push(`[order:${order.id}] tare 주문은 d3 이전에 사용할 수 없음`);
         }
       }
@@ -289,10 +308,29 @@ export function checkContentRules(bundle) {
   }
   const d3 = (bundle.days || []).find((day) => day.id === 'd3');
   if (d3 && (
-    d3.newActionId !== 'd3-tare-brush'
+    d3.newActionId !== 'd3-assembly-tare-brush'
     || d3.tutorialPolicy?.failurePolicy !== 'safe-first-use'
   )) {
-    errors.push('[day:d3] 타레 신규 행동의 안전 안내 계약 위반');
+    errors.push('[day:d3] 조립대 타레 신규 행동의 안전 안내 계약 위반');
+  }
+
+  const requiredAssemblyTareCommands = ['select-assembly-seasoning', 'brush-assembly-tare'];
+  const obsoleteTareCommands = new Set([
+    'apply-tare',
+    'finish-tare',
+    'select-grill-seasoning',
+    'brush-grill-tare',
+  ]);
+  for (const scenarioId of ['d3', 'd4', 'd5']) {
+    const scenario = (bundle.scenarios || []).find((candidate) => candidate.id === scenarioId);
+    if (!scenario) continue;
+    const commandIds = scenario.gameplayCommandIds || [];
+    if (
+      requiredAssemblyTareCommands.some((commandId) => !commandIds.includes(commandId))
+      || commandIds.some((commandId) => commandId.includes('torch') || obsoleteTareCommands.has(commandId))
+    ) {
+      errors.push(`[scenario:${scenarioId}] 타레는 조립대에서 양념 선택·1회 붓질 후 재고로 보내며 그릴 도포·토치·구형 마감을 사용할 수 없음`);
+    }
   }
 
   // 익힘 구간 순서 (DAT-001 §공통 6: 최소는 최대보다 클 수 없다)

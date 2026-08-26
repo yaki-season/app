@@ -11,7 +11,7 @@
     "displayKey": { "type": "string", "minLength": 1 },
     "active": { "type": "boolean" },
     "status": { "enum": ["candidate", "approved"] },
-    "maxSlots": { "type": "integer", "minimum": 1, "maximum": 12, "description": "그릴 최대 칸 수 (GPL-005 v2.23.0: 8)." },
+    "maxSlots": { "type": "integer", "minimum": 1, "maximum": 12, "description": "장기 확장 시 허용할 그릴 최대 칸 수. 현재 활성 tier는 D4의 3칸까지다." },
     "tiers": {
       "type": "array",
       "minItems": 1,
@@ -22,7 +22,8 @@
         "additionalProperties": false,
         "properties": {
           "reputation": { "type": "integer", "minimum": 0, "unit": "명성" },
-          "slots": { "type": "integer", "minimum": 1, "maximum": 12, "unit": "칸" }
+          "slots": { "type": "integer", "minimum": 1, "maximum": 12, "unit": "칸" },
+          "requiresUnlockId": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "해당 tier를 표시·claim하기 전에 필요한 캠페인 해금 ID." }
         }
       }
     }

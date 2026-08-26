@@ -1,3 +1,9 @@
+import {
+  DEFAULT_CLAIMED_GRILL_SLOTS,
+  GRILL_SLOT_UPGRADE_BLOCK,
+  campaignGrillUpgradeState,
+} from '../progression/grillSlots.js';
+
 export const CAMPAIGN_PHASE = Object.freeze({
   PROLOGUE: 'prologue',
   PRE_OPEN: 'pre-open',
@@ -17,8 +23,20 @@ export const EARLY_CAMPAIGN_NODE_IDS = Object.freeze([
   'd1',
   'd2',
   'd3',
-  'd4-preview',
+  'd4',
+  'd5',
+  'd5-complete',
 ]);
+
+export const D4_CAMPAIGN_NODE_IDS = EARLY_CAMPAIGN_NODE_IDS;
+
+export const GRILL_SLOT_CLAIM_REASON = Object.freeze({
+  ALREADY_CLAIMED: 'already-claimed',
+  PHASE_REQUIRED: 'pre-open-required',
+  REPUTATION_REQUIRED: 'reputation-required',
+  UNLOCK_REQUIRED: 'unlock-required',
+  UNAVAILABLE: 'unavailable',
+});
 
 function inferKind(id) {
   if (id === 's0') return CAMPAIGN_NODE_KIND.PROLOGUE;
@@ -96,15 +114,19 @@ export function assertEarlyCampaignDefinition(definition) {
   if (definition.get('s0').kind !== CAMPAIGN_NODE_KIND.PROLOGUE) {
     throw new TypeError('s0는 prologue여야 합니다.');
   }
-  for (const id of ['d1', 'd2', 'd3']) {
+  for (const id of ['d1', 'd2', 'd3', 'd4', 'd5']) {
     if (definition.get(id).kind !== CAMPAIGN_NODE_KIND.DAY) {
       throw new TypeError(`${id}는 영업일이어야 합니다.`);
     }
   }
-  if (definition.get('d4-preview').kind !== CAMPAIGN_NODE_KIND.PREVIEW) {
-    throw new TypeError('d4-preview는 읽기 전용 preview여야 합니다.');
+  if (definition.get('d5-complete').kind !== CAMPAIGN_NODE_KIND.PREVIEW) {
+    throw new TypeError('d5-complete는 읽기 전용 완료 상태여야 합니다.');
   }
   return definition;
+}
+
+export function assertD4CampaignDefinition(definition) {
+  return assertEarlyCampaignDefinition(definition);
 }
 
 export function createCampaignState({
@@ -141,6 +163,7 @@ export function createCampaignState({
     progression: {
       unlockIds: [],
       staffIds: [],
+      claimedGrillSlots: DEFAULT_CLAIMED_GRILL_SLOTS,
     },
     story: {
       flagIds: [],
@@ -186,6 +209,52 @@ export function beginBusinessDay(state) {
   return {
     ...state,
     campaign: { ...state.campaign, phase: CAMPAIGN_PHASE.BUSINESS },
+  };
+}
+
+export function getCampaignGrillSlotUpgradeState(state, config = {}) {
+  return campaignGrillUpgradeState({
+    claimedSlots: state?.progression?.claimedGrillSlots,
+    reputation: state?.economy?.reputation,
+    unlockIds: state?.progression?.unlockIds,
+  }, config);
+}
+
+// 해금 조건을 만족해도 플레이어가 직접 선택해야만 반영한다.
+// 명성과 골드는 판정에만 사용하고 state.economy는 변경하지 않는다.
+export function claimCampaignGrillSlots(state, config = {}) {
+  const upgrade = getCampaignGrillSlotUpgradeState(state, config);
+  if (state?.campaign?.phase !== CAMPAIGN_PHASE.PRE_OPEN) {
+    return {
+      state,
+      applied: false,
+      reason: GRILL_SLOT_CLAIM_REASON.PHASE_REQUIRED,
+      upgrade,
+    };
+  }
+  if (!upgrade.pending) {
+    const reason = upgrade.blockedBy === GRILL_SLOT_UPGRADE_BLOCK.UNLOCK
+      ? GRILL_SLOT_CLAIM_REASON.UNLOCK_REQUIRED
+      : upgrade.blockedBy === GRILL_SLOT_UPGRADE_BLOCK.REPUTATION
+        ? GRILL_SLOT_CLAIM_REASON.REPUTATION_REQUIRED
+        : upgrade.targetSlots === null
+          ? GRILL_SLOT_CLAIM_REASON.ALREADY_CLAIMED
+          : GRILL_SLOT_CLAIM_REASON.UNAVAILABLE;
+    return { state, applied: false, reason, upgrade };
+  }
+
+  const candidate = {
+    ...state,
+    progression: {
+      ...state.progression,
+      claimedGrillSlots: upgrade.available,
+    },
+  };
+  return {
+    state: candidate,
+    applied: true,
+    reason: null,
+    upgrade: getCampaignGrillSlotUpgradeState(candidate, config),
   };
 }
 
@@ -307,6 +376,17 @@ export function validateCampaignState(state, definition) {
   const ids = state.economy?.settlements?.map((item) => item?.completionId) ?? [];
   if (ids.some((id) => typeof id !== 'string') || new Set(ids).size !== ids.length) {
     errors.push('정산 completionId가 없거나 중복됐습니다.');
+  }
+  for (const field of ['unlockIds', 'staffIds']) {
+    try {
+      uniqueStrings(state.progression?.[field], `progression.${field}`);
+    } catch (error) {
+      errors.push(error.message);
+    }
+  }
+  if (!Number.isInteger(state.progression?.claimedGrillSlots)
+    || state.progression.claimedGrillSlots < DEFAULT_CLAIMED_GRILL_SLOTS) {
+    errors.push('progression.claimedGrillSlots가 올바르지 않습니다.');
   }
   return { valid: errors.length === 0, errors };
 }

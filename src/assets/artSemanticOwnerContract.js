@@ -5,6 +5,7 @@ import {
   S0_ART_BINDING_INVENTORY,
 } from './s0D1ArtBindingContract.js';
 import { S0_EXTERIOR_BACKGROUND_BINDINGS } from './s0ExteriorBackgroundBindingContract.js';
+import { S0_D3_STORY_ILLUSTRATION_BINDINGS } from './s0D3StoryIllustrationBindingContract.js';
 import {
   ART_SEMANTIC_OWNER_IDS,
   isFullyQualifiedArtSemanticOwner,
@@ -23,6 +24,7 @@ const bindingRows = [
   ...D1_DRINK_ART_BINDING_INVENTORY,
   ...D1_DRINK_VISUAL_VARIANTS.flatMap((variant) => variant.layers),
   ...S0_EXTERIOR_BACKGROUND_BINDINGS,
+  ...S0_D3_STORY_ILLUSTRATION_BINDINGS,
 ];
 
 const ownerSetForAsset = (rows, assetId) => new Set(

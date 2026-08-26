@@ -1,6 +1,9 @@
 // 손님 렌더 어댑터 순수 매핑 검증 (SCR-SVC-CUSTOMERS 렌더 인터페이스).
 import { describe, it, expect } from 'vitest';
-import { buildSeatStates } from '../../src/render/customerAdapter.js';
+import {
+  buildOrderBubblePresentations,
+  buildSeatStates,
+} from '../../src/render/customerAdapter.js';
 import { SEAT_IDS } from '../../src/config/screenLayout.js';
 
 describe('buildSeatStates', () => {
@@ -33,5 +36,64 @@ describe('buildSeatStates', () => {
     const s = states.find((x) => x.seatId === 'seat-01');
     expect(s.mood).toBe('waiting');
     expect(s.waitRatio).toBe(1);
+  });
+});
+
+describe('buildOrderBubblePresentations', () => {
+  const groupSeat = (overrides) => ({
+    occupied: true,
+    phase: 'ordering',
+    mood: 'waiting',
+    waitRatio: 1,
+    urgent: false,
+    group: true,
+    groupId: 'GROUP-OFFICE',
+    canOrder: true,
+    remainingItems: [],
+    ...overrides,
+  });
+
+  it('개별 주문을 가진 두 그룹 손님의 주문을 한 장으로 합산한다', () => {
+    const presentations = buildOrderBubblePresentations([
+      groupSeat({
+        seatId: 'seat-02',
+        orderId: 'ORDER-A',
+        remainingItems: [
+          { menuId: 'beer', seasoning: null, menuLabel: '생맥주', remaining: 1 },
+          { menuId: 'negima', seasoning: 'salt', menuLabel: '소금 네기마', remaining: 1 },
+        ],
+      }),
+      groupSeat({
+        seatId: 'seat-03',
+        orderId: 'ORDER-B',
+        remainingItems: [
+          { menuId: 'beer', seasoning: null, menuLabel: '생맥주', remaining: 1 },
+          { menuId: 'cabbage-salad', seasoning: null, menuLabel: '양배추 사라다', remaining: 1 },
+        ],
+      }),
+    ]);
+
+    expect(presentations).toHaveLength(1);
+    expect(presentations[0]).toMatchObject({
+      groupId: 'GROUP-OFFICE',
+      memberSeatIds: ['seat-02', 'seat-03'],
+      orderLabel: '생맥주 ×2 · 소금 네기마 · 양배추 사라다',
+    });
+  });
+
+  it('공유 orderId는 그룹 합산에서 한 번만 센다', () => {
+    const sharedOrder = {
+      orderId: 'ORDER-SHARED',
+      remainingItems: [
+        { menuId: 'beer', seasoning: null, menuLabel: '생맥주', remaining: 2 },
+        { menuId: 'negima', seasoning: 'salt', menuLabel: '소금 네기마', remaining: 2 },
+      ],
+    };
+    const [presentation] = buildOrderBubblePresentations([
+      groupSeat({ seatId: 'seat-02', ...sharedOrder }),
+      groupSeat({ seatId: 'seat-03', ...sharedOrder }),
+    ]);
+
+    expect(presentation.orderLabel).toBe('생맥주 ×2 · 소금 네기마 ×2');
   });
 });

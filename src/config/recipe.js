@@ -4,6 +4,7 @@
 export const INGREDIENT = {
   CHICKEN: 'chicken',
   LEEK: 'leek',
+  FOLDED_CHICKEN_SKIN: 'foldedChickenSkin',
 };
 
 // 네기마: 닭다리살-대파-닭다리살-대파-닭다리살 (GPL-001 §범위)
@@ -25,9 +26,14 @@ export const MOMO_RECIPE = [
   INGREDIENT.CHICKEN,
 ];
 
+// 토리카와: 접은 닭껍질 다섯 조각. 전용 원본 기반 조립·굽기 아트를 사용하며
+// 도메인 재료 ID도 분리해 아트 단계와 조리 규칙이 서로 침범하지 않게 한다.
+export const KAWA_RECIPE = Array(5).fill(INGREDIENT.FOLDED_CHICKEN_SKIN);
+
 export const EARLY_CAMPAIGN_RECIPES = Object.freeze({
   negima: RECIPE,
   momo: MOMO_RECIPE,
+  kawa: KAWA_RECIPE,
 });
 
 // 면별 조리 판정 (GPL-001 §상세요구사항 9)
@@ -61,10 +67,10 @@ export function applyBalanceContent(bundle) {
   return true;
 }
 
-export function classifyDoneness(elapsedSec) {
-  if (elapsedSec >= COOK_THRESHOLDS_SEC[DONENESS.BURNT]) return DONENESS.BURNT;
-  if (elapsedSec >= COOK_THRESHOLDS_SEC[DONENESS.OVER]) return DONENESS.OVER;
-  if (elapsedSec >= COOK_THRESHOLDS_SEC[DONENESS.PERFECT]) return DONENESS.PERFECT;
+export function classifyDoneness(elapsedSec, thresholds = COOK_THRESHOLDS_SEC) {
+  if (elapsedSec >= thresholds[DONENESS.BURNT]) return DONENESS.BURNT;
+  if (elapsedSec >= thresholds[DONENESS.OVER]) return DONENESS.OVER;
+  if (elapsedSec >= thresholds[DONENESS.PERFECT]) return DONENESS.PERFECT;
   return DONENESS.UNDER;
 }
 

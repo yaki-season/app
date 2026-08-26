@@ -55,6 +55,40 @@ it('같은 그룹의 두 손님은 D2 공유 주문 한 건을 함께 사용한�
   ]);
 });
 
+// 동행은 말풍선도 주문도 그룹 하나로 묶여 있고, 접수도 그룹 단위로만 된다.
+// 생각 시간이 각자 굴러가면 먼저 준비된 쪽만 클릭 가능해 보이는데 접수는 거부돼
+// "눌러도 안 되는" 구간이 최대 (thinkMax - thinkMin)만큼 생긴다.
+it('같은 그룹 손님은 같은 시각에 주문 준비를 마친다', () => {
+  const grouped = structuredClone(fixture);
+  const [pair] = grouped.waves;
+  pair.customers = [
+    { ...pair.customers[0], id: 'D1-OFFICE-A', groupId: 'D1-GROUP-OFFICE' },
+    { ...pair.customers[0], id: 'D1-OFFICE-B', groupId: 'D1-GROUP-OFFICE' },
+  ];
+  pair.customers[1].order = structuredClone(pair.customers[0].order);
+  pair.customers[1].order.id = `${pair.customers[0].order.id}-B`;
+  grouped.waves = [pair];
+  const groupDefinition = createBusinessDayDefinition(grouped, { expectedId: 'd1' });
+
+  for (let seed = 1; seed <= 25; seed += 1) {
+    let state = createD1BusinessDayState({
+      definition: groupDefinition, runId: `group-ready:${seed}`, seed,
+    });
+    state = advanceD1BusinessDay(state, groupDefinition, 100);
+    const peers = ['D1-OFFICE-A', 'D1-OFFICE-B'].map((id) => state.customers[id]);
+    expect(peers.every(Boolean), `seed ${seed} 동행 착석`).toBe(true);
+    expect(new Set(peers.map((peer) => peer.phaseRemainingMs)).size,
+      `seed ${seed} 남은 생각 시간`).toBe(1);
+
+    // 생각 시간이 끝나는 틱에 둘이 함께 order-ready가 된다.
+    const think = peers[0].phaseRemainingMs;
+    state = advanceD1BusinessDay(state, groupDefinition, think);
+    const readied = ['D1-OFFICE-A', 'D1-OFFICE-B'].map((id) => state.customers[id].phase);
+    expect(new Set(readied).size, `seed ${seed} 동시 준비`).toBe(1);
+    expect(readied[0]).toBe(D1_CUSTOMER_PHASE.ORDER_READY);
+  }
+});
+
 function initialState(seed = 7) {
   return createD1BusinessDayState({ definition, runId: 'campaign-test:d1', seed });
 }

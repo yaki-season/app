@@ -83,3 +83,41 @@ test('D1 ?reset=1 새로고침은 진행 중 영업을 초기 구간으로 되�
   expect(elapsedAfterReset).toBeLessThan(1_000);
   expect(elapsedAfterReset).toBeLessThan(elapsedBeforeReset);
 });
+
+// 좌석 손님은 츠키오카와 같은 z(LAYER_Z.actor)에 놓인 풀프레임 레이어다. 깊이 버퍼를 켜두면
+// 완전히 겹친 투명 평면들이 GPU마다 다른 정밀도로 z-fighting을 일으켜 손님이 지지직거린다.
+// 츠키오카 아트 레이어와 같은 계약(깊이 미사용 + 고정 renderOrder)인지 고정한다.
+test('좌석 손님 레이어는 아트 레이어와 같은 깊이 계약을 쓴다', async ({ page }) => {
+  await page.goto('/src/d1-game.html?reset=1');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady())).toBe(true);
+
+  const layers = await page.evaluate(() => {
+    const { renderer } = window.__d1GameDebug;
+    const tsukioka = renderer.artMesh.custTsukioka;
+    return {
+      tsukioka: {
+        depthTest: tsukioka.material.depthTest,
+        depthWrite: tsukioka.material.depthWrite,
+        renderOrder: tsukioka.renderOrder,
+      },
+      actors: Object.entries(renderer.seatActorMesh).map(([seatId, mesh]) => ({
+        seatId,
+        depthTest: mesh.material.depthTest,
+        depthWrite: mesh.material.depthWrite,
+        renderOrder: mesh.renderOrder,
+      })),
+    };
+  });
+
+  expect(layers.tsukioka).toMatchObject({ depthTest: false, depthWrite: false });
+  for (const actor of layers.actors) {
+    expect(actor.depthTest, `${actor.seatId} depthTest`).toBe(false);
+    expect(actor.depthWrite, `${actor.seatId} depthWrite`).toBe(false);
+    // 의자 등받이(10) 뒤가 아니라 앞, 카운터 상판(50) 뒤를 유지한다.
+    expect(actor.renderOrder).toBeGreaterThanOrEqual(layers.tsukioka.renderOrder);
+    expect(actor.renderOrder).toBeLessThan(50);
+  }
+  // 손님끼리의 그리기 순서도 프레임 정렬에 맡기지 않고 좌석마다 고정한다.
+  const orders = layers.actors.map(({ renderOrder }) => renderOrder);
+  expect(new Set(orders).size).toBe(orders.length);
+});

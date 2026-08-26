@@ -5,13 +5,31 @@
 // 판정 소유는 이 모듈이 아니라 GPL-004 수치이며, 아래 상수는 그 정본값이다(추후 content 이관 후보).
 
 export const DRINK = {
+  beerTargetSec: 3,
+  foamTargetSec: 1,
   beerRange: [2.3, 3.7], // 맥주 적정(초), 목표 3.0
   foamRange: [0.3, 1.7], // 거품 적정(초), 목표 1.0
+  beerVisualShare: 0.7, // 시각 정본: 맥주 7 : 거품 3
+  foamVisualShare: 0.3,
   glassCapacity: 4.0, // 잔이 시각적으로 가득 차는 목표량(맥주 3.0초 + 거품 1.0초)
   totalCap: 4.7, // 총 채움 넘침 임계(초) = 목표 4.0 + 0.7
 };
 
 const inRange = (v, [lo, hi]) => v >= lo && v <= hi;
+const clamp01 = (value) => Math.max(0, Math.min(1, value));
+
+// 품질 판정은 홀드 시간(3초·1초), 잔 내부 표현은 시각 정본(7:3)을 사용한다.
+// 두 값을 동일한 비율로 취급하면 3초·1초가 잘못된 3:1 시각 비율로 노출된다.
+export function drinkVisualFill(state, config = DRINK) {
+  const beerFill = clamp01(
+    (Math.max(0, Number(state?.beerSec) || 0) / config.beerTargetSec) * config.beerVisualShare,
+  );
+  const foamFill = Math.min(
+    1 - beerFill,
+    clamp01((Math.max(0, Number(state?.foamSec) || 0) / config.foamTargetSec) * config.foamVisualShare),
+  );
+  return Object.freeze({ beerFill, foamFill, totalFill: beerFill + foamFill });
+}
 
 export function createDrinkPour(config = DRINK) {
   let beerMs = 0;

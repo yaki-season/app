@@ -28,7 +28,7 @@
   ],
   "additionalProperties": false,
   "properties": {
-    "id": { "type": "string", "pattern": "^(s0|d[1-9][0-9]*|d[1-9][0-9]*-preview)$" },
+    "id": { "type": "string", "pattern": "^(s0|d[1-9][0-9]*|d[1-9][0-9]*-(preview|complete))$" },
     "schemaVersion": { "type": "integer", "minimum": 1 },
     "displayKey": { "type": "string", "minLength": 1 },
     "active": { "type": "boolean" },
@@ -39,6 +39,7 @@
     "prevDay": { "type": ["string", "null"] },
     "nextDay": { "type": ["string", "null"] },
     "dayDataId": { "type": "string", "pattern": "^d[1-9][0-9]*$" },
+    "releaseDataId": { "type": "string", "pattern": "^d[1-9][0-9]*-business-day-domain\\.v[1-9][0-9]*$" },
     "unlocks": {
       "type": "array",
       "uniqueItems": true,
@@ -118,7 +119,12 @@
   "allOf": [
     {
       "if": { "properties": { "kind": { "const": "business-day" } } },
-      "then": { "required": ["dayDataId"] }
+      "then": {
+        "anyOf": [
+          { "required": ["dayDataId"] },
+          { "required": ["releaseDataId"] }
+        ]
+      }
     },
     {
       "if": { "properties": { "kind": { "const": "prologue" } } },

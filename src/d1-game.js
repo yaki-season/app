@@ -11,10 +11,14 @@ import {
   loadD2MomoSpriteRuntime,
 } from './render/d2MomoSpriteRuntime.js';
 import {
+  D5_KAWA_RUNTIME_URLS,
+  loadD5KawaSpriteRuntime,
+} from './render/d5KawaSpriteRuntime.js';
+import {
   COOK_SLOT_NEXT_ACTION,
   createD1CookStations,
 } from './render/cookStations.js';
-import { createDrinkPour, DRINK } from './render/drinkStation.js';
+import { createDrinkPour, drinkVisualFill, DRINK } from './render/drinkStation.js';
 import { drinkLeverZoneForDelta } from './render/drinkLeverDrag.js';
 import { createBeerLiquidMaterial } from './render/beerLiquidMaterial.js';
 import { createBeerCoreVfxMaterial } from './render/beerCoreVfxMaterial.js';
@@ -23,7 +27,9 @@ import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { createGrillSmokeVfx } from './render/grillSmokeVfx.js';
 import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createPreparedDock } from './render/preparedDock.js';
-import { createD3GrillSession } from './domain/cooking/d3GrillSession.js';
+import { D4_MENU_ART_URLS } from './assets/d4MenuArt.js';
+import { createInstantServiceStation } from './application/stations/instantServiceStation.js';
+import { HIGHBALL_DEFAULT_CONFIG, createHighballStation } from './application/stations/highballStation.js';
 import { gameAudio, installGameAudio, setBgm, sfx, sfxOff, sfxOnce, loopOn, loopOff, loopRate } from './audio/gameAudio.js';
 import { crowdAmbienceId, interiorAmbienceId } from './audio/audioCatalog.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
@@ -31,6 +37,7 @@ import { seatHasServedMenu } from './render/seatServing.js';
 import { settlementStepDetail } from './render/settlementSteps.js';
 import { recipeBookEntries, shouldShowAssemblyTutorial } from './render/recipeBook.js';
 import {
+  d1OfficeActorOffsetX,
   d1OfficeCustomerVariant,
   isD1OfficeBeerFrame,
   resolveD1OfficeCustomerFrame,
@@ -40,6 +47,8 @@ import {
   resolveD1SoloCustomerFrame,
 } from './render/d1SoloCustomerArt.js';
 import {
+  HIGHBALL_DAY_BEER_KEYS,
+  HIGHBALL_DAY_BEER_SHIFT_X,
   SCREENS,
   SCREEN_IDS,
   SCREEN_BY_ID,
@@ -56,6 +65,7 @@ import {
   D1_GRILL_FOOD_FOOTPRINT,
   D1_GRILL_FINISHED_TRAY,
   D1_PUBLIC_GRILL_LAYOUT,
+  D4_PUBLIC_GRILL_LAYOUT,
 } from './config/d1GrillLayout.js';
 import {
   D1_ASSEMBLY_BUILD_SLOT,
@@ -74,6 +84,7 @@ import {
 import {
   createD1BusinessDayBrowserSession,
 } from './application/businessDay/d1BusinessDayBrowserSession.js';
+import { S0D3CampaignBridge } from './scenario/s0-d3-campaign.js';
 import { D1_TSUKIOKA_DEPARTURE_SCENE } from './scenario/d1BusinessCutscenes.js';
 import {
   D1_BUSINESS_DAY_RELEASE_DEFINITION_URL,
@@ -87,6 +98,14 @@ import {
   D3_BUSINESS_DAY_DEFINITION_URL,
   loadD3BusinessDayDefinition,
 } from './application/ports/d3BusinessDayDefinition.js';
+import {
+  D4_BUSINESS_DAY_DEFINITION_URL,
+  loadD4BusinessDayDefinition,
+} from './application/ports/d4BusinessDayDefinition.js';
+import {
+  D5_BUSINESS_DAY_DEFINITION_URL,
+  loadD5BusinessDayDefinition,
+} from './application/ports/d5BusinessDayDefinition.js';
 
 // 정적 진입점의 module graph가 평가된 직후부터 동일 객체를 유지한다. manifest fetch와 영업 세션
 // 복구가 끝나기 전에도 reload/E2E consumer는 readiness를 안전하게 읽을 수 있고, 준비되지 않은
@@ -107,24 +126,46 @@ loopOn('AMB-SHOP-INTERIOR');
 
 const runtimeParams = new URLSearchParams(window.location.search);
 const requestedDayId = runtimeParams.get('day');
-const ACTIVE_DAY_ID = ['d2', 'd3'].includes(requestedDayId) ? requestedDayId : 'd1';
+const ACTIVE_DAY_ID = ['d2', 'd3', 'd4', 'd5'].includes(requestedDayId) ? requestedDayId : 'd1';
 // unlockLabels는 정산 5단계에서 "오늘 뭘 얻었나"를 보여주는 용도다. 보상 자체는
 // buildBusinessDayCampaignReward가 완료 시점에 계산하므로(그때는 이미 화면이 넘어간다)
 // 읽을거리로 쓸 이름만 여기 둔다.
 const DAY_META = Object.freeze({
   d1: { label: 'D1', nextLabel: 'D2', nextNodeLabel: '둘째 날 이야기', unlockLabels: ['모모 레시피'] },
   d2: { label: 'D2', nextLabel: 'D3', nextNodeLabel: '셋째 날 이야기', unlockLabels: [] },
-  d3: { label: 'D3', nextLabel: '후일담', nextNodeLabel: '사흘째 밤의 후일담', unlockLabels: [] },
+  d3: { label: 'D3', nextLabel: 'D4', nextNodeLabel: '넷째 날 이야기', unlockLabels: ['양배추 사라다', '하이볼'] },
+  d4: { label: 'D4', nextLabel: 'D5', nextNodeLabel: '다섯째 날 영업', unlockLabels: ['토리카와 레시피'] },
+  d5: { label: 'D5', nextLabel: 'D5 완료', nextNodeLabel: '영업 완료', unlockLabels: [] },
 });
 const ACTIVE_DAY = DAY_META[ACTIVE_DAY_ID];
 document.title = `YAKI SEASON — ${ACTIVE_DAY.label} 영업`;
-const MENU_ID_BY_LABEL = Object.freeze({ '생맥주': 'beer', '네기마': 'negima', '모모': 'momo' });
+const MENU_ID_BY_LABEL = Object.freeze({
+  '생맥주': 'beer',
+  '네기마': 'negima',
+  '타레 네기마': 'negima',
+  '모모': 'momo',
+  '타레 모모': 'momo',
+  '토리카와': 'kawa',
+  '소금 토리카와': 'kawa',
+  '타레 토리카와': 'kawa',
+  '양배추 사라다': 'cabbage-salad',
+  '사라다': 'cabbage-salad',
+  '하이볼': 'highball',
+});
 const menuIdForLabel = (label) => MENU_ID_BY_LABEL[label] ?? null;
 const MENU_META = Object.freeze({
   negima: { label: '네기마' },
   momo: { label: '모모' },
+  kawa: { label: '토리카와' },
+  'cabbage-salad': { label: '양배추 사라다' },
+  highball: { label: '하이볼' },
 });
-const skewerLabel = (menuId) => MENU_META[menuId]?.label ?? '꼬치';
+const skewerLabel = (menuId, seasoning = 'none') => {
+  const base = MENU_META[menuId]?.label ?? '꼬치';
+  if (seasoning === 'tare') return `타레 ${base}`;
+  if (menuId === 'kawa') return '소금 토리카와';
+  return base;
+};
 
 const el = (id) => document.getElementById(id);
 const canvas = el('scene');
@@ -141,19 +182,43 @@ document.getElementById('dockShelf')?.style.setProperty(
   '--dock-momo-art',
   `url("${D2_MOMO_RUNTIME_URLS.order}")`,
 );
+document.getElementById('dockShelf')?.style.setProperty(
+  '--dock-kawa-art',
+  `url("${D5_KAWA_RUNTIME_URLS.order}")`,
+);
+document.getElementById('dockShelf')?.style.setProperty(
+  '--dock-cabbage-salad-art',
+  `url("${D4_MENU_ART_URLS.cabbageSaladPlate}")`,
+);
+document.getElementById('dockShelf')?.style.setProperty(
+  '--dock-highball-art',
+  `url("${D4_MENU_ART_URLS.highballPickup}")`,
+);
 document.body.dataset.assetPlaceholderCount = String(runtimeAssets.readiness.placeholderCount);
 document.body.dataset.runtimeAssetsReady = String(runtimeAssets.readiness.ready);
 document.body.dataset.runtimeContractValid = String(runtimeAssets.readiness.contractAudit.valid);
+const activeDayNumber = Number(ACTIVE_DAY_ID.slice(1));
+const ACTIVE_SCREENS = SCREENS.filter((screen) => (
+  !screen.introducedOn || activeDayNumber >= Number(screen.introducedOn.slice(1))
+));
+const ACTIVE_SCREEN_IDS = ACTIVE_SCREENS.map((screen) => screen.id);
 const R = createProductionRenderer(canvas, { runtimeAssets });
-const director = createStationDirector({ screens: SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
+// 하이볼이 열리는 날에는 맥주 세트를 왼쪽으로 비켜 두 작업대가 겹치지 않게 한다.
+if (['d4', 'd5'].includes(ACTIVE_DAY_ID)) {
+  R.setObjectOffsetX(HIGHBALL_DAY_BEER_KEYS, HIGHBALL_DAY_BEER_SHIFT_X);
+}
+R.warmTexture(D4_MENU_ART_URLS.cabbageSaladPlate);
+for (const seatId of SEAT_IDS) R.setSeatSaladUrl(seatId, D4_MENU_ART_URLS.cabbageSaladPlate);
+const director = createStationDirector({ screens: ACTIVE_SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
 
 // 새로고침은 진행 중 영업일을 복구한다(PM 001·002 "새로고침 복구" 완료 기준, 공개 S0→D1 인계).
 // 깨끗한 시작이 필요하면 ?reset=1로 명시한다.
 const resetFirstOrderRuntime = runtimeParams.get('reset') === '1';
 const developmentStartDay = runtimeParams.get('devUnlock') === '1'
-  && ['d2', 'd3'].includes(ACTIVE_DAY_ID)
+  && ['d2', 'd3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
   ? ACTIVE_DAY_ID
   : null;
+const developmentTestFlow = runtimeParams.get('testFlow');
 if (resetFirstOrderRuntime) clearFirstOrderRuntime(window.localStorage);
 function readFirstOrderRuntime() {
   try {
@@ -172,11 +237,31 @@ const restoredFirstOrderRuntime = readFirstOrderRuntime();
 const daySeed = ACTIVE_DAY_ID === 'd1'
   ? null
   : (restoredFirstOrderRuntime?.daySeed ?? Math.floor(Math.random() * 0xffffffff) + 1);
-const cook = createD1CookStations();
-if (restoredFirstOrderRuntime?.cook) cook.restore(restoredFirstOrderRuntime.cook, performance.now());
-const d3Grill = createD3GrillSession(restoredFirstOrderRuntime?.d3Grill ?? null);
+async function resolveClaimedGrillSlotCount() {
+  if (!['d4', 'd5'].includes(ACTIVE_DAY_ID)) return 2;
+  try {
+    // 업그레이드는 프리오픈 체크포인트에 먼저 저장된다. 영업 도메인을 부팅하기 전에 같은
+    // 저장을 검증해 읽어야 세 번째 슬롯의 mesh·sprite·shader가 첫 프레임부터 함께 생긴다.
+    const reader = new S0D3CampaignBridge({ browserStorage: window.localStorage });
+    const loaded = await reader.loadOrStart();
+    if (!loaded.ok) return 2;
+    return reader.getState()?.progression?.claimedGrillSlots >= 3 ? 3 : 2;
+  } catch {
+    return 2;
+  }
+}
+const configuredGrillSlotCount = await resolveClaimedGrillSlotCount();
+const activeGrillLayout = configuredGrillSlotCount >= 3
+  ? D4_PUBLIC_GRILL_LAYOUT
+  : D1_PUBLIC_GRILL_LAYOUT;
+const cook = createD1CookStations({ slots: configuredGrillSlotCount });
+if (restoredFirstOrderRuntime?.cook) {
+  cook.restore(restoredFirstOrderRuntime.cook, performance.now());
+  cook.setSlots(configuredGrillSlotCount);
+}
 const SLOT_KEYS = GRILL_SLOT_KEYS.slice(0, cook.slotCount());
-R.setGrillSlots(D1_PUBLIC_GRILL_LAYOUT);
+R.setGrillSlots(activeGrillLayout);
+document.body.dataset.grillSlotCount = String(configuredGrillSlotCount);
 const grillSmoke = createGrillSmokeVfx({
   scene: R.scene,
   slotMeshes: SLOT_KEYS.map((key) => R.objectMesh[key]),
@@ -193,11 +278,21 @@ const momoInstances = {
   build: null,
   tray: [],
 };
+const kawaInstances = {
+  grill: {},
+  build: null,
+  tray: [],
+};
 const momoRuntime = {
   status: ACTIVE_DAY_ID === 'd1' ? 'disabled' : 'loading',
   error: null,
 };
+const kawaRuntime = {
+  status: ACTIVE_DAY_ID === 'd5' ? 'loading' : 'disabled',
+  error: null,
+};
 document.body.dataset.d2MomoBindingStatus = momoRuntime.status;
+document.body.dataset.d5KawaBindingStatus = kawaRuntime.status;
 let rawNegimaReadiness = runtimeAssets.readiness;
 const rawNegimaRuntime = {
   status: runtimeAssets.GRILL_RAW_BUNDLE ? 'loading' : 'unavailable',
@@ -309,6 +404,46 @@ async function bootMomoRuntime() {
   }
 }
 void bootMomoRuntime();
+
+async function bootKawaRuntime() {
+  if (ACTIVE_DAY_ID !== 'd5') return;
+  try {
+    const runtime = await loadD5KawaSpriteRuntime();
+    for (const key of SLOT_KEYS) {
+      const slotMesh = R.objectMesh[key];
+      if (!slotMesh) throw new Error(`토리카와 그릴 slot mesh 누락: ${key}`);
+      const instance = runtime.createGrillInstance(
+        slotMesh,
+        D1_GRILL_FOOD_FOOTPRINT.sourceModelTransform,
+      );
+      kawaInstances.grill[key] = instance;
+      R.scene.add(instance.holder);
+    }
+    const buildMesh = R.objectMesh[D1_ASSEMBLY_BUILD_SLOT.key];
+    if (!buildMesh) throw new Error('토리카와 조립 지그 mesh 누락');
+    kawaInstances.build = runtime.createAssemblyInstance(
+      buildMesh,
+      D1_ASSEMBLY_BUILD_SLOT.sourceModelTransform,
+    );
+    R.scene.add(kawaInstances.build.holder);
+    for (const slot of D1_ASSEMBLY_TRAY_SLOTS) {
+      const trayMesh = R.objectMesh[slot.key];
+      if (!trayMesh) throw new Error(`토리카와 조립 트레이 mesh 누락: ${slot.key}`);
+      const instance = runtime.createTrayInstance(trayMesh, slot.sourceModelTransform);
+      kawaInstances.tray.push(instance);
+      R.scene.add(instance.holder);
+    }
+    kawaRuntime.status = runtime.status;
+    document.body.dataset.d5KawaBindingStatus = kawaRuntime.status;
+    render();
+  } catch (error) {
+    kawaRuntime.status = 'failed';
+    kawaRuntime.error = error;
+    document.body.dataset.d5KawaBindingStatus = 'failed';
+    console.error('D5 토리카와 아트 로드 실패:', error);
+  }
+}
+void bootKawaRuntime();
 const grillStatusLayer = el('grillStatusLayer');
 const grillInventory = el('grillInventory');
 const grillWaitingNegima = el('grillWaitingNegima');
@@ -317,6 +452,19 @@ const grillWaitingNegimaCount = el('grillWaitingNegimaCount');
 const grillWaitingMomo = el('grillWaitingMomo');
 const grillWaitingMomoHint = el('grillWaitingMomoHint');
 const grillWaitingMomoCount = el('grillWaitingMomoCount');
+const grillWaitingKawa = el('grillWaitingKawa');
+const grillWaitingKawaHint = el('grillWaitingKawaHint');
+const grillWaitingKawaCount = el('grillWaitingKawaCount');
+const grillWaitingActions = Object.freeze({
+  negima: Object.freeze({ salt: el('grillWaitingNegimaSalt'), tare: el('grillWaitingNegimaTare') }),
+  momo: Object.freeze({ salt: el('grillWaitingMomoSalt'), tare: el('grillWaitingMomoTare') }),
+  kawa: Object.freeze({ salt: el('grillWaitingKawaSalt'), tare: el('grillWaitingKawaTare') }),
+});
+const grillWaitingActionCounts = Object.freeze({
+  negima: Object.freeze({ salt: el('grillWaitingNegimaSaltCount'), tare: el('grillWaitingNegimaTareCount') }),
+  momo: Object.freeze({ salt: el('grillWaitingMomoSaltCount'), tare: el('grillWaitingMomoTareCount') }),
+  kawa: Object.freeze({ salt: el('grillWaitingKawaSaltCount'), tare: el('grillWaitingKawaTareCount') }),
+});
 const grillFinishedInventoryCount = el('grillFinishedInventoryCount');
 const grillFinishedQualityList = el('grillFinishedQualityList');
 const customerServePanel = el('customerServePanel');
@@ -337,10 +485,17 @@ function invokeLockedControl(key, now = performance.now()) {
   lockUntil[key] = performance.now() + 200;
   return true;
 }
-grillWaitingNegima.addEventListener('click', () => invokeLockedControl('grillWaitTray'));
-grillWaitingMomo.addEventListener('click', () => invokeLockedControl('grillWaitMomo'));
+for (const [menuId, actions] of Object.entries(grillWaitingActions)) {
+  for (const [seasoning, button] of Object.entries(actions)) {
+    button.addEventListener('click', () => invokeLockedControl(`grillWait:${menuId}:${seasoning}`));
+  }
+}
 const dockShelf = el('dockShelf');
 const dock = createPreparedDock({ container: dockShelf });
+let instantStation = createInstantServiceStation();
+let highballStation = createHighballStation({ snapshot: restoredFirstOrderRuntime?.highball });
+// D4부터 두 음료 공정을 같은 장면에 상시 노출한다. 이전 graybox의 tab 상태는 읽지 않는다.
+const drinkMode = ['d4', 'd5'].includes(ACTIVE_DAY_ID) ? 'combined' : 'beer';
 const assemblyRecipePicker = el('assemblyRecipePicker');
 for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
   button.addEventListener('click', () => {
@@ -355,191 +510,164 @@ for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
     render();
   });
 }
-const D3_TORCH_JOB_ID = 'D3-MOMO-TARE-ACTIVE';
-let d3TorchSlotKey = SLOT_KEYS.includes(restoredFirstOrderRuntime?.d3TorchSlotKey)
-  ? restoredFirstOrderRuntime.d3TorchSlotKey
-  : d3Grill.job(D3_TORCH_JOB_ID) ? SLOT_KEYS[0] : null;
-const d3TorchPanel = el('d3TorchPanel');
-const d3TorchTrack = el('d3TorchTrack');
-const d3TorchCursor = el('d3TorchCursor');
-let d3TorchPointerActive = false;
-let d3TorchLastAt = 0;
-let d3TorchPointerPosition = 0.5;
-let d3TorchFrame = 0;
-let d3KeyboardPosition = 0.5;
-const d3TorchPositionFromClientX = (clientX) => Math.max(0, Math.min(1,
-  ((clientX / Math.max(1, window.innerWidth)) - 0.28) / 0.44,
-));
+const assemblyTareCursor = el('assemblyTareCursor');
+const assemblyTarePot = el('assemblyTarePot');
+const assemblyTarePotArt = el('assemblyTarePotArt');
+const ASSEMBLY_TARE_ZONE_COUNT = 10;
+const ASSEMBLY_TARE_MIN_COVERAGE = 0.8;
+const assemblyTarePaintedZones = new Set();
+const assemblyTareKeyboardDirections = new Set();
+let assemblyTareModeSelected = false;
+let assemblyTarePointerId = null;
+let assemblyTareLastZone = null;
 
-function renderD3Torch() {
-  const job = d3Grill.job(D3_TORCH_JOB_ID);
-  const d3FeatureOpen = businessSession?.ok === true
-    && businessSession.completed !== true
-    && businessView()?.dayId === 'D3';
-  d3TorchPanel.hidden = !d3FeatureOpen || !job;
-  if (!job) {
-    d3TorchCursor.hidden = true;
-    document.body.classList.remove('d3-torch-cursor-ready');
-    return;
-  }
-  const finish = job.finish;
-  const percent = Math.round(finish.torchCoverage * 100);
-  const stateLabel = {
-    none: finish.tareApplied ? '토치 대기' : '타레 대기',
-    active: '토치 작동 중',
-    under: '마감 부족 · Good',
-    proper: '적정 마감 · Perfect + 불향',
-    over: '과다 마감 · OK',
-    failed: '집중 과열 · Fail',
-  }[finish.torchState];
-  d3TorchPanel.dataset.stateId = {
-    none: finish.tareApplied ? 'D3-MOMO-TARE-APPLIED' : 'D3-MOMO-TARE-READY',
-    active: 'D3-MOMO-TORCH-ACTIVE',
-    under: 'D3-MOMO-TORCH-UNDER',
-    proper: 'D3-MOMO-TORCH-PROPER',
-    over: 'D3-MOMO-TORCH-OVER',
-    failed: 'D3-MOMO-TORCH-FAILED',
-  }[finish.torchState];
-  el('d3TorchState').textContent = stateLabel;
-  el('d3ApplyTare').disabled = finish.tareApplied || finish.torchState === 'active';
-  d3TorchTrack.disabled = !finish.tareApplied || finish.torchCompleted;
-  const cursorReady = d3FeatureOpen
-    && finish.tareApplied
-    && !finish.torchCompleted
-    && director.activeScreenId() === 'SCR-SVC-GRILL';
-  d3TorchCursor.hidden = !cursorReady;
-  document.body.classList.toggle('d3-torch-cursor-ready', cursorReady);
-  el('d3RetrieveMomo').disabled = !finish.torchCompleted;
-  el('d3TorchFill').style.width = `${percent}%`;
-  el('d3TorchCoverage').style.width = `${percent}%`;
-  const meter = d3TorchPanel.querySelector('[role="progressbar"]');
-  meter.setAttribute('aria-valuenow', String(percent));
-  el('d3TorchWarning').textContent = finish.torchFocusMs >= 800 && !finish.torchCompleted
-    ? '한 지점이 과열되고 있어요. 좌우로 이동하세요.'
-    : finish.torchState === 'failed' ? '집중 과열로 품질이 Fail이 됐어요.' : '';
+function objectScreenPoint(key) {
+  const point = new THREE.Vector3();
+  R.objectMesh[key]?.getWorldPosition(point);
+  return R.projectToScreen(point);
 }
 
-function ensureD3TorchActive() {
-  const job = d3Grill.job(D3_TORCH_JOB_ID);
-  if (!job || job.finish.torchCompleted) return false;
-  if (job.finish.torchState !== 'active') {
-    const started = d3Grill.beginTorch(D3_TORCH_JOB_ID);
-    if (!started.ok) return false;
-    sfx('SFX-TORCH-IGNITE');
-    loopOn('SFX-TORCH-LOOP');
-    loopOn('SFX-TORCH-SWEEP');
+function assemblyTareTargetBounds() {
+  const center = objectScreenPoint('jigSkewer');
+  const halfWidth = Math.min(250, window.innerWidth * 0.2);
+  return { left: center.x - halfWidth, right: center.x + halfWidth, top: center.y - 70, bottom: center.y + 70 };
+}
+
+function assemblyTareReady() {
+  const progress = cook.assemblyProgress();
+  return director.activeScreenId() === 'SCR-SVC-ASSEMBLY'
+    && assemblyTareModeSelected
+    && progress.complete
+    && progress.seasoning === 'tare'
+    && progress.tarePrepared !== true;
+}
+
+function updateAssemblyTareCoverage(coverage) {
+  const normalized = Math.max(0, Math.min(1, Number(coverage) || 0));
+  const percent = Math.round(normalized * 100);
+  el('assemblyTareFill').style.width = `${percent}%`;
+  const meter = el('assemblyTareFill').parentElement;
+  meter.setAttribute('aria-valuenow', String(percent));
+  meter.setAttribute('aria-valuetext', `타레 도포 ${percent}%`);
+}
+
+function paintAssemblyTareAt(clientX, clientY) {
+  const bounds = assemblyTareTargetBounds();
+  const insideTarget = clientX >= bounds.left && clientX <= bounds.right
+    && clientY >= bounds.top && clientY <= bounds.bottom;
+  if (!insideTarget) {
+    assemblyTareLastZone = null;
+    return;
   }
+  const position = Math.max(0, Math.min(1, (clientX - bounds.left) / Math.max(1, bounds.right - bounds.left)));
+  const zone = Math.min(ASSEMBLY_TARE_ZONE_COUNT - 1, Math.floor(position * ASSEMBLY_TARE_ZONE_COUNT));
+  const from = assemblyTareLastZone == null ? zone : Math.min(zone, assemblyTareLastZone);
+  const to = assemblyTareLastZone == null ? zone : Math.max(zone, assemblyTareLastZone);
+  for (let index = from; index <= to; index += 1) assemblyTarePaintedZones.add(index);
+  assemblyTareLastZone = zone;
+  const coverage = assemblyTarePaintedZones.size / ASSEMBLY_TARE_ZONE_COUNT;
+  assemblyTareCursor.dataset.coverage = String(coverage);
+  updateAssemblyTareCoverage(coverage);
+}
+
+function commitAssemblyTareBrush(coverage) {
+  const result = cook.brushAssemblyTare(coverage);
+  if (!result.ok) {
+    if (result.reason === 'insufficient-coverage') persistFirstOrderRuntime();
+    showHint(result.reason === 'insufficient-coverage'
+      ? '꼬치 전체에 닿도록 붓을 왼쪽 끝부터 오른쪽 끝까지 움직여 주세요'
+      : '타레 소스통을 먼저 선택해 주세요');
+    updateAssemblyTareCoverage(result.coverage ?? coverage);
+    return false;
+  }
+  assemblyTareModeSelected = false;
+  assemblyTareKeyboardDirections.clear();
+  sfx('SFX-TARE-BRUSH');
+  showHint('타레를 고르게 발랐어요 · 꼬치를 눌러 전달 트레이로 옮기세요');
+  assemblyTarePaintedZones.clear();
+  persistFirstOrderRuntime();
+  render();
   return true;
 }
 
-function sweepD3Torch(position, deltaMs) {
-  if (!ensureD3TorchActive()) return;
-  d3Grill.sweepTorch(D3_TORCH_JOB_ID, { position, deltaMs: Math.max(16, Math.min(250, deltaMs)) });
-  // 훑기 소리는 파일이 아니라 위치로 변조한다. 가장자리로 갈수록 살짝 높아진다.
-  loopRate('SFX-TORCH-SWEEP', 0.9 + Math.abs(position - 0.5) * 0.4);
-  const focusMs = d3Grill.job(D3_TORCH_JOB_ID)?.finish.torchFocusMs ?? 0;
-  // 과열은 한 번의 경고로 끝낸다. 화면 문구가 사라지면 다음 과열에서 다시 운다.
-  if (focusMs >= 800) sfxOnce('SFX-TORCH-OVERHEAT', 'focus');
-  else gameAudio()?.resetOnce('SFX-TORCH-OVERHEAT:focus');
-  persistFirstOrderRuntime();
-  renderD3Torch();
+function finishAssemblyTareBrush(event) {
+  if (assemblyTarePointerId == null || (event.pointerId != null && event.pointerId !== assemblyTarePointerId)) return;
+  event.preventDefault?.();
+  event.stopImmediatePropagation?.();
+  assemblyTareCursor.classList.remove('is-brushing');
+  const coverage = assemblyTarePaintedZones.size / ASSEMBLY_TARE_ZONE_COUNT;
+  assemblyTarePointerId = null;
+  assemblyTareLastZone = null;
+  commitAssemblyTareBrush(coverage);
 }
 
-function finishD3TorchInput() {
-  const job = d3Grill.job(D3_TORCH_JOB_ID);
-  if (job?.finish.torchState === 'active') d3Grill.finishTorch(D3_TORCH_JOB_ID);
-  loopOff('SFX-TORCH-SWEEP');
-  loopOff('SFX-TORCH-LOOP');
-  sfx('SFX-TORCH-EXTINGUISH');
-  d3TorchPointerActive = false;
-  cancelAnimationFrame(d3TorchFrame);
-  d3TorchFrame = 0;
-  d3TorchCursor.classList.remove('is-firing');
-  persistFirstOrderRuntime();
-  renderD3Torch();
-}
-
-el('d3ApplyTare').addEventListener('click', () => {
-  const result = d3Grill.applyTare(D3_TORCH_JOB_ID);
-  if (result.ok) {
-    sfx('SFX-TARE-BRUSH');
-    sfx('SFX-TARE-SIZZLE');
-    showHint('타레 적용 완료 · 토치를 누른 채 좌우로 훑으세요');
+assemblyTarePot.addEventListener('click', () => {
+  const progress = cook.assemblyProgress();
+  if (!progress.complete) {
+    showHint('꼬치를 먼저 끝까지 조립해 주세요');
+    return;
+  }
+  if (progress.tarePrepared) {
+    showHint('타레 도포가 끝났어요 · 꼬치를 눌러 전달 트레이로 옮기세요');
+    return;
+  }
+  if (assemblyTareModeSelected) {
+    const result = cook.selectAssemblySeasoning('salt');
+    if (!result.ok) return;
+    assemblyTareModeSelected = false;
+    assemblyTarePaintedZones.clear();
+    assemblyTareKeyboardDirections.clear();
+    showHint('타레 붓을 내려놓았어요 · 꼬치를 누르면 소금 꼬치로 옮깁니다');
+  } else {
+    const result = progress.seasoning === 'tare'
+      ? { ok: true }
+      : cook.selectAssemblySeasoning('tare');
+    if (!result.ok) return;
+    assemblyTareModeSelected = true;
+    assemblyTarePaintedZones.clear();
+    assemblyTareKeyboardDirections.clear();
+    updateAssemblyTareCoverage(0);
+    showHint('타레 붓을 들었어요 · 조립한 꼬치 위를 한 번 좌우로 끝까지 칠하세요');
   }
   persistFirstOrderRuntime();
-  renderD3Torch();
-});
-d3TorchTrack.addEventListener('pointerdown', (event) => {
-  if (!ensureD3TorchActive()) return;
-  d3TorchPointerActive = true;
-  d3TorchLastAt = performance.now();
-  d3TorchTrack.setPointerCapture?.(event.pointerId);
-  sweepD3Torch((event.clientX - d3TorchTrack.getBoundingClientRect().left) / d3TorchTrack.clientWidth, 16);
-});
-d3TorchTrack.addEventListener('pointermove', (event) => {
-  if (!d3TorchPointerActive) return;
-  const now = performance.now();
-  sweepD3Torch((event.clientX - d3TorchTrack.getBoundingClientRect().left) / d3TorchTrack.clientWidth, now - d3TorchLastAt);
-  d3TorchLastAt = now;
-});
-d3TorchTrack.addEventListener('pointerup', finishD3TorchInput);
-d3TorchTrack.addEventListener('pointercancel', finishD3TorchInput);
-document.addEventListener('pointermove', (event) => {
-  if (d3TorchCursor.hidden) return;
-  d3TorchCursor.style.left = `${event.clientX}px`;
-  d3TorchCursor.style.top = `${event.clientY}px`;
-  d3TorchPointerPosition = d3TorchPositionFromClientX(event.clientX);
-});
-function tickD3CursorTorch(now) {
-  if (!d3TorchPointerActive) return;
-  sweepD3Torch(d3TorchPointerPosition, now - d3TorchLastAt);
-  d3TorchLastAt = now;
-  d3TorchFrame = requestAnimationFrame(tickD3CursorTorch);
-}
-document.addEventListener('pointerdown', (event) => {
-  if (event.button !== 0 || d3TorchCursor.hidden) return;
-  if (event.target !== canvas) return;
-  if (event.target.closest?.('button, [role="button"], .d3-torch-panel, #svcBar, .quick-nav')) return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  if (!ensureD3TorchActive()) return;
-  d3TorchPointerActive = true;
-  d3TorchLastAt = performance.now();
-  d3TorchPointerPosition = d3TorchPositionFromClientX(event.clientX);
-  d3TorchCursor.classList.add('is-firing');
-  sweepD3Torch(d3TorchPointerPosition, 16);
-  d3TorchFrame = requestAnimationFrame(tickD3CursorTorch);
-}, true);
-document.addEventListener('pointerup', (event) => {
-  if (!d3TorchPointerActive) return;
-  event.preventDefault();
-  event.stopImmediatePropagation();
-  finishD3TorchInput();
-}, true);
-document.addEventListener('pointercancel', finishD3TorchInput, true);
-d3TorchTrack.addEventListener('keydown', (event) => {
-  if (event.code === 'Space') {
-    event.preventDefault();
-    ensureD3TorchActive();
-    renderD3Torch();
-  } else if (['ArrowLeft', 'ArrowRight'].includes(event.code) && d3Grill.job(D3_TORCH_JOB_ID)?.finish.torchState === 'active') {
-    event.preventDefault();
-    d3KeyboardPosition = Math.max(0.05, Math.min(0.95, d3KeyboardPosition + (event.code === 'ArrowLeft' ? -0.2 : 0.2)));
-    sweepD3Torch(d3KeyboardPosition, 200);
-  }
-});
-d3TorchTrack.addEventListener('keyup', (event) => {
-  if (event.code === 'Space') finishD3TorchInput();
-});
-el('d3RetrieveMomo').addEventListener('click', () => {
-  const result = d3Grill.retrieve(D3_TORCH_JOB_ID);
-  if (!result.ok) return;
-  d3TorchSlotKey = null;
-  dock.add({ menu: '모모', label: result.item.quality.grade, good: result.item.quality.good });
-  persistFirstOrderRuntime();
-  showHint(result.item.quality.smokyBonus ? '불향 모모 완성 · 준비 목록에 올렸어요' : '모모 완성품을 준비 목록에 올렸어요');
   render();
 });
+
+assemblyTarePot.addEventListener('keydown', (event) => {
+  if (!['ArrowLeft', 'ArrowRight'].includes(event.key) || !assemblyTareReady()) return;
+  event.preventDefault();
+  assemblyTareKeyboardDirections.add(event.key);
+  const offset = event.key === 'ArrowLeft' ? 0 : ASSEMBLY_TARE_ZONE_COUNT / 2;
+  for (let index = 0; index < ASSEMBLY_TARE_ZONE_COUNT / 2; index += 1) {
+    assemblyTarePaintedZones.add(offset + index);
+  }
+  const coverage = assemblyTarePaintedZones.size / ASSEMBLY_TARE_ZONE_COUNT;
+  updateAssemblyTareCoverage(coverage);
+  if (coverage >= ASSEMBLY_TARE_MIN_COVERAGE) commitAssemblyTareBrush(coverage);
+  else showHint('반대 방향 화살표도 눌러 꼬치 전체를 칠하세요');
+});
+
+document.addEventListener('pointermove', (event) => {
+  if (!assemblyTareReady()) return;
+  assemblyTareCursor.style.left = `${event.clientX}px`;
+  assemblyTareCursor.style.top = `${event.clientY}px`;
+  if (event.pointerId === assemblyTarePointerId) paintAssemblyTareAt(event.clientX, event.clientY);
+});
+document.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0 || event.target !== canvas || !assemblyTareReady()) return;
+  const bounds = assemblyTareTargetBounds();
+  if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  assemblyTarePointerId = event.pointerId;
+  assemblyTarePaintedZones.clear();
+  assemblyTareLastZone = null;
+  assemblyTareCursor.classList.add('is-brushing');
+  canvas.setPointerCapture?.(event.pointerId);
+  paintAssemblyTareAt(event.clientX, event.clientY);
+}, true);
+document.addEventListener('pointerup', finishAssemblyTareBrush, true);
+document.addEventListener('pointercancel', finishAssemblyTareBrush, true);
 if (restoredFirstOrderRuntime?.dock) dock.restore(restoredFirstOrderRuntime.dock);
 const pour = createDrinkPour();
 let beerLiquid = null;
@@ -569,10 +697,10 @@ function persistFirstOrderRuntime() {
       stateVersion: 1,
       dayId: ACTIVE_DAY_ID,
       cook: cook.snapshot(performance.now()),
-      d3Grill: d3Grill.snapshot(),
-      d3TorchSlotKey,
       dock: dock.snapshot(),
       glassPlaced,
+      highball: highballStation.snapshot(),
+      drinkMode,
       daySeed,
     }));
   } catch {
@@ -592,6 +720,7 @@ const CLICKABLE = new Set([
   ...SEAT_KEYS,
   'binChicken',
   'binLeek',
+  'binTorikawa',
   'jigSkewer',
   'grillWaitTray',
   ...SLOT_KEYS,
@@ -605,6 +734,11 @@ const ORDER_ICON = {
   '생맥주': '/assets/core/ui/order-icon-draft-beer-r1-b1.png',
   '네기마': '/assets/core/ui/order-icon-negima-r1-b1.png',
   '모모': D2_MOMO_RUNTIME_URLS.order,
+  '소금 모모': D2_MOMO_RUNTIME_URLS.order,
+  '타레 모모': D2_MOMO_RUNTIME_URLS.order,
+  '토리카와': D5_KAWA_RUNTIME_URLS.order,
+  '소금 토리카와': D5_KAWA_RUNTIME_URLS.order,
+  '타레 토리카와': D5_KAWA_RUNTIME_URLS.order,
 };
 const PHASE_LABEL = {
   open: '영업 중',
@@ -618,16 +752,18 @@ const EXTRA_ASSET = {
   solo: 'CH-EXTRA-SOLO-SERVICE',
 };
 const EXTRA_ACTOR_FRAME = Object.freeze({
-  officeFullBody: Object.freeze({ scale: 1.82, offsetY: 0.16 }),
-  officePortrait: Object.freeze({ scale: 1, offsetY: 0 }),
-  solo: Object.freeze({ scale: 1, offsetY: 0 }),
+  officeFullBody: Object.freeze({ scale: 1, offsetY: 256 / 1080 }),
+  officePortrait: Object.freeze({ scale: 1, offsetY: 256 / 1080 }),
+  solo: Object.freeze({ scale: 1, offsetY: 256 / 1080 }),
   empty: Object.freeze({ scale: 1, offsetY: 0 }),
 });
 
 function officeActorFrame(customerId) {
-  return ['a', 'b'].includes(d1OfficeCustomerVariant(customerId))
+  const base = ['a', 'b'].includes(d1OfficeCustomerVariant(customerId))
     ? EXTRA_ACTOR_FRAME.officeFullBody
     : EXTRA_ACTOR_FRAME.officePortrait;
+  // 캔버스 중앙에서 벗어나 그려진 승인 라스터(developer A/B)를 좌석 중심으로 되돌린다.
+  return { ...base, offsetX: d1OfficeActorOffsetX(customerId) };
 }
 let businessSession = null;
 let businessPort = null;
@@ -717,7 +853,7 @@ function seatView(seatId) {
 }
 
 function seatCanReceiveSelected(seat, selected = dock.selected()) {
-  return Boolean(selected && canServeD1MenuToSeat(seat, selected.menu));
+  return Boolean(selected && canServeD1MenuToSeat(seat, selected));
 }
 
 function openServeQuantity(seatId) {
@@ -751,22 +887,31 @@ function confirmServe(all) {
     render();
     return;
   }
-  const menuId = menuIdForLabel(selected.menu);
-  const remaining = seat.remainingItems.find((item) => item.menuId === menuId)?.remaining ?? 0;
-  const available = dock.items().filter((item) => item.menu === selected.menu).length;
+  const menuId = selected.menuId ?? menuIdForLabel(selected.menu);
+  const matchingLine = seat.remainingItems.find((item) => (
+    item.menuId === menuId
+    && (item.seasoning === 'tare' ? selected.seasoning === 'tare' : selected.seasoning !== 'tare')
+  ));
+  const remaining = matchingLine?.remaining ?? 0;
+  const available = dock.items().filter((item) => (
+    item.menuId === menuId && item.seasoning === selected.seasoning
+  )).length;
   const count = all ? Math.min(remaining, available) : Math.min(1, remaining, available);
   let applied = 0;
   let lastResult = null;
   for (let index = 0; index < count; index += 1) {
-    const item = dock.items().find((candidate) => candidate.menu === selected.menu);
+    const item = dock.items().find((candidate) => (
+      candidate.menuId === menuId && candidate.seasoning === selected.seasoning
+    ));
     if (!item) break;
     lastResult = dispatchBusiness(D1_UI_INTENT.SERVE_ITEM, {
       seatId: pendingServeSeatId,
-      menu: item.menu,
-      quality: item.label,
+      menuId: item.menuId,
+      seasoning: item.seasoning ?? null,
+      quality: item.quality,
     });
     if (!lastResult.ok || !lastResult.applied) break;
-    dock.consumeMenu(item.menu, 1);
+    dock.consumeMenuId(item.menuId, 1, item.seasoning);
     applied += 1;
   }
   persistFirstOrderRuntime();
@@ -775,10 +920,37 @@ function confirmServe(all) {
   render();
 }
 
+function acceptGroupOrders(seat) {
+  const view = businessView();
+  const groupSeats = view?.seats.filter((candidate) => (
+    candidate.occupied && candidate.groupId === seat.groupId
+  )) ?? [];
+  if (groupSeats.length < 2 || !groupSeats.every((candidate) => candidate.canOrder)) {
+    showHint('동행이 주문을 고르는 중입니다');
+    return false;
+  }
+  const uniqueOrderIds = [...new Set(groupSeats.map((candidate) => candidate.orderId).filter(Boolean))];
+  if (view.limits.activeOrderCount + uniqueOrderIds.length > view.limits.maxActiveOrders) {
+    showHint('현재 처리 중인 주문을 먼저 마무리하세요');
+    return false;
+  }
+  const results = uniqueOrderIds.map((orderId) => dispatchBusiness(D1_UI_INTENT.ACCEPT_ORDER, {
+    orderId,
+  }));
+  if (!results.every((result) => result.ok && result.applied)) return false;
+  persistFirstOrderRuntime();
+  showHint('그룹 주문 접수');
+  return true;
+}
+
 function activateSeat(seatId) {
   const seat = seatView(seatId);
   if (!seat) return;
   if (seat.canOrder) {
+    if (seat.groupId) {
+      acceptGroupOrders(seat);
+      return;
+    }
     const result = dispatchBusiness(D1_UI_INTENT.ACCEPT_ORDER, { seatId });
     if (result.ok) {
       persistFirstOrderRuntime();
@@ -840,30 +1012,32 @@ function elapsedLabel(value) {
 }
 
 function grillStatusCopy(slot) {
+  const menuLabel = MENU_META[slot.menuId]?.label ?? '꼬치';
+  const seasonedLabel = `${slot.seasoning === 'tare' ? '타레' : '소금'} ${menuLabel}`;
   if (slot.status === 'staged') {
     return {
-      face: '저장 상태 복구 중',
+      face: `${seasonedLabel} · 저장 상태 복구 중`,
       icon: { symbol: '·', className: 'airborne' },
       action: '앞면 조리를 다시 시작합니다',
     };
   }
   if (slot.flipping) {
     return {
-      face: '뒤집는 중',
+      face: `${seasonedLabel} · 뒤집는 중`,
       icon: { symbol: '↻', className: 'airborne' },
       action: '꼬치가 돌아가는 중입니다',
     };
   }
   if (slot.nextAction === COOK_SLOT_NEXT_ACTION.RETRIEVE) {
     return {
-      face: '양면 굽기 완료',
+      face: `${seasonedLabel} · 양면 굽기 완료`,
       icon: { symbol: '✓', className: 'back' },
       action: '다 익었어요 · 꼬치를 눌러 꺼내세요',
     };
   }
 
   const flipped = slot.contactFace === 'back';
-  const face = flipped ? '뒤집은 면 굽는 중' : '첫 면 굽는 중';
+  const face = `${seasonedLabel} · ${flipped ? '뒤집은 면 굽는 중' : '첫 면 굽는 중'}`;
   const icon = flipped
     ? { symbol: 'Ⅱ', className: 'back' }
     : { symbol: 'Ⅰ', className: 'front' };
@@ -960,7 +1134,7 @@ const serveTargetButtons = new Map(SEAT_IDS.map((seatId, index) => {
 function renderPreparedSelection() {
   const selected = dock.selected();
   selectedPreparedItem.textContent = selected
-    ? `선택 완성품 · ${selected.menu} · ${selected.label}`
+    ? `선택 완성품 · ${selected.menu}${selected.label ? ` · ${selected.label}` : ''}`
     : '완성품을 먼저 선택하세요';
   for (const card of el('dockShelf').querySelectorAll('.dock-card')) {
     const selectedCard = card.dataset.testid === `dock-item-${dock.selectedId()}`;
@@ -1061,9 +1235,10 @@ function syncRiskCount(now = performance.now()) {
 const OBJECT_LABELS = {
   workbench: '조립대', binChicken: '닭', binLeek: '파', jigSkewer: '완성 꼬치',
   grillBody: '숯불 그릴', grillWaitTray: '대기', grillFinishedTray: '완료 트레이 (개발)',
-  drinkTower: '맥주 타워', glassRack: '빈잔 놓기',
+  drinkTower: '맥주 타워', glassRack: '빈 잔',
   drinkLeverDrag: '레버',
 };
+OBJECT_LABELS.binTorikawa = '닭껍질';
 const LABEL_UP = { workbench: 74, grillBody: 74, drinkTower: 46, glassRack: 24 };
 const labelEls = {};
 for (const [key, text] of Object.entries(OBJECT_LABELS)) {
@@ -1097,30 +1272,335 @@ const foamEl = drinkPanel.querySelector('.foam');
 const stampEl = drinkPanel.querySelector('.stamp');
 const finishBtn = drinkPanel.querySelector('[data-act="finish"]');
 const overflowEl = drinkPanel.querySelector('.drink-overflow');
+const beerHint = el('beerHint');
 const GLASS_PX = 150;
 drinkPanel.querySelector('.target-line').style.bottom = `${GLASS_PX}px`;
+const beerPanel = el('beerPanel');
+const highballPanel = el('highballPanel');
+const highballGuide = el('highballGuide');
+const highballWorktop = highballPanel.querySelector('.highball-worktop');
+const highballVisual = el('highballVisual');
+const highballLiquid = el('highballLiquid');
+const highballHint = el('highballHint');
+const highballOverflow = el('highballOverflow');
+const highballBottleButtons = [...highballPanel.querySelectorAll('[data-liquid]')];
+const highballGaugeWhiskey = highballGuide.querySelector('[data-testid="highball-gauge-whiskey"]');
+const highballGaugeSoda = highballGuide.querySelector('[data-testid="highball-gauge-soda"]');
+const highballReadout = el('highballReadout');
+const highballStamp = el('highballStamp');
+const HIGHBALL_ART_URLS = [
+  '/assets/campaign/d4/prop-highball-workstation-base-draft-r8.png',
+  '/assets/campaign/d4/prop-highball-glass-draft-r3.png',
+  '/assets/campaign/d4/prop-highball-ice-fill-draft-r2.png',
+  '/assets/campaign/d4/prop-highball-bottles-draft-r1.png',
+];
+const BEER_GLASS_DECK_ALPHA_BOTTOM = 796 / 941;
+const HIGHBALL_WORKTOP_ALPHA_BOTTOM = 901 / 1024;
 
-function updateDrinkPanel(activeScreen) {
-  const show = activeScreen === 'SCR-SVC-DRINK';
+Promise.allSettled(HIGHBALL_ART_URLS.map((src) => {
+  const image = new Image();
+  image.decoding = 'sync';
+  image.fetchPriority = 'high';
+  image.src = src;
+  return image.decode();
+})).then(() => {
+  highballPanel.classList.add('is-art-ready');
+  render();
+});
+
+function beerGlassDeckBaselinePx() {
+  return R.projectArtUvAtPreset?.(
+    'drinkGlassDeck',
+    0.5,
+    BEER_GLASS_DECK_ALPHA_BOTTOM,
+  )?.y ?? window.innerHeight * 0.71;
+}
+
+function alignHighballPanelToBeerGlassDeck() {
+  // 기준선은 변형과 무관해야 한다. getBoundingClientRect는 transform까지 반영하므로
+  // 레이아웃 높이(offsetHeight)만 읽는다.
+  const worktopHeight = highballWorktop.offsetHeight;
+  const top = beerGlassDeckBaselinePx()
+    - (worktopHeight * HIGHBALL_WORKTOP_ALPHA_BOTTOM);
+  highballPanel.style.setProperty('--highball-panel-top', `${top.toFixed(3)}px`);
+}
+
+function highballActionMessage(reason) {
+  return {
+    'glass-required': '빈 잔을 먼저 놓으세요',
+    'ice-required': '얼음을 먼저 넣으세요',
+    'both-liquids-required': '위스키와 탄산수를 모두 따라 주세요',
+    'overflow-decision-required': '넘친 잔을 계속 쓸지 먼저 정하세요',
+  }[reason] ?? '지금은 그 조작을 할 수 없어요';
+}
+
+// 납품 음원이 조작보다 길어도 단발음은 2초에서 끊는다. 생맥주 잔 덱과 같은 규칙이다.
+const HIGHBALL_ONE_SHOT_SFX_SEC = 2;
+
+// 하이볼 잔 덱도 생맥주 잔 덱과 같은 소리를 낸다. 같은 조작이므로 같은 소리여야 한다.
+function playGlassDeckSfx() {
+  sfx('SFX-DRINK-GLASS-SET', { maxSec: GLASS_RACK_SFX_SEC });
+  sfx('SFX-DRINK-TRAY-TAP', { maxSec: GLASS_RACK_SFX_SEC });
+}
+
+// 완성된 잔을 눌러 픽업대로 보낸다.
+el('highballPickup').addEventListener('click', () => {
+  if (pickUpHighball()) playGlassDeckSfx();
+});
+
+el('highballGlass').addEventListener('click', () => {
+  const result = highballStation.placeGlass();
+  if (result.ok) playGlassDeckSfx();
+  showHint(result.ok ? '오른쪽 보관대에서 하이볼 잔을 가져왔어요' : '이미 잔이 놓여 있어요');
+  persistFirstOrderRuntime();
+  render();
+});
+el('highballIce').addEventListener('click', () => {
+  const result = highballStation.addIce();
+  if (result.ok) {
+    sfx('SFX-DRINK-ICE-SCOOP', { maxSec: HIGHBALL_ONE_SHOT_SFX_SEC });
+    sfx('SFX-DRINK-ICE-SETTLE', { maxSec: HIGHBALL_ONE_SHOT_SFX_SEC });
+  }
+  showHint(result.ok ? '얼음을 채웠어요' : highballActionMessage(result.reason));
+  persistFirstOrderRuntime();
+  render();
+});
+
+function beginHighballPour(button, now = performance.now()) {
+  const result = highballStation.press(button.dataset.liquid, now);
+  if (!result.ok) {
+    showHint(highballActionMessage(result.reason));
+    return false;
+  }
+  button.classList.add('is-pouring');
+  // 병을 누르고 있는 동안 물줄기가 이어진다. 탄산수 루프에는 기포음이 함께 구워져 있다.
+  loopOn(button.dataset.liquid === 'whiskey' ? 'SFX-DRINK-WHISKEY-POUR' : 'SFX-DRINK-SODA-POUR');
+  render();
+  return true;
+}
+
+function stopHighballPourLoops() {
+  loopOff('SFX-DRINK-WHISKEY-POUR');
+  loopOff('SFX-DRINK-SODA-POUR');
+}
+
+function releaseHighballPour(now = performance.now()) {
+  const released = highballStation.release(now);
+  highballBottleButtons.forEach((button) => button.classList.remove('is-pouring'));
+  stopHighballPourLoops();
+  if (released) {
+    sfx('SFX-DRINK-BOTTLE-SET', { maxSec: HIGHBALL_ONE_SHOT_SFX_SEC });
+    persistFirstOrderRuntime();
+  }
+  return released;
+}
+
+for (const button of highballBottleButtons) {
+  button.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 || !beginHighballPour(button)) return;
+    button.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  });
+  button.addEventListener('keydown', (event) => {
+    if (!['Enter', ' '].includes(event.key) || event.repeat) return;
+    if (beginHighballPour(button)) event.preventDefault();
+  });
+  button.addEventListener('keyup', (event) => {
+    if (!['Enter', ' '].includes(event.key)) return;
+    event.preventDefault();
+    releaseHighballPour();
+  });
+}
+window.addEventListener('pointerup', () => releaseHighballPour());
+window.addEventListener('pointercancel', () => releaseHighballPour());
+
+// 완성 잔을 집어 음료 픽업대에 올린다. 생맥주의 '완성'과 같은 자리다.
+function pickUpHighball() {
+  const result = highballStation.pickUp();
+  if (!result.ok) return false;
+  const quality = result.completed.quality;
+  dock.add({
+    menuId: 'highball',
+    menu: '하이볼',
+    quality,
+    good: quality === 'Perfect' || quality === 'Good',
+    zone: 'drink',
+  });
+  persistFirstOrderRuntime();
+  showHint('하이볼을 음료 픽업대에 올렸어요');
+  render();
+  return true;
+}
+
+el('highballLemon').addEventListener('click', () => {
+  const result = highballStation.addLemon();
+  if (!result.ok) {
+    showHint(highballActionMessage(result.reason));
+    return;
+  }
+  sfx('SFX-DRINK-LEMON-DROP', { maxSec: HIGHBALL_ONE_SHOT_SFX_SEC });
+  persistFirstOrderRuntime();
+  showHint(`${result.completed.quality} 하이볼 완성 · 잔을 눌러 픽업대에 올리세요`);
+  render();
+});
+highballOverflow.querySelector('[data-highball-act="serve-low"]').addEventListener('click', () => {
+  highballStation.acceptOverflow();
+  persistFirstOrderRuntime();
+  showHint('낮은 품질로 계속합니다 · 레몬을 올려 마무리하세요');
+  render();
+});
+highballOverflow.querySelector('[data-highball-act="discard"]').addEventListener('click', () => {
+  highballStation.discard();
+  persistFirstOrderRuntime();
+  showHint('하이볼 잔을 폐기했어요');
+  render();
+});
+
+function updateHighballPanel(show) {
+  const state = highballStation.view();
+  highballPanel.hidden = !show;
+  highballGuide.hidden = !show || !highballPanel.classList.contains('is-art-ready');
+  if (!show) {
+    highballGuide.classList.remove('is-overflow');
+    return;
+  }
+  alignHighballPanelToBeerGlassDeck();
+  const hasWhiskey = state.whiskeyUnits > 0.001;
+  const hasSoda = state.sodaUnits > 0.001;
+  const fillPercent = Math.min(85, state.fillRatio * 85);
+  highballVisual.hidden = !state.glassPlaced;
+  highballVisual.classList.toggle('has-ice', state.iceAdded);
+  highballVisual.classList.toggle('has-whiskey', hasWhiskey);
+  highballVisual.classList.toggle('has-soda', hasSoda);
+  highballVisual.classList.toggle('is-mixed', hasWhiskey && hasSoda);
+  highballVisual.classList.toggle('is-pouring-whiskey', state.activeLiquid === 'whiskey');
+  highballVisual.classList.toggle('is-pouring-soda', state.activeLiquid === 'soda');
+  highballVisual.classList.toggle('is-overflow', state.overflow);
+  highballVisual.classList.toggle('is-overflow-accepted', state.overflowAccepted);
+  // 레몬을 올려 완성한 잔에만 레몬 조각이 걸린다.
+  highballVisual.classList.toggle('has-lemon', state.canPickUp === true);
+  highballWorktop.classList.toggle('is-pouring-whiskey', state.activeLiquid === 'whiskey');
+  highballWorktop.classList.toggle('is-pouring-soda', state.activeLiquid === 'soda');
+  highballBottleButtons.forEach((button) => {
+    button.classList.toggle('is-pouring', button.dataset.liquid === state.activeLiquid);
+  });
+  highballLiquid.style.height = `${fillPercent}%`;
+  highballVisual.style.setProperty('--highball-fill', state.fillRatio.toFixed(4));
+  highballVisual.style.setProperty(
+    '--highball-whiskey-share',
+    state.totalUnits > 0 ? (state.whiskeyUnits / state.totalUnits).toFixed(4) : '0',
+  );
+  highballVisual.style.setProperty(
+    '--highball-soda-share',
+    state.totalUnits > 0 ? (state.sodaUnits / state.totalUnits).toFixed(4) : '0',
+  );
+  highballVisual.setAttribute(
+    'aria-label',
+    `하이볼 잔 ${Math.round(state.fillRatio * 100)}% · 위스키 ${state.whiskeyUnits.toFixed(1)} · 탄산수 ${state.sodaUnits.toFixed(1)}`,
+  );
+  if (state.overflow || state.canPickUp) stopHighballPourLoops();
+  highballOverflow.hidden = !state.overflow;
+  highballGuide.classList.toggle('is-overflow', state.overflow);
+  highballHint.hidden = state.overflow;
+  // 완성 잔이 올라와 있으면 같은 자리가 '픽업대에 올리기' 버튼이 된다.
+  const readyToPick = state.canPickUp === true;
+  el('highballPickup').hidden = !readyToPick;
+  el('highballGlass').disabled = state.glassPlaced;
+  el('highballIce').disabled = readyToPick || !state.glassPlaced || state.iceAdded;
+  el('highballLemon').disabled = !state.canAddLemon;
+  updateHighballGauge(state);
+  highballHint.textContent = readyToPick
+    ? `${state.readyQuality} 하이볼 완성 · 잔을 눌러 픽업대에 올리세요`
+    : state.activeLiquid === 'whiskey'
+      ? '위스키 따르는 중'
+      : state.activeLiquid === 'soda'
+        ? '탄산수 따르는 중'
+        : !state.glassPlaced
+          ? '빈 잔을 가져오세요'
+          : !state.iceAdded
+            ? '얼음을 넣으세요'
+            : state.canAddLemon
+              ? '비율을 살피고 레몬으로 마무리하세요'
+              : '위스키와 탄산수 병을 눌러 따르세요';
+}
+
+// 지금까지 따라진 양을 생맥주 잔 게이지와 같은 방식으로 보여준다.
+// 넘침 기준(4.8 단위)을 잔 전체 높이로 삼아 위스키를 아래, 탄산수를 그 위에 쌓는다.
+function updateHighballGauge(state) {
+  const cap = HIGHBALL_DEFAULT_CONFIG.overflowThresholdUnits;
+  const whiskeyPercent = Math.max(0, Math.min(100, (state.whiskeyUnits / cap) * 100));
+  const sodaPercent = Math.max(0, Math.min(100 - whiskeyPercent, (state.sodaUnits / cap) * 100));
+  highballGaugeWhiskey.style.height = `${whiskeyPercent.toFixed(2)}%`;
+  highballGaugeSoda.style.height = `${sodaPercent.toFixed(2)}%`;
+  highballGaugeSoda.style.bottom = `${whiskeyPercent.toFixed(2)}%`;
+  highballReadout.textContent = `위스키 ${state.whiskeyUnits.toFixed(1)} · 탄산수 ${state.sodaUnits.toFixed(1)}`
+    + `${state.whiskeyUnits > 0 ? ` · 비율 1:${(state.sodaUnits / state.whiskeyUnits).toFixed(1)}` : ''}`;
+  const quality = state.overflow ? 'Fail' : state.readyQuality;
+  highballStamp.hidden = !quality;
+  if (quality) {
+    highballStamp.textContent = state.overflow ? '넘침' : quality;
+    highballStamp.className = `stamp q-${quality}`;
+  }
+}
+
+// 화면 전환 중에는 하이볼 작업대를 잠깐 감춘다.
+//
+// 예전에는 도착 카메라로 투영한 위치·배율을 DOM 패널에 얹어 3D 장면을 따라 날아 들어오게 했다.
+// 그런데 카메라가 수렴하는 300ms 동안 작업대가 눈에 띄게 움직여(들어올 때 x +178px·배율 1.10에서
+// 제자리로) 매번 "위치가 바뀐다"로 읽혔다. 생맥주 안내·하이볼 안내가 이미 전환 중 페이드로
+// 처리되므로 작업대도 같은 방식으로 맞춘다. 자리는 항상 고정이다.
+function updateHighballSceneMotion(activeScreen) {
+  const drinkScreen = 'SCR-SVC-DRINK';
+  const entering = director.isTransitioning()
+    && activeScreen === drinkScreen
+    && director.fromScreenId() !== drinkScreen;
+  highballPanel.classList.toggle('is-scene-moving', entering);
+  drinkPanel.classList.toggle('is-scene-moving', entering);
+  highballPanel.classList.remove('is-scene-leaving');
+}
+
+function beerGuideMessage(state, combined) {
+  if (!combined) return '중립 레버를 아래로 드래그=맥주 · 위로 드래그=거품';
+  if (!glassPlaced) return '빈 잔을 놓으세요';
+  if (state.active === 'beer') return '맥주 따르는 중';
+  if (state.active === 'foam') return '거품 올리는 중';
+  if (state.phase === 'ready') return '비율이 맞았어요 · 완성하세요';
+  return '레버로 비율을 맞추세요';
+}
+
+function updateDrinkPanel(activeScreen, now = performance.now()) {
+  const onDrinkScreen = activeScreen === 'SCR-SVC-DRINK';
+  const combined = ['d4', 'd5'].includes(ACTIVE_DAY_ID);
+  drinkPanel.classList.toggle('is-d4', combined);
+  R.setObjectEnabled?.('drinkStation', true);
+  R.setObjectEnabled?.('drinkGlassDeck', true);
+  R.setObjectEnabled?.('glassRack', true);
+  R.setObjectEnabled?.('drinkLeverDrag', true);
   R.setObjectEnabled?.('drinkPlacedGlass', glassPlaced);
   R.setObjectEnabled?.('drinkBeerLiquid', glassPlaced);
   R.setObjectEnabled?.('drinkBeerVfx', glassPlaced);
-  drinkPanel.hidden = !show;
+  drinkPanel.hidden = !onDrinkScreen;
+  beerPanel.hidden = combined && !onDrinkScreen;
+  updateHighballPanel(onDrinkScreen && combined);
+  if (combined) updateHighballSceneMotion(activeScreen);
   const s = pour.state();
+  const visualFill = drinkVisualFill(s);
+  beerHint.textContent = beerGuideMessage(s, combined);
+  beerPanel.classList.toggle('is-overflow', s.phase === 'overflow');
   beerLiquid?.setState({
-    beerFill: s.beerSec / DRINK.glassCapacity,
-    foamFill: s.foamSec / DRINK.glassCapacity,
+    beerFill: visualFill.beerFill,
+    foamFill: visualFill.foamFill,
     overflow: s.phase === 'overflow',
   });
   beerCoreVfx?.setState({
     active: s.active,
-    foamFill: s.foamSec / DRINK.glassCapacity,
+    foamFill: visualFill.foamFill,
     overflow: s.phase === 'overflow',
     finished: s.phase === 'ready' && s.beerOk && s.foamOk,
   });
-  if (!show) return;
-  const beerH = Math.min(1, s.beerSec / DRINK.glassCapacity) * GLASS_PX;
-  const foamH = Math.min(1 - beerH / GLASS_PX, s.foamSec / DRINK.glassCapacity) * GLASS_PX;
+  if (!onDrinkScreen) return;
+  const beerH = visualFill.beerFill * GLASS_PX;
+  const foamH = visualFill.foamFill * GLASS_PX;
   beerEl.style.height = `${beerH}px`;
   foamEl.style.height = `${foamH}px`;
   foamEl.style.bottom = `${beerH}px`;
@@ -1132,7 +1612,7 @@ function updateDrinkPanel(activeScreen) {
 function finishDrink() {
   const q = pour.finish();
   if (q) {
-    dock.add({ menu: '생맥주', label: q, good: q === 'Perfect' || q === 'Good' });
+    dock.add({ menuId: 'beer', menu: '생맥주', quality: q, good: q === 'Perfect' || q === 'Good', zone: 'drink' });
     glassPlaced = false;
     persistFirstOrderRuntime();
     showHint('생맥주를 음료 픽업대에 올렸어요');
@@ -1143,7 +1623,7 @@ function finishDrink() {
 function serveOverflowLow() {
   const q = pour.serveOverflow();
   if (q) {
-    dock.add({ menu: '생맥주', label: q, good: false });
+    dock.add({ menuId: 'beer', menu: '생맥주', quality: q, good: false, zone: 'drink' });
     glassPlaced = false;
     persistFirstOrderRuntime();
   }
@@ -1155,28 +1635,91 @@ finishBtn.addEventListener('click', finishDrink);
 drinkPanel.querySelector('[data-act="serve-low"]').addEventListener('click', serveOverflowLow);
 drinkPanel.querySelector('[data-act="discard"]').addEventListener('click', discardDrink);
 
+const instantPanel = el('instantPanel');
+const instantArtScene = el('instantArtScene');
+const cabbageSaladPrepare = el('cabbageSaladPrepare');
+const cabbageSaladProgress = el('cabbageSaladProgress');
+const instantMessage = el('instantMessage');
+
+function beginInstantPreparation(now = performance.now()) {
+  if (!['d4', 'd5'].includes(ACTIVE_DAY_ID) || director.activeScreenId() !== 'SCR-SVC-INSTANT') return false;
+  if (!instantStation.begin(now)) return false;
+  instantMessage.textContent = '사라다 담는 중';
+  cabbageSaladPrepare.classList.add('is-holding');
+  render();
+  return true;
+}
+
+function releaseInstantPreparation() {
+  const completed = instantStation.release();
+  cabbageSaladPrepare.classList.remove('is-holding');
+  if (!completed) instantMessage.textContent = '접시에 담으려면 2.5초 동안 계속 누르세요';
+  render();
+  return completed;
+}
+
+function cancelInstantPreparation() {
+  const changed = instantStation.cancel();
+  cabbageSaladPrepare.classList.remove('is-holding');
+  if (changed) instantMessage.textContent = '담기를 취소했습니다 · 처음부터 다시 누르세요';
+  return changed;
+}
+
+cabbageSaladPrepare.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0 || !beginInstantPreparation()) return;
+  cabbageSaladPrepare.setPointerCapture?.(event.pointerId);
+  event.preventDefault();
+});
+cabbageSaladPrepare.addEventListener('pointerup', releaseInstantPreparation);
+cabbageSaladPrepare.addEventListener('pointercancel', releaseInstantPreparation);
+cabbageSaladPrepare.addEventListener('keydown', (event) => {
+  if (!['Enter', ' '].includes(event.key) || event.repeat) return;
+  if (beginInstantPreparation()) event.preventDefault();
+});
+cabbageSaladPrepare.addEventListener('keyup', (event) => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  event.preventDefault();
+  releaseInstantPreparation();
+});
+
+function updateInstantPanel(activeScreen) {
+  const show = ['d4', 'd5'].includes(ACTIVE_DAY_ID) && activeScreen === 'SCR-SVC-INSTANT';
+  instantPanel.hidden = !show;
+  instantArtScene.hidden = !show;
+  const state = instantStation.view();
+  cabbageSaladProgress.style.setProperty('--instant-progress', `${state.ratio * 360}deg`);
+  cabbageSaladProgress.setAttribute('aria-valuenow', String(Math.round(state.ratio * 100)));
+  cabbageSaladPrepare.classList.toggle('is-holding', state.phase === 'holding');
+}
+
 // ── 상태 → 장면·HUD ──────────────────────────────────────────
 const slotIndexOf = (key) => SLOT_KEYS.indexOf(key);
 function shouldShow(key) {
   const active = director.activeScreenId();
   if (SCREEN_OF[key] !== active) return false;
+  if (key === 'binChicken' && cook.selectedMenuId() === 'kawa') return false;
+  if (key === 'binTorikawa') return ACTIVE_DAY_ID === 'd5' && cook.selectedMenuId() === 'kawa';
   const si = slotIndexOf(key);
   if (si >= 0) return si < cook.slotCount() && cook.slotViews(performance.now())[si].status !== 'empty';
   return true;
 }
 
 function extraKind(customerId) {
-  if (/^D[1-3]-(OFFICE|COMMUTER)/.test(customerId ?? '')) return 'office';
-  if (/^D[1-3]-SOLO/.test(customerId ?? '')) return 'solo';
+  if (/^D[1-5]-(OFFICE|COMMUTER)/.test(customerId ?? '')) return 'office';
+  if (/^D[1-5]-SOLO/.test(customerId ?? '')) return 'solo';
   return null;
 }
 
 function tsukiokaArtFor(seat, nowMs) {
   if (!seat) return runtimeAssets.TSUKIOKA_WAITING;
   const view = businessView();
-  const servedBeer = seatHasServedMenu(view, seat, 'beer');
+  const servedBeer = seatHasServedMenu(view, seat, 'beer')
+    || seatHasServedMenu(view, seat, 'highball');
+  // 사라다는 꼬치가 아니다. 여기 섞으면 사라다만 받은 손님이 꼬치를 먹는 그림이 된다.
+  // 사라다 접시는 카운터 위에 따로 그려지고, 사람은 대기 자세로 남는다.
   const servedSkewer = seatHasServedMenu(view, seat, 'negima')
-    || seatHasServedMenu(view, seat, 'momo');
+    || seatHasServedMenu(view, seat, 'momo')
+    || seatHasServedMenu(view, seat, 'kawa');
   if (seat.phase === 'eating' || seat.phase === 'done') {
     if (servedBeer && servedSkewer) return resolveD1ReceivedEatingFrame(runtimeAssets, nowMs);
     if (servedBeer) return runtimeAssets.TSUKIOKA_PARTIAL_BEER;
@@ -1210,7 +1753,9 @@ function updateTsukiokaArt(nowMs = visualNowMs(), resolvedArt = null) {
     || art.frameRole === 'drink-frame';
   // actor 프레임은 매 rAF마다 바뀐다. 같은 프레임에서 테이블 잔도 함께 숨겨
   // 손과 테이블에 잔이 한 프레임이라도 중복되는 현상을 막는다.
-  R.setSeatBeerVisible(seat.seatId, seatHasServedMenu(view, seat, 'beer') && !holdingBeer);
+  R.setSeatBeerVisible(seat.seatId, (
+    seatHasServedMenu(view, seat, 'beer') || seatHasServedMenu(view, seat, 'highball')
+  ) && !holdingBeer);
   const genericActor = R.seatActorMesh[seat.seatId];
   if (genericActor) genericActor.visible = false;
   return art;
@@ -1246,8 +1791,13 @@ function syncCustomers() {
     const seat = seats.find((item) => item.seatId === seatId);
     const servedNegima = seatHasServedMenu(view, seat, 'negima');
     const servedMomo = seatHasServedMenu(view, seat, 'momo');
-    const servedSkewer = servedNegima || servedMomo;
-    const servedBeer = seatHasServedMenu(view, seat, 'beer');
+    const servedKawa = seatHasServedMenu(view, seat, 'kawa');
+    const servedSalad = seatHasServedMenu(view, seat, 'cabbage-salad');
+    const servedGrilledFood = servedNegima || servedMomo || servedKawa;
+    // 손님 자세는 구운 꼬치를 받았을 때만 먹는 그림으로 바뀐다. 사라다는 접시만 놓인다.
+    const servedSkewer = servedGrilledFood;
+    const servedBeer = seatHasServedMenu(view, seat, 'beer')
+      || seatHasServedMenu(view, seat, 'highball');
     const kind = extraKind(seat?.customerId);
     const officeArt = kind === 'office'
       ? resolveD1OfficeCustomerFrame(runtimeAssets.COMMUTER_CUSTOMER, {
@@ -1276,11 +1826,15 @@ function syncCustomers() {
     const dirtyTable = Boolean(seat?.cleanupNeeded || seat?.phase === 'leaving');
     R.setSeatPlateUrl(
       seatId,
-      servedMomo && !servedNegima
-        ? D2_MOMO_RUNTIME_URLS.servedPlate
+      servedKawa && !servedNegima
+        ? D5_KAWA_RUNTIME_URLS.servedPlate
+        : servedMomo && !servedNegima
+          ? D2_MOMO_RUNTIME_URLS.servedPlate
         : '/assets/core/customer/pr-served-negima-plate-r2-b1.png',
     );
-    R.setSeatPlateVisible(seatId, onCustomers && customerPresent && servedSkewer);
+    R.setSeatFoodLayout(seatId, { grilled: servedGrilledFood, salad: servedSalad });
+    R.setSeatPlateVisible(seatId, onCustomers && customerPresent && servedGrilledFood);
+    R.setSeatSaladVisible(seatId, onCustomers && customerPresent && servedSalad);
     R.setSeatBeerVisible(seatId, onCustomers && customerPresent
       && servedBeer && !tsukiokaHoldingBeer && !officeHoldingBeer && !soloHoldingBeer);
     R.setSeatEmptyDishesVisible(seatId, onCustomers && dirtyTable);
@@ -1352,7 +1906,8 @@ function render() {
   renderReceipts();
   renderOrderHud();
   renderBusiness();
-  renderD3Torch();
+  updateDrinkPanel(director.activeScreenId());
+  updateInstantPanel(director.activeScreenId());
   syncCustomers();
   renderServeTargets();
   for (const btn of document.querySelectorAll('.quick-nav button')) btn.classList.toggle('active', btn.dataset.screen === director.activeScreenId());
@@ -1361,26 +1916,89 @@ function render() {
   businessRenderDue = false;
 }
 
+const ASSEMBLY_TARE_TINT = new THREE.Color(0x5e281a);
+
+function setAssemblyTareTint(instance, amount, { ingredientsOnly = false } = {}) {
+  const normalized = Math.max(0, Math.min(1, Number(amount) || 0));
+  if (typeof instance?.setTare === 'function') {
+    instance.setTare(normalized);
+    return;
+  }
+  instance?.root?.traverse((node) => {
+    if (!node.isMesh) return;
+    if (ingredientsOnly) {
+      let parent = node;
+      let ingredient = false;
+      while (parent && parent !== instance.root) {
+        if (/^(chicken|green-onion)-\d{2}$/.test(parent.name)) {
+          ingredient = true;
+          break;
+        }
+        parent = parent.parent;
+      }
+      if (!ingredient) return;
+    }
+    for (const material of (Array.isArray(node.material) ? node.material : [node.material])) {
+      if (!material?.color) continue;
+      material.userData.assemblyTareBaseColor ??= material.color.clone();
+      material.color.copy(material.userData.assemblyTareBaseColor).lerp(
+        ASSEMBLY_TARE_TINT,
+        normalized * 0.22,
+      );
+    }
+  });
+}
+
 function syncAssemblyVisual() {
   const onAssembly = director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
   const selectedMenuId = cook.selectedMenuId();
+  // learnedMenuIds()는 Set을 돌려준다. includes는 Set에 없다.
+  const torikawaUnlocked = cook.learnedMenuIds().has('kawa');
+  R.setArtAsset('workbench', torikawaUnlocked
+    ? COOKING_ART.torikawaAssemblyStation
+    : COOKING_ART.assemblyStation);
   const negimaReady = rawNegimaRuntime.status === 'ready';
   const momoReady = momoRuntime.status === 'approved';
+  const kawaReady = kawaRuntime.status === 'approved';
   const progress = cook.assemblyProgress();
+  const assembledTare = progress.complete && progress.tarePrepared;
   if (assemblyNegimaInstances.build) {
-    assemblyNegimaInstances.build.setIngredientCount(progress.index);
-    assemblyNegimaInstances.build.holder.visible = onAssembly && negimaReady && selectedMenuId === 'negima';
+    // 네기마 조립 compositor가 가진 온전한 3D 대나무 꼬치를 모든 꼬치 메뉴의 공통
+    // 베이스로 유지한다. 모모·토리카와 단계 PNG는 재료만 얹고 자체 막대는 그리지 않는다.
+    const usesCommonSkewerBase = ['negima', 'momo', 'kawa'].includes(selectedMenuId);
+    assemblyNegimaInstances.build.setIngredientCount(
+      selectedMenuId === 'negima' ? progress.index : 0,
+    );
+    assemblyNegimaInstances.build.holder.visible = onAssembly && negimaReady && usesCommonSkewerBase;
+    setAssemblyTareTint(
+      assemblyNegimaInstances.build,
+      selectedMenuId === 'negima' && assembledTare ? 1 : 0,
+      { ingredientsOnly: true },
+    );
   }
   if (momoInstances.build) {
     momoInstances.build.setIngredientCount(progress.index);
     momoInstances.build.holder.visible = onAssembly && momoReady && selectedMenuId === 'momo';
+    setAssemblyTareTint(momoInstances.build, selectedMenuId === 'momo' && assembledTare ? 1 : 0);
+  }
+  if (kawaInstances.build) {
+    kawaInstances.build.setIngredientCount(progress.index);
+    kawaInstances.build.holder.visible = onAssembly && kawaReady && selectedMenuId === 'kawa';
+    setAssemblyTareTint(kawaInstances.build, selectedMenuId === 'kawa' && assembledTare ? 1 : 0);
   }
   const waitingItems = cook.waitingItems();
+  const waitingProducts = cook.waitingProducts();
   assemblyNegimaInstances.tray.forEach((instance, index) => {
     instance.holder.visible = onAssembly && negimaReady && waitingItems[index] === 'negima';
+    setAssemblyTareTint(instance, waitingProducts[index]?.seasoning === 'tare' ? 1 : 0);
   });
   momoInstances.tray.forEach((instance, index) => {
     instance.holder.visible = onAssembly && momoReady && waitingItems[index] === 'momo';
+    setAssemblyTareTint(instance, waitingProducts[index]?.seasoning === 'tare' ? 1 : 0);
+  });
+  kawaInstances.tray.forEach((instance, index) => {
+    instance.holder.visible = onAssembly && kawaReady && waitingItems[index] === 'kawa';
+    setAssemblyTareTint(instance, waitingProducts[index]?.seasoning === 'tare' ? 1 : 0);
   });
 }
 
@@ -1404,40 +2022,51 @@ function assemblyInstanceGeometry(instance) {
 function renderGrillWaitingControl(slotViews) {
   const onGrill = director.activeScreenId() === 'SCR-SVC-GRILL';
   const onCustomers = director.activeScreenId() === 'SCR-SVC-CUSTOMERS';
-  const waitingByMenu = {
-    negima: cook.waitingCount('negima'),
-    momo: cook.waitingCount('momo'),
-  };
+  const waitingByMenu = Object.fromEntries(['negima', 'momo', 'kawa'].map((menuId) => [menuId, {
+    salt: cook.waitingCount(menuId, 'salt'),
+    tare: cook.waitingCount(menuId, 'tare'),
+  }]));
   const hasEmptySlot = slotViews.some((slot) => slot.status === 'empty');
+  const tareUnlocked = ['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID);
   grillInventory.hidden = !onGrill;
   // The prepared inventory is shared state, but selecting it is a customer-station action.
   // Keep the stock while hiding the service-counter art from every work station.
   dockShelf.classList.toggle('station-context-hidden', !onCustomers);
   dockShelf.setAttribute('aria-hidden', String(!onCustomers));
   const syncCard = (menuId, card, countEl, hintEl) => {
-    const count = waitingByMenu[menuId];
-    const label = skewerLabel(menuId);
-    card.hidden = menuId === 'momo' && ACTIVE_DAY_ID === 'd1';
-    card.disabled = !onGrill || count === 0 || !hasEmptySlot;
+    const counts = waitingByMenu[menuId];
+    const count = counts.salt + counts.tare;
+    const label = MENU_META[menuId]?.label ?? '꼬치';
+    card.hidden = menuId === 'kawa'
+      ? ACTIVE_DAY_ID !== 'd5'
+      : menuId === 'momo' && ACTIVE_DAY_ID === 'd1';
+    const disabled = !onGrill || count === 0 || !hasEmptySlot;
+    card.classList.toggle('is-disabled', disabled);
     card.dataset.waitingCount = String(count);
     card.dataset.hasEmptySlot = String(hasEmptySlot);
     countEl.textContent = `× ${count}`;
     hintEl.textContent = count === 0
       ? `조립대에서 ${label}를 완성해 주세요`
       : hasEmptySlot
-        ? '클릭하여 첫 빈 칸에 한 개 올리기'
+        ? tareUnlocked ? `소금 ${counts.salt} · 타레 ${counts.tare}` : `소금 ${counts.salt}`
         : '빈 그릴 칸이 생기면 배치할 수 있습니다';
-    card.setAttribute(
-      'aria-label',
-      count === 0
-        ? `${label}. 대기 중인 꼬치 없음.`
+    for (const [seasoning, button] of Object.entries(grillWaitingActions[menuId])) {
+      const seasoningCount = counts[seasoning];
+      button.hidden = seasoning === 'tare' && !tareUnlocked;
+      button.disabled = disabled || seasoningCount === 0;
+      button.dataset.waitingCount = String(seasoningCount);
+      grillWaitingActionCounts[menuId][seasoning].textContent = `× ${seasoningCount}`;
+      const seasoningLabel = seasoning === 'tare' ? '타레' : '소금';
+      button.setAttribute('aria-label', seasoningCount === 0
+        ? `${seasoningLabel} ${label}. 대기 중인 꼬치 없음.`
         : hasEmptySlot
-          ? `${label}. 대기 ${count}개. 다음 한 개를 첫 빈 그릴 칸에 올리기.`
-          : `${label}. 대기 ${count}개. 빈 그릴 칸 없음.`,
-    );
+          ? `${seasoningLabel} ${label}. 대기 ${seasoningCount}개. 첫 빈 그릴 칸에 올리기.`
+          : `${seasoningLabel} ${label}. 대기 ${seasoningCount}개. 빈 그릴 칸 없음.`);
+    }
   };
   syncCard('negima', grillWaitingNegima, grillWaitingNegimaCount, grillWaitingNegimaHint);
   syncCard('momo', grillWaitingMomo, grillWaitingMomoCount, grillWaitingMomoHint);
+  syncCard('kawa', grillWaitingKawa, grillWaitingKawaCount, grillWaitingKawaHint);
 }
 
 const GRILL_QUALITY_ORDER = Object.freeze(['Perfect', 'Good', 'OK', 'Fail']);
@@ -1449,7 +2078,7 @@ const GRILL_QUALITY_LABEL = Object.freeze({
 });
 
 function renderGrillFinishedInventory() {
-  const skewerItems = dock.items().filter((item) => ['네기마', '모모'].includes(item.menu));
+  const skewerItems = dock.items().filter((item) => ['negima', 'momo', 'kawa'].includes(item.menuId));
   grillFinishedInventoryCount.textContent = `총 ${skewerItems.length}개`;
   grillFinishedQualityList.innerHTML = '';
 
@@ -1507,25 +2136,34 @@ function renderReceipts() {
   ol.innerHTML = '';
   const idx = cook.assemblyIndex();
   // 단계 안내는 처음 만드는 메뉴에만. 익힌 뒤에는 비법노트에서 찾아본다.
-  const tutorial = shouldShowAssemblyTutorial(cook.selectedMenuId(), cook.learnedMenuIds());
+  const selectedMenuId = cook.selectedMenuId();
+  const tutorial = selectedMenuId !== 'kawa'
+    && shouldShowAssemblyTutorial(selectedMenuId, cook.learnedMenuIds());
   ol.dataset.tutorial = String(tutorial);
   if (tutorial) {
     cook.currentRecipe().forEach((ing, i) => {
       const li = document.createElement('li');
-      li.textContent = ing === 'chicken' ? '닭' : '파';
+      li.textContent = ing === 'chicken' ? '닭' : ing === 'foldedChickenSkin' ? '닭껍질' : '파';
       li.dataset.testid = `order-slot-${i}`;
       if (i < idx) li.classList.add('done');
       else if (i === idx) li.classList.add('next');
       ol.appendChild(li);
     });
   }
+  if (selectedMenuId === 'kawa') {
+    const progress = document.createElement('li');
+    progress.textContent = `토리카와 ${idx}/5`;
+    progress.dataset.testid = 'kawa-assembly-progress';
+    progress.style.width = 'auto';
+    progress.style.padding = '0 8px';
+    ol.appendChild(progress);
+  }
   const w = document.createElement('li');
-  const waiting = [
-    ['네기마', cook.waitingCount('negima')],
-    ['모모', cook.waitingCount('momo')],
-  ].filter(([, count]) => count > 0);
+  const waiting = cook.waitingProducts().map((item) => skewerLabel(item.menuId, item.seasoning));
+  const waitingCounts = new Map();
+  for (const label of waiting) waitingCounts.set(label, (waitingCounts.get(label) ?? 0) + 1);
   w.textContent = waiting.length
-    ? waiting.map(([label, count]) => `${label} ${count}`).join(' · ')
+    ? [...waitingCounts].map(([label, count]) => `${label} ${count}`).join(' · ')
     : '대기 0';
   w.dataset.testid = 'wait-count';
   w.style.width = 'auto';
@@ -1568,6 +2206,45 @@ function syncCustomerAmbience(view) {
   previousOccupiedSeatCount = occupied;
 }
 
+function renderAssemblyTareControl(activeDayFeatureOpen) {
+  const progress = cook.assemblyProgress();
+  const unlocked = activeDayFeatureOpen
+    && ['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
+    && director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
+  const panel = el('assemblyTarePanel');
+  panel.hidden = !unlocked;
+  if (!unlocked) {
+    assemblyTareModeSelected = false;
+    assemblyTarePointerId = null;
+    assemblyTareLastZone = null;
+    assemblyTarePaintedZones.clear();
+    assemblyTareKeyboardDirections.clear();
+    assemblyTareCursor.classList.remove('is-brushing');
+    assemblyTareCursor.hidden = true;
+    document.body.classList.remove('assembly-tare-cursor-ready');
+    return;
+  }
+
+  if (!progress.complete || progress.tarePrepared) assemblyTareModeSelected = false;
+  const ready = progress.complete && !progress.tarePrepared;
+  assemblyTarePot.disabled = !ready;
+  assemblyTarePot.setAttribute('aria-pressed', String(assemblyTareModeSelected));
+  assemblyTarePotArt.src = assemblyTareModeSelected
+    ? '/assets/campaign/d3/prop-tare-sauce-pot-open-r2-b1.png'
+    : '/assets/campaign/d3/prop-tare-sauce-pot-r2-b1.png';
+  assemblyTareCursor.hidden = !assemblyTareReady();
+  document.body.classList.toggle('assembly-tare-cursor-ready', assemblyTareReady());
+
+  const status = el('assemblyTareProgress');
+  if (!progress.complete) status.textContent = '꼬치를 먼저 조립하세요';
+  else if (progress.tarePrepared) status.textContent = '타레 도포 완료 · 꼬치를 눌러 이동';
+  else if (assemblyTareModeSelected) status.textContent = '꼬치 위를 한 번 좌우로 칠하세요';
+  else status.textContent = '소금으로 옮기거나 타레를 선택하세요';
+  if (assemblyTarePointerId == null) {
+    updateAssemblyTareCoverage(progress.tarePrepared ? 1 : (progress.tareCoverage ?? 0));
+  }
+}
+
 function renderBusiness() {
   const view = businessView();
   syncCustomerAmbience(view);
@@ -1575,14 +2252,17 @@ function renderBusiness() {
     && businessSession.completed !== true
     && view?.dayId?.toLowerCase() === ACTIVE_DAY_ID;
   const recipePickerOpen = activeDayFeatureOpen
-    && ['d2', 'd3'].includes(ACTIVE_DAY_ID)
+    && ['d2', 'd3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
     && director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
   assemblyRecipePicker.hidden = !recipePickerOpen;
   for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
+    button.hidden = (button.dataset.d3Only === 'true' && !['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID))
+      || (button.dataset.d5Only === 'true' && ACTIVE_DAY_ID !== 'd5');
     const selected = button.dataset.menuId === cook.selectedMenuId();
     button.setAttribute('aria-pressed', String(selected));
     button.disabled = !selected && (cook.assemblyIndex() > 0 || cook.assemblyComplete());
   }
+  renderAssemblyTareControl(activeDayFeatureOpen);
   el('businessClock').textContent = view?.clock?.label ?? '--:--';
   const manuallyPaused = runtimeSuspensionReasons.has('manual-pause');
   el('businessPhase').textContent = manuallyPaused
@@ -1646,10 +2326,10 @@ function renderBusiness() {
   if (completed) {
     const campaign = businessSession?.bridge?.getState?.();
     el('resultMessage').textContent = `${ACTIVE_DAY.label} 완료 · 보상 ${campaign?.economy?.balance ?? 44} · 명성 ${campaign?.economy?.reputation ?? 12} · ${ACTIVE_DAY.nextLabel} 저장 완료`;
-    el('continueButton').textContent = ACTIVE_DAY_ID === 'd3'
-      ? '후일담으로 계속'
-      : `${ACTIVE_DAY.nextLabel}로 계속`;
-    el('continueButton').href = `./s0-d3.html?post=${ACTIVE_DAY_ID}`;
+    el('continueButton').textContent = `${ACTIVE_DAY.nextLabel}로 계속`;
+    el('continueButton').href = ACTIVE_DAY_ID === 'd5'
+      ? './public-shell.html'
+      : `./s0-d3.html?post=${ACTIVE_DAY_ID}`;
   }
 }
 
@@ -1657,7 +2337,15 @@ function renderBusiness() {
 function renderRecipeBook() {
   const container = el('recipeBookEntries');
   container.replaceChildren();
-  for (const entry of recipeBookEntries()) {
+  const menuIds = ACTIVE_DAY_ID === 'd5'
+    ? ['negima', 'momo', 'kawa', 'beer', 'cabbage-salad', 'highball']
+    : ACTIVE_DAY_ID === 'd4'
+      ? ['negima', 'momo', 'beer', 'cabbage-salad', 'highball']
+    : ['negima', 'momo', 'beer'];
+  for (const entry of recipeBookEntries({
+    menuIds,
+    tareAvailable: ['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID),
+  })) {
     const article = document.createElement('article');
     article.className = 'recipe-book-entry';
     article.dataset.testid = `recipe-book-${entry.menuId}`;
@@ -1810,6 +2498,8 @@ function setRuntimeSuspended(reason, suspended) {
 
   const now = performance.now();
   if (isSuspended) {
+    cancelInstantPreparation();
+    releaseHighballPour(now);
     releasePointers();
     cook.pause(now);
     pour.pause(now);
@@ -1866,6 +2556,23 @@ const GLASS_RACK_SFX_SEC = 2;
 function handle(key, now) {
   const si = slotIndexOf(key);
   if (si >= 0) { clickGrillSlot(si, now); return; }
+  if (key.startsWith('grillWait:')) {
+    const [, menuId, seasoning] = key.split(':');
+    const r = cook.placeToGrill(now, menuId, seasoning);
+    const label = skewerLabel(menuId, seasoning);
+    if (!r.ok) {
+      const noWaiting = ['no-waiting', 'no-menu-waiting', 'no-seasoning-waiting'].includes(r.reason);
+      showHint(noWaiting ? `대기 중인 ${label}가 없어요` : '빈 그릴 칸이 없어요');
+    } else {
+      sfx('SFX-GRILL-PLACE-METAL');
+      sfx('SFX-GRILL-PLACE-SIZZLE', { maxSec: GRILL_CUE_SEC });
+      showHint(`${r.slot + 1}번에 ${label}를 올렸어요 · 앞면부터 익습니다`);
+    }
+    persistFirstOrderRuntime();
+    syncRiskCount(now);
+    render();
+    return;
+  }
   switch (key) {
     case 'glassRack':
       // 납품 음원이 연출보다 길어 잔 하나 놓는 데 계속 울린다. 2초에서 끊는다.
@@ -1876,8 +2583,12 @@ function handle(key, now) {
       showHint('빈 잔을 노즐 아래에 놓았어요');
       break;
     case 'binChicken':
+    case 'binTorikawa':
     case 'binLeek': {
-      const r = cook.clickIngredient(key === 'binChicken' ? 'chicken' : 'leek');
+      const ingredient = key === 'binTorikawa'
+        ? 'foldedChickenSkin'
+        : key === 'binChicken' ? 'chicken' : 'leek';
+      const r = cook.clickIngredient(ingredient);
       if (!r.ok) {
         sfx('SFX-ASM-REJECT');
         showHint(r.reason === 'transfer-required' ? '완성 꼬치를 먼저 옮기세요' : '순서가 달라요');
@@ -1886,7 +2597,9 @@ function handle(key, now) {
         if (r.completed) {
           sfx('SFX-ASM-COMPLETE');
           persistFirstOrderRuntime();
-          showHint(`${skewerLabel(r.menuId)} 완성 · 꼬치를 눌러 오른쪽 트레이로 옮기세요`);
+          showHint(['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
+            ? `${skewerLabel(r.menuId)} 조립 완료 · 소금은 꼬치를 눌러 이동, 타레는 오른쪽 소스통을 선택하세요`
+            : `${skewerLabel(r.menuId)} 완성 · 꼬치를 눌러 오른쪽 트레이로 옮기세요`);
         }
       }
       break;
@@ -1894,27 +2607,16 @@ function handle(key, now) {
     case 'jigSkewer': {
       const r = cook.transferAssembly();
       if (!r.ok) {
-        showHint('아직 완성된 꼬치가 없어요');
+        showHint(r.reason === 'tare-brush-required'
+          ? '타레 붓으로 꼬치 전체를 한 번 좌우로 칠해 주세요'
+          : '아직 완성된 꼬치가 없어요');
       } else {
+        assemblyTareModeSelected = false;
+        assemblyTarePaintedZones.clear();
+        assemblyTareKeyboardDirections.clear();
         persistFirstOrderRuntime();
-        showHint(`${skewerLabel(r.menuId)} · 전달 트레이 이동 완료`);
+        showHint(`${skewerLabel(r.menuId, r.seasoning)} · 전달 트레이 이동 완료`);
       }
-      break;
-    }
-    case 'grillWaitTray':
-    case 'grillWaitMomo': {
-      const menuId = key === 'grillWaitMomo' ? 'momo' : 'negima';
-      const r = cook.placeToGrill(now, menuId);
-      if (!r.ok) {
-        const noWaiting = ['no-waiting', 'no-menu-waiting'].includes(r.reason);
-        showHint(noWaiting ? `대기 중인 ${skewerLabel(menuId)}가 없어요` : '빈 그릴 칸이 없어요');
-      } else {
-        sfx('SFX-GRILL-PLACE-METAL');
-        sfx('SFX-GRILL-PLACE-SIZZLE', { maxSec: GRILL_CUE_SEC });
-        showHint(`${r.slot + 1}번 ${skewerLabel(menuId)} 앞면 조리 시작 · 다른 꼬치와 독립적으로 익습니다`);
-      }
-      persistFirstOrderRuntime();
-      syncRiskCount(now);
       break;
     }
     case 'grillFinishedTray':
@@ -1933,19 +2635,12 @@ function clickGrillSlot(i, now) {
   const r = cook.clickSlot(i, now);
   if (r.retrieved) {
     const menuId = r.menuId ?? 'negima';
-    const label = skewerLabel(menuId);
+    const label = skewerLabel(menuId, r.seasoning);
     sfx('SFX-GRILL-RETRIEVE');
     sfx(r.quality?.good ? 'SFX-JUDGE-PERFECT' : 'SFX-JUDGE-FAIL');
-    if (ACTIVE_DAY_ID === 'd3' && menuId === 'momo' && !d3Grill.job(D3_TORCH_JOB_ID)) {
-      d3Grill.stageCookedItem({ id: D3_TORCH_JOB_ID, menuId: 'momo', seasoning: 'tare', bothFacesCooked: true });
-      d3TorchSlotKey = SLOT_KEYS[i];
-    } else {
-      dock.add({ menu: label, label: r.quality.grade, good: r.quality.good });
-    }
+    dock.add({ menuId, menu: label, seasoning: r.seasoning ?? null, quality: r.quality.grade, good: r.quality.good, zone: 'food' });
     persistFirstOrderRuntime();
-    showHint(ACTIVE_DAY_ID === 'd3' && menuId === 'momo'
-      ? '구운 모모를 타레·토치 마감대로 옮겼어요'
-      : `완성 ${label}가 오른쪽 종류·품질별 목록에 추가됐어요`);
+    showHint(`완성 ${label}가 오른쪽 종류·품질별 목록에 추가됐어요`);
   }
   else if (r.flipped) {
     sfx('SFX-GRILL-FLIP');
@@ -1977,23 +2672,11 @@ function grillNegimaStage(view) {
   return 'cooking';
 }
 
-function d3TorchMomoStage(job) {
-  if (!job?.finish) return 'proper';
-  const finish = job.finish;
-  if (finish.torchCompleted) {
-    if (finish.torchState === 'failed') return 'burnt';
-    if (finish.torchState === 'over') return 'overcooked';
-    return 'proper';
-  }
-  if (finish.torchFocusMs >= 1_200) return 'burnt';
-  if (finish.torchFocusMs >= 800) return 'overcooked';
-  return 'proper';
-}
-
 // 뒤집는 동안에는 단계 표시를 고정한다. 회전 중 판정이 잠깐 비조리로 보여 'raw'로 튀면
 // 화면·회귀 모두에서 단계가 깜빡인다. 마지막으로 확정된 단계를 들고 있는다.
 const rawNegimaStageBySlot = {};
 const momoStageBySlot = {};
+const kawaStageBySlot = {};
 
 function bindCookingMaterialToApprovedPlane(key) {
   const g = grillMats[key];
@@ -2144,22 +2827,7 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
   updateGrillStateCues(views);
   for (const key of SLOT_KEYS) {
     const slotView = views[slotIndexOf(key)];
-    const d3TorchJob = key === d3TorchSlotKey ? d3Grill.job(D3_TORCH_JOB_ID) : null;
-    const stagedD3Momo = d3TorchJob != null;
-    // Tare and torch finishing happen on the grill. Keep the cooked momo visible
-    // after the cook station hands it to the D3 finishing workflow.
-    const v = stagedD3Momo && (!slotView || slotView.status === 'empty')
-      ? {
-          status: 'back',
-          cooking: true,
-          menuId: 'momo',
-          doneness: 'perfect',
-          faceElapsedSec: 3,
-          visualRotationRad: 0,
-          orientationFaceDown: 'back',
-          flipping: false,
-        }
-      : slotView;
+    const v = slotView;
     const mesh = R.objectMesh[key];
     if (!mesh) continue;
     const g = grillMats[key];
@@ -2168,18 +2836,22 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
       g.setTime(now / 1000);
       for (const [param, value] of Object.entries(d1SecondFaceR3Params(v))) g.setParam(param, value);
       g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
+      // 글레이즈(연출)와 양념 구분색(게임 상태)은 서로 다른 uniform이 갖는다.
+      g.setTare(v?.tarePrepared ? 0.34 : 0);
+      g.setTareSeasoned(v?.tarePrepared === true);
     }
     const visibleStage = grillNegimaStage(v);
-    const momoVisibleStage = stagedD3Momo ? d3TorchMomoStage(d3TorchJob) : visibleStage;
+    const skewerVisibleStage = visibleStage;
     mesh.userData.grillBaseQuaternion ??= mesh.quaternion.clone();
     mesh.quaternion.copy(mesh.userData.grillBaseQuaternion).multiply(
       grillFlipQuaternion.setFromAxisAngle(GRILL_FLIP_AXIS, v?.visualRotationRad ?? 0),
     );
     const rawInstance = rawNegimaInstances[key];
     const momoInstance = momoInstances.grill[key];
+    const kawaInstance = kawaInstances.grill[key];
     const menuId = v?.menuId ?? 'negima';
-    // 네기마는 승인 원본(raw) 한 장에 GLSL 조리색을 적용한다. 모모는 승인된 단계별
-    // 래스터를 선택해 적정·과다·탄 상태의 국소 그을음과 살코기 디테일을 보존한다.
+    // 네기마는 승인 원본(raw) 한 장에 GLSL 조리색을 적용한다. 모모와 토리카와는
+    // 메뉴별 단계 래스터를 선택해 적정·과다·탄 상태의 국소 디테일을 보존한다.
     const shaderOnApprovedPlane = rawInstance?.usesCookingMaterial?.() === true;
     const showApprovedSprite = (
       rawNegimaRuntime.status === 'ready'
@@ -2213,16 +2885,36 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
     if (momoInstance) {
       momoInstance.holder.visible = showMomoSprite;
       if (!v?.flipping) {
-        momoStageBySlot[key] = momoVisibleStage;
-        momoInstance.setStage(momoVisibleStage);
+        momoStageBySlot[key] = skewerVisibleStage;
+        momoInstance.setStage(skewerVisibleStage);
+        momoInstance.setTare(v?.tarePrepared ? 1 : 0);
         momoInstance.flipPivot.scale.x = v?.orientationFaceDown === 'back' ? -1 : 1;
       }
       momoInstance.flipPivot.rotation.y = 0;
     }
+    const showKawaSprite = (
+      kawaRuntime.status === 'approved'
+      && v != null
+      && v.status !== 'empty'
+      && menuId === 'kawa'
+      && director.activeScreenId() === 'SCR-SVC-GRILL'
+    );
+    if (kawaInstance) {
+      kawaInstance.holder.visible = showKawaSprite;
+      if (!v?.flipping) {
+        kawaStageBySlot[key] = skewerVisibleStage;
+        kawaInstance.setStage(skewerVisibleStage);
+        kawaInstance.setTare(v?.tarePrepared ? 1 : 0);
+        kawaInstance.flipPivot.scale.x = v?.orientationFaceDown === 'back' ? -1 : 1;
+      }
+      kawaInstance.flipPivot.rotation.y = 0;
+    }
     // public pgSlot은 visual과 raycast를 한 mesh가 맡으므로 visible=false로 숨기면 입력도 끊긴다.
     // mesh/raycast는 유지하고 color write만 막는다. 승인 평면이 셰이더를 소유한 뒤에는
     // mesh가 raycast 전용이라 항상 막아둔다.
-    if (mesh.material) mesh.material.colorWrite = !(showApprovedSprite || showMomoSprite);
+    if (mesh.material) {
+      mesh.material.colorWrite = !(showApprovedSprite || showMomoSprite || showKawaSprite);
+    }
   }
 }
 
@@ -2238,7 +2930,7 @@ for (const key of SLOT_KEYS) {
 // ── 화면 전환 ────────────────────────────────────────────────
 function buildQuickNav() {
   const nav = el('quickNav');
-  for (const s of SCREENS) {
+  for (const s of ACTIVE_SCREENS) {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = s.name;
@@ -2252,6 +2944,7 @@ buildQuickNav();
 el('navLeft').addEventListener('click', () => director.left(performance.now()));
 el('navRight').addEventListener('click', () => director.right(performance.now()));
 window.addEventListener('keydown', (e) => {
+  if (e.defaultPrevented) return;
   if (e.key === 'ArrowLeft') director.left(performance.now());
   else if (e.key === 'ArrowRight') director.right(performance.now());
 });
@@ -2298,7 +2991,11 @@ el('postBusinessAction').addEventListener('click', handlePostBusinessAction);
 
 async function bootBusinessDay() {
   try {
-    const consumed = ACTIVE_DAY_ID === 'd3'
+    const consumed = ACTIVE_DAY_ID === 'd5'
+      ? await loadD5BusinessDayDefinition({ url: D5_BUSINESS_DAY_DEFINITION_URL })
+      : ACTIVE_DAY_ID === 'd4'
+      ? await loadD4BusinessDayDefinition({ url: D4_BUSINESS_DAY_DEFINITION_URL })
+      : ACTIVE_DAY_ID === 'd3'
       ? await loadD3BusinessDayDefinition({ url: D3_BUSINESS_DAY_DEFINITION_URL, seed: daySeed })
       : ACTIVE_DAY_ID === 'd2'
         ? await loadD2BusinessDayDefinition({ url: D2_BUSINESS_DAY_DEFINITION_URL, seed: daySeed })
@@ -2308,6 +3005,24 @@ async function bootBusinessDay() {
       businessRenderDue = true;
       render();
       return;
+    }
+    if (['d4', 'd5'].includes(ACTIVE_DAY_ID)) {
+      const instantDefinition = consumed.definition.stationProcesses?.instant
+        ?.items?.['cabbage-salad'];
+      const highballDefinition = consumed.definition.stationProcesses?.drink
+        ?.workSurfaces?.highball;
+      instantStation = createInstantServiceStation({
+        holdMs: instantDefinition?.prepareHoldMs,
+      });
+      highballStation = createHighballStation({
+        config: highballDefinition,
+        snapshot: restoredFirstOrderRuntime?.highball,
+      });
+    }
+    if (ACTIVE_DAY_ID === 'd5') {
+      const kawaThresholds = consumed.definition.stationProcesses?.grill
+        ?.items?.kawa?.faceThresholdsSec;
+      cook.setMenuThresholds('kawa', kawaThresholds);
     }
     const resetDevelopment = resetFirstOrderRuntime;
     businessSession = await createD1BusinessDayBrowserSession({
@@ -2321,17 +3036,6 @@ async function bootBusinessDay() {
     } else {
       businessPort = businessSession.port;
       reportedRiskCount = businessView()?.limits.riskProcessCount ?? 0;
-      if (developmentStartDay === 'd3' && !d3Grill.job(D3_TORCH_JOB_ID)) {
-        d3Grill.stageCookedItem({
-          id: D3_TORCH_JOB_ID,
-          menuId: 'momo',
-          seasoning: 'tare',
-          bothFacesCooked: true,
-        });
-        d3TorchSlotKey = SLOT_KEYS[0];
-        persistFirstOrderRuntime();
-        director.request('SCR-SVC-GRILL', performance.now());
-      }
       if (runtimeIsSuspended()) dispatchBusiness(D1_UI_INTENT.PAUSE);
       else lastBusinessFrameAt = performance.now();
     }
@@ -2364,7 +3068,13 @@ function loop(now) {
   }
   director.tick(now);
   const active = director.activeScreenId();
-  if (active !== lastActive) { R.goToScreen(active, now, SCREEN_TRANSITION_MS); lastActive = active; render(); }
+  if (active !== lastActive) {
+    cancelInstantPreparation();
+    releaseHighballPour(now);
+    R.goToScreen(active, now, SCREEN_TRANSITION_MS);
+    lastActive = active;
+    render();
+  }
   if (cook.waitingCount() !== lastWaiting) { lastWaiting = cook.waitingCount(); render(); }
   if (businessPort && lastBusinessFrameAt !== null) {
     businessDeltaMs += Math.max(0, Math.min(1_000, now - lastBusinessFrameAt));
@@ -2383,10 +3093,30 @@ function loop(now) {
   R.setCleanupOverlayFrame(Math.floor(visualNow / 180));
   updateGrillStatus(now);
   pour.tick(now);
+  const highballTick = highballStation.tick(now);
+  if (highballTick.overflowed) {
+    persistFirstOrderRuntime();
+    showHint('잔이 넘쳤어요 · 낮은 품질로 계속하거나 폐기하세요');
+  }
+  const instantTick = instantStation.tick(now);
+  if (instantTick.completed) {
+    dock.add({
+      menuId: 'cabbage-salad',
+      menu: '양배추 사라다',
+      quality: null,
+      qualityMode: 'none',
+      good: null,
+      zone: 'food',
+    });
+    instantMessage.textContent = '사라다 한 접시를 준비 목록에 올렸어요';
+    persistFirstOrderRuntime();
+    showHint('양배추 사라다 한 접시 완성');
+  }
   updateDrinkAudio(pour.state());
   beerLiquid?.setTime(visualNow / 1000);
   beerCoreVfx?.setTime(visualNow / 1000);
-  updateDrinkPanel(active);
+  updateDrinkPanel(active, now);
+  updateInstantPanel(active);
   updateLabels();
   customers.tick(active);
   positionServeTargets();
@@ -2558,6 +3288,18 @@ Object.assign(d1GameDebug, {
       visualMirrorX: momoInstances.grill[key]?.flipPivot?.scale?.x ?? null,
     })),
   }),
+  kawaRuntime: () => ({
+    status: kawaRuntime.status,
+    error: kawaRuntime.error ? String(kawaRuntime.error.message ?? kawaRuntime.error) : null,
+    slots: SLOT_KEYS.map((key) => ({
+      key,
+      visible: kawaInstances.grill[key]?.holder.visible === true,
+      stage: kawaInstances.grill[key]?.stage?.() ?? null,
+      approvedStage: kawaStageBySlot[key]
+        ?? grillNegimaStage(cook.slotViews(performance.now())[slotIndexOf(key)]),
+      visualMirrorX: kawaInstances.grill[key]?.flipPivot?.scale?.x ?? null,
+    })),
+  }),
   assemblyArtRuntime: () => ({
     status: rawNegimaRuntime.status,
     selectedMenuId: cook.selectedMenuId(),
@@ -2585,6 +3327,19 @@ Object.assign(d1GameDebug, {
         geometry: assemblyInstanceGeometry(instance),
       })),
     },
+    kawa: {
+      status: kawaRuntime.status,
+      build: {
+        visible: kawaInstances.build?.holder.visible === true,
+        ingredientCount: kawaInstances.build?.ingredientCount?.() ?? 0,
+        geometry: assemblyInstanceGeometry(kawaInstances.build),
+      },
+      tray: kawaInstances.tray.map((instance) => ({
+        visible: instance.holder.visible === true,
+        ingredientCount: instance.ingredientCount(),
+        geometry: assemblyInstanceGeometry(instance),
+      })),
+    },
     waitingCount: cook.waitingCount(),
     waitingItems: cook.waitingItems(),
   }),
@@ -2592,22 +3347,17 @@ Object.assign(d1GameDebug, {
   dockSelectedId: () => dock.selectedId(),
   dockAdd: (item) => { const id = dock.add(item); render(); return id; },
   dockSelect: (id) => dock.select(id),
-  d3TorchView: () => d3Grill.job(D3_TORCH_JOB_ID),
-  d3TorchStage: () => {
-    const result = d3Grill.job(D3_TORCH_JOB_ID)
-      ? { ok: true }
-      : d3Grill.stageCookedItem({ id: D3_TORCH_JOB_ID, menuId: 'momo', seasoning: 'tare', bothFacesCooked: true });
-    d3TorchSlotKey ??= SLOT_KEYS[0];
-    persistFirstOrderRuntime();
+  cookSelectRecipe: (menuId) => { const result = cook.selectRecipe(menuId); render(); return result; },
+  cookClickIngredient: (ingredientId) => { const result = cook.clickIngredient(ingredientId); render(); return result; },
+  cookSelectAssemblySeasoning: (seasoning) => { const result = cook.selectAssemblySeasoning(seasoning); render(); return result; },
+  cookBrushAssemblyTare: (coverage = 1) => { const result = cook.brushAssemblyTare(coverage); render(); return result; },
+  cookAssemblyProgress: () => cook.assemblyProgress(),
+  assemblyTareTargetBounds,
+  cookFillAssembly: (menuId, seasoning = 'salt') => {
+    const result = cook.debugFillAssembly(menuId, seasoning);
     render();
     return result;
   },
-  d3TorchApplyTare: () => { const result = d3Grill.applyTare(D3_TORCH_JOB_ID); persistFirstOrderRuntime(); render(); return result; },
-  d3TorchBegin: () => { const result = d3Grill.beginTorch(D3_TORCH_JOB_ID); persistFirstOrderRuntime(); render(); return result; },
-  d3TorchSweep: (position, deltaMs) => { const result = d3Grill.sweepTorch(D3_TORCH_JOB_ID, { position, deltaMs }); persistFirstOrderRuntime(); render(); return result; },
-  d3TorchFinish: () => { const result = d3Grill.finishTorch(D3_TORCH_JOB_ID); persistFirstOrderRuntime(); render(); return result; },
-  cookSelectRecipe: (menuId) => { const result = cook.selectRecipe(menuId); render(); return result; },
-  cookFillAssembly: (menuId) => { const result = cook.debugFillAssembly(menuId); render(); return result; },
   cookAssemblyIndex: () => cook.assemblyIndex(),
   cookWaiting: () => cook.waitingCount(),
   cookSlots: () => cook.slotViews(performance.now()),
@@ -2632,9 +3382,9 @@ Object.assign(d1GameDebug, {
     ariaLabel: button.getAttribute('aria-label'),
   })),
   audioState: () => gameAudio()?.state() ?? null,
-  cookPlace: (menuId = null) => {
+  cookPlace: (menuId = null, seasoning = 'salt') => {
     const now = performance.now();
-    const result = cook.placeToGrill(now, menuId);
+    const result = cook.placeToGrill(now, menuId, seasoning);
     syncRiskCount(now);
     render();
     return result;
@@ -2649,31 +3399,52 @@ Object.assign(d1GameDebug, {
     render();
     return views;
   },
-  cookTransferAssembly: () => cook.transferAssembly(),
+  cookTransferAssembly: () => {
+    const result = cook.transferAssembly();
+    if (result.ok) persistFirstOrderRuntime();
+    render();
+    return result;
+  },
+  cookWaitingProducts: () => cook.waitingProducts(),
   grillContract: () => ({
-    slots: computeGrillSlots(D1_PUBLIC_GRILL_LAYOUT),
-    initialPlacementSlots: D1_PUBLIC_GRILL_LAYOUT.initialPlacementSlots,
+    contractId: activeGrillLayout.contractId,
+    slots: computeGrillSlots(activeGrillLayout),
+    initialPlacementSlots: activeGrillLayout.initialPlacementSlots,
     finishedTray: D1_GRILL_FINISHED_TRAY,
   }),
   grillWaitingControl: () => ({
     hidden: grillInventory.hidden,
-    disabled: grillWaitingNegima.disabled,
+    disabled: grillWaitingActions.negima.salt.disabled,
     waitingCount: grillWaitingNegima.dataset.waitingCount,
     hasEmptySlot: grillWaitingNegima.dataset.hasEmptySlot,
-    ariaLabel: grillWaitingNegima.getAttribute('aria-label'),
+    ariaLabel: grillWaitingActions.negima.salt.getAttribute('aria-label'),
+    saltWaitingCount: grillWaitingActions.negima.salt.dataset.waitingCount,
+    tare: {
+      hidden: grillWaitingActions.negima.tare.hidden,
+      disabled: grillWaitingActions.negima.tare.disabled,
+      ariaLabel: grillWaitingActions.negima.tare.getAttribute('aria-label'),
+      waitingCount: grillWaitingActions.negima.tare.dataset.waitingCount,
+    },
     rect: grillWaitingNegima.getBoundingClientRect().toJSON(),
     momo: {
       hidden: grillWaitingMomo.hidden,
-      disabled: grillWaitingMomo.disabled,
+      disabled: grillWaitingActions.momo.salt.disabled,
       waitingCount: grillWaitingMomo.dataset.waitingCount,
       hasEmptySlot: grillWaitingMomo.dataset.hasEmptySlot,
-      ariaLabel: grillWaitingMomo.getAttribute('aria-label'),
+      ariaLabel: grillWaitingActions.momo.salt.getAttribute('aria-label'),
+      saltWaitingCount: grillWaitingActions.momo.salt.dataset.waitingCount,
+      tare: {
+        hidden: grillWaitingActions.momo.tare.hidden,
+        disabled: grillWaitingActions.momo.tare.disabled,
+        ariaLabel: grillWaitingActions.momo.tare.getAttribute('aria-label'),
+        waitingCount: grillWaitingActions.momo.tare.dataset.waitingCount,
+      },
       rect: grillWaitingMomo.getBoundingClientRect().toJSON(),
     },
   }),
   grillFinishedInventory: () => ({
     hidden: grillInventory.hidden,
-    total: dock.items().filter((item) => ['네기마', '모모'].includes(item.menu)).length,
+    total: dock.items().filter((item) => ['negima', 'momo', 'kawa'].includes(item.menuId)).length,
     groups: [...grillFinishedQualityList.querySelectorAll('[data-quality]')].map((card) => ({
       menu: card.dataset.menu,
       quality: card.dataset.quality,

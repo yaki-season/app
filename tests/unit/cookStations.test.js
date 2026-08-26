@@ -8,6 +8,7 @@ import {
 
 const NEGIMA = ['chicken', 'leek', 'chicken', 'leek', 'chicken'];
 const MOMO = ['chicken', 'chicken', 'chicken', 'chicken', 'chicken'];
+const KAWA = ['foldedChickenSkin', 'foldedChickenSkin', 'foldedChickenSkin', 'foldedChickenSkin', 'foldedChickenSkin'];
 const assemble = (cook) => NEGIMA.forEach((ing) => cook.clickIngredient(ing));
 
 describe('createCookStations', () => {
@@ -66,12 +67,26 @@ describe('createCookStations', () => {
     expect(cook.waitingItems()).toEqual(['momo']);
   });
 
+  it('D5 토리카와는 접은 닭껍질 다섯 조각과 메뉴별 빠른 그릴 판정을 사용한다', () => {
+    const cook = createD1CookStations({
+      thresholdsByMenu: { kawa: { under: 0, perfect: 10, over: 14, burnt: 18 } },
+    });
+    expect(cook.selectRecipe('kawa', 'salt')).toMatchObject({ ok: true, recipe: KAWA });
+    KAWA.forEach((ingredient) => expect(cook.clickIngredient(ingredient).ok).toBe(true));
+    expect(cook.transferAssembly()).toMatchObject({ ok: true, menuId: 'kawa' });
+    expect(cook.placeToGrill(0, 'kawa')).toMatchObject({ ok: true, menuId: 'kawa', seasoning: 'salt' });
+    expect(cook.slotViews(9_999)[0].doneness).toBe('under');
+    expect(cook.slotViews(10_000)[0].doneness).toBe('perfect');
+    expect(cook.slotViews(14_000)[0].doneness).toBe('over');
+    expect(cook.slotViews(18_000)[0].doneness).toBe('burnt');
+  });
+
   it('네기마와 모모는 메뉴별로 선택 배치되고 슬롯·회수 결과에 메뉴가 따라간다', () => {
     const cook = createD1CookStations();
     cook.debugFillAssembly('negima');
     cook.debugFillAssembly('momo');
-    expect(cook.placeToGrill(0, 'momo')).toEqual({ ok: true, slot: 0, menuId: 'momo' });
-    expect(cook.placeToGrill(1_000, 'negima')).toEqual({ ok: true, slot: 1, menuId: 'negima' });
+    expect(cook.placeToGrill(0, 'momo')).toMatchObject({ ok: true, slot: 0, menuId: 'momo' });
+    expect(cook.placeToGrill(1_000, 'negima')).toMatchObject({ ok: true, slot: 1, menuId: 'negima' });
     expect(cook.slotViews(9_000)).toEqual([
       expect.objectContaining({ menuId: 'momo', frontElapsedSec: 9 }),
       expect.objectContaining({ menuId: 'negima', frontElapsedSec: 8 }),
@@ -437,5 +452,155 @@ describe('createCookStations', () => {
       expect.objectContaining({ status: 'front', frontElapsedSec: 10 }),
       expect.objectContaining({ status: 'front', frontElapsedSec: 8 }),
     ]);
+  });
+
+  it('완성 꼬치는 별도 양념 선택 없이 전달하면 소금 재고가 된다', () => {
+    const cook = createD1CookStations();
+    cook.selectRecipe('momo');
+    expect(cook.selectedSeasoning()).toBe('none');
+    MOMO.forEach((ingredient) => cook.clickIngredient(ingredient));
+    expect(cook.transferAssembly()).toMatchObject({
+      ok: true,
+      seasoning: 'salt',
+      tarePrepared: false,
+    });
+    expect(cook.waitingProducts()).toEqual([
+      expect.objectContaining({ menuId: 'momo', seasoning: 'salt', tarePrepared: false }),
+    ]);
+    expect(cook.placeToGrill(0, 'momo', 'salt')).toMatchObject({ seasoning: 'salt' });
+  });
+
+  it('타래는 조립 완료 후 선택하고 좌우 한 번의 80% 이상 붓질을 마쳐야 전달된다', () => {
+    const cook = createD1CookStations();
+    expect(COOK_SLOT_NEXT_ACTION).not.toHaveProperty('APPLY_TARE');
+    expect(cook).not.toHaveProperty('applyTare');
+    expect(cook.selectAssemblySeasoning('tare')).toEqual({
+      ok: false,
+      reason: 'assembly-not-complete',
+    });
+    assemble(cook);
+    expect(cook.selectAssemblySeasoning('tare')).toMatchObject({
+      ok: true,
+      seasoning: 'tare',
+      tarePrepared: false,
+    });
+    expect(cook.transferAssembly()).toEqual({ ok: false, reason: 'tare-brush-required' });
+    expect(cook.brushAssemblyTare(0.79)).toMatchObject({
+      ok: false,
+      reason: 'insufficient-coverage',
+    });
+    expect(cook.brushAssemblyTare(0.8)).toMatchObject({
+      ok: true,
+      complete: true,
+      coverage: 0.8,
+    });
+    expect(cook.transferAssembly()).toMatchObject({
+      ok: true,
+      menuId: 'negima',
+      seasoning: 'tare',
+      tarePrepared: true,
+    });
+    expect(cook.waitingProducts()[0]).toMatchObject({
+      seasoning: 'tare',
+      tarePrepared: true,
+      tareCoverage: 0.8,
+    });
+    expect(cook.waitingCount('negima', 'tare')).toBe(1);
+    expect(cook.placeToGrill(0, 'negima', 'tare')).toMatchObject({
+      ok: true,
+      menuId: 'negima',
+      seasoning: 'tare',
+    });
+    cook.debugElapse(8);
+    cook.clickSlot(0, 0);
+    cook.debugElapse(8);
+    expect(cook.slotViews(0)[0]).toMatchObject({
+      nextAction: COOK_SLOT_NEXT_ACTION.RETRIEVE,
+      seasoning: 'tare',
+      tarePrepared: true,
+    });
+    expect(cook.clickSlot(0, 0)).toMatchObject({
+      retrieved: true,
+      seasoning: 'tare',
+      tarePrepared: true,
+    });
+  });
+
+  it('같은 꼬치의 소금·타래 대기 재고를 분리하고 요청한 양념만 그릴에 올린다', () => {
+    const cook = createD1CookStations();
+    assemble(cook);
+    cook.transferAssembly();
+    assemble(cook);
+    cook.selectAssemblySeasoning('tare');
+    cook.brushAssemblyTare(0.9);
+    cook.transferAssembly();
+
+    expect(cook.waitingCount('negima')).toBe(2);
+    expect(cook.waitingCount('negima', 'salt')).toBe(1);
+    expect(cook.waitingCount('negima', 'tare')).toBe(1);
+    expect(cook.placeToGrill(0, 'negima', 'tare')).toMatchObject({
+      ok: true,
+      seasoning: 'tare',
+    });
+    expect(cook.waitingCount('negima', 'tare')).toBe(0);
+    expect(cook.placeToGrill(0, 'negima', 'tare')).toEqual({
+      ok: false,
+      reason: 'no-seasoning-waiting',
+      menuId: 'negima',
+      seasoning: 'tare',
+    });
+    expect(cook.placeToGrill(0, 'negima', 'salt')).toMatchObject({
+      ok: true,
+      seasoning: 'salt',
+    });
+  });
+
+  it('구형 그릴 타래 저장은 조립 도포 완료 상태로 승격해 이어서 회수할 수 있다', () => {
+    const source = createD1CookStations();
+    source.debugFillAssembly('negima', 'tare');
+    source.placeToGrill(0, 'negima', 'tare');
+    const legacy = source.snapshot(0);
+    legacy.grill[0].tarePrepared = false;
+    legacy.grill[0].tareCoverage = 0;
+
+    const restored = createD1CookStations();
+    expect(restored.restore(legacy, 10_000)).toEqual({ ok: true });
+    expect(restored.slotViews(10_000)[0]).toMatchObject({
+      seasoning: 'tare',
+      tarePrepared: true,
+      tareCoverage: 1,
+    });
+    restored.debugElapse(8);
+    restored.clickSlot(0, 10_000);
+    restored.debugElapse(8);
+    expect(restored.clickSlot(0, 10_000)).toMatchObject({
+      ok: true,
+      retrieved: true,
+      seasoning: 'tare',
+    });
+  });
+
+  it('구형 2회 조립 붓질 저장은 새 타래 도포 완료 상태로 복구한다', () => {
+    const source = createD1CookStations();
+    assemble(source);
+    const legacy = source.snapshot(0);
+    legacy.assembly.seasoning = 'tare';
+    legacy.assembly.tareBrushCount = 2;
+    delete legacy.assembly.tarePrepared;
+    delete legacy.assembly.tareCoverage;
+
+    const restored = createD1CookStations();
+    expect(restored.restore(legacy, 1_000)).toEqual({ ok: true });
+    expect(restored.assemblyProgress()).toMatchObject({
+      complete: true,
+      seasoning: 'tare',
+      tarePrepared: true,
+      tareCoverage: 1,
+    });
+    expect(restored.transferAssembly()).toMatchObject({
+      ok: true,
+      seasoning: 'tare',
+      tarePrepared: true,
+    });
   });
 });
