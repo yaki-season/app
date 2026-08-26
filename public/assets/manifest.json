@@ -1,7 +1,7 @@
 {
   "$schema": "https://yaki-season.local/assets/manifest.schema.json",
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-24",
+  "generatedAt": "2026-08-26",
   "specRefs": [
     "ART-002 v3.6.1",
     "ART-003 v5.0.0",
@@ -2464,6 +2464,78 @@
       "dimensions": {
         "width": 1920,
         "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "PROP-TARE-SAUCE-POT-D3",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY",
+      "profile": "standalone-raster",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0.5,
+        "y": 0.82
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:PROP-TARE-SAUCE-POT-D3:R2",
+      "provenance": "PROV:BUILTIN-IMAGEGEN-PROP-TARE-SAUCE-POT-D3:R2",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "GPL-006 D3-D5 tare assembly flow",
+        "User requested warmer lower-saturation pixel-art revision 2026-08-26"
+      ],
+      "reviewedAt": "2026-08-26",
+      "url": "/assets/campaign/d3/prop-tare-sauce-pot-r2-b1.png",
+      "sha256": "4499b039d50922bc6a6010182684e177a99346b9bff9ceeb322c6ee6765b960a",
+      "bytes": 642088,
+      "dimensions": {
+        "width": 1312,
+        "height": 1199
+      },
+      "format": "png"
+    },
+    {
+      "id": "PROP-TARE-SAUCE-POT-OPEN-D3",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY",
+      "profile": "standalone-raster",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0.5,
+        "y": 0.82
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:PROP-TARE-SAUCE-POT-OPEN-D3:R2",
+      "provenance": "PROV:BUILTIN-IMAGEGEN-PROP-TARE-SAUCE-POT-OPEN-D3:R2",
+      "license": "YAKI SEASON internal user-requested artwork",
+      "specRefs": [
+        "GPL-006 D3-D5 tare assembly flow",
+        "Selected brush state for assembly station 2026-08-26"
+      ],
+      "reviewedAt": "2026-08-26",
+      "url": "/assets/campaign/d3/prop-tare-sauce-pot-open-r2-b1.png",
+      "sha256": "cdd32889ba0ab51c471ff3cf063d2b2060dca2a00c07bc9b71be210e77995728",
+      "bytes": 600408,
+      "dimensions": {
+        "width": 1306,
+        "height": 1205
       },
       "format": "png"
     }
