@@ -676,9 +676,15 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       const frameKey = `${seatCapacity}:${seatLayoutMode}:${scale}:${offsetY}`;
       if (actor.userData.frameKey === frameKey) return;
       const seat = computeSeats(seatCapacity, { layoutMode: seatLayoutMode })[seatIndex];
+      const seatCenterX = seat.actor.x + seat.actor.width / 2;
+      // Approved customer states use the same complete 1920x1080 layer contract as
+      // Tsukioka. Move that complete layer horizontally to the assigned seat instead
+      // of squeezing it into the old portrait-shaped seat billboard.
       placeBillboard(actor, seatCam, {
-        ...seat.actor,
-        y: seat.actor.y + offsetY,
+        x: seatCenterX - 0.5,
+        y: offsetY,
+        width: 1,
+        height: 1,
       }, LAYER_Z.actor);
       actor.scale.set(scale, scale, 1);
       actor.userData.frameKey = frameKey;

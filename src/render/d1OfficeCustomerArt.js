@@ -1,12 +1,16 @@
 export const D1_OFFICE_CUSTOMER_FRAME_INTERVAL_MS = 1200;
 
 const OFFICE_IDS = Object.freeze(['a', 'b', 'c', 'd', 'e']);
+const COMMUTER_VARIANTS = Object.freeze({ A: 'c', B: 'd', C: 'e', D: 'c', E: 'd' });
 const ACTION_PHASES = new Set(['eating', 'done']);
 
 export function d1OfficeCustomerVariant(customerId) {
   const match = /^D[1-3]-OFFICE-([A-E])$/.exec(customerId ?? '');
   if (match) return match[1].toLowerCase();
-  if (/^D[2-3]-COMMUTER-/.test(customerId ?? '')) return 'c';
+  const commuterMatch = /^D[2-3]-COMMUTER-([A-E])$/.exec(customerId ?? '');
+  if (commuterMatch) {
+    return COMMUTER_VARIANTS[commuterMatch[1]] ?? 'c';
+  }
   return null;
 }
 

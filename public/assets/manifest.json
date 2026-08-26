@@ -300,8 +300,8 @@
     },
     {
       "id": "CH-EXTRA-SOLO-SERVICE",
-      "sourceRevision": 7,
-      "runtimeBuild": 2,
+      "sourceRevision": 9,
+      "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-SVC-CUSTOMERS",
       "profile": "standalone-raster",
@@ -326,43 +326,43 @@
         "drinking-beer"
       ],
       "mirrorSafe": false,
-      "source": "ARTSRC:CH-EXTRA-SOLO-SERVICE:R7",
-      "provenance": "PROV:CH-EXTRA-SOLO-SERVICE:R7",
+      "source": "ARTSRC:CH-EXTRA-SOLO-SERVICE:R9",
+      "provenance": "PROV:CH-EXTRA-SOLO-SERVICE:R9",
       "license": "YAKI SEASON internal approved artwork",
       "specRefs": [
         "ART-003 v5.0.0",
         "GPL-005 v2.23.0",
-        "Artist 3 task 025 CH-EXTRA-SOLO-SERVICE R7"
+        "User approval 2026-08-26: use the approved middle-aged woman three-state set for solo customers"
       ],
-      "reviewedAt": "2026-08-05",
-      "url": "/assets/core/customer/ch-extra-solo-service-r7-b1.png",
-      "sha256": "81ad4e50ef45d963829bd1ab981273c5a7e59e074c047598e6cba13a17e462e8",
-      "bytes": 1392381,
+      "reviewedAt": "2026-08-26",
+      "url": "/assets/core/customer/ch-extra-solo-service-r9-b1.png",
+      "sha256": "2e236f1e6c542b223a5388d48020f1e184fc327b6e67638f9f493b6c1d46122f",
+      "bytes": 333694,
       "dimensions": {
-        "width": 1121,
-        "height": 1403
+        "width": 1920,
+        "height": 1080
       },
       "format": "png",
       "companions": [
         {
           "role": "solo-eating-skewer",
-          "url": "/assets/core/customer/ch-extra-solo-service-eating-skewer-r7-b2.png",
-          "sha256": "ee0e108489c9454594a0ab5d47d0c07e00690d4c1203dad565737eaf49951ef5",
-          "bytes": 1482377,
+          "url": "/assets/core/customer/ch-extra-solo-service-eating-skewer-r9-b1.png",
+          "sha256": "a7c6dfa4c9f020926365a1f2c055047692285a643fb141eb5137feec60dc684e",
+          "bytes": 319518,
           "dimensions": {
-            "width": 1121,
-            "height": 1403
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "solo-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-solo-service-drinking-beer-r7-b2.png",
-          "sha256": "b38113dc48b438cdb9ce2830576d8aad04e7c26eb5a9369ae1025dbe81e18ec6",
-          "bytes": 1450741,
+          "url": "/assets/core/customer/ch-extra-solo-service-drinking-beer-r9-b1.png",
+          "sha256": "db34773f2be0778a9f40147766fb86721548975e66384226f5abf323bb6984a3",
+          "bytes": 327683,
           "dimensions": {
-            "width": 1121,
-            "height": 1403
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         }
@@ -1528,7 +1528,7 @@
     },
     {
       "id": "CH-EXTRA-COMMUTER-SERVICE",
-      "sourceRevision": 6,
+      "sourceRevision": 9,
       "runtimeBuild": 1,
       "status": "approved",
       "screenUnit": "SCR-SVC-CUSTOMERS",
@@ -1554,176 +1554,178 @@
         "drinking-beer"
       ],
       "mirrorSafe": false,
-      "source": "ARTSRC:CH-EXTRA-COMMUTER-SERVICE:R6",
-      "provenance": "PROV:CH-EXTRA-COMMUTER-SERVICE:R6",
+      "source": "ARTSRC:CH-EXTRA-COMMUTER-SERVICE:R9",
+      "provenance": "PROV:CH-EXTRA-COMMUTER-SERVICE:R9",
       "license": "YAKI SEASON internal user-approved artwork",
       "specRefs": [
         "ART-003 v5.0.0",
         "GPL-005 v2.23.0",
         "User approval 2026-08-09: five front-facing office customer variants with lowered resting hands",
-        "User approval 2026-08-10: office A/B replaced by early-30s male developer pixel-art variants with backpacks"
+        "User approval 2026-08-10: office A/B replaced by early-30s male developer pixel-art variants with backpacks",
+        "User approval 2026-08-26: replace all five customer identities and all three runtime states",
+        "User approval 2026-08-26: developer A/B alpha halo cleanup and developer B scaled to 90% seated height"
       ],
-      "reviewedAt": "2026-08-10",
-      "url": "/assets/core/customer/ch-extra-office-a-waiting-r6-b1.png",
-      "sha256": "cf1fb5a79d16813c895ed3c1b3e054a65088401caeba80066b28afcb4bc0f5d6",
-      "bytes": 668406,
+      "reviewedAt": "2026-08-26",
+      "url": "/assets/core/customer/in-game-mapping/developer-a-waiting-r9-b1.png",
+      "sha256": "a04ea963abe0eac62b2c2c36d7fcccaf9872d7506e1903aa5a43cc54d25f0c1b",
+      "bytes": 230411,
       "dimensions": {
-        "width": 1182,
-        "height": 1330
+        "width": 1920,
+        "height": 1080
       },
       "format": "png",
       "companions": [
         {
           "role": "office-a-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-a-eating-negima-r6-b1.png",
-          "sha256": "88a628440a7f711a12e73a2c749be04d00089c7c97c8022e51fb24e6e04e12e8",
-          "bytes": 643353,
+          "url": "/assets/core/customer/in-game-mapping/developer-a-eating-negima-r9-b1.png",
+          "sha256": "0d28be9c0fd317b1fc8c724e132fdfcc7c85a152d3f6f894d16fe1275f67b2e8",
+          "bytes": 227383,
           "dimensions": {
-            "width": 1182,
-            "height": 1330
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-a-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-a-drinking-beer-r6-b1.png",
-          "sha256": "88ca90f12f32feaa814d847142921b61d395d4789d7481b5702dd5855b89479f",
-          "bytes": 650250,
+          "url": "/assets/core/customer/in-game-mapping/developer-a-drinking-beer-r9-b1.png",
+          "sha256": "43cd467fe0d82491c15f1699abc5c10fab551e1b53d3ae673086ca0643e787af",
+          "bytes": 229353,
           "dimensions": {
-            "width": 1182,
-            "height": 1330
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-b-waiting",
-          "url": "/assets/core/customer/ch-extra-office-b-waiting-r6-b1.png",
-          "sha256": "1882832a9318f0388c7ce6dcebdeb143f13ee66eead6f4a969cfe3a7f898ce16",
-          "bytes": 584200,
+          "url": "/assets/core/customer/in-game-mapping/developer-b-waiting-r9-b1.png",
+          "sha256": "b62f3ba26ff86b5dc4dd5043087800fd727b9aefce14a2aa887929c77dafef7c",
+          "bytes": 187314,
           "dimensions": {
-            "width": 1024,
-            "height": 1536
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-b-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-b-eating-negima-r6-b1.png",
-          "sha256": "3ef87daf316740ceb0c8b8022ce1fb74c057fce2ce599d3c74b1ae480cfceed6",
-          "bytes": 596941,
+          "url": "/assets/core/customer/in-game-mapping/developer-b-eating-negima-r9-b1.png",
+          "sha256": "4e7ac52eb0a7932175286a3aa03030331cb3c4a60797a5a9fcae03aa7b1fc51b",
+          "bytes": 193351,
           "dimensions": {
-            "width": 1024,
-            "height": 1536
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-b-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-b-drinking-beer-r6-b1.png",
-          "sha256": "76206895ff41eff8da7a2bb031a79bdcf5a6f5fe8e138bbc0140bb461f10c952",
-          "bytes": 618419,
+          "url": "/assets/core/customer/in-game-mapping/developer-b-drinking-beer-r9-b1.png",
+          "sha256": "ff16f73d90adac69e26a4cacf8fad04e45c728dad8b2f321ce28a81dd6594388",
+          "bytes": 194124,
           "dimensions": {
-            "width": 1024,
-            "height": 1536
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-c-waiting",
-          "url": "/assets/core/customer/ch-extra-office-c-waiting-r6-b1.png",
-          "sha256": "676c7d7f708babc3b2fae26bdd603a4a435d9fb85bc93f53d80126613f949dc2",
-          "bytes": 1793667,
+          "url": "/assets/core/customer/in-game-mapping/young-man-delivery-waiting-r9-b1.png",
+          "sha256": "90267fa5874a9493fd2b8035cd4735163320cf2262c2a1155c5590d07f217b05",
+          "bytes": 344605,
           "dimensions": {
-            "width": 1086,
-            "height": 1448
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-c-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-c-eating-negima-r6-b1.png",
-          "sha256": "1b873248ec4dca6e27a929d2480a0a0c2496df7a0770ecc0b66ce098310751d9",
-          "bytes": 1787857,
+          "url": "/assets/core/customer/in-game-mapping/young-man-delivery-eating-negima-r9-b1.png",
+          "sha256": "3122d753ebb379a1caa130b38c8b0361a4e68771dcbaa61df20d98fcc06d11a0",
+          "bytes": 336452,
           "dimensions": {
-            "width": 1086,
-            "height": 1448
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-c-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-c-drinking-beer-r6-b1.png",
-          "sha256": "fa31481ef527040cadcb02af6e1df90d4292879cf5cac304568de8447c5f927e",
-          "bytes": 1868596,
+          "url": "/assets/core/customer/in-game-mapping/young-man-delivery-drinking-beer-r9-b1.png",
+          "sha256": "8db5d1ab117624810d02f8a74c4e95a85bdff765879dfc8cb9158d37df259e8e",
+          "bytes": 335236,
           "dimensions": {
-            "width": 1086,
-            "height": 1448
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-d-waiting",
-          "url": "/assets/core/customer/ch-extra-office-d-waiting-r6-b1.png",
-          "sha256": "e732afdf24b67fb401de331e17f6e90bf0d0d0d819ce45a8afeed9ea112431b7",
-          "bytes": 1790495,
+          "url": "/assets/core/customer/in-game-mapping/stocky-middle-aged-man-waiting-r9-b1.png",
+          "sha256": "25841e9f2fde9cecd602e7f3a8057d4acc9af231ee6b7f6625fbe2d9dc5fee80",
+          "bytes": 452995,
           "dimensions": {
-            "width": 1086,
-            "height": 1448
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-d-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-d-eating-negima-r6-b1.png",
-          "sha256": "33c9d5fb5e52d9c7ffed625e5313ff005f847694fffc687349b85fa23ef28756",
-          "bytes": 1753364,
+          "url": "/assets/core/customer/in-game-mapping/stocky-middle-aged-man-eating-negima-r9-b1.png",
+          "sha256": "1e650c1c089431defebf14c562c098d8449f397da2d32f88cb924a1a69f41cff",
+          "bytes": 491460,
           "dimensions": {
-            "width": 1086,
-            "height": 1448
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-d-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-d-drinking-beer-r6-b1.png",
-          "sha256": "03bf52c6ba4243fe7c578304e55c047c41bae870db2dba81fce14593606e0a4d",
-          "bytes": 1814957,
+          "url": "/assets/core/customer/in-game-mapping/stocky-middle-aged-man-drinking-beer-r9-b1.png",
+          "sha256": "b109e9f3c44dd2d673b82481d31f6c9daf8a740c8f18913ff62d3522604e998e",
+          "bytes": 444528,
           "dimensions": {
-            "width": 1086,
-            "height": 1448
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-e-waiting",
-          "url": "/assets/core/customer/ch-extra-office-e-waiting-r6-b1.png",
-          "sha256": "fa75dc7e9d207e4f67cc3011d38058e088de69343b052edbb499f3ed635af374",
-          "bytes": 1460015,
+          "url": "/assets/core/customer/in-game-mapping/middle-aged-woman-waiting-r9-b1.png",
+          "sha256": "2e236f1e6c542b223a5388d48020f1e184fc327b6e67638f9f493b6c1d46122f",
+          "bytes": 333694,
           "dimensions": {
-            "width": 1086,
-            "height": 1448
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-e-eating-negima",
-          "url": "/assets/core/customer/ch-extra-office-e-eating-negima-r6-b1.png",
-          "sha256": "27b3f1f2fa6491626fbc75989a71f910e3ca2c870d23d00861d4fda5566656e5",
-          "bytes": 1454049,
+          "url": "/assets/core/customer/in-game-mapping/middle-aged-woman-eating-negima-r9-b1.png",
+          "sha256": "a7c6dfa4c9f020926365a1f2c055047692285a643fb141eb5137feec60dc684e",
+          "bytes": 319518,
           "dimensions": {
-            "width": 1086,
-            "height": 1448
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         },
         {
           "role": "office-e-drinking-beer",
-          "url": "/assets/core/customer/ch-extra-office-e-drinking-beer-r6-b1.png",
-          "sha256": "d9ea1718ad923fdb8560a6596ef9a035850d080d892eda607fd71889775606d2",
-          "bytes": 1458201,
+          "url": "/assets/core/customer/in-game-mapping/middle-aged-woman-drinking-beer-r9-b1.png",
+          "sha256": "db34773f2be0778a9f40147766fb86721548975e66384226f5abf323bb6984a3",
+          "bytes": 327683,
           "dimensions": {
-            "width": 1086,
-            "height": 1448
+            "width": 1920,
+            "height": 1080
           },
           "format": "png"
         }
