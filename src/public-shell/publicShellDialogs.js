@@ -1,4 +1,5 @@
 import { copyText, downloadTextFile } from './browserFiles.js';
+import { createHowToPlayContent } from './howToPlayContent.js';
 
 export function createPublicShellDialogs({
   element,
@@ -62,16 +63,13 @@ export function createPublicShellDialogs({
     });
   }
 
+  // 시작 메뉴·일시정지의 '플레이방법'. 기존 화면 조작 안내도 이 안에 함께 담는다.
   function openHelp() {
     open({
       overlayId: 'OVR-HELP',
-      kicker: '도움',
-      title: '화면 이용 방법',
-      content: [
-        element('p', { text: 'Tab과 Shift+Tab으로 항목을 이동하고 Enter 또는 Space로 선택할 수 있습니다.' }),
-        element('p', { text: '저장 파일은 이 브라우저에만 남습니다. 내보내기와 불러오기는 사용자가 직접 실행할 때만 동작합니다.' }),
-        element('p', { text: '모든 상태와 경고는 색뿐 아니라 문구로도 표시됩니다. 이 버전에는 오디오가 없습니다.' }),
-      ],
+      kicker: '플레이방법',
+      title: '플레이 방법',
+      content: createHowToPlayContent(element),
       actions: [
         actionButton('진단 정보 보기', () => {
           close();
@@ -138,7 +136,7 @@ export function createPublicShellDialogs({
         element('p', { text: '이 shell에는 진행 중인 gameplay timer가 없습니다. 저장과 캠페인 상태도 변경하지 않습니다.' }),
       ],
       actions: [
-        actionButton('도움', () => {
+        actionButton('플레이방법', () => {
           close();
           openHelp();
         }),

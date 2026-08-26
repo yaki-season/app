@@ -73,7 +73,7 @@ test('사이트 루트는 테스트 장면 대신 공개 시작 화면을 열고
   await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-STORY-PROLOGUE');
 });
 
-test('FHD/720 title에서 키보드·마우스로 설정·도움·일시정지를 사용할 수 있다', async ({ page }) => {
+test('FHD/720 title에서 키보드·마우스로 설정·플레이방법·일시정지를 사용할 수 있다', async ({ page }) => {
   await installStorage(page, {});
   await openShell(page);
 
@@ -85,9 +85,18 @@ test('FHD/720 title에서 키보드·마우스로 설정·도움·일시정지�
   await page.getByRole('button', { name: '설정 저장' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-large-hit-area', 'true');
 
-  await page.getByRole('button', { name: '도움', exact: true }).focus();
+  await page.getByRole('button', { name: '플레이방법', exact: true }).focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('dialog')).toHaveAttribute('data-overlay-id', 'OVR-HELP');
+  // 플레이 방법은 한 접시가 나가는 흐름·스테이션 요령·품질까지 한 화면에 담는다.
+  await expect(page.locator('dialog')).toContainText('한 접시가 나가는 흐름');
+  await expect(page.locator('dialog .howto-step').first()).toContainText('주문 받기');
+  await expect(page.locator('dialog .howto-card-title')).toHaveText(['조립', '그릴', '드링크', '사이드 메뉴']);
+  await expect(page.locator('dialog .howto-grade')).toHaveText(['Perfect', 'Good', 'OK', 'Fail']);
+  // 수치는 조리 정본을 그대로 읽는다. 화면에 다시 적어 두지 않는다.
+  await expect(page.locator('dialog')).toContainText('한 면당 8초~16초');
+  // 기존 화면 조작 안내도 이 화면에 남아 있어야 한다.
+  await expect(page.locator('dialog')).toContainText('Tab과 Shift+Tab');
   await page.keyboard.press('Escape');
 
   await page.locator('#pause-button').focus();

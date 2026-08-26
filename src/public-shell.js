@@ -260,7 +260,7 @@ function renderStart(extraStatus = null) {
   }
   menu.append(
     actionButton('설정', () => shellDialogs.openSettings('start')),
-    actionButton('도움', shellDialogs.openHelp),
+    actionButton('플레이방법', shellDialogs.openHelp),
     actionButton('일시정지', shellDialogs.openPause),
     actionButton('저장 파일 다운로드', downloadSave, { disabled: !valid, id: 'export-save-button' }),
     importButton(),
