@@ -22,6 +22,9 @@ describe('D1 office customer art selector', () => {
     expect(['A', 'B', 'C', 'D', 'E'].map((id) => d1OfficeCustomerVariant(`D1-OFFICE-${id}`)))
       .toEqual(['a', 'b', 'c', 'd', 'e']);
     expect(d1OfficeCustomerVariant('D1-SOLO-A')).toBeNull();
+    expect(d1OfficeCustomerVariant('D2-COMMUTER-A')).toBe('c');
+    expect(d1OfficeCustomerVariant('D3-COMMUTER-B')).toBe('d');
+    expect(d1OfficeCustomerVariant('D3-COMMUTER-C')).toBe('e');
   });
 
   it('uses each identity waiting frame before food is served', () => {

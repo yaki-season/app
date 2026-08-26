@@ -766,9 +766,9 @@ const EXTRA_ASSET = {
   solo: 'CH-EXTRA-SOLO-SERVICE',
 };
 const EXTRA_ACTOR_FRAME = Object.freeze({
-  officeFullBody: Object.freeze({ scale: 1.82, offsetY: 0.16 }),
-  officePortrait: Object.freeze({ scale: 1, offsetY: 0 }),
-  solo: Object.freeze({ scale: 1, offsetY: 0 }),
+  officeFullBody: Object.freeze({ scale: 1, offsetY: 256 / 1080 }),
+  officePortrait: Object.freeze({ scale: 1, offsetY: 256 / 1080 }),
+  solo: Object.freeze({ scale: 1, offsetY: 256 / 1080 }),
   empty: Object.freeze({ scale: 1, offsetY: 0 }),
 });
 

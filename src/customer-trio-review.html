@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YAKI SEASON 손님 6인 인게임 규격 검수</title>
+  <link rel="stylesheet" href="./customer-trio-review.css">
+</head>
+<body>
+  <main id="review-stage" class="review-stage" aria-label="츠키오카와 신규 손님 5명 인게임 합성">
+    <img class="layer background" src="/assets/core/customer/background-complete-r4-b1.png" alt="">
+    <img class="layer seating" src="/assets/core/customer/bg-seating-6-r2-b1.png" alt="">
+
+    <img class="layer customer developer-a" src="/assets/core/customer/in-game-mapping/developer-a-waiting-r9-b1.png" alt="Developer A">
+    <img class="layer customer developer-b" src="/assets/core/customer/in-game-mapping/developer-b-waiting-r9-b1.png" alt="Developer B">
+    <img class="layer customer young-man" src="/assets/core/customer/in-game-mapping/young-man-delivery-waiting-r9-b1.png" alt="젊은 배달원">
+    <img class="layer customer stocky-man" src="/assets/core/customer/in-game-mapping/stocky-middle-aged-man-waiting-r9-b1.png" alt="체격 있는 중년 남성">
+    <img class="layer customer middle-aged-woman" src="/assets/core/customer/in-game-mapping/middle-aged-woman-waiting-r9-b1.png" alt="중년 여성">
+    <img class="layer customer tsukioka" src="/assets/core/customer/d1-tsukioka-waiting-r3-b1.png" alt="츠키오카">
+
+    <img class="layer counter" src="/assets/core/customer/service-table-straight-r5-b1.png" alt="">
+    <div class="labels" aria-hidden="true">
+      <span style="left:10.9%">Developer A</span>
+      <span style="left:26.7%">Developer B</span>
+      <span style="left:42.1%">젊은 배달원</span>
+      <span style="left:57.7%">체격 있는 중년 남성</span>
+      <span style="left:73.2%">중년 여성</span>
+      <span style="left:89.1%">츠키오카</span>
+    </div>
+    <p class="spec">1920×1080 · character 690px (Developer B 621px) · bottom Y=904 · runtime offset Y=256</p>
+  </main>
+  <script>
+    const stage = document.querySelector('#review-stage');
+    const resize = () => {
+      const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      stage.style.transform = `scale(${scale})`;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+  </script>
+</body>
+</html>

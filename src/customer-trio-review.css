@@ -1,0 +1,18 @@
+:root { color-scheme: dark; font-family: "Malgun Gothic", system-ui, sans-serif; background: #090604; }
+* { box-sizing: border-box; }
+body { margin: 0; width: 100vw; height: 100vh; overflow: hidden; display: grid; place-items: center; }
+.review-stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; transform-origin: center; background: #120b08; }
+.layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: fill; pointer-events: none; }
+.background { z-index: 0; }
+.seating { z-index: 10; left: 10px; top: 190px; width: 1900.72px; height: 1069.69px; }
+.customer { z-index: 20; top: 256px; image-rendering: pixelated; }
+.developer-a { left: -750px; }
+.developer-b { left: -447.5px; }
+.young-man { left: -150.8px; }
+.stocky-man { left: 148.7px; }
+.middle-aged-woman { left: 444.8px; }
+.tsukioka { left: 624.1px; }
+.counter { z-index: 50; top: 270px; transform: scaleY(.78); transform-origin: center; }
+.labels { position: absolute; inset: 0; z-index: 60; }
+.labels span { position: absolute; top: 405px; transform: translateX(-50%); padding: 5px 9px; border: 1px solid #c58442; border-radius: 999px; background: #1b100bdd; color: #ffe4bd; font-size: 15px; }
+.spec { position: absolute; z-index: 70; left: 24px; bottom: 20px; margin: 0; padding: 8px 12px; background: #120b08dd; color: #d4ae7e; font-size: 14px; }

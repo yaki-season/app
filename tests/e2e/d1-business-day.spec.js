@@ -117,8 +117,8 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   const officeA = await accept(page, 'D1-OFFICE-A');
   const officeB = await accept(page, 'D1-OFFICE-B');
   for (const [seatId, expectedWaitingArt] of [
-    [officeA, 'ch-extra-office-a-waiting-r6-b1.png'],
-    [officeB, 'ch-extra-office-b-waiting-r6-b1.png'],
+    [officeA, 'developer-a-waiting-r9-b1.png'],
+    [officeB, 'developer-b-waiting-r9-b1.png'],
   ]) {
     const bubble = page.getByTestId(`bubble-${seatId}`);
     await expect(bubble).not.toHaveAttribute('data-placeholder');
