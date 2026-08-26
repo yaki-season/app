@@ -49,6 +49,7 @@ export const COOKING_ART = {
   grillStation: 'ST-GRILL-TIER-1',
   grillFinishedTray: 'ST-GRILL-FINISHED-TRAY',
   assemblyStation: 'ST-ASSEMBLY-TIER-1',
+  torikawaAssemblyStation: 'D5-ASSEMBLY-STATION-TORIKAWA',
 };
 
 // 하나의 stable ID가 여러 상태 래스터를 갖는 경우의 companion role.
@@ -133,6 +134,7 @@ export const OBJECTS = {
   workbench: { kind: 'image', full: true, layer: 'fixture', order: 1, stableAssetId: COOKING_ART.assemblyStation, opaque: false },
   binChicken: { rect: { x: 0.03, y: 0.38, width: 0.135, height: 0.34 }, hitRect: { x: 0.025, y: 0.36, width: 0.15, height: 0.38 }, layer: 'interactive', color: 0xd98a5f, kind: 'hotspot' },
   binLeek: { rect: { x: 0.165, y: 0.38, width: 0.11, height: 0.34 }, hitRect: { x: 0.155, y: 0.36, width: 0.13, height: 0.38 }, layer: 'interactive', color: 0x8fc06a, kind: 'hotspot' },
+  binTorikawa: { rect: { x: 0.28, y: 0.38, width: 0.10, height: 0.34 }, hitRect: { x: 0.275, y: 0.36, width: 0.115, height: 0.38 }, layer: 'interactive', color: 0xf1b39a, kind: 'hotspot' },
   jigSkewer: { rect: { x: 0.39, y: 0.40, width: 0.305, height: 0.31 }, hitRect: { x: 0.38, y: 0.38, width: 0.325, height: 0.35 }, layer: 'interactive', color: 0xc9a86a, kind: 'hotspot' },
   ...createD1AssemblyObjects(),
 
@@ -178,6 +180,19 @@ export const OBJECTS = {
   drinkLeverDrag: { rect: { x: 0.475, y: 0.11, width: 0.09, height: 0.27 }, hitRect: { x: 0.45, y: 0.085, width: 0.14, height: 0.33 }, layer: 'interactive', color: 0xe8d8a0, kind: 'plane', invisible: true },
 };
 
+// D4에 하이볼 작업대가 들어오면 오른쪽 절반을 하이볼이 쓴다. 맥주 세트(머신·레버·잔 덱·
+// 액체·VFX)를 통째로 왼쪽으로 밀어 두 세트가 서로 밀치지 않게 한다. 단위는 정규화 x.
+export const HIGHBALL_DAY_BEER_SHIFT_X = -0.11;
+export const HIGHBALL_DAY_BEER_KEYS = Object.freeze([
+  'drinkStation',
+  'drinkGlassDeck',
+  'drinkPlacedGlass',
+  'drinkBeerLiquid',
+  'drinkBeerVfx',
+  'glassRack',
+  'drinkLeverDrag',
+]);
+
 // 좌석 (손님 화면). 좌석 수는 좌석 확장 업그레이드(seatCap 6→8→12)로 늘어난다. 좌석은 카운터 뒤 손님
 // 액터, 좌석 위 말풍선(DOM), 카운터 위 serve 대상을 갖는다. 좌표는 정규화(top-left rect / center point).
 export const MAX_SEATS = 12;
@@ -220,8 +235,12 @@ export const SEAT_IDS = Array.from({ length: MAX_SEATS }, (_, i) => `seat-${Stri
 export const SEATS = computeSeats(DEFAULT_SEAT_CAP);
 export const SEAT_ACTOR_MOOD = { waiting: 0x8a7563, tasting: 0x9c826a, satisfied: 0x8fd47a, neutral: 0xc2b3a3, retry: 0xef6a58 };
 
-// 화면 레지스트리. 좌·우 순서 = 배열 순서. 각 화면은 같은 PLAYER_EYE에서 look만 달리한다.
-// look: 월드 단위 시선 지점 (손님=정면·위, 스테이션=아래, 드링크=옆).
+// 화면 레지스트리. 좌·우 순서 = 배열 순서. 조리 동선(조립 → 그릴 → 드링크)을 먼저 두고,
+// D4에 추가되는 사이드 메뉴는 맨 끝에 붙인다. 중간에 끼우면 그릴↔드링크를 오갈 때마다
+// 쓰지 않는 화면을 한 칸씩 더 지나야 한다.
+// 각 화면은 같은 PLAYER_EYE에서 look만 달리한다.
+// look: 월드 단위 시선 지점 (손님=정면·위, 조립·그릴=정면 아래, 드링크·사이드 메뉴=오른쪽).
+// 시선 x는 배열 순서대로 왼쪽에서 오른쪽으로만 움직인다.
 export const SCREENS = [
   {
     id: 'SCR-SVC-CUSTOMERS',
@@ -239,6 +258,7 @@ export const SCREENS = [
       'workbench',
       'binChicken',
       'binLeek',
+      'binTorikawa',
       'jigSkewer',
       D1_ASSEMBLY_BUILD_SLOT.key,
       ...D1_ASSEMBLY_TRAY_SLOTS.map(({ key }) => key),
@@ -252,17 +272,19 @@ export const SCREENS = [
     objects: ['grillBg', ...D1_GRILL_SLOT_KEYS, ...GRILL_SLOT_KEYS],
   },
   {
-    id: 'SCR-SVC-INSTANT',
-    name: '사이드 메뉴',
-    introducedOn: 'd4',
-    look: { x: -1.6, y: -1.6, z: -4.1 },
-    objects: ['instantBg', 'instantCounter', 'instantCabbageBin', 'instantPlateSlot'],
-  },
-  {
     id: 'SCR-SVC-DRINK',
     name: '드링크',
     look: { x: 1.8, y: -1.4, z: -4.4 }, // 옆(오른쪽) 주류
     objects: ['drinkBg', 'glassRack', 'drinkStation', 'drinkGlassDeck', 'drinkBeerLiquid', 'drinkPlacedGlass', 'drinkBeerVfx', 'drinkLeverDrag'],
+  },
+  {
+    id: 'SCR-SVC-INSTANT',
+    name: '사이드 메뉴',
+    introducedOn: 'd4',
+    // 퀵네비 맨 오른쪽 화면이므로 시선도 드링크(1.8)보다 더 오른쪽을 본다.
+    // 왼쪽(-1.6)에 두면 오른쪽으로 넘겼는데 카메라가 왼쪽으로 크게 되돌아간다.
+    look: { x: 3.4, y: -1.6, z: -4.1 },
+    objects: ['instantBg', 'instantCounter', 'instantCabbageBin', 'instantPlateSlot'],
   },
 ];
 

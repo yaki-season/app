@@ -79,25 +79,50 @@
   z-index: 31;
   top: 50%;
   left: 50%;
+  display: flex;
+  flex-direction: column;
+  /* 종이는 승인 라스터 한 장(1024×1536, 2:3)이다. 메뉴가 늘 때마다 패널을 늘리면 종이가
+     세로로 늘어나 찢긴 가장자리와 펀치홀까지 왜곡된다. 크기를 고정하고 목록만 스크롤한다. */
   width: min(460px, calc(100vw - 48px));
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
+  height: min(690px, calc(100vh - 48px));
+  overflow: hidden;
   transform: translate(-50%, -50%);
   border: 0;
-  border-radius: 8px 42px 8px 8px;
   padding: 42px 38px 32px 62px;
   color: #382619;
-  background: #ead39d url('/assets/core/ui/grandfather-secret-recipe-notebook-bg-r1-b1.png') center / 100% 100% no-repeat;
-  box-shadow: 0 18px 64px rgba(0, 0, 0, 0.52);
+  /* 누끼 딴 R2 종이. 배경색·사각 모서리·사각 그림자를 두면 잘라낸 가장자리가 다시 사각형으로 보인다. */
+  background: url('/assets/core/ui/grandfather-secret-recipe-notebook-bg-r2-b1.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.52));
 }
 .recipe-book[hidden] { display: none; }
 .recipe-book-title {
+  flex: none;
   margin: 0 0 12px;
   color: #6d321d;
   font-size: 19px;
   font-weight: 700;
 }
-.recipe-book-entries { display: grid; gap: 10px; }
+/* 제목과 닫기는 종이에 고정하고 이 목록만 스크롤한다. min-height:0이 없으면 flex 항목이
+   내용만큼 늘어나 패널을 다시 밀어낸다. */
+.recipe-book-entries {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* 스크롤바가 글자를 덮지 않게 한 칸 띄운다. */
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(109, 50, 29, 0.5) transparent;
+  overscroll-behavior: contain;
+}
+.recipe-book-entries::-webkit-scrollbar { width: 8px; }
+.recipe-book-entries::-webkit-scrollbar-track { background: transparent; }
+.recipe-book-entries::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(109, 50, 29, 0.45);
+}
 .recipe-book-entry {
   border: 1px solid rgba(103, 62, 31, 0.32);
   border-radius: 8px;
@@ -114,6 +139,8 @@
   word-break: keep-all;
 }
 .recipe-book-close {
+  flex: none;
+  align-self: flex-start;
   margin-top: 14px;
   min-height: 40px;
   border: 0;
@@ -127,6 +154,10 @@
 }
 @media (max-width: 520px) {
   .recipe-book { padding: 34px 24px 28px 50px; }
+}
+@media (max-height: 760px) {
+  /* 낮은 창에서는 종이를 창 높이에 맞춰 줄이고 비율은 그대로 둔다. */
+  .recipe-book { width: min(calc((100vh - 48px) / 1.5), calc(100vw - 48px)); }
 }
 body:has(.quick-nav button[data-screen="SCR-SVC-ASSEMBLY"].active) .receipts { display: flex; }
 
@@ -951,6 +982,62 @@ body.assembly-tare-cursor-ready #scene { cursor: none; }
   line-height: 1.35;
   white-space: nowrap;
 }
+/* 하이볼 따라진 양 게이지 — D4 전 생맥주 잔 게이지와 같은 읽는 법.
+   아래가 위스키, 위가 탄산수, 점선이 목표(위스키 1 : 탄산수 3)다. */
+.drink-panel.is-d4 .highball-gauge {
+  grid-area: gauge;
+  position: relative;
+  /* 생맥주 안내와 같은 높이 기준선을 유지해야 하므로 잔은 패널 안쪽 높이에 맞춘다. */
+  width: 38px;
+  height: 52px;
+  align-self: center;
+  box-sizing: border-box;
+  border: 2px solid #b9a07a;
+  border-top: none;
+  border-radius: 3px 3px 8px 8px;
+  background: rgba(0, 0, 0, .35);
+  overflow: hidden;
+}
+.highball-gauge-whiskey,
+.highball-gauge-soda {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  transition: height 60ms linear, bottom 60ms linear;
+}
+.highball-gauge-whiskey { background: linear-gradient(to top, #8a4a16, #c9812c); }
+.highball-gauge-soda { background: linear-gradient(to top, rgba(216, 236, 245, .78), rgba(238, 249, 255, .92)); }
+.highball-gauge-target {
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  bottom: 83.3%;
+  border-top: 2px dashed #8fd47a;
+}
+.highball-gauge-whiskey-target {
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  bottom: 20.8%;
+  border-top: 1px dashed rgba(232, 176, 96, .8);
+}
+/* 게이지가 좁아 생맥주 잔 도장 크기 그대로는 글자가 잘린다. */
+.drink-panel.is-d4 .highball-gauge .stamp {
+  padding: 1px 3px;
+  border-width: 1px;
+  border-radius: 4px;
+  font-size: 9px;
+  letter-spacing: -.02em;
+}
+.drink-panel.is-d4 .highball-readout {
+  margin: 0 0 0 auto;
+  color: #d7c2a4;
+  font-size: clamp(10px, .58vw, 11px);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .drink-panel.is-d4 .drink-guide-status,
 .drink-panel.is-d4 .highball-hint {
   grid-area: status;
@@ -996,24 +1083,28 @@ body.assembly-tare-cursor-ready #scene { cursor: none; }
 .drink-panel.is-d4 .highball-panel {
   position: absolute;
   top: var(--highball-panel-top, 24.25%);
-  right: 1.5%;
-  width: min(480px, 44vw);
-  min-width: 340px;
-  transform: translate3d(var(--highball-scene-x, 0), var(--highball-scene-y, 0), 0) scale(var(--highball-scene-scale, 1));
-  transform-origin: 50% 50%;
-  will-change: transform;
+  /* 맥주 세트가 왼쪽으로 비켜난 만큼 하이볼 작업대를 중앙 쪽으로 당기고 키운다.
+     병·얼음·잔 버튼이 작아 조준이 어려웠다. */
+  /* 맥주 잔 덱이 화면에서 약 713px을 차지한다. 위스키 세트는 그보다 커야 조준이 편하다. */
+  right: 9%;
+  width: min(780px, 62vw);
+  min-width: 480px;
   pointer-events: auto;
+  transition: opacity 140ms ease-out;
 }
 .drink-panel.is-d4 .highball-panel.is-scene-moving { pointer-events: none; }
 .drink-panel.is-d4 .highball-guide {
   position: absolute;
-  right: 1.5%;
+  right: 5%;
   bottom: 92px;
   display: grid;
-  grid-template: 'heading action' auto 'status action' auto / minmax(0, 1fr) auto;
+  grid-template:
+    'gauge heading action' auto
+    'gauge status action' auto
+    / auto minmax(0, 1fr) auto;
   gap: 4px 12px;
   align-items: center;
-  width: min(480px, 44vw);
+  width: min(620px, 52vw);
   min-height: 74px;
   box-sizing: border-box;
   border: 1px solid rgba(181, 134, 84, .46);
@@ -1025,9 +1116,12 @@ body.assembly-tare-cursor-ready #scene { cursor: none; }
   pointer-events: auto;
 }
 .highball-guide[hidden] { display: none !important; }
-.drink-panel.is-d4.is-scene-moving :is(.beer-panel, .highball-guide) {
+/* 전환 중에는 작업대·안내를 모두 감췄다가 자리에 도착하면 그대로 나타난다.
+   감출 때는 즉시 꺼야 이동 중인 모습이 한 프레임도 보이지 않는다. */
+.drink-panel.is-d4.is-scene-moving :is(.beer-panel, .highball-guide, .highball-panel) {
   opacity: 0;
   pointer-events: none;
+  transition: none;
 }
 .highball-worktop {
   position: relative;
@@ -1124,13 +1218,31 @@ body.assembly-tare-cursor-ready #scene { cursor: none; }
   transform: translateX(-50%);
 }
 .highball-glass::after { content: '빈 잔'; bottom: 24%; }
+/* 완성 잔을 누르면 픽업대로 간다. 빈 잔 덱이 아니라 잔 그림 자리다. */
+.highball-pickup { left: 35.5%; top: 27.3%; width: 17%; height: 48.9%; z-index: 4; }
+.highball-pickup[hidden] { display: none; }
+.highball-pickup::after { content: '픽업대에 올리기'; bottom: -14%; color: #ffe1a8; }
+.highball-pickup {
+  animation: highball-ready-pulse 1.4s ease-in-out infinite;
+  cursor: pointer;
+}
+@keyframes highball-ready-pulse {
+  0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 210, 130, 0)); }
+  50% { filter: drop-shadow(0 0 10px rgba(255, 210, 130, .75)); }
+}
 .highball-ice::after { content: '얼음'; }
 .highball-bottle.whiskey::after { content: '위스키'; bottom: 42%; }
 .highball-bottle.soda::after { content: '탄산수'; }
 .highball-lemon::after { content: '레몬'; }
 .highball-bottle.is-pouring::after { opacity: 0; }
-.highball-worktop button:hover,
-.highball-worktop button:focus-visible { border-color: #f0ad48; background-color: rgba(76, 42, 20, .22); }
+/* 조작 영역을 사각형으로 칠하면 클릭 반경이 그대로 화면에 드러난다(레몬 버튼이 그렇게 보였다).
+   피드백은 아트 위 라벨에만 준다. */
+.highball-worktop button:hover::after,
+.highball-worktop button:focus-visible::after {
+  color: #ffe1a8;
+  background: rgba(48, 26, 12, .95);
+  box-shadow: 0 0 0 1px rgba(240, 173, 72, .85);
+}
 .highball-worktop button:disabled { opacity: .38; cursor: default; }
 .highball-glass { right: 2%; top: 24%; width: 23%; height: 62%; }
 .highball-ice { left: 1%; top: 34%; width: 31%; height: 51%; }
@@ -1268,6 +1380,26 @@ body.assembly-tare-cursor-ready #scene { cursor: none; }
   transition: opacity 120ms ease;
 }
 .highball-visual.has-ice .highball-ice-visual { opacity: 1; }
+/* 완성 잔의 레몬 조각. 전용 아트가 없어 잔 테두리에 걸친 슬라이스를 그린다. */
+.highball-lemon-garnish {
+  position: absolute;
+  z-index: 2;
+  right: -14%;
+  top: -4%;
+  width: 42%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  transform: rotate(-12deg);
+  /* 위: 껍질 테, 가운데: 심, 아래: 과육 결. 전용 아트가 오면 이 배경만 교체하면 된다. */
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 72%, #fdf3c8 72% 84%, #d9a63a 84% 100%),
+    radial-gradient(circle at 50% 50%, #fff8d8 0 13%, transparent 13%),
+    repeating-conic-gradient(from 8deg, #fbe58c 0deg 20deg, #f0cb4e 20deg 22deg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .45);
+  opacity: 0;
+  transition: opacity 140ms ease-out;
+}
+.highball-visual.has-lemon .highball-lemon-garnish { opacity: 1; }
 .highball-overflow-spill {
   position: absolute;
   z-index: 4;
@@ -1352,7 +1484,7 @@ body.assembly-tare-cursor-ready #scene { cursor: none; }
   transform: rotate(-84deg);
 }
 .highball-bottle small { display: none; }
-.highball-lemon { left: 57%; bottom: 11%; width: 20%; height: 24%; }
+.highball-lemon { left: 57%; bottom: 18%; width: 20%; height: 24%; }
 .highball-hint {
   margin: 0;
 }
@@ -1423,7 +1555,7 @@ body.assembly-tare-cursor-ready #scene { cursor: none; }
   .instant-progress { width: 36px; height: 36px; }
   .instant-progress i { width: 25px; height: 25px; }
   .drink-panel.is-d4 { inset: 0; width: auto; max-height: none; transform: none; }
-  .drink-panel.is-d4 .highball-panel { top: var(--highball-panel-top, 17%); right: 12px; width: min(360px, 48vw); min-width: 270px; }
+  .drink-panel.is-d4 .highball-panel { top: var(--highball-panel-top, 17%); right: 4%; width: min(460px, 56vw); min-width: 300px; }
   .drink-panel.is-d4 .beer-panel { left: 43%; bottom: 76px; width: 210px; }
   .drink-panel.is-d4 .highball-guide { right: 12px; bottom: 76px; width: min(360px, 42vw); }
   .drink-panel.is-d4 :is(.beer-panel, .highball-guide) { min-height: 66px; padding: 8px 10px; }

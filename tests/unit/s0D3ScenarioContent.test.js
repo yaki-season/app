@@ -105,6 +105,7 @@ describe('S0~D4 시나리오 콘텐츠', () => {
     expect(D4_EPILOGUE_PAGES).toEqual([
       {
         pageId: 'D4-EPILOGUE-01',
+        illustrationAssetId: 'IL-D4-EPILOGUE-CLEANUP-PIXEL',
         kicker: '영업을 마치고',
         title: '넷째 날 정리를 마쳤다',
         visualLine: '아키는 사라다 접시와 하이볼 잔을 씻어 제자리에 놓았다.',
@@ -115,6 +116,7 @@ describe('S0~D4 시나리오 콘텐츠', () => {
       },
       {
         pageId: 'D4-EPILOGUE-02',
+        illustrationAssetId: 'IL-D4-EPILOGUE-TORIKAWA-PIXEL',
         kicker: '다섯째 날 준비',
         title: '토리카와를 메뉴에 추가했다',
         visualLine: '아키는 비법 노트에 토리카와 조립 순서와 굽는 법을 적었다.',

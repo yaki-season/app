@@ -35,6 +35,23 @@ describe('비법노트', () => {
     }
   });
 
+  it('꼬치마다 타레를 바르면 무엇이 되는지 먼저 알려준다', () => {
+    const [negima, momo, kawa] = recipeBookEntries({
+      menuIds: ['negima', 'momo', 'kawa'],
+      tareAvailable: true,
+    });
+    expect(negima.lines[1]).toBe('타레를 바르면 타레 네기마가 됩니다. 바르지 않으면 소금 네기마입니다.');
+    expect(momo.lines[1]).toBe('타레를 바르면 타레 모모가 됩니다. 바르지 않으면 소금 모모입니다.');
+    expect(kawa.lines[1]).toBe('타레를 바르면 타레 토리카와가 됩니다. 바르지 않으면 소금 토리카와입니다.');
+    // 결과를 먼저 말하고 칠하는 방법은 그 다음 줄에 남는다.
+    expect(negima.lines[2]).toContain('조립대');
+  });
+
+  it('타레가 없는 날에는 타레 줄을 넣지 않는다', () => {
+    const negima = recipeBookEntries({ menuIds: ['negima'] })[0];
+    expect(negima.lines.join(' ')).not.toContain('타레');
+  });
+
   it('굽기 기준은 임계값 정본을 그대로 읽는다', () => {
     const line = entryOf('negima').lines[1];
     expect(line).toBe(

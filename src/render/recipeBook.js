@@ -37,6 +37,15 @@ function grillLines(thresholds) {
   ];
 }
 
+// 타레는 조립대에서 바르는 순간 같은 꼬치가 다른 메뉴가 된다. 절차보다 그 결과를 먼저 말한다.
+function tareLines(menuId) {
+  const label = MENU_LABEL[menuId] ?? menuId;
+  return [
+    `타레를 바르면 타레 ${label}가 됩니다. 바르지 않으면 소금 ${label}입니다.`,
+    '타레는 조립을 마친 뒤 조립대의 소스통을 선택해 꼬치 위를 좌우로 한 번 고르게 칠한 다음 그릴 재고로 보냅니다.',
+  ];
+}
+
 function skewerEntry(menuId, recipe, thresholds, tareAvailable = false) {
   const steps = recipe.map((ingredient) => INGREDIENT_LABEL[ingredient] ?? ingredient);
   // 같은 재료만 반복하는 레시피는 순서를 나열해 봐야 읽기 어렵다. 개수로 알려준다.
@@ -49,9 +58,7 @@ function skewerEntry(menuId, recipe, thresholds, tareAvailable = false) {
       uniform
         ? `${steps[0]} ${steps.length}조각을 차례로 끼웁니다.`
         : `끼우는 순서 · ${steps.join(' → ')}`,
-      ...(tareAvailable
-        ? ['조립을 마친 뒤 소금으로 보내거나 타레 소스통을 선택합니다. 타레는 조립대에서 꼬치 위를 좌우로 한 번 고르게 칠한 뒤 그릴 재고로 보냅니다.']
-        : []),
+      ...(tareAvailable ? tareLines(menuId) : []),
       ...grillLines(thresholds),
     ],
   };
@@ -64,8 +71,8 @@ function kawaEntry(recipe) {
     steps: recipe.map(() => INGREDIENT_LABEL.foldedChickenSkin),
     lines: [
       '접은 닭껍질 5조각을 빈 자리부터 차례로 끼웁니다.',
+      ...tareLines('kawa'),
       '소금은 양면을 구운 뒤 회수합니다. 닭껍질은 모모보다 빨리 타므로 색을 더 자주 살피세요.',
-      '타레는 조립을 마친 뒤 조립대의 소스통을 선택해 꼬치 위를 좌우로 한 번 고르게 칠한 뒤 그릴 재고로 보냅니다.',
     ],
   };
 }

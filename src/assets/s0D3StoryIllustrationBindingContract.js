@@ -16,6 +16,7 @@ export const S0_D3_STORY_ILLUSTRATION_BINDINGS = Object.freeze([
   storyIllustration('D3-PRE', 'IL-D3-PREOPEN-PIXEL', '타레 노트를 살피며 직장인 손님들을 맞는 아사노 아키'),
   storyIllustration('D3-POST', 'IL-D3-POST-PIXEL', '셋째 날 영업 뒤 손님과 츠키오카에게 인사하는 아사노 아키'),
   storyIllustration('D4-PRE', 'IL-D4-PREOPEN-PIXEL', '넷째 날 영업 전, 조리대 안쪽에서 양배추 사라다를 담으며 츠키오카의 하이볼 주문을 듣는 아사노 아키'),
+  storyIllustration('D4-POST', 'IL-D4-POST-PIXEL', '넷째 날 영업을 마치고 퇴근길 손님을 배웅하며 츠키오카의 격려를 받는 아사노 아키'),
 ]);
 
 export const S0_D3_STORY_ILLUSTRATION_BY_SCENE_KEY = Object.freeze(

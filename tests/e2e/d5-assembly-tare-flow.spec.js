@@ -90,7 +90,7 @@ async function bootD5Assembly(page) {
 async function assembleKawa(page) {
   for (let index = 1; index <= 5; index += 1) {
     // 토리카와 선택 중에는 같은 닭 재료 통이 접힌 닭껍질 한 조각을 공급한다.
-    await clickObject(page, 'binChicken');
+    await clickObject(page, 'binTorikawa');
     await expect.poll(() => D(page, 'cookAssemblyProgress').then(({ index: value }) => value)).toBe(index);
     await expect.poll(() => D(page, 'assemblyArtRuntime').then(({ kawa }) => (
       kawa.build.ingredientCount

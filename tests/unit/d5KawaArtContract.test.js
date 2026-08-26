@@ -67,4 +67,12 @@ describe('D5 토리카와 원본 기반 아트 계약', () => {
       colorType: 6,
     });
   });
+  it('토리카와 조립대는 기존 꼬치 트레이를 닭껍질 트레이로 교체한 전용 이미지를 사용한다', () => {
+    expect(D5_KAWA_RUNTIME_URLS.assemblyStation).toContain('torikawa');
+    expect(pngSize(assetBytes(D5_KAWA_RUNTIME_URLS.assemblyStation))).toEqual({
+      width: 1920,
+      height: 1080,
+      colorType: 6,
+    });
+  });
 });

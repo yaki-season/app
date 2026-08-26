@@ -119,6 +119,19 @@ function renderStoryIllustration(activeDayId, dialogueId) {
   return true;
 }
 
+function renderEpilogueIllustration(assetId) {
+  const asset = resolveApprovedRuntimeAsset(approvedRuntimeAssets, assetId);
+  if (!asset) {
+    hideStoryIllustration();
+    return false;
+  }
+  storyIllustration.src = asset.url;
+  storyIllustration.alt = '';
+  storyIllustration.hidden = false;
+  document.body.dataset.storyIllustrationAssetId = asset.id;
+  return true;
+}
+
 function hideStoryBackground() {
   storyBackground.hidden = true;
   storyBackground.removeAttribute('src');
@@ -620,7 +633,11 @@ function renderEpilogue() {
   heading.textContent = '넷째 날 마감 후';
   hideStoryPortrait();
   hideStoryIllustration();
-  renderStoryBackground('D4');
+  if (renderEpilogueIllustration(page.illustrationAssetId)) {
+    hideStoryBackground();
+  } else {
+    renderStoryBackground('D4');
+  }
   setIds({
     screen: 'SCR-POST-EPILOGUE',
     state: `D4-epilogue-${epilogueIndex + 1}`,

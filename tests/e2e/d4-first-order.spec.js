@@ -90,46 +90,55 @@ test('D4 첫 주문은 실제 사라다 홀드와 하이볼 병 홀드로 완료
   expect(errors).toEqual([]);
 });
 
-test('하이볼은 장면과 함께 진입하고 액체 혼합·탄산·넘침을 잔에서 보여준다', async ({ page }) => {
+test('하이볼 작업대는 자리가 고정된 채 들어오고 액체 혼합·탄산·넘침을 잔에서 보여준다', async ({ page }) => {
   await page.goto('/src/d1-game.html?day=d4&devUnlock=1&reset=1');
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
 
+  // 전환 중에는 작업대를 감췄다가 제자리에 나타난다. 예전에는 도착 카메라로 투영한 위치·배율을
+  // 얹어 날아 들어왔는데, 매번 자리가 바뀌는 것처럼 보였다.
   const entering = await page.evaluate(async () => {
     window.__d1GameDebug.requestScreen('SCR-SVC-DRINK');
     await new Promise((resolve) => requestAnimationFrame(resolve));
     const panel = document.getElementById('highballPanel');
     const rect = panel.getBoundingClientRect();
-    const worktop = panel.querySelector('.highball-worktop').getBoundingClientRect();
     return {
       moving: panel.classList.contains('is-scene-moving'),
-      x: Number.parseFloat(panel.style.getPropertyValue('--highball-scene-x')),
-      y: Number.parseFloat(panel.style.getPropertyValue('--highball-scene-y')),
-      scale: Number.parseFloat(panel.style.getPropertyValue('--highball-scene-scale')),
-      visibleWidth: Math.max(0, Math.min(window.innerWidth, rect.right) - Math.max(0, rect.left)),
-      width: rect.width,
+      opacity: getComputedStyle(panel).opacity,
+      transform: getComputedStyle(panel).transform,
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+      width: Math.round(rect.width),
       artReady: panel.classList.contains('is-art-ready'),
     };
   });
   expect(entering.moving).toBe(true);
   expect(entering.artReady).toBe(true);
-  expect(Math.hypot(entering.x, entering.y)).toBeGreaterThan(40);
-  expect(entering.scale).toBeGreaterThanOrEqual(0.72);
-  expect(entering.scale).toBeLessThanOrEqual(1.16);
-  expect(entering.visibleWidth).toBeLessThan(entering.width * 0.9);
+  expect(entering.opacity).toBe('0');
+  // 위치를 흔드는 변형이 남아 있으면 안 된다.
+  expect(entering.transform === 'none' || entering.transform === 'matrix(1, 0, 0, 1, 0, 0)').toBe(true);
+
   await expect(page.getByTestId('highball-panel')).not.toHaveClass(/is-scene-moving/, { timeout: 2_000 });
   const settled = await page.evaluate(() => {
     const panel = document.getElementById('highballPanel');
+    const rect = panel.getBoundingClientRect();
     const worktop = panel.querySelector('.highball-worktop').getBoundingClientRect();
     const art = panel.querySelector('.highball-worktop-art');
     return {
-      x: Number.parseFloat(panel.style.getPropertyValue('--highball-scene-x')),
-      y: Number.parseFloat(panel.style.getPropertyValue('--highball-scene-y')),
-      scale: Number.parseFloat(panel.style.getPropertyValue('--highball-scene-scale')),
+      opacity: getComputedStyle(panel).opacity,
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+      width: Math.round(rect.width),
       worktopBaseline: worktop.top + (worktop.height * (901 / 1024)),
       artReady: art.complete && art.naturalWidth > 0 && panel.classList.contains('is-art-ready'),
     };
   });
-  expect(settled).toMatchObject({ x: 0, y: 0, scale: 1, artReady: true });
+  expect(settled.artReady).toBe(true);
+  // 도착하면 페이드로 나타난다(140ms).
+  await expect.poll(() => page.locator('#highballPanel')
+    .evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+  // 들어오는 동안과 도착한 뒤의 자리가 같아야 한다.
+  expect({ left: settled.left, top: settled.top, width: settled.width })
+    .toEqual({ left: entering.left, top: entering.top, width: entering.width });
 
   const leaving = await page.evaluate(async () => {
     document.querySelector('[data-testid="quicknav-SCR-SVC-GRILL"]').click();
@@ -313,4 +322,71 @@ test('하이볼은 장면과 함께 진입하고 액체 혼합·탄산·넘침�
   expect(overflowPresentation.hintHidden).toBe(true);
   expect(overflowPresentation.glassFilter).toBe('none');
   await page.mouse.up();
+});
+
+// 하이볼도 생맥주와 같은 흐름이다. 레몬을 올리면 완성 잔이 작업대에 남고, 플레이어가
+// 그 잔을 눌러야 음료 픽업대로 간다. 따르는 동안에는 게이지로 양과 비율을 확인한다.
+test('하이볼은 레몬 뒤 잔을 눌러야 픽업대에 올라가고, 따라진 양을 게이지로 보여준다', async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/src/d1-game.html?day=d5&devUnlock=1&reset=1');
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
+  await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-DRINK'));
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.activeScreen())).toBe('SCR-SVC-DRINK');
+  await expect(page.getByTestId('highball-panel')).toHaveClass(/is-art-ready/);
+
+  const gaugeHeights = () => page.getByTestId('highball-gauge').evaluate((node) => ({
+    whiskey: node.querySelector('[data-testid="highball-gauge-whiskey"]').getBoundingClientRect().height,
+    soda: node.querySelector('[data-testid="highball-gauge-soda"]').getBoundingClientRect().height,
+  }));
+
+  await page.getByTestId('highball-glass').click();
+  await page.getByTestId('highball-ice').click();
+  expect(await gaugeHeights()).toMatchObject({ whiskey: 0, soda: 0 });
+
+  await hold(page, page.getByTestId('highball-whiskey'), 1_000);
+  const afterWhiskey = await gaugeHeights();
+  expect(afterWhiskey.whiskey, '위스키 게이지').toBeGreaterThan(0);
+  expect(afterWhiskey.soda, '탄산수 게이지').toBe(0);
+  // 따르기는 벽시계 기준이라 소수 첫째 자리는 흔들린다. 값이 반영되는지만 본다.
+  await expect(page.getByTestId('highball-readout')).toHaveText(/위스키 [01]\.\d · 탄산수 0\.0/);
+
+  await hold(page, page.getByTestId('highball-soda'), 3_000);
+  const afterSoda = await gaugeHeights();
+  expect(afterSoda.soda, '탄산수 게이지').toBeGreaterThan(afterWhiskey.whiskey);
+  await expect(page.getByTestId('highball-readout'))
+    .toHaveText(/위스키 [01]\.\d · 탄산수 [23]\.\d · 비율 1:[234]\.\d/);
+
+  // 레몬을 올리기 전에는 잔에 레몬 조각이 없다.
+  const garnishOpacity = () => page.locator('#highballLemonGarnish')
+    .evaluate((node) => getComputedStyle(node).opacity);
+  expect(await garnishOpacity()).toBe('0');
+
+  // 레몬만으로는 픽업대에 올라가지 않는다.
+  await page.getByTestId('highball-lemon').click();
+  // 완성 잔에는 레몬 조각이 걸린다.
+  await expect.poll(garnishOpacity).toBe('1');
+  // 조작 영역을 사각형으로 칠하면 클릭 반경이 그대로 드러난다. 포커스가 남아도 투명해야 한다.
+  expect(await page.getByTestId('highball-lemon').evaluate((node) => {
+    node.focus();
+    const style = getComputedStyle(node);
+    return { background: style.backgroundColor, border: style.borderTopColor };
+  })).toEqual({ background: 'rgba(0, 0, 0, 0)', border: 'rgba(0, 0, 0, 0)' });
+  await expect(page.locator('#highballHint')).toContainText('잔을 눌러 픽업대에 올리세요');
+  await expect(page.getByTestId('highball-pickup')).toBeVisible();
+  await expect(page.locator('.dock-card[data-menu-id="highball"]')).toHaveCount(0);
+  await expect(page.getByTestId('highball-stamp')).toBeVisible();
+
+  // 완성된 잔 자체를 눌러야 그때 픽업대로 간다(빈 잔 덱이 아니다).
+  await expect(page.getByTestId('highball-pickup')).toBeVisible();
+  await page.getByTestId('highball-pickup').click();
+  await expect(page.locator('.dock-card[data-menu-id="highball"]')).toHaveCount(1);
+  await expect(page.locator('#highballHint')).toContainText('빈 잔을 가져오세요');
+  // 게이지 높이는 60ms 전환이라 즉시 0이 아니다. 비워지는 것만 확인한다.
+  await expect.poll(async () => {
+    const { whiskey, soda } = await gaugeHeights();
+    return whiskey + soda;
+  }).toBe(0);
+  expect(errors).toEqual([]);
 });

@@ -43,6 +43,9 @@ export function createHighballStation({
   let lastTickMs = null;
   let overflow = false;
   let overflowAccepted = false;
+  // 레몬을 올려 완성했지만 아직 플레이어가 집어 올리지 않은 잔. 생맥주와 같은 흐름으로
+  // 완성품이 저절로 픽업대에 가지 않고 작업대에 남아 있게 한다.
+  let readyDrink = null;
 
   function reset() {
     glassPlaced = false;
@@ -53,6 +56,7 @@ export function createHighballStation({
     lastTickMs = null;
     overflow = false;
     overflowAccepted = false;
+    readyDrink = null;
   }
 
   function restore(saved) {
@@ -63,6 +67,7 @@ export function createHighballStation({
     sodaUnits = Math.max(0, Number(saved.sodaUnits) || 0);
     overflow = saved.overflow === true;
     overflowAccepted = saved.overflowAccepted === true;
+    readyDrink = saved.readyDrink ? { ...saved.readyDrink } : null;
     activeLiquid = null;
     lastTickMs = null;
     return true;
@@ -71,6 +76,7 @@ export function createHighballStation({
   if (snapshot) restore(snapshot);
 
   function placeGlass() {
+    if (readyDrink) return { ok: false, reason: 'pickup-required' };
     if (glassPlaced) return { ok: false, reason: 'glass-already-placed' };
     reset();
     glassPlaced = true;
@@ -78,6 +84,7 @@ export function createHighballStation({
   }
 
   function addIce() {
+    if (readyDrink) return { ok: false, reason: 'pickup-required' };
     if (!glassPlaced) return { ok: false, reason: 'glass-required' };
     if (iceAdded) return { ok: false, reason: 'ice-already-added' };
     iceAdded = true;
@@ -85,6 +92,7 @@ export function createHighballStation({
   }
 
   function press(liquid, nowMs) {
+    if (readyDrink) return { ok: false, reason: 'pickup-required' };
     if (!LIQUIDS.has(liquid)) return { ok: false, reason: 'unknown-liquid' };
     if (!glassPlaced) return { ok: false, reason: 'glass-required' };
     if (!iceAdded) return { ok: false, reason: 'ice-required' };
@@ -132,6 +140,7 @@ export function createHighballStation({
   }
 
   function addLemon() {
+    if (readyDrink) return { ok: false, reason: 'pickup-required' };
     if (!glassPlaced || !iceAdded) return { ok: false, reason: 'ice-required' };
     if (overflow) return { ok: false, reason: 'overflow-decision-required' };
     if (!(whiskeyUnits > 0) || !(sodaUnits > 0)) {
@@ -151,6 +160,17 @@ export function createHighballStation({
       ratio: sodaUnits / whiskeyUnits,
       overflowAccepted,
     };
+    // 여기서 reset하지 않는다. 완성 잔은 플레이어가 집어 올릴 때까지 작업대에 남는다.
+    readyDrink = completed;
+    activeLiquid = null;
+    lastTickMs = null;
+    return { ok: true, completed, state: view() };
+  }
+
+  // 완성 잔을 집어 음료 픽업대로 보낸다. 생맥주의 '완성' 조작과 같은 자리다.
+  function pickUp() {
+    if (!readyDrink) return { ok: false, reason: 'nothing-to-pick-up' };
+    const completed = readyDrink;
     reset();
     return { ok: true, completed, state: view() };
   }
@@ -164,15 +184,17 @@ export function createHighballStation({
   function view() {
     const totalUnits = whiskeyUnits + sodaUnits;
     return Object.freeze({
-      phase: !glassPlaced
-        ? 'empty'
-        : overflow
-          ? 'overflow'
-          : overflowAccepted
-            ? 'overflow-accepted'
-            : activeLiquid
-              ? 'pouring'
-              : 'building',
+      phase: readyDrink
+        ? 'ready'
+        : !glassPlaced
+          ? 'empty'
+          : overflow
+            ? 'overflow'
+            : overflowAccepted
+              ? 'overflow-accepted'
+              : activeLiquid
+                ? 'pouring'
+                : 'building',
       glassPlaced,
       iceAdded,
       whiskeyUnits,
@@ -182,11 +204,15 @@ export function createHighballStation({
       activeLiquid,
       overflow,
       overflowAccepted,
-      canAddLemon: iceAdded
+      canAddLemon: !readyDrink
+        && iceAdded
         && whiskeyUnits > 0
         && sodaUnits > 0
         && !overflow,
-      hasInProgressGlass: glassPlaced,
+      // 완성 잔의 품질. 픽업대에 올리기 전 UI가 무엇이 완성됐는지 보여줄 때 쓴다.
+      readyQuality: readyDrink?.quality ?? null,
+      canPickUp: readyDrink !== null,
+      hasInProgressGlass: glassPlaced || readyDrink !== null,
     });
   }
 
@@ -199,6 +225,7 @@ export function createHighballStation({
       sodaUnits,
       overflow,
       overflowAccepted,
+      readyDrink: readyDrink ? { ...readyDrink } : null,
     };
   }
 
@@ -210,6 +237,7 @@ export function createHighballStation({
     release,
     acceptOverflow,
     addLemon,
+    pickUp,
     discard,
     reset,
     restore,

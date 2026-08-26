@@ -73,7 +73,7 @@ ID는 그대로라 게임 코드는 손대지 않는다.
 - [ ] `retrieve-r1-b1.ogg`
 - [ ] `burnt-r1-b1.ogg`
 
-## sfx/drink/ (11)
+## sfx/drink/ (17)
 
 - [ ] `glass-set-r1-b1.ogg`
 - [ ] `tray-tap-r1-b1.ogg`
@@ -86,6 +86,16 @@ ID는 그대로라 게임 코드는 손대지 않는다.
 - [ ] `complete-r1-b1.ogg`
 - [ ] `overflow-r1-b1.ogg`
 - [ ] `serve-r1-b1.ogg`
+
+하이볼 작업대. 빈 잔을 가져올 때와 완성 잔을 픽업대에 올릴 때는 생맥주 잔 덱과 같은
+`glass-set` + `tray-tap`을 그대로 쓴다. 새 파일이 필요 없다.
+
+- [ ] `ice-scoop-r1-b1.ogg` — 집게로 얼음을 뜨는 단발음
+- [ ] `ice-settle-r1-b1.ogg` — 얼음이 잔 안에서 부딪히는 잔향
+- [ ] `whiskey-pour-r1-b1.ogg` — **루프**. 점성 있는 낮은 물줄기
+- [ ] `soda-pour-r1-b1.ogg` — **루프**. 탄산 기포음까지 이 한 장에 함께 굽는다
+- [ ] `bottle-set-r1-b1.ogg` — 병에서 손을 뗄 때 트레이에 내려놓는 소리
+- [ ] `lemon-drop-r1-b1.ogg` — 레몬을 올려 마무리하는 가벼운 단발음
 
 ## sfx/tare/ (1)
 

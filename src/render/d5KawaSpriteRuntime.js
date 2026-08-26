@@ -9,6 +9,7 @@ export const D5_KAWA_RUNTIME_URLS = Object.freeze({
   burnt: '/assets/campaign/d5/spr-kawa-grill-burnt-r1-b1.png',
   order: '/assets/campaign/d5/order-icon-kawa-r1-b1.png',
   servedPlate: '/assets/campaign/d5/pr-served-kawa-plate-r1-b1.png',
+  assemblyStation: '/assets/campaign/d5/st-assembly-torikawa-r1-b1.png',
   assemblyProgress: Object.freeze(Array.from(
     { length: 6 },
     (_, index) => `/assets/campaign/d5/spr-kawa-assembly-progress-${index}-r1-b1.png`,

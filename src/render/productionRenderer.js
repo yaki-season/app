@@ -236,12 +236,20 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         cleanupOverlay.visible = false;
         scene.add(cleanupOverlay); group.push(cleanupOverlay); seatCleanupOverlayMesh[seatId] = cleanupOverlay;
 
-        const actorMat = new THREE.MeshBasicMaterial({ color: SEAT_ACTOR_MOOD.waiting });
+        // 좌석 손님도 츠키오카와 같은 풀프레임 레이어라 서로 완전히 겹친다. 깊이 버퍼를 쓰면
+        // 같은 z(=LAYER_Z.actor)에 놓인 투명 평면들이 매 프레임 정렬 순서가 뒤바뀌고, 투명 영역까지
+        // depth를 써서 옆 손님을 지웠다 살렸다 한다(지지직). 아트 레이어와 같은 계약으로 맞춘다.
+        const actorMat = new THREE.MeshBasicMaterial({
+          color: SEAT_ACTOR_MOOD.waiting,
+          depthTest: false,
+          depthWrite: false,
+        });
         if (SEAT_ACTOR_TEXTURE) { actorMat.map = texture(SEAT_ACTOR_TEXTURE); actorMat.transparent = true; actorMat.color.setHex(0xffffff); }
         const actor = billboard(cam, { x: 0, y: 0, width: 0.05, height: 0.05 }, LAYER_Z.actor, actorMat);
         // 손님은 의자 등받이(order 10) 앞에, 카운터 상판(order 50) 뒤에 선다.
         // z값만 사용하면 투명 좌석 PNG의 등받이가 손님을 다시 덮으므로 명시적으로 고정한다.
-        actor.renderOrder = OBJECTS.custTsukioka.order;
+        // 좌석마다 미세하게 다른 값을 줘서 손님끼리의 그리기 순서도 프레임과 무관하게 고정한다.
+        actor.renderOrder = OBJECTS.custTsukioka.order + (SEAT_IDS.indexOf(seatId) + 1) / 1000;
         actor.visible = false;
         actor.userData.seatId = seatId;
         actor.userData.runtimeControlled = true;
@@ -373,6 +381,23 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     if (layoutMode === seatLayoutMode) return false;
     setSeatCapacity(seatCapacity, { layoutMode });
     return true;
+  }
+
+  // 화면 안에서 오브젝트 묶음을 좌우로 통째로 옮긴다(시각면 + hit면 함께).
+  // D4에 하이볼 작업대가 오른쪽 절반을 차지하면서 맥주 세트를 왼쪽으로 비켜 줄 때 쓴다.
+  function setObjectOffsetX(keys, dx) {
+    for (const key of keys) {
+      const def = OBJECTS[key];
+      if (!def) continue;
+      const screen = SCREENS.find((item) => item.objects.includes(key));
+      const cam = screen ? presetCam[screen.id] : null;
+      if (!cam) continue;
+      const shift = (rect) => ({ ...rect, x: rect.x + dx });
+      const mesh = artMesh[key] ?? objectMesh[key];
+      if (mesh && def.rect) placeBillboard(mesh, cam, shift(def.rect), LAYER_Z[def.layer]);
+      const hit = interactionMesh[key];
+      if (hit && def.hitRect) placeBillboard(hit, cam, shift(def.hitRect), LAYER_Z.interactive + 0.01);
+    }
   }
 
   // game.html 프로덕션 그릴 칸 수(명성 해금)에 맞춰 pgSlot 칸을 그릴 바디에 균등 재배치한다.
@@ -654,6 +679,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
       }
     },
     setGrillSlots,
+    setObjectOffsetX,
     setObjectEnabled,
     setObjectTexture,
     hasSeatActorArt: () => !!SEAT_ACTOR_TEXTURE,
@@ -669,19 +695,20 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         a.material.needsUpdate = true;
       }
     },
-    setSeatActorFrame: (seatId, { scale = 1, offsetY = 0 } = {}) => {
+    setSeatActorFrame: (seatId, { scale = 1, offsetY = 0, offsetX = 0 } = {}) => {
       const actor = seatActorMesh[seatId];
       const seatIndex = SEAT_IDS.indexOf(seatId);
       if (!actor || seatIndex < 0 || seatIndex >= seatCapacity) return;
-      const frameKey = `${seatCapacity}:${seatLayoutMode}:${scale}:${offsetY}`;
+      const frameKey = `${seatCapacity}:${seatLayoutMode}:${scale}:${offsetY}:${offsetX}`;
       if (actor.userData.frameKey === frameKey) return;
       const seat = computeSeats(seatCapacity, { layoutMode: seatLayoutMode })[seatIndex];
       const seatCenterX = seat.actor.x + seat.actor.width / 2;
       // Approved customer states use the same complete 1920x1080 layer contract as
       // Tsukioka. Move that complete layer horizontally to the assigned seat instead
-      // of squeezing it into the old portrait-shaped seat billboard.
+      // of squeezing it into the old portrait-shaped seat billboard. offsetX
+      // compensates rasters whose figure is not drawn at the canvas centre.
       placeBillboard(actor, seatCam, {
-        x: seatCenterX - 0.5,
+        x: seatCenterX - 0.5 + offsetX,
         y: offsetY,
         width: 1,
         height: 1,

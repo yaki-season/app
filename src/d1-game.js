@@ -29,7 +29,7 @@ import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createPreparedDock } from './render/preparedDock.js';
 import { D4_MENU_ART_URLS } from './assets/d4MenuArt.js';
 import { createInstantServiceStation } from './application/stations/instantServiceStation.js';
-import { createHighballStation } from './application/stations/highballStation.js';
+import { HIGHBALL_DEFAULT_CONFIG, createHighballStation } from './application/stations/highballStation.js';
 import { gameAudio, installGameAudio, setBgm, sfx, sfxOff, sfxOnce, loopOn, loopOff, loopRate } from './audio/gameAudio.js';
 import { crowdAmbienceId, interiorAmbienceId } from './audio/audioCatalog.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
@@ -37,6 +37,7 @@ import { seatHasServedMenu } from './render/seatServing.js';
 import { settlementStepDetail } from './render/settlementSteps.js';
 import { recipeBookEntries, shouldShowAssemblyTutorial } from './render/recipeBook.js';
 import {
+  d1OfficeActorOffsetX,
   d1OfficeCustomerVariant,
   isD1OfficeBeerFrame,
   resolveD1OfficeCustomerFrame,
@@ -46,6 +47,8 @@ import {
   resolveD1SoloCustomerFrame,
 } from './render/d1SoloCustomerArt.js';
 import {
+  HIGHBALL_DAY_BEER_KEYS,
+  HIGHBALL_DAY_BEER_SHIFT_X,
   SCREENS,
   SCREEN_IDS,
   SCREEN_BY_ID,
@@ -187,6 +190,10 @@ document.getElementById('dockShelf')?.style.setProperty(
   '--dock-cabbage-salad-art',
   `url("${D4_MENU_ART_URLS.cabbageSaladPlate}")`,
 );
+document.getElementById('dockShelf')?.style.setProperty(
+  '--dock-highball-art',
+  `url("${D4_MENU_ART_URLS.highballPickup}")`,
+);
 document.body.dataset.assetPlaceholderCount = String(runtimeAssets.readiness.placeholderCount);
 document.body.dataset.runtimeAssetsReady = String(runtimeAssets.readiness.ready);
 document.body.dataset.runtimeContractValid = String(runtimeAssets.readiness.contractAudit.valid);
@@ -196,6 +203,10 @@ const ACTIVE_SCREENS = SCREENS.filter((screen) => (
 ));
 const ACTIVE_SCREEN_IDS = ACTIVE_SCREENS.map((screen) => screen.id);
 const R = createProductionRenderer(canvas, { runtimeAssets });
+// 하이볼이 열리는 날에는 맥주 세트를 왼쪽으로 비켜 두 작업대가 겹치지 않게 한다.
+if (['d4', 'd5'].includes(ACTIVE_DAY_ID)) {
+  R.setObjectOffsetX(HIGHBALL_DAY_BEER_KEYS, HIGHBALL_DAY_BEER_SHIFT_X);
+}
 R.warmTexture(D4_MENU_ART_URLS.cabbageSaladPlate);
 for (const seatId of SEAT_IDS) R.setSeatSaladUrl(seatId, D4_MENU_ART_URLS.cabbageSaladPlate);
 const director = createStationDirector({ screens: ACTIVE_SCREEN_IDS, initial: INITIAL_SCREEN, transitionMs: SCREEN_TRANSITION_MS });
@@ -709,6 +720,7 @@ const CLICKABLE = new Set([
   ...SEAT_KEYS,
   'binChicken',
   'binLeek',
+  'binTorikawa',
   'jigSkewer',
   'grillWaitTray',
   ...SLOT_KEYS,
@@ -747,9 +759,11 @@ const EXTRA_ACTOR_FRAME = Object.freeze({
 });
 
 function officeActorFrame(customerId) {
-  return ['a', 'b'].includes(d1OfficeCustomerVariant(customerId))
+  const base = ['a', 'b'].includes(d1OfficeCustomerVariant(customerId))
     ? EXTRA_ACTOR_FRAME.officeFullBody
     : EXTRA_ACTOR_FRAME.officePortrait;
+  // 캔버스 중앙에서 벗어나 그려진 승인 라스터(developer A/B)를 좌석 중심으로 되돌린다.
+  return { ...base, offsetX: d1OfficeActorOffsetX(customerId) };
 }
 let businessSession = null;
 let businessPort = null;
@@ -1224,6 +1238,7 @@ const OBJECT_LABELS = {
   drinkTower: '맥주 타워', glassRack: '빈 잔',
   drinkLeverDrag: '레버',
 };
+OBJECT_LABELS.binTorikawa = '닭껍질';
 const LABEL_UP = { workbench: 74, grillBody: 74, drinkTower: 46, glassRack: 24 };
 const labelEls = {};
 for (const [key, text] of Object.entries(OBJECT_LABELS)) {
@@ -1269,6 +1284,10 @@ const highballLiquid = el('highballLiquid');
 const highballHint = el('highballHint');
 const highballOverflow = el('highballOverflow');
 const highballBottleButtons = [...highballPanel.querySelectorAll('[data-liquid]')];
+const highballGaugeWhiskey = highballGuide.querySelector('[data-testid="highball-gauge-whiskey"]');
+const highballGaugeSoda = highballGuide.querySelector('[data-testid="highball-gauge-soda"]');
+const highballReadout = el('highballReadout');
+const highballStamp = el('highballStamp');
 const HIGHBALL_ART_URLS = [
   '/assets/campaign/d4/prop-highball-workstation-base-draft-r8.png',
   '/assets/campaign/d4/prop-highball-glass-draft-r3.png',
@@ -1298,7 +1317,9 @@ function beerGlassDeckBaselinePx() {
 }
 
 function alignHighballPanelToBeerGlassDeck() {
-  const worktopHeight = highballWorktop.getBoundingClientRect().height;
+  // 기준선은 변형과 무관해야 한다. getBoundingClientRect는 transform까지 반영하므로
+  // 레이아웃 높이(offsetHeight)만 읽는다.
+  const worktopHeight = highballWorktop.offsetHeight;
   const top = beerGlassDeckBaselinePx()
     - (worktopHeight * HIGHBALL_WORKTOP_ALPHA_BOTTOM);
   highballPanel.style.setProperty('--highball-panel-top', `${top.toFixed(3)}px`);
@@ -1313,14 +1334,33 @@ function highballActionMessage(reason) {
   }[reason] ?? '지금은 그 조작을 할 수 없어요';
 }
 
+// 납품 음원이 조작보다 길어도 단발음은 2초에서 끊는다. 생맥주 잔 덱과 같은 규칙이다.
+const HIGHBALL_ONE_SHOT_SFX_SEC = 2;
+
+// 하이볼 잔 덱도 생맥주 잔 덱과 같은 소리를 낸다. 같은 조작이므로 같은 소리여야 한다.
+function playGlassDeckSfx() {
+  sfx('SFX-DRINK-GLASS-SET', { maxSec: GLASS_RACK_SFX_SEC });
+  sfx('SFX-DRINK-TRAY-TAP', { maxSec: GLASS_RACK_SFX_SEC });
+}
+
+// 완성된 잔을 눌러 픽업대로 보낸다.
+el('highballPickup').addEventListener('click', () => {
+  if (pickUpHighball()) playGlassDeckSfx();
+});
+
 el('highballGlass').addEventListener('click', () => {
   const result = highballStation.placeGlass();
+  if (result.ok) playGlassDeckSfx();
   showHint(result.ok ? '오른쪽 보관대에서 하이볼 잔을 가져왔어요' : '이미 잔이 놓여 있어요');
   persistFirstOrderRuntime();
   render();
 });
 el('highballIce').addEventListener('click', () => {
   const result = highballStation.addIce();
+  if (result.ok) {
+    sfx('SFX-DRINK-ICE-SCOOP', { maxSec: HIGHBALL_ONE_SHOT_SFX_SEC });
+    sfx('SFX-DRINK-ICE-SETTLE', { maxSec: HIGHBALL_ONE_SHOT_SFX_SEC });
+  }
   showHint(result.ok ? '얼음을 채웠어요' : highballActionMessage(result.reason));
   persistFirstOrderRuntime();
   render();
@@ -1333,14 +1373,25 @@ function beginHighballPour(button, now = performance.now()) {
     return false;
   }
   button.classList.add('is-pouring');
+  // 병을 누르고 있는 동안 물줄기가 이어진다. 탄산수 루프에는 기포음이 함께 구워져 있다.
+  loopOn(button.dataset.liquid === 'whiskey' ? 'SFX-DRINK-WHISKEY-POUR' : 'SFX-DRINK-SODA-POUR');
   render();
   return true;
+}
+
+function stopHighballPourLoops() {
+  loopOff('SFX-DRINK-WHISKEY-POUR');
+  loopOff('SFX-DRINK-SODA-POUR');
 }
 
 function releaseHighballPour(now = performance.now()) {
   const released = highballStation.release(now);
   highballBottleButtons.forEach((button) => button.classList.remove('is-pouring'));
-  if (released) persistFirstOrderRuntime();
+  stopHighballPourLoops();
+  if (released) {
+    sfx('SFX-DRINK-BOTTLE-SET', { maxSec: HIGHBALL_ONE_SHOT_SFX_SEC });
+    persistFirstOrderRuntime();
+  }
   return released;
 }
 
@@ -1363,12 +1414,10 @@ for (const button of highballBottleButtons) {
 window.addEventListener('pointerup', () => releaseHighballPour());
 window.addEventListener('pointercancel', () => releaseHighballPour());
 
-el('highballLemon').addEventListener('click', () => {
-  const result = highballStation.addLemon();
-  if (!result.ok) {
-    showHint(highballActionMessage(result.reason));
-    return;
-  }
+// 완성 잔을 집어 음료 픽업대에 올린다. 생맥주의 '완성'과 같은 자리다.
+function pickUpHighball() {
+  const result = highballStation.pickUp();
+  if (!result.ok) return false;
   const quality = result.completed.quality;
   dock.add({
     menuId: 'highball',
@@ -1379,6 +1428,19 @@ el('highballLemon').addEventListener('click', () => {
   });
   persistFirstOrderRuntime();
   showHint('하이볼을 음료 픽업대에 올렸어요');
+  render();
+  return true;
+}
+
+el('highballLemon').addEventListener('click', () => {
+  const result = highballStation.addLemon();
+  if (!result.ok) {
+    showHint(highballActionMessage(result.reason));
+    return;
+  }
+  sfx('SFX-DRINK-LEMON-DROP', { maxSec: HIGHBALL_ONE_SHOT_SFX_SEC });
+  persistFirstOrderRuntime();
+  showHint(`${result.completed.quality} 하이볼 완성 · 잔을 눌러 픽업대에 올리세요`);
   render();
 });
 highballOverflow.querySelector('[data-highball-act="serve-low"]').addEventListener('click', () => {
@@ -1415,6 +1477,8 @@ function updateHighballPanel(show) {
   highballVisual.classList.toggle('is-pouring-soda', state.activeLiquid === 'soda');
   highballVisual.classList.toggle('is-overflow', state.overflow);
   highballVisual.classList.toggle('is-overflow-accepted', state.overflowAccepted);
+  // 레몬을 올려 완성한 잔에만 레몬 조각이 걸린다.
+  highballVisual.classList.toggle('has-lemon', state.canPickUp === true);
   highballWorktop.classList.toggle('is-pouring-whiskey', state.activeLiquid === 'whiskey');
   highballWorktop.classList.toggle('is-pouring-soda', state.activeLiquid === 'soda');
   highballBottleButtons.forEach((button) => {
@@ -1434,54 +1498,62 @@ function updateHighballPanel(show) {
     'aria-label',
     `하이볼 잔 ${Math.round(state.fillRatio * 100)}% · 위스키 ${state.whiskeyUnits.toFixed(1)} · 탄산수 ${state.sodaUnits.toFixed(1)}`,
   );
+  if (state.overflow || state.canPickUp) stopHighballPourLoops();
   highballOverflow.hidden = !state.overflow;
   highballGuide.classList.toggle('is-overflow', state.overflow);
   highballHint.hidden = state.overflow;
+  // 완성 잔이 올라와 있으면 같은 자리가 '픽업대에 올리기' 버튼이 된다.
+  const readyToPick = state.canPickUp === true;
+  el('highballPickup').hidden = !readyToPick;
   el('highballGlass').disabled = state.glassPlaced;
-  el('highballIce').disabled = !state.glassPlaced || state.iceAdded;
+  el('highballIce').disabled = readyToPick || !state.glassPlaced || state.iceAdded;
   el('highballLemon').disabled = !state.canAddLemon;
-  highballHint.textContent = state.activeLiquid === 'whiskey'
-    ? '위스키 따르는 중'
-    : state.activeLiquid === 'soda'
-      ? '탄산수 따르는 중'
-      : !state.glassPlaced
-        ? '빈 잔을 가져오세요'
-        : !state.iceAdded
-          ? '얼음을 넣으세요'
-          : state.canAddLemon
-            ? '비율을 살피고 레몬으로 마무리하세요'
-            : '위스키와 탄산수 병을 눌러 따르세요';
+  updateHighballGauge(state);
+  highballHint.textContent = readyToPick
+    ? `${state.readyQuality} 하이볼 완성 · 잔을 눌러 픽업대에 올리세요`
+    : state.activeLiquid === 'whiskey'
+      ? '위스키 따르는 중'
+      : state.activeLiquid === 'soda'
+        ? '탄산수 따르는 중'
+        : !state.glassPlaced
+          ? '빈 잔을 가져오세요'
+          : !state.iceAdded
+            ? '얼음을 넣으세요'
+            : state.canAddLemon
+              ? '비율을 살피고 레몬으로 마무리하세요'
+              : '위스키와 탄산수 병을 눌러 따르세요';
 }
 
-function updateHighballSceneMotion(activeScreen, now = performance.now()) {
-  const drinkScreen = 'SCR-SVC-DRINK';
-  const fromScreen = director.fromScreenId();
-  const transitioning = director.isTransitioning();
-  const entering = transitioning && activeScreen === drinkScreen && fromScreen !== drinkScreen;
-  let x = 0;
-  let y = 0;
-  let scale = 1;
-  if (entering && R.projectScreenPointAtPreset) {
-    const panelWidth = highballPanel.offsetWidth;
-    const panelHeight = highballPanel.offsetHeight;
-    const centerX = highballPanel.offsetLeft + (panelWidth / 2);
-    const centerY = highballPanel.offsetTop + (panelHeight / 2);
-    const canvasRect = canvas.getBoundingClientRect();
-    const normalizedX = (centerX - canvasRect.left) / canvasRect.width;
-    const normalizedY = (centerY - canvasRect.top) / canvasRect.height;
-    const halfWidth = (panelWidth / canvasRect.width) / 2;
-    const center = R.projectScreenPointAtPreset(drinkScreen, normalizedX, normalizedY);
-    const left = R.projectScreenPointAtPreset(drinkScreen, normalizedX - halfWidth, normalizedY);
-    const right = R.projectScreenPointAtPreset(drinkScreen, normalizedX + halfWidth, normalizedY);
-    if (center && left && right) {
-      x = center.x - (canvasRect.left + centerX);
-      y = center.y - (canvasRect.top + centerY);
-      scale = Math.max(0.72, Math.min(1.16, Math.abs(right.x - left.x) / panelWidth));
-    }
+// 지금까지 따라진 양을 생맥주 잔 게이지와 같은 방식으로 보여준다.
+// 넘침 기준(4.8 단위)을 잔 전체 높이로 삼아 위스키를 아래, 탄산수를 그 위에 쌓는다.
+function updateHighballGauge(state) {
+  const cap = HIGHBALL_DEFAULT_CONFIG.overflowThresholdUnits;
+  const whiskeyPercent = Math.max(0, Math.min(100, (state.whiskeyUnits / cap) * 100));
+  const sodaPercent = Math.max(0, Math.min(100 - whiskeyPercent, (state.sodaUnits / cap) * 100));
+  highballGaugeWhiskey.style.height = `${whiskeyPercent.toFixed(2)}%`;
+  highballGaugeSoda.style.height = `${sodaPercent.toFixed(2)}%`;
+  highballGaugeSoda.style.bottom = `${whiskeyPercent.toFixed(2)}%`;
+  highballReadout.textContent = `위스키 ${state.whiskeyUnits.toFixed(1)} · 탄산수 ${state.sodaUnits.toFixed(1)}`
+    + `${state.whiskeyUnits > 0 ? ` · 비율 1:${(state.sodaUnits / state.whiskeyUnits).toFixed(1)}` : ''}`;
+  const quality = state.overflow ? 'Fail' : state.readyQuality;
+  highballStamp.hidden = !quality;
+  if (quality) {
+    highballStamp.textContent = state.overflow ? '넘침' : quality;
+    highballStamp.className = `stamp q-${quality}`;
   }
-  highballPanel.style.setProperty('--highball-scene-x', `${x.toFixed(3)}px`);
-  highballPanel.style.setProperty('--highball-scene-y', `${y.toFixed(3)}px`);
-  highballPanel.style.setProperty('--highball-scene-scale', scale.toFixed(4));
+}
+
+// 화면 전환 중에는 하이볼 작업대를 잠깐 감춘다.
+//
+// 예전에는 도착 카메라로 투영한 위치·배율을 DOM 패널에 얹어 3D 장면을 따라 날아 들어오게 했다.
+// 그런데 카메라가 수렴하는 300ms 동안 작업대가 눈에 띄게 움직여(들어올 때 x +178px·배율 1.10에서
+// 제자리로) 매번 "위치가 바뀐다"로 읽혔다. 생맥주 안내·하이볼 안내가 이미 전환 중 페이드로
+// 처리되므로 작업대도 같은 방식으로 맞춘다. 자리는 항상 고정이다.
+function updateHighballSceneMotion(activeScreen) {
+  const drinkScreen = 'SCR-SVC-DRINK';
+  const entering = director.isTransitioning()
+    && activeScreen === drinkScreen
+    && director.fromScreenId() !== drinkScreen;
   highballPanel.classList.toggle('is-scene-moving', entering);
   drinkPanel.classList.toggle('is-scene-moving', entering);
   highballPanel.classList.remove('is-scene-leaving');
@@ -1510,7 +1582,7 @@ function updateDrinkPanel(activeScreen, now = performance.now()) {
   drinkPanel.hidden = !onDrinkScreen;
   beerPanel.hidden = combined && !onDrinkScreen;
   updateHighballPanel(onDrinkScreen && combined);
-  if (combined) updateHighballSceneMotion(activeScreen, now);
+  if (combined) updateHighballSceneMotion(activeScreen);
   const s = pour.state();
   const visualFill = drinkVisualFill(s);
   beerHint.textContent = beerGuideMessage(s, combined);
@@ -1625,6 +1697,8 @@ const slotIndexOf = (key) => SLOT_KEYS.indexOf(key);
 function shouldShow(key) {
   const active = director.activeScreenId();
   if (SCREEN_OF[key] !== active) return false;
+  if (key === 'binChicken' && cook.selectedMenuId() === 'kawa') return false;
+  if (key === 'binTorikawa') return ACTIVE_DAY_ID === 'd5' && cook.selectedMenuId() === 'kawa';
   const si = slotIndexOf(key);
   if (si >= 0) return si < cook.slotCount() && cook.slotViews(performance.now())[si].status !== 'empty';
   return true;
@@ -1641,10 +1715,11 @@ function tsukiokaArtFor(seat, nowMs) {
   const view = businessView();
   const servedBeer = seatHasServedMenu(view, seat, 'beer')
     || seatHasServedMenu(view, seat, 'highball');
+  // 사라다는 꼬치가 아니다. 여기 섞으면 사라다만 받은 손님이 꼬치를 먹는 그림이 된다.
+  // 사라다 접시는 카운터 위에 따로 그려지고, 사람은 대기 자세로 남는다.
   const servedSkewer = seatHasServedMenu(view, seat, 'negima')
     || seatHasServedMenu(view, seat, 'momo')
-    || seatHasServedMenu(view, seat, 'kawa')
-    || seatHasServedMenu(view, seat, 'cabbage-salad');
+    || seatHasServedMenu(view, seat, 'kawa');
   if (seat.phase === 'eating' || seat.phase === 'done') {
     if (servedBeer && servedSkewer) return resolveD1ReceivedEatingFrame(runtimeAssets, nowMs);
     if (servedBeer) return runtimeAssets.TSUKIOKA_PARTIAL_BEER;
@@ -1718,8 +1793,9 @@ function syncCustomers() {
     const servedMomo = seatHasServedMenu(view, seat, 'momo');
     const servedKawa = seatHasServedMenu(view, seat, 'kawa');
     const servedSalad = seatHasServedMenu(view, seat, 'cabbage-salad');
-    const servedSkewer = servedNegima || servedMomo || servedKawa || servedSalad;
     const servedGrilledFood = servedNegima || servedMomo || servedKawa;
+    // 손님 자세는 구운 꼬치를 받았을 때만 먹는 그림으로 바뀐다. 사라다는 접시만 놓인다.
+    const servedSkewer = servedGrilledFood;
     const servedBeer = seatHasServedMenu(view, seat, 'beer')
       || seatHasServedMenu(view, seat, 'highball');
     const kind = extraKind(seat?.customerId);
@@ -1876,6 +1952,11 @@ function setAssemblyTareTint(instance, amount, { ingredientsOnly = false } = {})
 function syncAssemblyVisual() {
   const onAssembly = director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
   const selectedMenuId = cook.selectedMenuId();
+  // learnedMenuIds()는 Set을 돌려준다. includes는 Set에 없다.
+  const torikawaUnlocked = cook.learnedMenuIds().has('kawa');
+  R.setArtAsset('workbench', torikawaUnlocked
+    ? COOKING_ART.torikawaAssemblyStation
+    : COOKING_ART.assemblyStation);
   const negimaReady = rawNegimaRuntime.status === 'ready';
   const momoReady = momoRuntime.status === 'approved';
   const kawaReady = kawaRuntime.status === 'approved';
@@ -2502,10 +2583,11 @@ function handle(key, now) {
       showHint('빈 잔을 노즐 아래에 놓았어요');
       break;
     case 'binChicken':
+    case 'binTorikawa':
     case 'binLeek': {
-      const ingredient = key === 'binChicken'
-        ? cook.selectedMenuId() === 'kawa' ? 'foldedChickenSkin' : 'chicken'
-        : 'leek';
+      const ingredient = key === 'binTorikawa'
+        ? 'foldedChickenSkin'
+        : key === 'binChicken' ? 'chicken' : 'leek';
       const r = cook.clickIngredient(ingredient);
       if (!r.ok) {
         sfx('SFX-ASM-REJECT');
@@ -2754,7 +2836,9 @@ function updateGrillVisual(now, views = cook.slotViews(now)) {
       g.setTime(now / 1000);
       for (const [param, value] of Object.entries(d1SecondFaceR3Params(v))) g.setParam(param, value);
       g.setDoneness(v && v.cooking ? elapsedSecToUniform(v.faceElapsedSec) : 0);
+      // 글레이즈(연출)와 양념 구분색(게임 상태)은 서로 다른 uniform이 갖는다.
       g.setTare(v?.tarePrepared ? 0.34 : 0);
+      g.setTareSeasoned(v?.tarePrepared === true);
     }
     const visibleStage = grillNegimaStage(v);
     const skewerVisibleStage = visibleStage;

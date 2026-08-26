@@ -60,6 +60,13 @@ export const GRILL_PARAMS = freezeParams({
   tareNormalStrength: 2.2,
   tareTint: [0.88, 0.56, 0.23],
   tareTintAmount: 0.07,
+  // ── 양념 구분색 ──
+  // tareSeasoned는 "이 꼬치에 타레를 발랐는가"(0/1)다. 기본값 0이라 아무것도 바꾸지 않고,
+  // 실제로 바른 꼬치에만 아래 갈색 코팅이 들어가 소금 꼬치와 한눈에 구분된다.
+  tareSeasoned: 0.0,
+  tareCoatColor: [0.88, 0.56, 0.23],
+  tareCoatAmount: 0.78,
+  tareRawCoat: 0.62,
   emberColor: [0.147, 0.022, 0.0023],
   emberFlickerSpeed: [7.3, 3.1],
   emberRise: [0.85, 0.15],
@@ -88,5 +95,16 @@ export const GRILL_PARAM_RANGES = freezeParams({
   tareGloss: [0.0, 3.0],
   tareNormalStrength: [0.5, 5.0],
   tareTintAmount: [0.0, 1.0],
+  tareSeasoned: [0.0, 1.0],
+  tareCoatAmount: [0.0, 1.0],
+  tareRawCoat: [0.0, 1.0],
   emberIntensity: [0.0, 1.5],
 });
+
+// 셰이더의 양념 구분색(uTareCoatColor × uTareCoatAmount)을 곱셈 색 하나로 접은 값.
+// 라스터 단계 스프라이트(모모·토리카와)가 같은 갈색을 쓰도록 여기서 한 번만 정의한다.
+// 반환값은 선형 RGB 배수다.
+export function tareCoatMultiplier(params = GRILL_PARAMS) {
+  const amount = Math.max(0, Math.min(1, params.tareCoatAmount));
+  return Object.freeze(params.tareCoatColor.map((channel) => 1 - amount + amount * channel));
+}

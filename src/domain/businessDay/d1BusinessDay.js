@@ -268,6 +268,20 @@ function randomThinkMs(state, definition) {
   return Math.round(thinkMin + nextRandom(state) * (thinkMax - thinkMin));
 }
 
+// 동행은 말풍선·주문·접수가 모두 그룹 하나로 묶여 있다. 생각 시간까지 각자 굴리면
+// 먼저 준비된 쪽만 눌리는 것처럼 보이는데 접수는 그룹 전원이 준비돼야 되므로,
+// 최대 (thinkMax - thinkMin)만큼 "눌러도 안 되는" 구간이 생긴다. 그래서 그룹은
+// 먼저 앉은 동행의 생각 시간을 그대로 쓴다.
+function thinkMsFor(state, definition, groupId) {
+  if (groupId) {
+    const peer = Object.values(state.customers)
+      .find((customer) => customer.groupId === groupId
+        && customer.phase === D1_CUSTOMER_PHASE.THINKING);
+    if (peer) return peer.phaseRemainingMs;
+  }
+  return randomThinkMs(state, definition);
+}
+
 function makeSeat(id) {
   return {
     id,
@@ -394,7 +408,7 @@ function spawnCustomer(state, definition, customerSpec, seat, waveId) {
     seatId: seat.id,
     orderId: order.id,
     phase: D1_CUSTOMER_PHASE.THINKING,
-    phaseRemainingMs: randomThinkMs(state, definition),
+    phaseRemainingMs: thinkMsFor(state, definition, groupId),
     patienceMs: customerSpec.patienceMs,
     waitRemainingMs: null,
     departureCause: null,

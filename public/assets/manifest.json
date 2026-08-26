@@ -1,7 +1,7 @@
 {
   "$schema": "https://yaki-season.local/assets/manifest.schema.json",
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-08-26",
+  "generatedAt": "2026-08-27",
   "specRefs": [
     "ART-002 v3.6.1",
     "ART-003 v5.0.0",
@@ -693,6 +693,68 @@
       "url": "/assets/core/cooking/bg-workspace-assembly-r1-b1.png",
       "sha256": "4b8570a524ffd3edaebc6493c82ada46eb3eab5d933b2e2ff59bf2c66e1b4b34",
       "bytes": 2753220,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "D4-UI-HIGHBALL-PICKUP",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-CUSTOMERS",
+      "profile": "standalone-raster",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": { "x": 0.5, "y": 0.5 },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": true,
+      "source": "ARTSRC:D4-UI-HIGHBALL-PICKUP:R1",
+      "provenance": "PROV:IMAGEGEN:2026-08-27:HIGHBALL-PICKUP-R1",
+      "license": "YAKI SEASON internal generated artwork",
+      "specRefs": ["D4 highball drink pickup UI"],
+      "reviewedAt": "2026-08-27",
+      "url": "/assets/campaign/d4/ui-highball-pickup-r1-b1.png",
+      "sha256": "6fa94bb3397b8df0211d94a727a40ecccae7471d83af3d43068312e559f72797",
+      "bytes": 70168,
+      "dimensions": { "width": 256, "height": 256 },
+      "format": "png"
+    },
+    {
+      "id": "D5-ASSEMBLY-STATION-TORIKAWA",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SVC-ASSEMBLY",
+      "profile": "standalone-raster",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:D5-ASSEMBLY-STATION-TORIKAWA:R1",
+      "provenance": "PROV:SOURCE-PRESERVE-COMPOSITE:2026-08-27:TORIKAWA-STATION-R1",
+      "license": "YAKI SEASON internal generated artwork",
+      "specRefs": [
+        "D5 torikawa replaces loose skewer tray with chicken skin"
+      ],
+      "reviewedAt": "2026-08-27",
+      "url": "/assets/campaign/d5/st-assembly-torikawa-r1-b1.png",
+      "sha256": "49a99e81607c05d941ee0ec0a3bb4917c39c4469f68bc7cd0bb8c87409158191",
+      "bytes": 1326367,
       "dimensions": {
         "width": 1920,
         "height": 1080
@@ -2207,6 +2269,120 @@
       "format": "png"
     },
     {
+      "id": "IL-D4-POST-PIXEL",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-STORY-BEAT",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d4-post"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D4-POST-PIXEL:R2",
+      "provenance": "PROV:IL-D4-POST-PIXEL:R2",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "SCN-D4-POST",
+        "User approved D4 post-closing cutscene R2 2026-08-27"
+      ],
+      "reviewedAt": "2026-08-27",
+      "url": "/assets/core/s0/story/d4-post-full-scene-r2-b1.png",
+      "sha256": "16583a3b3c33f940c03ea22d9a9c1455302aa793f30816e9831b48aba59fed03",
+      "bytes": 2763092,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D4-EPILOGUE-CLEANUP-PIXEL",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-POST-EPILOGUE",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d4-epilogue-01"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D4-EPILOGUE-CLEANUP-PIXEL:R1",
+      "provenance": "PROV:IL-D4-EPILOGUE-CLEANUP-PIXEL:R1",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "D4-EPILOGUE-01",
+        "User requested visual cutscene for D4 cleanup epilogue 2026-08-27"
+      ],
+      "reviewedAt": "2026-08-27",
+      "url": "/assets/core/s0/story/d4-epilogue-cleanup-full-scene-r1-b1.png",
+      "sha256": "6df08ad482823ee5cc54a56b869880308c87a3a77493347c87bd419fc73b6297",
+      "bytes": 2528902,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
+      "id": "IL-D4-EPILOGUE-TORIKAWA-PIXEL",
+      "sourceRevision": 1,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-POST-EPILOGUE",
+      "profile": "complete-layer",
+      "pack": "campaign",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "none",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [
+        "d4-epilogue-02"
+      ],
+      "mirrorSafe": false,
+      "source": "ARTSRC:IL-D4-EPILOGUE-TORIKAWA-PIXEL:R1",
+      "provenance": "PROV:IL-D4-EPILOGUE-TORIKAWA-PIXEL:R1",
+      "license": "YAKI SEASON internal user-approved artwork",
+      "specRefs": [
+        "D4-EPILOGUE-02",
+        "User requested visual cutscene for D4 torikawa recipe epilogue 2026-08-27"
+      ],
+      "reviewedAt": "2026-08-27",
+      "url": "/assets/core/s0/story/d4-epilogue-torikawa-full-scene-r1-b1.png",
+      "sha256": "0003f9068c1678e3439f89ba934281a13f95fd37c72de7ef1332216fc841d251",
+      "bytes": 3179530,
+      "dimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "format": "png"
+    },
+    {
       "id": "BG-WORKSPACE-GRILL",
       "sourceRevision": 2,
       "runtimeBuild": 1,
@@ -2536,6 +2712,42 @@
       "dimensions": {
         "width": 1306,
         "height": 1205
+      },
+      "format": "png"
+    },
+    {
+      "id": "UI-RECIPE-BOOK-PAPER",
+      "sourceRevision": 2,
+      "runtimeBuild": 1,
+      "status": "approved",
+      "screenUnit": "SCR-SYS-RECIPE-BOOK",
+      "profile": "complete-layer",
+      "pack": "core",
+      "kind": "image",
+      "colorSpace": "sRGB",
+      "alpha": "straight",
+      "lossPolicy": "lossless-required",
+      "pivot": {
+        "x": 0,
+        "y": 0
+      },
+      "anchors": [],
+      "clips": [],
+      "mirrorSafe": false,
+      "source": "ARTSRC:UI-RECIPE-BOOK-PAPER:R2",
+      "provenance": "PROV:UI-RECIPE-BOOK-PAPER:R2",
+      "license": "YAKI SEASON internal approved artwork",
+      "specRefs": [
+        "UI recipe book background",
+        "User approval 2026-08-27: 비법노트 종이 누끼 — 흰 배경과 펀치홀을 투명 처리"
+      ],
+      "reviewedAt": "2026-08-27",
+      "url": "/assets/core/ui/grandfather-secret-recipe-notebook-bg-r2-b1.png",
+      "sha256": "f0fd8b1561afe175e81b6da177ea55388e3bb831c6dfedf674e7137f52ff147e",
+      "bytes": 2401656,
+      "dimensions": {
+        "width": 1024,
+        "height": 1536
       },
       "format": "png"
     }

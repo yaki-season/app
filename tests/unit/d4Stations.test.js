@@ -34,7 +34,46 @@ describe('D4 하이볼 스테이션', () => {
     const result = station.addLemon();
     expect(result.ok).toBe(true);
     expect(result.completed).toMatchObject({ menuId: 'highball', quality: 'Perfect' });
+    // 레몬을 올려도 잔은 작업대에 남는다. 플레이어가 집어 올려야 픽업대로 간다(생맥주와 같은 흐름).
+    expect(station.view()).toMatchObject({ phase: 'ready', readyQuality: 'Perfect' });
+  });
+
+  it('완성한 잔은 플레이어가 집어 올릴 때까지 작업대에 남는다', () => {
+    const station = createHighballStation();
+    station.placeGlass();
+    station.addIce();
+    station.press('whiskey', 0);
+    station.release(1_000);
+    station.press('soda', 1_000);
+    station.release(4_000);
+    station.addLemon();
+
+    // 완성 대기 중에는 새 잔·얼음·따르기를 받지 않는다.
+    expect(station.placeGlass()).toMatchObject({ ok: false, reason: 'pickup-required' });
+    expect(station.addIce()).toMatchObject({ ok: false, reason: 'pickup-required' });
+    expect(station.press('soda', 5_000)).toMatchObject({ ok: false, reason: 'pickup-required' });
+    expect(station.addLemon()).toMatchObject({ ok: false, reason: 'pickup-required' });
+
+    const picked = station.pickUp();
+    expect(picked).toMatchObject({ ok: true });
+    expect(picked.completed).toMatchObject({ menuId: 'highball', quality: 'Perfect' });
     expect(station.view().phase).toBe('empty');
+    expect(station.pickUp()).toMatchObject({ ok: false, reason: 'nothing-to-pick-up' });
+  });
+
+  it('완성 대기 상태는 새로고침 뒤에도 남는다', () => {
+    const station = createHighballStation();
+    station.placeGlass();
+    station.addIce();
+    station.press('whiskey', 0);
+    station.release(1_000);
+    station.press('soda', 1_000);
+    station.release(4_000);
+    station.addLemon();
+
+    const restored = createHighballStation({ snapshot: station.snapshot() });
+    expect(restored.view()).toMatchObject({ phase: 'ready', readyQuality: 'Perfect' });
+    expect(restored.pickUp().completed).toMatchObject({ quality: 'Perfect' });
   });
 
   it('4.8 단위에서 자동 차단하고 낮은 품질 계속 선택을 Fail로 확정한다', () => {

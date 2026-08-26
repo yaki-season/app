@@ -102,6 +102,14 @@ const DRINK = group('sfx/drink', AUDIO_BUS.SFX, [
   ['SFX-DRINK-COMPLETE', 'complete'],
   ['SFX-DRINK-OVERFLOW', 'overflow'],
   ['SFX-DRINK-SERVE', 'serve'],
+  // 하이볼 작업대. 빈 잔 놓기·픽업은 생맥주 잔 덱과 같은 소리(GLASS-SET + TRAY-TAP)를 쓴다.
+  ['SFX-DRINK-ICE-SCOOP', 'ice-scoop'],
+  ['SFX-DRINK-ICE-SETTLE', 'ice-settle'],
+  ['SFX-DRINK-WHISKEY-POUR', 'whiskey-pour', { loop: true }],
+  // 탄산 기포음은 따로 두지 않고 이 루프 한 장에 함께 굽는다.
+  ['SFX-DRINK-SODA-POUR', 'soda-pour', { loop: true }],
+  ['SFX-DRINK-BOTTLE-SET', 'bottle-set'],
+  ['SFX-DRINK-LEMON-DROP', 'lemon-drop'],
 ]);
 
 // 타래는 조립대에서 한 번 붓질한다. 폐기된 그릴 재도포·토치 단계의 소리는 등록하지 않는다.

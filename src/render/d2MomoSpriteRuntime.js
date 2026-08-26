@@ -1,8 +1,11 @@
 import * as THREE from 'three';
+import { tareCoatMultiplier } from './grillShaderParams.js';
 import { runtimeAssetUrl } from '../assets/runtimeAssetResolver.js';
 
 const WHITE_TINT = new THREE.Color(0xffffff);
-const TARE_TINT = new THREE.Color(0x7a2f20);
+// 타레 갈색은 익힘 셰이더와 같은 정본을 쓴다. 라스터 단계(모모·토리카와)와 GLSL 단계(네기마)가
+// 서로 다른 갈색이면 같은 타레 꼬치가 화면마다 다른 색으로 보인다.
+const TARE_TINT = new THREE.Color().setRGB(...tareCoatMultiplier(), THREE.LinearSRGBColorSpace);
 
 export const D2_MOMO_RUNTIME_URLS = Object.freeze({
   raw: '/assets/campaign/d2/spr-momo-grill-raw-r1-b1.png',
@@ -94,7 +97,7 @@ function spriteInstance(textures, slotMesh, sourceTransform, initialStage, asset
     setTare(amount = 0) {
       const mix = Math.max(0, Math.min(1, Number(amount) || 0));
       Object.values(planes).forEach((plane) => {
-        plane.material.color.copy(WHITE_TINT).lerp(TARE_TINT, mix * 0.38);
+        plane.material.color.copy(WHITE_TINT).lerp(TARE_TINT, mix);
       });
     },
     stage: () => holder.userData.stage,

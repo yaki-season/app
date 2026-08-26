@@ -67,6 +67,8 @@ body[data-screen-id="SCR-POST-EPILOGUE"] .epilogue-visual { display:grid; justif
 .epilogue-visual p { margin:0; max-width:36em; color:#f8e6c7; font-family:Georgia,"Noto Serif KR","Batang",serif; font-size:clamp(1.05rem,2.2vw,1.5rem); line-height:1.9; text-wrap:balance; text-shadow:0 3px 14px #000; }
 .epilogue-ember { width:clamp(44px,6vw,72px); aspect-ratio:1; border-radius:50%; background:radial-gradient(circle,#ffd68a 0 4%,#d66b38 20%,#7d2918 46%,transparent 70%); filter:blur(.4px) drop-shadow(0 0 22px #d65c2caa); animation:epilogue-ember 3.6s ease-in-out infinite; }
 body[data-screen-id="SCR-POST-EPILOGUE"] .visual-placeholder::before { content:""; position:absolute; inset:0; z-index:2; background:linear-gradient(180deg,#09060452,#100b08c7 86%),radial-gradient(circle at 50% 58%,#8b3d2028,transparent 46%); pointer-events:none; }
+body[data-screen-id="SCR-POST-EPILOGUE"] .visual-placeholder:has(.story-illustration:not([hidden]))::before { background:linear-gradient(180deg,#09060420,#100b086b 92%); }
+body[data-screen-id="SCR-POST-EPILOGUE"] .visual-placeholder:has(.story-illustration:not([hidden])) .epilogue-ember { display:none; }
 .epilogue-card { max-width:880px; margin-inline:auto; display:grid; gap:14px; }
 .epilogue-kicker { margin:0; color:#dca46f; font-size:.78rem; font-weight:800; letter-spacing:.15em; text-transform:uppercase; }
 .epilogue-title { margin:0 0 8px; color:#ffe1aa; font-family:Georgia,"Noto Serif KR","Batang",serif; font-size:clamp(1.45rem,3vw,2.35rem); font-weight:700; }

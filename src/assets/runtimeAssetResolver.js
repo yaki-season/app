@@ -48,6 +48,13 @@ export const D1_RUNTIME_ASSET_ID = Object.freeze({
   GRILL_FINISHED_TRAY: 'ST-GRILL-FINISHED-TRAY',
 });
 
+// D1 공개 상태 계약(D1_RUNTIME_ASSET_ID)은 D1 readiness 감사와 inventory 대조의 입력이다.
+// 뒷날 전용 아트를 거기 섞으면 D1 항목으로 오해되므로, 번들에만 싣는 목록을 따로 둔다.
+export const LATER_DAY_RUNTIME_ASSET_ID = Object.freeze({
+  // D5 토리카와 선택 시 기존 꼬치 트레이를 닭껍질로 교체한 조립대 전체 원본.
+  TORIKAWA_ASSEMBLY_STATION: 'D5-ASSEMBLY-STATION-TORIKAWA',
+});
+
 export const D1_PENDING_RUNTIME_ASSET_IDS = Object.freeze({
   drink: Object.freeze([]),
   assembly: Object.freeze([
@@ -351,6 +358,11 @@ export async function loadD1RuntimeAssets(fetchImpl = globalThis.fetch) {
   const index = indexApprovedRuntimeAssets(manifest);
   const resolved = {};
   for (const [key, id] of Object.entries(D1_RUNTIME_ASSET_ID)) {
+    const asset = resolveApprovedRuntimeAsset(index, id);
+    if (!asset) throw new Error(`승인 runtime manifest ID 누락: ${id}`);
+    resolved[key] = asset;
+  }
+  for (const [key, id] of Object.entries(LATER_DAY_RUNTIME_ASSET_ID)) {
     const asset = resolveApprovedRuntimeAsset(index, id);
     if (!asset) throw new Error(`승인 runtime manifest ID 누락: ${id}`);
     resolved[key] = asset;

@@ -142,6 +142,7 @@ export async function createGrillRenderer(canvas, { textureUrl, vertUrl, fragUrl
     tex: gl.getUniformLocation(prog, 'uTex'),
     doneness: gl.getUniformLocation(prog, 'uDoneness'),
     tare: gl.getUniformLocation(prog, 'uTareAmount'),
+    tareSeasoned: gl.getUniformLocation(prog, 'uTareSeasoned'),
     time: gl.getUniformLocation(prog, 'uTime'),
     texSize: gl.getUniformLocation(prog, 'uTexSize'),
   };
@@ -166,12 +167,14 @@ export async function createGrillRenderer(canvas, { textureUrl, vertUrl, fragUrl
   }
 
   // elapsedSec: null이면 그리지 않는다 (그릴이 비어 있음)
-  function render(nowMs, elapsedSec, tare = GRILL_PARAMS.tareAmount) {
+  // seasoned: 이 꼬치에 타레를 발랐는가(0/1). 소금 꼬치와 구분되는 갈색 코팅을 켠다.
+  function render(nowMs, elapsedSec, tare = GRILL_PARAMS.tareAmount, seasoned = GRILL_PARAMS.tareSeasoned) {
     resize();
     gl.clear(gl.COLOR_BUFFER_BIT);
     if (elapsedSec == null) return;
     gl.uniform1f(u.doneness, elapsedSecToUniform(elapsedSec));
     gl.uniform1f(u.tare, tare);
+    gl.uniform1f(u.tareSeasoned, seasoned ? 1 : 0);
     gl.uniform1f(u.time, nowMs / 1000);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
