@@ -114,8 +114,13 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   // 100초 파동: 두 엑스트라가 동시에 입장·주문한다. 정식 아트 전 stable ID placeholder를 명시한다.
   await D(page, 'businessAdvanceTo', 100_000);
   await D(page, 'businessAdvance', 6000);
+  // 동행은 그룹 주문이다. 한 명만 눌러도 두 사람 몫이 함께 접수되므로 두 번 누르지 않는다.
   const officeA = await accept(page, 'D1-OFFICE-A');
-  const officeB = await accept(page, 'D1-OFFICE-B');
+  const officeB = await customerSeat(page, 'D1-OFFICE-B');
+  await expect.poll(async () => {
+    const seat = (await D(page, 'businessView')).seats.find((item) => item.seatId === officeB);
+    return seat?.canServe ?? false;
+  }).toBe(true);
   for (const [seatId, expectedWaitingArt] of [
     [officeA, 'developer-a-waiting-r9-b1.png'],
     [officeB, 'developer-b-waiting-r9-b1.png'],
@@ -261,7 +266,7 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   await page.mouse.click(jig.x, jig.y);
   await D(page, 'requestScreen', 'SCR-SVC-GRILL');
   await expect.poll(() => D(page, 'isTransitioning')).toBe(false);
-  await page.getByTestId('grill-waiting-momo').click();
+  await page.getByTestId('grill-waiting-momo').locator('#grillWaitingMomoSalt').click();
   await D(page, 'cookElapse', 9);
   await D(page, 'cookClickSlot', 0);
   await page.waitForTimeout(350);

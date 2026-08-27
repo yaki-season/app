@@ -151,7 +151,9 @@ test('츠키오카 접수→시작 2칸에서 두 꼬치를 독립적으로 조�
 
   // 첫 꼬치는 놓는 즉시 굽기 시작하고, 두 번째 꼬치는 나중에 놓인 시각부터 별도로 시작한다.
   await goScreen(page, 'SCR-SVC-GRILL');
-  const waitingNegima = page.getByTestId('grill-waiting-negima');
+  // 재고 카드 자체는 버튼이 아니다. 카드 안의 양념 버튼이 그릴에 올린다.
+  const waitingNegima = page.getByTestId('grill-waiting-negima').locator('#grillWaitingNegimaSalt');
+  await expect(waitingNegima).toBeEnabled();
   await waitingNegima.click();
   await expect.poll(() => D(page, 'cookSlots').then((current) => current[0].status)).toBe('front');
   expect((await D(page, 'cookSlots')).slice(0, 2)).toEqual([

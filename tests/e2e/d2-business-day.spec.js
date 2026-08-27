@@ -56,8 +56,9 @@ test('D2 모모는 조립·독립 양면 굽기·회수까지 실제 공정을 �
 
   await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-GRILL'));
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug.isTransitioning())).toBe(false);
-  await expect(page.getByTestId('grill-waiting-momo')).toBeEnabled();
-  await page.getByTestId('grill-waiting-momo').click();
+  const waitingMomo = page.getByTestId('grill-waiting-momo').locator('#grillWaitingMomoSalt');
+  await expect(waitingMomo).toBeEnabled();
+  await waitingMomo.click();
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug.momoRuntime().slots[0].visible)).toBe(true);
   await page.evaluate(() => window.__d1GameDebug.cookElapse(9));
   await page.evaluate(() => window.__d1GameDebug.cookClickSlot(0));

@@ -77,7 +77,7 @@ test('approved grill negima exact-loads and cooks the approved raw plane with th
   await page.waitForTimeout(350);
   await D(page, 'cookFillAssembly');
   await D(page, 'cookFillAssembly');
-  const waiting = page.getByTestId('grill-waiting-negima');
+  const waiting = page.getByTestId('grill-waiting-negima').locator('#grillWaitingNegimaSalt');
   await expect(waiting).toBeEnabled();
   await waiting.click();
   await expect.poll(() => D(page, 'cookSlots')).toEqual([
@@ -366,7 +366,7 @@ test('exact source 하나라도 실패하면 RAW binding을 열지 않고 proced
   await page.waitForTimeout(350);
   await D(page, 'cookFillAssembly');
   await D(page, 'cookFillAssembly');
-  await page.getByTestId('grill-waiting-negima').click();
+  await page.getByTestId('grill-waiting-negima').locator('#grillWaitingNegimaSalt').click();
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
     .toMatchObject({
       approvedRawVisible: false,
