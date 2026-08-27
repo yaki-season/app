@@ -711,19 +711,27 @@
       "colorSpace": "sRGB",
       "alpha": "straight",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0.5, "y": 0.5 },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "anchors": [],
       "clips": [],
       "mirrorSafe": true,
       "source": "ARTSRC:D4-UI-HIGHBALL-PICKUP:R1",
-      "provenance": "PROV:IMAGEGEN:2026-08-27:HIGHBALL-PICKUP-R1",
+      "provenance": "PROV:D4-UI-HIGHBALL-PICKUP:R1",
       "license": "YAKI SEASON internal generated artwork",
-      "specRefs": ["D4 highball drink pickup UI"],
+      "specRefs": [
+        "D4 highball drink pickup UI"
+      ],
       "reviewedAt": "2026-08-27",
       "url": "/assets/campaign/d4/ui-highball-pickup-r1-b1.png",
       "sha256": "6fa94bb3397b8df0211d94a727a40ecccae7471d83af3d43068312e559f72797",
       "bytes": 70168,
-      "dimensions": { "width": 256, "height": 256 },
+      "dimensions": {
+        "width": 256,
+        "height": 256
+      },
       "format": "png"
     },
     {
@@ -738,19 +746,27 @@
       "colorSpace": "sRGB",
       "alpha": "straight",
       "lossPolicy": "lossless-required",
-      "pivot": { "x": 0.5, "y": 0.5 },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.5
+      },
       "anchors": [],
       "clips": [],
       "mirrorSafe": true,
       "source": "ARTSRC:D4-SERVED-HIGHBALL-GLASS:R2",
-      "provenance": "PROV:IMAGEGEN-EDIT:2026-08-27:SERVED-HIGHBALL-CLEAR-GLASS-R2",
+      "provenance": "PROV:D4-SERVED-HIGHBALL-GLASS:R2",
       "license": "YAKI SEASON internal generated artwork",
-      "specRefs": ["D4 served highball customer counter prop"],
+      "specRefs": [
+        "D4 served highball customer counter prop"
+      ],
       "reviewedAt": "2026-08-27",
-      "url": "/assets/campaign/d4/pr-served-highball-glass-r1-b1.png",
+      "url": "/assets/campaign/d4/pr-served-highball-glass-r2-b1.png",
       "sha256": "5aa6ce1258a0749172f6665c8f3a602ee3c3ff321dcafd6330424cd970ea74b9",
       "bytes": 270865,
-      "dimensions": { "width": 512, "height": 512 },
+      "dimensions": {
+        "width": 512,
+        "height": 512
+      },
       "format": "png"
     },
     {
@@ -773,7 +789,7 @@
       "clips": [],
       "mirrorSafe": false,
       "source": "ARTSRC:D5-ASSEMBLY-STATION-TORIKAWA:R1",
-      "provenance": "PROV:SOURCE-PRESERVE-COMPOSITE:2026-08-27:TORIKAWA-STATION-R1",
+      "provenance": "PROV:D5-ASSEMBLY-STATION-TORIKAWA:R1",
       "license": "YAKI SEASON internal generated artwork",
       "specRefs": [
         "D5 torikawa replaces loose skewer tray with chicken skin"

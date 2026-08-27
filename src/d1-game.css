@@ -1085,10 +1085,12 @@ body.assembly-tare-cursor-ready #scene { cursor: none; }
   top: var(--highball-panel-top, 24.25%);
   /* 맥주 세트가 왼쪽으로 비켜난 만큼 하이볼 작업대를 중앙 쪽으로 당기고 키운다.
      병·얼음·잔 버튼이 작아 조준이 어려웠다. */
-  /* 맥주 잔 덱이 화면에서 약 713px을 차지한다. 위스키 세트는 그보다 커야 조준이 편하다. */
+  /* 맥주 잔 덱이 FHD에서 약 713px을 차지한다. 위스키 세트는 그보다 커야 조준이 편하다.
+     다만 vw 상한을 크게 잡으면 720p에서 폭이 그대로 남아 화면의 6할을 먹고 맥주 레버를 덮는다.
+     화면 대비 비율을 고정하고 px 상한만 둔다. */
   right: 9%;
-  width: min(780px, 62vw);
-  min-width: 480px;
+  width: min(780px, 42vw);
+  min-width: 420px;
   pointer-events: auto;
   transition: opacity 140ms ease-out;
 }
@@ -1104,7 +1106,8 @@ body.assembly-tare-cursor-ready #scene { cursor: none; }
     / auto minmax(0, 1fr) auto;
   gap: 4px 12px;
   align-items: center;
-  width: min(620px, 52vw);
+  /* 생맥주 안내는 화면 중앙에 있다. 좁은 화면에서 이 폭이 줄지 않으면 그 위로 겹친다. */
+  width: min(620px, 33vw);
   min-height: 74px;
   box-sizing: border-box;
   border: 1px solid rgba(181, 134, 84, .46);
@@ -1546,6 +1549,15 @@ body.assembly-tare-cursor-ready #scene { cursor: none; }
   .highball-carbonation,
   .highball-visual.is-overflow,
   .highball-visual.is-overflow .highball-overflow-spill { animation: none; }
+}
+
+/* 좁은 화면에서는 안내 한 줄이 들어갈 자리가 없다. 레시피 문구는 비법노트와 플레이방법
+   화면에 그대로 있으므로, 하이볼 안내에서는 접고 따라진 양 숫자를 남긴다. */
+@media (max-width: 1320px), (max-height: 760px) {
+  .drink-panel.is-d4 .drink-guide-recipe { font-size: 9px; }
+  .drink-panel.is-d4 .highball-readout { font-size: 9px; }
+  .drink-panel.is-d4 .highball-guide .drink-guide-recipe { display: none; }
+  .drink-panel.is-d4 .highball-gauge { width: 32px; }
 }
 
 @media (max-width: 720px), (max-height: 650px) {
