@@ -183,7 +183,7 @@ test('키보드 S0 두 입력 뒤 점화 대사와 요약으로 실제 D1을 부
     await page.keyboard.press('Enter');
   }
   await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-S0-001');
-  await expect(page.locator('.dialogue')).toHaveText('문을 열자 묵은 나무 냄새 사이로 오래전 숯 향이 희미하게 되살아났다.');
+  await expect(page.locator('.dialogue')).toHaveText('문을 열었더니 안에 숯 냄새가 아직 남아 있네.');
   await skipStory(page);
   await skipStory(page);
   await waitForD1Boot(page);

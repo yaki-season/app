@@ -65,7 +65,7 @@ test('사라다는 단독일 때 작게 놓이고 꼬치와 동시 제공되면 
   await expect.poll(() => page.evaluate((seatId) => {
     const mesh = window.__d1GameDebug.renderer.seatBeerMesh[seatId];
     return mesh?.material?.map?.image?.currentSrc || mesh?.material?.map?.image?.src || '';
-  }, firstSeatId)).toContain('/assets/campaign/d4/pr-served-highball-glass-r1-b1.png');
+  }, firstSeatId)).toContain('/assets/campaign/d4/pr-served-highball-glass-r2-b1.png');
 
   const pairSeatId = await page.evaluate(() => {
     const debug = window.__d1GameDebug;

@@ -72,7 +72,7 @@ test('S0: 열쇠→대문 2클릭 뒤 점화 대사를 거쳐 D1로 이어진다
 
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-S0-DECISION');
   await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-S0-001');
-  await expect(page.locator('.dialogue')).toHaveText('문을 열자 묵은 나무 냄새 사이로 오래전 숯 향이 희미하게 되살아났다.');
+  await expect(page.locator('.dialogue')).toHaveText('문을 열었더니 안에 숯 냄새가 아직 남아 있네.');
   await expect(page.locator('#story-illustration')).toBeVisible();
   await expect(page.locator('#story-illustration')).toHaveAttribute(
     'src',
@@ -89,9 +89,9 @@ test('S0: 열쇠→대문 2클릭 뒤 점화 대사를 거쳐 D1로 이어진다
   await page.getByRole('button', { name: '이 장면 건너뛰기' }).click();
   await expect(page.getByRole('heading', { name: '잠시 돌아보며' })).toBeVisible();
   await expect(page.locator('.summary li')).toHaveText([
-    '남겨진 열쇠로 오래 닫힌 가게의 문을 열었다.',
-    '희미했던 숯 향과 함께 오래된 기억도 다시 살아났다.',
-    '두렵지만, 오늘 하루만큼은 내 손으로 이 가게를 지켜 보기로 했다.',
+    '남겨진 열쇠로 오래 닫힌 가게 문을 열었다.',
+    '가게 안에는 화로와 집기가 그대로 남아 있었다.',
+    '아키는 가게를 다시 열기로 했다.',
   ]);
   await page.locator('#actions .primary').click();
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D1-PREOPEN');

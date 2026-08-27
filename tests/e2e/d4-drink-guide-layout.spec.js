@@ -104,6 +104,7 @@ test('하이볼이 열린 날에는 맥주 세트가 왼쪽으로 비켜나고 �
     return {
       panelLeft: panel.left,
       panelWidth: panel.width,
+      viewportWidth: window.innerWidth,
       beerDeck: window.__d1GameDebug.screenPosOf('glassRack').x,
       beerLever: window.__d1GameDebug.screenPosOf('drinkLeverDrag').x,
       glass: size('highballGlass'),
@@ -119,11 +120,13 @@ test('하이볼이 열린 날에는 맥주 세트가 왼쪽으로 비켜나고 �
   // 맥주 세트는 하이볼 작업대 왼쪽 바깥에 있다.
   expect(layout.beerDeck).toBeLessThan(layout.panelLeft);
   expect(layout.beerLever).toBeLessThan(layout.panelLeft);
-  // 조준 가능한 최소 체급을 고정한다(예전 탄산수 병은 짧은 변이 86px이었다).
+  // 조준 가능한 최소 체급을 고정한다(예전 탄산수 병은 FHD에서 짧은 변이 86px = 화면의 4.5%였다).
+  // 720p에서도 성립하도록 절대 px이 아니라 화면 폭 대비 비율로 본다.
   for (const short of [layout.glass, layout.ice, ...layout.bottles]) {
-    expect(short).toBeGreaterThanOrEqual(110);
+    expect(short / layout.viewportWidth).toBeGreaterThanOrEqual(0.055);
   }
-  expect(layout.panelWidth).toBeGreaterThanOrEqual(560);
+  // 맥주 잔 덱(화면의 약 37%)보다 커야 한다.
+  expect(layout.panelWidth / layout.viewportWidth).toBeGreaterThanOrEqual(0.4);
 });
 
 test('하이볼이 없는 날에는 맥주 세트를 옮기지 않는다', async ({ page }) => {
