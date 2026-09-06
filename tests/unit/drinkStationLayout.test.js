@@ -42,4 +42,12 @@ describe('손님 화면 원경 배치', () => {
     // 첫 논리 손님은 승인 seating/츠키오카 합성 계약의 물리 4번 좌석에 놓인다.
     expect(seat.actor.x + seat.actor.width / 2).toBeCloseTo(1108.7 / 1920);
   });
+
+  it('일반 영업의 논리 인접 좌석은 화면에서도 항상 인접한다', () => {
+    const seats = computeSeats(6, { layoutMode: 'sequential-guests' });
+    for (let i = 1; i < seats.length; i += 1) {
+      expect(seats[i].bubble.x).toBeGreaterThan(seats[i - 1].bubble.x);
+      expect(seats[i].bubble.x - seats[i - 1].bubble.x).toBeLessThan(0.17);
+    }
+  });
 });

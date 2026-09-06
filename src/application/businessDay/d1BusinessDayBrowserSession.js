@@ -3,9 +3,8 @@ import { D1BusinessDayRuntime } from './d1BusinessDayRuntime.js';
 import { D1BusinessDayUiPort } from './d1BusinessDayUiPort.js';
 import { S0D3CampaignBridge } from '../../scenario/s0-d3-campaign.js';
 
-// S0/D1 campaign 저장과 D1 영업 UI port를 브라우저 화면에 조립하는 얇은 adapter다.
-// 영업 중 상태는 별도 저장하지 않는다. 새로고침 시 campaign day-start 체크포인트(D1 pre-open)를
-// 다시 불러와 같은 D1을 안전하게 재시작하며, 완료 뒤에는 저장된 D2 pre-open을 그대로 노출한다.
+// 캠페인 day-start 체크포인트와 영업 UI를 연결한다. 같은 회차의 검증된 businessSnapshot이
+// 있으면 손님·주문·좌석·시계를 재개하고, 없으면 해당 날짜를 시작한다. 완료 보상은 campaign 저장이 소유한다.
 export async function createD1BusinessDayBrowserSession({
   definition,
   storagePort,
@@ -15,6 +14,7 @@ export async function createD1BusinessDayBrowserSession({
   seed = 0,
   resetDevelopment = false,
   developmentStartDay = null,
+  businessSnapshot = null,
 } = {}) {
   if (!definition) throw new TypeError('D1 영업일 definition이 필요합니다.');
   const bridge = new S0D3CampaignBridge({
@@ -41,11 +41,13 @@ export async function createD1BusinessDayBrowserSession({
 
   let campaign = bridge.getState();
   if (developmentStartDay) {
-    if (!['d2', 'd3', 'd4', 'd5'].includes(developmentStartDay)) {
+    if (!['d2', 'd3', 'd4', 'd5', 'd6'].includes(developmentStartDay)) {
       throw new TypeError(`지원하지 않는 개발 시작 날짜입니다: ${developmentStartDay}`);
     }
     if (campaign.campaign.nodeId === 's0') bridge.finishPrologue();
-    const precedingDays = developmentStartDay === 'd5'
+    const precedingDays = developmentStartDay === 'd6'
+      ? ['d1', 'd2', 'd3', 'd4', 'd5']
+      : developmentStartDay === 'd5'
       ? ['d1', 'd2', 'd3', 'd4']
       : developmentStartDay === 'd4' ? ['d1', 'd2', 'd3']
       : developmentStartDay === 'd3' ? ['d1', 'd2'] : ['d1'];
@@ -116,6 +118,12 @@ export async function createD1BusinessDayBrowserSession({
       port,
       position: bridge.getPosition(),
     };
+  }
+  if (businessSnapshot) {
+    const restored = runtime.restore(businessSnapshot);
+    if (!restored.ok) {
+      return { ok: false, error: { code: 'BUSINESS_SNAPSHOT_INVALID', message: '영업 중 저장을 복구하지 못했습니다. 원본 저장은 유지됩니다.' }, bridge, port: null };
+    }
   }
   return {
     ok: true,

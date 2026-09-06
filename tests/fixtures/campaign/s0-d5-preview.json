@@ -32,13 +32,19 @@
   {
     "id": "d5",
     "kind": "day",
-    "nextId": "d5-complete",
+    "nextId": "d6",
     "contentId": "campaign.day.d5"
   },
   {
-    "id": "d5-complete",
+    "id": "d6",
+    "kind": "day",
+    "nextId": "d6-complete",
+    "contentId": "campaign.day.d6"
+  },
+  {
+    "id": "d6-complete",
     "kind": "preview",
     "nextId": null,
-    "contentId": "campaign.complete.d5"
+    "contentId": "campaign.complete.d6"
   }
 ]

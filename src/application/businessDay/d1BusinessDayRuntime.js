@@ -56,6 +56,34 @@ export class D1BusinessDayRuntime {
     return { ok: true, value: this.getState(), checkpoint: checkpoint.save };
   }
 
+  restore(snapshot) {
+    // 영업 시작 체크포인트와 같은 회차만 재개한다. 오래된 완료 snapshot은 보상을 재실행하지 않는다.
+    if (!snapshot || snapshot.runId !== this.state?.runId
+      || snapshot.dayId !== this.definition.id || snapshot.phase === D1_DAY_PHASE.COMPLETE) {
+      return { ok: false, reason: 'snapshot-session-mismatch' };
+    }
+    let validation;
+    try {
+      validation = validateD1BusinessDayState(snapshot, this.definition);
+      if (!snapshot.clock || !Number.isFinite(snapshot.clock.elapsedMs)
+        || snapshot.clock.elapsedMs < 0 || !Array.isArray(snapshot.waves)
+        || snapshot.waves.length !== this.definition.waves.length
+        || snapshot.waves.some((wave, i) => wave.id !== this.definition.waves[i].id)
+        || !snapshot.customers || !snapshot.orders || !snapshot.metrics || !snapshot.settlement
+        || !Array.isArray(snapshot.ledger) || !Array.isArray(snapshot.handledEventIds)
+        || snapshot.seats.some((seat, i) => seat.id !== this.definition.seatIds[i]
+          || (seat.customerId && !snapshot.customers[seat.customerId]))) {
+        return { ok: false, reason: 'invalid-snapshot' };
+      }
+    } catch {
+      return { ok: false, reason: 'invalid-snapshot' };
+    }
+    if (!validation.valid) return { ok: false, reason: 'invalid-snapshot', errors: validation.errors };
+    this.state = structuredClone(snapshot);
+    this.state.clock.paused = false;
+    return { ok: true, value: this.getState() };
+  }
+
   advance(deltaMs) {
     if (!this.state) throw new TypeError('D1 영업을 먼저 시작해야 합니다.');
     this.state = advanceD1BusinessDay(this.state, this.definition, deltaMs);

@@ -46,11 +46,12 @@ export const S0_D4_CAMPAIGN_RECORDS = Object.freeze([
   Object.freeze({ id: 'd2', kind: 'day', nextId: 'd3', contentId: 'campaign.day.d2' }),
   Object.freeze({ id: 'd3', kind: 'day', nextId: 'd4', contentId: 'campaign.day.d3' }),
   Object.freeze({ id: 'd4', kind: 'day', nextId: 'd5', contentId: 'campaign.day.d4' }),
-  Object.freeze({ id: 'd5', kind: 'day', nextId: 'd5-complete', contentId: 'campaign.day.d5' }),
-  Object.freeze({ id: 'd5-complete', kind: 'preview', nextId: null, contentId: 'campaign.complete.d5' }),
+  Object.freeze({ id: 'd5', kind: 'day', nextId: 'd6', contentId: 'campaign.day.d5' }),
+  Object.freeze({ id: 'd6', kind: 'day', nextId: 'd6-complete', contentId: 'campaign.day.d6' }),
+  Object.freeze({ id: 'd6-complete', kind: 'preview', nextId: null, contentId: 'campaign.complete.d6' }),
 ]);
 
-// 공개 API 이름은 기존 소비자 호환을 위해 유지하되, 정의의 기준은 S0~D4다.
+// 공개 API 이름은 기존 소비자 호환을 위해 유지하되, 정의는 S0~D6와 읽기 전용 완료 상태다.
 export const S0_D3_CAMPAIGN_RECORDS = S0_D4_CAMPAIGN_RECORDS;
 
 export function createS0D3CampaignDefinition() {
@@ -63,8 +64,8 @@ export function createS0D4CampaignDefinition() {
 
 export function campaignPresentationPosition(state) {
   if (state?.campaign?.nodeId === 's0') return Object.freeze({ kind: 'prologue', dayId: 'S0' });
-  if (state?.campaign?.nodeId === 'd5-complete') return Object.freeze({ kind: 'epilogue', dayId: 'D5' });
-  if (['d1', 'd2', 'd3', 'd4', 'd5'].includes(state?.campaign?.nodeId)) {
+  if (state?.campaign?.nodeId === 'd6-complete') return Object.freeze({ kind: 'epilogue', dayId: 'D6' });
+  if (['d1', 'd2', 'd3', 'd4', 'd5', 'd6'].includes(state?.campaign?.nodeId)) {
     return Object.freeze({
       kind: state.campaign.phase === CAMPAIGN_PHASE.PRE_OPEN ? 'pre-open' : state.campaign.phase,
       dayId: state.campaign.nodeId.toUpperCase(),
@@ -87,6 +88,18 @@ export function normalizeLegacyCampaignState(state) {
     };
   }
 
+  if (normalized?.campaign?.nodeId === 'd5-complete') {
+    return {
+      ...normalized,
+      campaign: {
+        ...normalized.campaign, nodeId: 'd6', nodeKind: 'day', dayId: 'd6',
+        phase: CAMPAIGN_PHASE.PRE_OPEN,
+        unlockedNodeIds: [...new Set([
+          ...normalized.campaign.unlockedNodeIds.filter(id => id !== 'd5-complete'), 'd6',
+        ])],
+      },
+    };
+  }
   if (normalized?.campaign?.nodeId === ['d5', 'preview'].join('-')) {
     return {
       ...normalized,

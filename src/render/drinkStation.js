@@ -13,6 +13,7 @@ export const DRINK = {
   foamVisualShare: 0.3,
   glassCapacity: 4.0, // 잔이 시각적으로 가득 차는 목표량(맥주 3.0초 + 거품 1.0초)
   totalCap: 4.7, // 총 채움 넘침 임계(초) = 목표 4.0 + 0.7
+  minimumBeerSec: 1.5,
 };
 
 const inRange = (v, [lo, hi]) => v >= lo && v <= hi;
@@ -103,6 +104,7 @@ export function createDrinkPour(config = DRINK) {
   // 넘침이 아닐 때 따르기를 마무리 → 품질 확정.
   function finish() {
     if (finalized || overflow) return quality;
+    if (paused || active || beerMs / 1000 < (config.minimumBeerSec ?? 1.5)) return null;
     quality = computeQuality();
     finalized = true;
     active = null;
@@ -146,6 +148,8 @@ export function createDrinkPour(config = DRINK) {
       overflow,
       quality,
       paused,
+      canFinish: !paused && !active && !finalized && !overflow
+        && beerMs / 1000 >= (config.minimumBeerSec ?? 1.5),
       beerOk: inRange(beerMs / 1000, config.beerRange),
       foamOk: inRange(foamMs / 1000, config.foamRange),
     };

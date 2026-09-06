@@ -337,6 +337,7 @@
       <p>모든 영업·조리 시간이 멈췄습니다</p>
       <h2 id="runtimePauseTitle">일시정지</h2>
       <button id="runtimePauseResume" type="button" data-testid="runtime-pause-resume">영업 계속</button>
+      <a class="runtime-pause-home" href="./public-shell.html">저장하고 시작 화면으로</a>
     </div>
   </section>
 
@@ -345,20 +346,24 @@
 
   <div id="hint" class="hint" data-testid="hint"></div>
 
-  <!-- 마감·숯불·5단계 정산. 정식 아트가 오기 전 stable ID 기반 개발 placeholder. -->
-  <section
-    id="postBusinessPanel"
-    class="post-business-panel"
-    data-testid="post-business-panel"
-    data-component-id="closing.charcoal"
-    data-required-asset-id="ST-CHARCOAL-CORE"
-    data-placeholder="development"
-    hidden
-  >
-    <p id="postBusinessTitle" class="post-business-title" data-testid="post-business-title"></p>
-    <p id="postBusinessSummary" class="post-business-summary" data-testid="post-business-summary"></p>
-    <ol id="settlementSteps" class="settlement-steps" data-testid="settlement-steps"></ol>
-    <button id="postBusinessAction" type="button" data-testid="post-business-action"></button>
+  <!-- 마감 뒤에는 이번 영업의 보상만 보여준다. -->
+  <section id="postBusinessPanel" class="post-business-panel" data-testid="post-business-panel" hidden>
+    <div class="stage-result-card">
+      <p id="resultDay" class="result-day"></p>
+      <div id="resultSeal" class="result-seal" aria-hidden="true">✓</div>
+      <h1 id="postBusinessTitle" class="post-business-title" data-testid="post-business-title" tabindex="-1"></h1>
+      <p id="postBusinessSummary" class="post-business-summary" data-testid="post-business-summary"></p>
+      <dl id="resultRewards" class="result-rewards" hidden>
+        <div><dt>이번 영업 수입 <small>팁 포함</small></dt><dd id="resultEarnings" data-testid="result-earnings"></dd></div>
+        <div><dt>명성 변화</dt><dd id="resultReputation" data-testid="result-reputation"></dd></div>
+      </dl>
+      <p id="resultSaveStatus" class="result-save-status" role="status"></p>
+      <button id="postBusinessAction" type="button" data-testid="post-business-action"></button>
+      <div id="resultOverlay" class="result-confirmation" data-testid="result-overlay" hidden>
+        <p id="resultMessage" class="sr-only" data-testid="result-message"></p>
+        <a id="continueButton" class="continue-button" data-testid="continue-button" href="./s0-d3.html">다음 날로</a>
+      </div>
+    </div>
   </section>
 
   <!-- 비법노트: 조립 순서와 굽기·따르기 기준을 언제든 다시 펼쳐 본다 -->
@@ -367,20 +372,15 @@
     class="recipe-book"
     data-testid="recipe-book"
     role="dialog"
-    aria-modal="false"
+    aria-modal="true"
     aria-labelledby="recipeBookTitle"
     hidden
   >
     <p id="recipeBookTitle" class="recipe-book-title">비법노트</p>
-    <div id="recipeBookEntries" class="recipe-book-entries" data-testid="recipe-book-entries"></div>
+    <div id="recipeBookEntries" class="recipe-book-entries" data-testid="recipe-book-entries" tabindex="0"></div>
     <button id="recipeBookClose" class="recipe-book-close" type="button" data-testid="recipe-book-close">닫기</button>
   </section>
 
-  <!-- 완료 오버레이: day-complete 저장 성공 뒤 D2 pre-open -->
-  <div id="resultOverlay" class="overlay" data-testid="result-overlay" hidden>
-    <p id="resultMessage" data-testid="result-message"></p>
-    <a id="continueButton" class="continue-button" data-testid="continue-button" href="./s0-d3.html">D2로 계속</a>
-  </div>
 
   <script type="module" src="./d1-game.js"></script>
 </body>

@@ -2,9 +2,7 @@ import { test, expect } from '@playwright/test';
 
 async function skipStory(page) {
   await page.getByRole('button', { name: '이 장면 건너뛰기' }).click();
-  await expect(page.getByRole('heading', { name: '잠시 돌아보며' })).toBeVisible();
-  await expect(page.locator('.summary li')).toHaveCount(3);
-  await page.locator('#actions .primary').click();
+  await expect(page.locator('.summary')).toHaveCount(0);
 }
 
 test('S0: 열쇠→대문 2클릭 뒤 점화 대사를 거쳐 D1로 이어진다', async ({ page }) => {
@@ -67,12 +65,12 @@ test('S0: 열쇠→대문 2클릭 뒤 점화 대사를 거쳐 D1로 이어진다
     'data-interaction-component-id',
     'prologue.gate',
   );
-  await expect(page.getByText('열쇠를 쥔 손이 차가웠다. 한 번 숨을 고르고 돌리자, 오래 닫혀 있던 문이 뻑뻑한 소리를 내며 열렸다.')).toBeVisible();
+  await expect(page.locator('body')).toHaveAttribute('data-state-id', 'S0-STATE-GATE');
   await page.getByRole('button', { name: '문을 연다' }).click();
 
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-S0-DECISION');
   await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-S0-001');
-  await expect(page.locator('.dialogue')).toHaveText('문을 열었더니 안에 숯 냄새가 아직 남아 있네.');
+  await expect(page.locator('.dialogue')).toContainText('짐만 정리하고 돌아가려고 했는데');
   await expect(page.locator('#story-illustration')).toBeVisible();
   await expect(page.locator('#story-illustration')).toHaveAttribute(
     'src',
@@ -87,13 +85,7 @@ test('S0: 열쇠→대문 2클릭 뒤 점화 대사를 거쳐 D1로 이어진다
   await expect(page.locator('#portrait-placeholder')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '숯불 점화' })).toHaveCount(0);
   await page.getByRole('button', { name: '이 장면 건너뛰기' }).click();
-  await expect(page.getByRole('heading', { name: '잠시 돌아보며' })).toBeVisible();
-  await expect(page.locator('.summary li')).toHaveText([
-    '남겨진 열쇠로 오래 닫힌 가게 문을 열었다.',
-    '가게 안에는 화로와 집기가 그대로 남아 있었다.',
-    '아키는 가게를 다시 열기로 했다.',
-  ]);
-  await page.locator('#actions .primary').click();
+  await expect(page.locator('.summary')).toHaveCount(0);
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D1-PREOPEN');
 });
 

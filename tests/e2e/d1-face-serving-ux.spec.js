@@ -194,9 +194,7 @@ test('키보드로 공용 완성품을 선택하고 일치하는 여러 손님 �
   await expect(tsukiokaTarget).toHaveAttribute('data-eligible', 'true');
   await tsukiokaTarget.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByTestId('serve-quantity')).toBeVisible();
-  await expect(page.getByTestId('serve-one')).toBeFocused();
-  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('serve-quantity')).toBeHidden();
   await expect.poll(() => D(page, 'businessView').then(
     (view) => view.orders.find((order) => order.orderId === 'D1-ORDER-001')
       .lines.find((line) => line.menuId === 'negima').served,
@@ -256,9 +254,7 @@ test('키보드로 공용 완성품을 선택하고 일치하는 여러 손님 �
   const chosenTarget = page.getByTestId(`serve-target-${chosen.seatId}`);
   await chosenTarget.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByTestId('serve-quantity')).toBeVisible();
-  await expect(page.getByTestId('serve-one')).toBeFocused();
-  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('serve-quantity')).toBeHidden();
   const view = await D(page, 'businessView');
   expect(view.orders.find((order) => order.customerId === chosen.customerId).lines
     .find((line) => line.menuId === 'negima').served).toBe(1);

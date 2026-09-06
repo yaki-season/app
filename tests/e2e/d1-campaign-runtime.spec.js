@@ -154,10 +154,9 @@ test('D4 후일담의 마지막 장면에서 실제 D5 토리카와 영업으로
   await page.goto('/src/s0-d3.html?post=d4');
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D4-POST');
   await page.getByRole('button', { name: '이 장면 건너뛰기' }).click();
-  await page.getByRole('button', { name: '이어서' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-state-id', 'D4-epilogue-1');
   await page.getByRole('button', { name: '다음 장면' }).click();
-  await page.getByRole('button', { name: 'D5 영업으로' }).click();
+  await page.getByRole('button', { name: '다섯째 날 문 열기' }).click();
 
   await expect(page).toHaveURL(/\/src\/d1-game\.html\?day=d5$/);
   await page.getByRole('button', { name: '조립', exact: true }).click();

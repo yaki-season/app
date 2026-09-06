@@ -1,6 +1,7 @@
 export const HIGHBALL_DEFAULT_CONFIG = Object.freeze({
   flowUnitsPerSec: 1,
   overflowThresholdUnits: 4.8,
+  minimumTotalUnits: 2,
   whiskeyPerfect: Object.freeze([0.8, 1.2]),
   whiskeyGood: Object.freeze([0.6, 1.4]),
   sodaPerfect: Object.freeze([2.55, 3.45]),
@@ -20,6 +21,7 @@ export function evaluateHighballQuality({
 }) {
   if (overflowAccepted) return 'Fail';
   if (!(whiskeyUnits > 0) || !(sodaUnits > 0)) return null;
+  if (whiskeyUnits + sodaUnits < (config.minimumTotalUnits ?? 2)) return null;
   const ratio = sodaUnits / whiskeyUnits;
   const allPerfect = inRange(whiskeyUnits, config.whiskeyPerfect)
     && inRange(sodaUnits, config.sodaPerfect)
@@ -134,6 +136,7 @@ export function createHighballStation({
 
   function acceptOverflow() {
     if (!overflow) return { ok: false, reason: 'not-overflowed' };
+    if (!(whiskeyUnits > 0) || !(sodaUnits > 0)) return { ok: false, reason: 'both-liquids-required' };
     overflow = false;
     overflowAccepted = true;
     return { ok: true, state: view() };
@@ -152,6 +155,8 @@ export function createHighballStation({
       overflowAccepted,
       config,
     });
+    if (activeLiquid) return { ok: false, reason: 'pour-active' };
+    if (!quality) return { ok: false, reason: 'more-liquid-required' };
     const completed = {
       menuId: 'highball',
       quality,
@@ -204,10 +209,13 @@ export function createHighballStation({
       activeLiquid,
       overflow,
       overflowAccepted,
+      canAcceptOverflow: overflow && whiskeyUnits > 0 && sodaUnits > 0,
       canAddLemon: !readyDrink
         && iceAdded
         && whiskeyUnits > 0
         && sodaUnits > 0
+        && totalUnits >= (config.minimumTotalUnits ?? 2)
+        && !activeLiquid
         && !overflow,
       // 완성 잔의 품질. 픽업대에 올리기 전 UI가 무엇이 완성됐는지 보여줄 때 쓴다.
       readyQuality: readyDrink?.quality ?? null,

@@ -227,7 +227,7 @@
         "timing": "pre-open",
         "skipSummary": [
           "기다리는 손님에게 먼저 내어 줄 양배추 사라다를 준비한다.",
-          "츠키오카의 주문으로 하이볼 제작을 시작한다.",
+          "오늘 첫 주문으로 하이볼 제작을 시작한다.",
           "D4 목표: 사이드 메뉴·그릴·드링크를 함께 운영한다."
         ]
       },
@@ -265,7 +265,7 @@
     "stage": "D5",
     "emotionKey": "닭껍질의 불맛",
     "prevDay": "d4",
-    "nextDay": "d5-complete",
+    "nextDay": "d6",
     "releaseDataId": "d5-business-day-domain.v1",
     "unlocks": ["day-d5-completed"],
     "fallbackNote": "D5 토리카와는 사용자 제공 원본을 규격화한 전용 조립·그릴 에셋을 사용하며, 그을음 있는 두 번째 원본은 타레가 아닌 완벽 직전 굽기 단계로 적용한다.",
@@ -295,26 +295,88 @@
     }
   },
   {
-    "id": "d5-complete",
+    "id": "d6",
     "schemaVersion": 2,
-    "displayKey": "scenario.d5-complete",
+    "displayKey": "scenario.d6",
+    "active": true,
+    "status": "approved",
+    "kind": "business-day",
+    "stage": "D6",
+    "emotionKey": "첫 만석",
+    "prevDay": "d5",
+    "nextDay": "d6-complete",
+    "releaseDataId": "d6-business-day-domain.v1",
+    "unlocks": [
+      "day-d6-completed",
+      "day-d7"
+    ],
+    "fallbackNote": "기존 메뉴와 기존 6석을 사용한다. 신규 도구와 D7 플레이 콘텐츠는 노출하지 않는다.",
+    "entryConditionId": "d5-settlement-complete",
+    "completionConditionId": "d6-settlement-complete",
+    "scenes": [
+      {
+        "id": "SCN-D6-PREOPEN",
+        "timing": "pre-open",
+        "skipSummary": [
+          "잔과 접시를 채우고 여섯 자리를 준비한다."
+        ]
+      }
+    ],
+    "skipSummary": [
+      "익숙한 메뉴로 겹쳐 오는 손님을 맞는다.",
+      "마지막 손님 퇴장과 정리를 마치고 정산한다."
+    ],
+    "interactions": [],
+    "readOnly": false,
+    "gameplayCommandIds": [
+      "begin-day",
+      "accept-order",
+      "serve-item",
+      "cleanup-seat",
+      "complete-settlement"
+    ],
+    "economyCommandIds": [
+      "record-sale",
+      "record-tip",
+      "apply-settlement"
+    ],
+    "reward": {
+      "growthResultIds": [
+        "day-d6-completed",
+        "day-d7"
+      ],
+      "storyFlagIds": [
+        "d6-complete"
+      ]
+    }
+  },
+  {
+    "id": "d6-complete",
+    "schemaVersion": 2,
+    "displayKey": "scenario.d6-complete",
     "active": true,
     "status": "approved",
     "kind": "preview",
-    "stage": "D5 완료",
-    "emotionKey": "닷새의 영업",
-    "prevDay": "d5",
+    "stage": "D6 완료",
+    "emotionKey": "여섯째 날의 영업",
+    "prevDay": "d6",
     "nextDay": null,
     "unlocks": [],
-    "fallbackNote": "D6 이후 콘텐츠는 열지 않고 D5 완료 저장만 유지한다.",
-    "entryConditionId": "d5-settlement-complete",
+    "fallbackNote": "D7은 저장상 해금만 유지하며 플레이 콘텐츠는 노출하지 않는다.",
+    "entryConditionId": "d6-settlement-complete",
     "completionConditionId": "complete-state",
-    "scenes": [{
-      "id": "SCN-D5-COMPLETE",
-      "timing": "preview",
-      "skipSummary": ["D5 영업과 정산을 완료했다."]
-    }],
-    "skipSummary": ["D5 영업과 정산을 완료했다."],
+    "scenes": [
+      {
+        "id": "SCN-D6-COMPLETE",
+        "timing": "preview",
+        "skipSummary": [
+          "D6 영업과 정산을 완료했다."
+        ]
+      }
+    ],
+    "skipSummary": [
+      "D6 영업과 정산을 완료했다."
+    ],
     "interactions": [],
     "readOnly": true,
     "gameplayCommandIds": [],

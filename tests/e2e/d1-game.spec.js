@@ -83,10 +83,6 @@ test('6석 프로덕션 renderer와 승인 손님 배경이 조리 스테이션�
   expect(layers.custSeating.scale).toEqual([1, 1, 1]);
   expect(layers.custTsukioka.scale).toEqual([1, 1, 1]);
   expect(layers.custCounter.scale).toEqual([1, 0.78, 1]);
-  const viewport = page.viewportSize();
-  await page.screenshot({
-    path: `../tmp/customer-review/yaki-d1-approved-live-${viewport.width}x${viewport.height}.png`,
-  });
 });
 
 test('스테이션을 좌·우/퀵/키보드로 전환한다', async ({ page }) => {
@@ -256,7 +252,7 @@ test('츠키오카 접수→시작 2칸에서 두 꼬치를 독립적으로 조�
     await negimaCard.click();
     const serveTarget = page.getByTestId(`serve-target-${tsukiokaSeat}`);
     await serveTarget.click();
-    await page.getByTestId('serve-one').click();
+    if (await page.getByTestId('serve-quantity').isVisible()) await page.getByTestId('serve-one').click();
   }
   await expect.poll(() => D(page, 'order').then((o) => o['네기마'].done)).toBe(2);
 
@@ -264,7 +260,7 @@ test('츠키오카 접수→시작 2칸에서 두 꼬치를 독립적으로 조�
   const beerCard = page.locator('.dock-card').filter({ hasText: '생맥주' }).first();
   await beerCard.click();
   await page.getByTestId(`serve-target-${tsukiokaSeat}`).click();
-  await page.getByTestId('serve-one').click();
+  await expect(page.getByTestId('serve-quantity')).toBeHidden();
   await expect.poll(() => D(page, 'order').then((o) => o['생맥주'].done)).toBe(1);
 
   // 첫 주문은 완료됐지만 전체 D1은 계속된다.

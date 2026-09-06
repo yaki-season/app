@@ -50,12 +50,13 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .order-hud {
   top: 16.296296vh;
   left: 9.166667vw;
   width: 66.5625vw;
-  max-height: 6.666667vh;
+  max-height: 13vh;
   margin: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 5px 8px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   align-content: flex-start;
 }
 
