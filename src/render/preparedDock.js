@@ -9,6 +9,8 @@ export function qualityFromCook(frontResult, backResult) {
   return frontResult === 'over' || backResult === 'over' ? 'low' : 'good';
 }
 
+import { qualityLabel } from './qualityLabel.js';
+
 const LEGACY_MENU_ID = Object.freeze({
   '생맥주': 'beer',
   '네기마': 'negima',
@@ -52,6 +54,10 @@ export function createPreparedDock({ container }) {
 
   function render() {
     if (!container) return;
+    const focusedCard = container.contains(document.activeElement) ? document.activeElement?.dataset.testid : null;
+    const scrollByZone = Object.fromEntries([...container.querySelectorAll('[data-prepared-zone]')]
+      .filter(node => node.classList.contains('dock-zone'))
+      .map(node => [node.dataset.preparedZone, node.querySelector('.dock-zone-items').scrollLeft]));
     container.innerHTML = '';
 
     const zones = Object.fromEntries([
@@ -78,17 +84,24 @@ export function createPreparedDock({ container }) {
       card.dataset.good = it.good == null ? '' : it.good ? '1' : '0';
       card.dataset.preparedZone = zoneId;
       card.dataset.menuId = it.menuId ?? '';
+      card.dataset.seasoning = it.seasoning ?? 'none';
+      card.setAttribute('aria-pressed', String(it.id === selectedId));
       const quality = it.qualityMode === 'none'
         ? ''
-        : `<span class="dock-quality ${it.good ? 'q-good' : 'q-low'}">${it.label}</span>`;
+        : `<span class="dock-quality ${it.good ? 'q-good' : 'q-low'}">${qualityLabel(it.label)}</span>`;
       card.innerHTML = `<span class="dock-item-art dock-item-art--${zoneId}" aria-hidden="true"></span><span class="dock-menu">${it.menu}</span>${quality}`;
       card.addEventListener('click', () => select(it.id));
       zone.querySelector('.dock-zone-items').appendChild(card);
     }
     for (const zone of Object.values(zones)) {
       zone.classList.toggle('is-empty', !zone.querySelector('.dock-card'));
+      zone.querySelector('.dock-zone-items').scrollLeft = scrollByZone[zone.dataset.preparedZone] ?? 0;
     }
     container.hidden = items.length === 0;
+    if (focusedCard) {
+      [...container.querySelectorAll('.dock-card')]
+        .find(card => card.dataset.testid === focusedCard)?.focus({ preventScroll: true });
+    }
   }
 
   // item: { menuId, menu, quality, qualityMode, good, zone }.
@@ -115,6 +128,14 @@ export function createPreparedDock({ container }) {
     selectedId = items.length ? items[0].id : null;
     render();
     return it;
+  }
+  function consumeId(id) {
+    const item = items.find(candidate => candidate.id === id);
+    if (!item) return null;
+    items = items.filter(candidate => candidate.id !== id);
+    if (selectedId === id) selectedId = items[0]?.id ?? null;
+    render();
+    return item;
   }
   function consumeMenu(menu, count = 1) {
     const removed = [];
@@ -167,6 +188,7 @@ export function createPreparedDock({ container }) {
     select,
     selected,
     consumeSelected,
+    consumeId,
     consumeMenu,
     consumeMenuId,
     clear,

@@ -27,16 +27,16 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Chromium for the public D1 gate
+      - name: Install Chromium for campaign regression
         run: npx playwright install --with-deps chromium
 
-      - name: Run required public D1 gate
+      - name: Run required campaign gameplay regression
         run: npm run verify
 
   repository-diagnostics:
@@ -53,11 +53,15 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Inspect repository-wide contracts without blocking D1
-        run: npm run assets:validate && npm run visual:references:validate && npm test
+      - name: Inspect runtime asset registration
+        run: npm run assets:validate
+
+      - name: Inspect visual reference integrity even if asset registration failed
+        if: always()
+        run: npm run visual:references:validate

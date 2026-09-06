@@ -726,6 +726,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         height: 1,
       }, LAYER_Z.actor);
       actor.scale.set(scale, scale, 1);
+      actor.userData.restPosition = actor.position.clone();
       actor.userData.frameKey = frameKey;
     },
     presetCam,

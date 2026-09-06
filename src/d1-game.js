@@ -3,6 +3,9 @@
 // 조리 모델은 영업 도메인과 독립이며 이 파일이 완성품·위험 공정 intent만 번역한다.
 
 import * as THREE from 'three';
+import { randomizeBusinessDayRecord } from './domain/businessDay/randomizeBusinessDay.js';
+import { createBusinessDayDefinition } from './domain/businessDay/d1BusinessDay.js';
+import { loadD6BusinessDayDefinition } from './application/ports/d6BusinessDayDefinition.js';
 import { createProductionRenderer } from './render/productionRenderer.js';
 import { createStationDirector } from './render/stationDirector.js';
 import { createD1RawNegimaCompositor } from './render/d1RawNegimaCompositor.js';
@@ -27,6 +30,7 @@ import { elapsedSecToUniform } from './render/grillRenderer.js';
 import { createGrillSmokeVfx } from './render/grillSmokeVfx.js';
 import { d1SecondFaceR3Params } from './render/d1SecondFaceR3.js';
 import { createPreparedDock } from './render/preparedDock.js';
+import { qualityLabel } from './render/qualityLabel.js';
 import { D4_MENU_ART_URLS } from './assets/d4MenuArt.js';
 import { createInstantServiceStation } from './application/stations/instantServiceStation.js';
 import { HIGHBALL_DEFAULT_CONFIG, createHighballStation } from './application/stations/highballStation.js';
@@ -34,7 +38,7 @@ import { gameAudio, installGameAudio, setBgm, sfx, sfxOff, sfxOnce, loopOn, loop
 import { crowdAmbienceId, interiorAmbienceId } from './audio/audioCatalog.js';
 import { createCustomerAdapter } from './render/customerAdapter.js';
 import { seatHasServedMenu } from './render/seatServing.js';
-import { settlementStepDetail } from './render/settlementSteps.js';
+import { stageResult } from './render/stageResult.js';
 import { recipeBookEntries, shouldShowAssemblyTutorial } from './render/recipeBook.js';
 import {
   d1OfficeActorOffsetX,
@@ -126,7 +130,8 @@ loopOn('AMB-SHOP-INTERIOR');
 
 const runtimeParams = new URLSearchParams(window.location.search);
 const requestedDayId = runtimeParams.get('day');
-const ACTIVE_DAY_ID = ['d2', 'd3', 'd4', 'd5'].includes(requestedDayId) ? requestedDayId : 'd1';
+const ACTIVE_DAY_ID = ['d2', 'd3', 'd4', 'd5', 'd6'].includes(requestedDayId) ? requestedDayId : 'd1';
+document.body.dataset.businessDay = ACTIVE_DAY_ID;
 // unlockLabels는 정산 5단계에서 "오늘 뭘 얻었나"를 보여주는 용도다. 보상 자체는
 // buildBusinessDayCampaignReward가 완료 시점에 계산하므로(그때는 이미 화면이 넘어간다)
 // 읽을거리로 쓸 이름만 여기 둔다.
@@ -135,7 +140,8 @@ const DAY_META = Object.freeze({
   d2: { label: 'D2', nextLabel: 'D3', nextNodeLabel: '셋째 날 이야기', unlockLabels: [] },
   d3: { label: 'D3', nextLabel: 'D4', nextNodeLabel: '넷째 날 이야기', unlockLabels: ['양배추 사라다', '하이볼'] },
   d4: { label: 'D4', nextLabel: 'D5', nextNodeLabel: '다섯째 날 영업', unlockLabels: ['토리카와 레시피'] },
-  d5: { label: 'D5', nextLabel: 'D5 완료', nextNodeLabel: '영업 완료', unlockLabels: [] },
+  d5: { label: 'D5', nextLabel: 'D6', nextNodeLabel: '여섯째 날 준비', unlockLabels: [] },
+  d6: { label: 'D6', nextLabel: '후일담', nextNodeLabel: '영업 완료', unlockLabels: [] },
 });
 const ACTIVE_DAY = DAY_META[ACTIVE_DAY_ID];
 document.title = `YAKI SEASON — ${ACTIVE_DAY.label} 영업`;
@@ -206,7 +212,7 @@ const ACTIVE_SCREENS = SCREENS.filter((screen) => (
 const ACTIVE_SCREEN_IDS = ACTIVE_SCREENS.map((screen) => screen.id);
 const R = createProductionRenderer(canvas, { runtimeAssets });
 // 하이볼이 열리는 날에는 맥주 세트를 왼쪽으로 비켜 두 작업대가 겹치지 않게 한다.
-if (['d4', 'd5'].includes(ACTIVE_DAY_ID)) {
+if (['d4', 'd5', 'd6'].includes(ACTIVE_DAY_ID)) {
   R.setObjectOffsetX(HIGHBALL_DAY_BEER_KEYS, HIGHBALL_DAY_BEER_SHIFT_X);
 }
 R.warmTexture(D4_MENU_ART_URLS.cabbageSaladPlate);
@@ -217,7 +223,7 @@ const director = createStationDirector({ screens: ACTIVE_SCREEN_IDS, initial: IN
 // 깨끗한 시작이 필요하면 ?reset=1로 명시한다.
 const resetFirstOrderRuntime = runtimeParams.get('reset') === '1';
 const developmentStartDay = runtimeParams.get('devUnlock') === '1'
-  && ['d2', 'd3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
+  && ['d2', 'd3', 'd4', 'd5', 'd6'].includes(ACTIVE_DAY_ID)
   ? ACTIVE_DAY_ID
   : null;
 const developmentTestFlow = runtimeParams.get('testFlow');
@@ -239,8 +245,12 @@ const restoredFirstOrderRuntime = readFirstOrderRuntime();
 const daySeed = ACTIVE_DAY_ID === 'd1'
   ? null
   : (restoredFirstOrderRuntime?.daySeed ?? Math.floor(Math.random() * 0xffffffff) + 1);
+// Old in-progress days must restore with their original identity/order algorithm.
+const customerRandomizationVersion = restoredFirstOrderRuntime
+  ? (restoredFirstOrderRuntime.customerRandomizationVersion ?? 1) : 2;
+const legacyDaySeed = customerRandomizationVersion === 1 ? daySeed : null;
 async function resolveClaimedGrillSlotCount() {
-  if (!['d4', 'd5'].includes(ACTIVE_DAY_ID)) return 2;
+  if (!['d4', 'd5', 'd6'].includes(ACTIVE_DAY_ID)) return 2;
   try {
     // 업그레이드는 프리오픈 체크포인트에 먼저 저장된다. 영업 도메인을 부팅하기 전에 같은
     // 저장을 검증해 읽어야 세 번째 슬롯의 mesh·sprite·shader가 첫 프레임부터 함께 생긴다.
@@ -290,7 +300,7 @@ const momoRuntime = {
   error: null,
 };
 const kawaRuntime = {
-  status: ACTIVE_DAY_ID === 'd5' ? 'loading' : 'disabled',
+  status: ['d5', 'd6'].includes(ACTIVE_DAY_ID) ? 'loading' : 'disabled',
   error: null,
 };
 document.body.dataset.d2MomoBindingStatus = momoRuntime.status;
@@ -408,7 +418,7 @@ async function bootMomoRuntime() {
 void bootMomoRuntime();
 
 async function bootKawaRuntime() {
-  if (ACTIVE_DAY_ID !== 'd5') return;
+  if (!['d5', 'd6'].includes(ACTIVE_DAY_ID)) return;
   try {
     const runtime = await loadD5KawaSpriteRuntime();
     for (const key of SLOT_KEYS) {
@@ -480,6 +490,10 @@ const grillFlipQuaternion = new THREE.Quaternion();
 const lockUntil = {};
 function invokeLockedControl(key, now = performance.now()) {
   if (director.controlsLocked()) return false;
+  if (['binChicken', 'binLeek', 'binTorikawa'].includes(key)) {
+    handle(key, now);
+    return true;
+  }
   if ((lockUntil[key] || 0) > now) return false;
   lockUntil[key] = now + 200;
   handle(key, now);
@@ -497,7 +511,7 @@ const dock = createPreparedDock({ container: dockShelf });
 let instantStation = createInstantServiceStation();
 let highballStation = createHighballStation({ snapshot: restoredFirstOrderRuntime?.highball });
 // D4부터 두 음료 공정을 같은 장면에 상시 노출한다. 이전 graybox의 tab 상태는 읽지 않는다.
-const drinkMode = ['d4', 'd5'].includes(ACTIVE_DAY_ID) ? 'combined' : 'beer';
+const drinkMode = ['d4', 'd5', 'd6'].includes(ACTIVE_DAY_ID) ? 'combined' : 'beer';
 const assemblyRecipePicker = el('assemblyRecipePicker');
 for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
   button.addEventListener('click', () => {
@@ -530,9 +544,51 @@ function objectScreenPoint(key) {
 }
 
 function assemblyTareTargetBounds() {
-  const center = objectScreenPoint('jigSkewer');
-  const halfWidth = Math.min(250, window.innerWidth * 0.2);
-  return { left: center.x - halfWidth, right: center.x + halfWidth, top: center.y - 70, bottom: center.y + 70 };
+  const menuId = cook.selectedMenuId();
+  const instance = menuId === 'momo' ? momoInstances.build
+    : menuId === 'kawa' ? kawaInstances.build : assemblyNegimaInstances.build;
+  const points = [];
+  const projectBounds = (mesh, bounds) => {
+    for (const x of [bounds.min.x, bounds.max.x]) {
+      for (const y of [bounds.min.y, bounds.max.y]) {
+        for (const z of [bounds.min.z, bounds.max.z]) {
+          points.push(R.projectToScreen(mesh.localToWorld(new THREE.Vector3(x, y, z))));
+        }
+      }
+    }
+  };
+  instance?.root.updateWorldMatrix(true, true);
+  if (menuId === 'negima') {
+    for (const [index, ingredient] of ['chicken', 'green-onion', 'chicken', 'green-onion', 'chicken'].entries()) {
+      const component = instance?.root.getObjectByName(`${ingredient}-${String(index + 1).padStart(2, '0')}`);
+      component?.traverse(node => {
+        if (!node.isMesh) return;
+        node.geometry.computeBoundingBox();
+        projectBounds(node, node.geometry.boundingBox);
+      });
+    }
+  } else {
+    // Complete assembly rasters: crop out transparent margins and the bare stick.
+    const plane = instance?.root.getObjectByName('d2MomoSprite:5');
+    if (plane) {
+      plane.geometry.computeBoundingBox();
+      const bounds = plane.geometry.boundingBox.clone();
+      const height = bounds.max.y - bounds.min.y;
+      bounds.min.x *= 0.78; bounds.max.x *= 0.78;
+      bounds.min.y = (0.5 - (menuId === 'kawa' ? 0.74 : 0.77)) * height;
+      bounds.max.y = (0.5 - (menuId === 'kawa' ? 0.16 : 0.18)) * height;
+      projectBounds(plane, bounds);
+    }
+  }
+  if (points.length) return {
+    left: Math.min(...points.map(p => p.x)) - 4,
+    right: Math.max(...points.map(p => p.x)) + 4,
+    top: Math.min(...points.map(p => p.y)) - 8,
+    bottom: Math.max(...points.map(p => p.y)) + 8,
+  };
+  const center = objectScreenPoint(D1_ASSEMBLY_BUILD_SLOT.key);
+  const halfWidth = window.innerWidth * 0.075;
+  return { left: center.x - halfWidth, right: center.x + halfWidth, top: center.y - 24, bottom: center.y + 24 };
 }
 
 function assemblyTareReady() {
@@ -704,6 +760,8 @@ function persistFirstOrderRuntime() {
       highball: highballStation.snapshot(),
       drinkMode,
       daySeed,
+      customerRandomizationVersion,
+      business: businessSession?.port?.runtime?.getState?.() ?? null,
     }));
   } catch {
     // 저장 공간 실패는 campaign 저장을 덮어쓰지 않으며 현재 세션 진행은 유지한다.
@@ -747,7 +805,7 @@ const PHASE_LABEL = {
   'closing-drain': '마감 정리',
   'charcoal-down': '숯불',
   settlement: '정산',
-  complete: '다음 날 준비',
+  complete: '영업 종료',
 };
 const EXTRA_ASSET = {
   office: 'CH-EXTRA-COMMUTER-SERVICE',
@@ -770,12 +828,15 @@ function officeActorFrame(customerId) {
 let businessSession = null;
 let businessPort = null;
 let businessBootError = null;
-let businessIntentSequence = 0;
+let businessIntentSequence = Math.max(0, ...(restoredFirstOrderRuntime?.business?.handledEventIds ?? [])
+  .map(id => Number(String(id).split(':').at(-1)) || 0));
 let cleanupSeatId = null;
 let reportedRiskCount = 0;
 let businessRenderDue = true;
 let lastBusinessFrameAt = null;
 let finalizing = false;
+let settlementSaveError = false;
+let resultFocusState = null;
 let departureCutsceneActive = false;
 let departureCutsceneSeen = false;
 const runtimeSuspensionReasons = new Set();
@@ -870,8 +931,28 @@ function openServeQuantity(seatId) {
     return;
   }
   pendingServeSeatId = seatId;
+  const line = seat.remainingItems.find(item => item.menuId === selected.menuId
+    && (item.seasoning === 'tare' ? selected.seasoning === 'tare' : selected.seasoning !== 'tare'));
+  const available = dock.items().filter(item => item.menuId === selected.menuId
+    && item.seasoning === selected.seasoning).length;
+  if (Math.min(line?.remaining ?? 0, available) === 1) {
+    confirmServe(false);
+    return;
+  }
   persistFirstOrderRuntime();
-  serveQuantitySummary.textContent = `${selected.menu} → ${seat.customerId === 'REGULAR_TSUKIOKA' ? '츠키오카' : seatId}`;
+  const batch = [selected, ...dock.items().filter(item => item.id !== selected.id
+    && item.menuId === selected.menuId && item.seasoning === selected.seasoning)]
+    .slice(0, Math.min(line?.remaining ?? 0, available));
+  const qualities = new Map();
+  for (const item of batch) {
+    if (item.qualityMode === 'none' || !item.quality) continue;
+    const label = qualityLabel(item.quality);
+    qualities.set(label, (qualities.get(label) ?? 0) + 1);
+  }
+  const breakdown = [...qualities].map(([label, count]) => `${label} ${count}개`).join(' · ');
+  const selectedQuality = selected.quality ? ` · ${qualityLabel(selected.quality)}` : '';
+  const warning = batch.some(item => item.quality === 'Fail') ? ' · 주의: 실패 음식 포함' : '';
+  serveQuantitySummary.textContent = `${selected.menu} → ${seat.customerId === 'REGULAR_TSUKIOKA' ? '츠키오카' : '손님'} · 선택한 1개${selectedQuality} / 모두 제공 ${batch.length}개${breakdown ? ` (${breakdown})` : ''}${warning}`;
   serveQuantity.hidden = false;
   serveQuantity.querySelector('[data-act="serve-one"]').focus();
 }
@@ -901,10 +982,10 @@ function confirmServe(all) {
   const count = all ? Math.min(remaining, available) : Math.min(1, remaining, available);
   let applied = 0;
   let lastResult = null;
+  const candidates = [selected, ...dock.items().filter(candidate => candidate.id !== selected.id
+    && candidate.menuId === menuId && candidate.seasoning === selected.seasoning)];
   for (let index = 0; index < count; index += 1) {
-    const item = dock.items().find((candidate) => (
-      candidate.menuId === menuId && candidate.seasoning === selected.seasoning
-    ));
+    const item = candidates[index];
     if (!item) break;
     lastResult = dispatchBusiness(D1_UI_INTENT.SERVE_ITEM, {
       seatId: pendingServeSeatId,
@@ -913,12 +994,15 @@ function confirmServe(all) {
       quality: item.quality,
     });
     if (!lastResult.ok || !lastResult.applied) break;
-    dock.consumeMenuId(item.menuId, 1, item.seasoning);
+    dock.consumeId(item.id);
     applied += 1;
   }
   persistFirstOrderRuntime();
   closeServeQuantity();
-  showHint(lastResult?.completedOrder ? '최종 제공 완료 · 총 3항목' : `부분 제공 · ${applied}개 전달`);
+  const order = businessView()?.orders.find(order => order.orderId === seat.orderId);
+  const total = order?.lines.reduce((sum, line) => sum + line.quantity, 0) ?? applied;
+  showHint(!applied ? '제공하지 못했습니다 · 손님의 남은 주문을 확인하세요'
+    : lastResult?.completedOrder ? `주문 제공 완료 · 총 ${total}항목` : `${selected.menu} ${applied}개를 드렸습니다`);
   render();
 }
 
@@ -956,7 +1040,9 @@ function activateSeat(seatId) {
     const result = dispatchBusiness(D1_UI_INTENT.ACCEPT_ORDER, { seatId });
     if (result.ok) {
       persistFirstOrderRuntime();
-      showHint(`${seat.customerId === 'REGULAR_TSUKIOKA' ? '츠키오카' : '엑스트라'} 주문 접수`);
+      showHint(ACTIVE_DAY_ID === 'd6' && seat.orderId === 'D6-ORDER-004'
+        ? '손님 A: 사장님, 맥주하고 사라다 부탁해요.'
+        : `${seat.customerId === 'REGULAR_TSUKIOKA' ? '츠키오카' : '손님'} 주문을 받았습니다`);
     }
   } else if (seat.canServe) {
     openServeQuantity(seatId);
@@ -1136,7 +1222,7 @@ const serveTargetButtons = new Map(SEAT_IDS.map((seatId, index) => {
 function renderPreparedSelection() {
   const selected = dock.selected();
   selectedPreparedItem.textContent = selected
-    ? `선택 완성품 · ${selected.menu}${selected.label ? ` · ${selected.label}` : ''}`
+    ? `선택 완성품 · ${selected.menu}${selected.label ? ` · ${qualityLabel(selected.label)}` : ''}`
     : '완성품을 먼저 선택하세요';
   for (const card of el('dockShelf').querySelectorAll('.dock-card')) {
     const selectedCard = card.dataset.testid === `dock-item-${dock.selectedId()}`;
@@ -1157,13 +1243,15 @@ function renderServeTargets() {
   for (const seatId of SEAT_IDS) {
     const seat = view.seats.find((item) => item.seatId === seatId);
     const { button, cleanupProgress, index } = serveTargetButtons.get(seatId);
+    button.hidden = !seat;
+    if (!seat) { cleanupProgress.hidden = true; continue; }
     const eligible = seatCanReceiveSelected(seat, selected);
     const cleanupNeeded = Boolean(seat?.cleanupNeeded);
     const canActivate = Boolean(seat?.canOrder || eligible || cleanupNeeded);
     const seatLabel = `${index + 1}번 좌석`;
     const customerLabel = seat?.customerId === 'REGULAR_TSUKIOKA'
       ? '츠키오카'
-      : seat?.occupied ? '이름 없는 손님' : '빈 자리';
+      : seat?.occupied ? '손님' : '빈 자리';
     const remaining = seat?.remainingOrderLabel || '남은 주문 없음';
     button.disabled = !canActivate;
     button.dataset.eligible = String(eligible);
@@ -1331,6 +1419,8 @@ function highballActionMessage(reason) {
   return {
     'glass-required': '빈 잔을 먼저 놓으세요',
     'ice-required': '얼음을 먼저 넣으세요',
+    'more-liquid-required': '잔을 절반 이상 채워 주세요',
+    'pour-active': '따르기를 멈춘 뒤 레몬을 올리세요',
     'both-liquids-required': '위스키와 탄산수를 모두 따라 주세요',
     'overflow-decision-required': '넘친 잔을 계속 쓸지 먼저 정하세요',
   }[reason] ?? '지금은 그 조작을 할 수 없어요';
@@ -1442,11 +1532,12 @@ el('highballLemon').addEventListener('click', () => {
   }
   sfx('SFX-DRINK-LEMON-DROP', { maxSec: HIGHBALL_ONE_SHOT_SFX_SEC });
   persistFirstOrderRuntime();
-  showHint(`${result.completed.quality} 하이볼 완성 · 잔을 눌러 픽업대에 올리세요`);
+  showHint(`${qualityLabel(result.completed.quality)} 하이볼 완성 · 잔을 눌러 픽업대에 올리세요`);
   render();
 });
 highballOverflow.querySelector('[data-highball-act="serve-low"]').addEventListener('click', () => {
-  highballStation.acceptOverflow();
+  const result = highballStation.acceptOverflow();
+  if (!result.ok) { showHint('두 재료가 모두 필요합니다 · 버리고 다시 만들어 주세요'); return; }
   persistFirstOrderRuntime();
   showHint('낮은 품질로 계속합니다 · 레몬을 올려 마무리하세요');
   render();
@@ -1501,7 +1592,12 @@ function updateHighballPanel(show) {
     `하이볼 잔 ${Math.round(state.fillRatio * 100)}% · 위스키 ${state.whiskeyUnits.toFixed(1)} · 탄산수 ${state.sodaUnits.toFixed(1)}`,
   );
   if (state.overflow || state.canPickUp) stopHighballPourLoops();
-  highballOverflow.hidden = !state.overflow;
+  const strandedOverflow = state.overflowAccepted && !state.canAddLemon && !state.canPickUp;
+  highballOverflow.hidden = !state.overflow && !strandedOverflow;
+  highballOverflow.querySelector('[data-highball-act="serve-low"]').disabled = !state.canAcceptOverflow;
+  highballOverflow.querySelector('strong').textContent = state.whiskeyUnits > 0 && state.sodaUnits > 0
+    ? '잔이 넘쳤어요 · 계속하거나 다시 만들 수 있어요'
+    : '한 재료로 잔이 찼어요 · 버리고 다시 만들어 주세요';
   highballGuide.classList.toggle('is-overflow', state.overflow);
   highballHint.hidden = state.overflow;
   // 완성 잔이 올라와 있으면 같은 자리가 '픽업대에 올리기' 버튼이 된다.
@@ -1512,7 +1608,7 @@ function updateHighballPanel(show) {
   el('highballLemon').disabled = !state.canAddLemon;
   updateHighballGauge(state);
   highballHint.textContent = readyToPick
-    ? `${state.readyQuality} 하이볼 완성 · 잔을 눌러 픽업대에 올리세요`
+    ? `${qualityLabel(state.readyQuality)} 하이볼 완성 · 잔을 눌러 픽업대에 올리세요`
     : state.activeLiquid === 'whiskey'
       ? '위스키 따르는 중'
       : state.activeLiquid === 'soda'
@@ -1540,7 +1636,7 @@ function updateHighballGauge(state) {
   const quality = state.overflow ? 'Fail' : state.readyQuality;
   highballStamp.hidden = !quality;
   if (quality) {
-    highballStamp.textContent = state.overflow ? '넘침' : quality;
+    highballStamp.textContent = state.overflow ? '넘침' : qualityLabel(quality);
     highballStamp.className = `stamp q-${quality}`;
   }
 }
@@ -1572,7 +1668,7 @@ function beerGuideMessage(state, combined) {
 
 function updateDrinkPanel(activeScreen, now = performance.now()) {
   const onDrinkScreen = activeScreen === 'SCR-SVC-DRINK';
-  const combined = ['d4', 'd5'].includes(ACTIVE_DAY_ID);
+  const combined = ['d4', 'd5', 'd6'].includes(ACTIVE_DAY_ID);
   drinkPanel.classList.toggle('is-d4', combined);
   R.setObjectEnabled?.('drinkStation', true);
   R.setObjectEnabled?.('drinkGlassDeck', true);
@@ -1606,13 +1702,14 @@ function updateDrinkPanel(activeScreen, now = performance.now()) {
   beerEl.style.height = `${beerH}px`;
   foamEl.style.height = `${foamH}px`;
   foamEl.style.bottom = `${beerH}px`;
-  finishBtn.disabled = s.phase !== 'ready';
+  finishBtn.disabled = !s.canFinish;
   overflowEl.hidden = s.phase !== 'overflow';
   if (s.phase === 'overflow') { stampEl.hidden = false; stampEl.textContent = '넘침'; stampEl.className = 'stamp q-Fail'; }
   else stampEl.hidden = true;
 }
 function finishDrink() {
   const q = pour.finish();
+  if (!q) { showHint('맥주를 더 채워 주세요'); return; }
   if (q) {
     dock.add({ menuId: 'beer', menu: '생맥주', quality: q, good: q === 'Perfect' || q === 'Good', zone: 'drink' });
     glassPlaced = false;
@@ -1644,7 +1741,7 @@ const cabbageSaladProgress = el('cabbageSaladProgress');
 const instantMessage = el('instantMessage');
 
 function beginInstantPreparation(now = performance.now()) {
-  if (!['d4', 'd5'].includes(ACTIVE_DAY_ID) || director.activeScreenId() !== 'SCR-SVC-INSTANT') return false;
+  if (!['d4', 'd5', 'd6'].includes(ACTIVE_DAY_ID) || director.activeScreenId() !== 'SCR-SVC-INSTANT') return false;
   if (!instantStation.begin(now)) return false;
   instantMessage.textContent = '사라다 담는 중';
   cabbageSaladPrepare.classList.add('is-holding');
@@ -1673,7 +1770,15 @@ cabbageSaladPrepare.addEventListener('pointerdown', (event) => {
   event.preventDefault();
 });
 cabbageSaladPrepare.addEventListener('pointerup', releaseInstantPreparation);
-cabbageSaladPrepare.addEventListener('pointercancel', releaseInstantPreparation);
+cabbageSaladPrepare.addEventListener('pointercancel', cancelInstantPreparation);
+cabbageSaladPrepare.addEventListener('lostpointercapture', cancelInstantPreparation);
+cabbageSaladPrepare.addEventListener('pointermove', event => {
+  if (instantStation.view().phase !== 'holding') return;
+  const rect = cabbageSaladPrepare.getBoundingClientRect();
+  if (event.clientX < rect.left || event.clientX > rect.right
+    || event.clientY < rect.top || event.clientY > rect.bottom) cancelInstantPreparation();
+});
+cabbageSaladPrepare.addEventListener('blur', cancelInstantPreparation);
 cabbageSaladPrepare.addEventListener('keydown', (event) => {
   if (!['Enter', ' '].includes(event.key) || event.repeat) return;
   if (beginInstantPreparation()) event.preventDefault();
@@ -1685,7 +1790,7 @@ cabbageSaladPrepare.addEventListener('keyup', (event) => {
 });
 
 function updateInstantPanel(activeScreen) {
-  const show = ['d4', 'd5'].includes(ACTIVE_DAY_ID) && activeScreen === 'SCR-SVC-INSTANT';
+  const show = ['d4', 'd5', 'd6'].includes(ACTIVE_DAY_ID) && activeScreen === 'SCR-SVC-INSTANT';
   instantPanel.hidden = !show;
   instantArtScene.hidden = !show;
   const state = instantStation.view();
@@ -1700,28 +1805,24 @@ function shouldShow(key) {
   const active = director.activeScreenId();
   if (SCREEN_OF[key] !== active) return false;
   if (key === 'binChicken' && cook.selectedMenuId() === 'kawa') return false;
-  if (key === 'binTorikawa') return ACTIVE_DAY_ID === 'd5' && cook.selectedMenuId() === 'kawa';
+  if (key === 'binTorikawa') return ['d5', 'd6'].includes(ACTIVE_DAY_ID) && cook.selectedMenuId() === 'kawa';
   const si = slotIndexOf(key);
   if (si >= 0) return si < cook.slotCount() && cook.slotViews(performance.now())[si].status !== 'empty';
   return true;
 }
 
 function extraKind(customerId) {
-  if (/^D[1-5]-(OFFICE|COMMUTER)/.test(customerId ?? '')) return 'office';
-  if (/^D[1-5]-SOLO/.test(customerId ?? '')) return 'solo';
+  if (/^D[1-6]-(OFFICE|COMMUTER)/.test(customerId ?? '')) return 'office';
+  if (/^D[1-6]-SOLO/.test(customerId ?? '')) return 'solo';
   return null;
 }
 
 function tsukiokaArtFor(seat, nowMs) {
   if (!seat) return runtimeAssets.TSUKIOKA_WAITING;
   const view = businessView();
-  const servedBeer = seatHasServedMenu(view, seat, 'beer')
-    || seatHasServedMenu(view, seat, 'highball');
-  // 사라다는 꼬치가 아니다. 여기 섞으면 사라다만 받은 손님이 꼬치를 먹는 그림이 된다.
-  // 사라다 접시는 카운터 위에 따로 그려지고, 사람은 대기 자세로 남는다.
-  const servedSkewer = seatHasServedMenu(view, seat, 'negima')
-    || seatHasServedMenu(view, seat, 'momo')
-    || seatHasServedMenu(view, seat, 'kawa');
+  // D1 전용 손 프레임에는 네기마·맥주가 이미 그려져 있다. 다른 메뉴로 대체하지 않는다.
+  const servedBeer = seatHasServedMenu(view, seat, 'beer');
+  const servedSkewer = seatHasServedMenu(view, seat, 'negima');
   if (seat.phase === 'eating' || seat.phase === 'done') {
     if (servedBeer && servedSkewer) return resolveD1ReceivedEatingFrame(runtimeAssets, nowMs);
     if (servedBeer) return runtimeAssets.TSUKIOKA_PARTIAL_BEER;
@@ -1745,7 +1846,8 @@ function updateTsukiokaArt(nowMs = visualNowMs(), resolvedArt = null) {
       && !seat.cleanupNeeded
       && !['empty', 'leaving', 'cleanup'].includes(seat.phase)
     ));
-  R.setObjectVisible('custTsukioka', visible);
+  R.setObjectVisible('custTsukioka', visible && ACTIVE_DAY_ID === 'd1');
+  if (ACTIVE_DAY_ID !== 'd1') return resolvedArt;
   if (!visible) return null;
   const art = resolvedArt ?? tsukiokaArtFor(seat, nowMs);
   R.setArtUrl('custTsukioka', art.url);
@@ -1775,18 +1877,12 @@ function syncCustomers() {
     && !departureCutsceneActive;
   const nowMs = visualNowMs();
   const tsukiokaSeat = seats.find((item) => item.customerId === 'REGULAR_TSUKIOKA');
-  // 좌석 배치는 두 가지 제약을 동시에 지켜야 한다.
-  //
-  // 1) 첫 손님이 오기 전부터 'tsukioka' 배치여야 한다. 그 사람의 그림은 좌석 좌표가 아니라 화면
-  //    전체를 쓰는 전용 구도라, 배치가 어긋나면 몸은 저기 있는데 말풍선·접시·잔만 다른 자리에
-  //    놓인다. 개점 순간엔 아직 아무도 없어 "츠키오카 자리가 없다"로 보이므로 등장 여부가
-  //    아니라 '아직 다녀가지 않았다'로 판단한다.
-  // 2) 바꾸는 순간 여섯 자리 좌표가 전부 다시 잡히므로, 앉아 있는 손님이 있으면 바꾸지 않는다.
-  //    바꾸면 그 손님들이 그 자리에서 순간이동한다.
+  // D1 keeps its tutorial composition. Later days use fixed left-to-right seats,
+  // so any regular or party can arrive without moving the other guests.
   if (tsukiokaSeat) tsukiokaSeatedBefore = true;
-  const desiredSeatLayout = (tsukiokaSeat || !tsukiokaSeatedBefore)
+  const desiredSeatLayout = ACTIVE_DAY_ID === 'd1' && (tsukiokaSeat || !tsukiokaSeatedBefore)
     ? 'tsukioka'
-    : 'centered-guests';
+    : ACTIVE_DAY_ID === 'd1' ? 'centered-guests' : 'sequential-guests';
   if (seats.every((seat) => !seat.occupied)) R.setSeatLayoutMode(desiredSeatLayout);
   const tsukiokaArt = tsukiokaSeat ? tsukiokaArtFor(tsukiokaSeat, nowMs) : null;
   for (const seatId of SEAT_IDS) {
@@ -1797,9 +1893,9 @@ function syncCustomers() {
     const servedSalad = seatHasServedMenu(view, seat, 'cabbage-salad');
     const servedGrilledFood = servedNegima || servedMomo || servedKawa;
     // 손님 자세는 구운 꼬치를 받았을 때만 먹는 그림으로 바뀐다. 사라다는 접시만 놓인다.
-    const servedSkewer = servedGrilledFood;
+    const servedSkewer = servedNegima;
     const servedHighball = seatHasServedMenu(view, seat, 'highball');
-    const servedBeer = seatHasServedMenu(view, seat, 'beer') || servedHighball;
+    const servedBeer = seatHasServedMenu(view, seat, 'beer');
     const kind = extraKind(seat?.customerId);
     const officeArt = kind === 'office'
       ? resolveD1OfficeCustomerFrame(runtimeAssets.COMMUTER_CUSTOMER, {
@@ -1842,7 +1938,7 @@ function syncCustomers() {
       servedHighball ? D4_MENU_ART_URLS.servedHighball : servedBeerCounterUrl,
     );
     R.setSeatBeerVisible(seatId, onCustomers && customerPresent
-      && servedBeer && !tsukiokaHoldingBeer && !officeHoldingBeer && !soloHoldingBeer);
+      && (servedBeer || servedHighball) && !tsukiokaHoldingBeer && !officeHoldingBeer && !soloHoldingBeer);
     R.setSeatEmptyDishesVisible(seatId, onCustomers && dirtyTable);
     R.setSeatCleanupOverlayVisible(seatId, onCustomers && cleanupSeatId === seatId);
     const target = R.objectMesh[`seatServe:${seatId}`];
@@ -1852,7 +1948,10 @@ function syncCustomers() {
     }
     const actor = R.seatActorMesh[seatId];
     if (actor) {
-      if (kind === 'office') {
+      if (seat?.customerId === 'REGULAR_TSUKIOKA' && ACTIVE_DAY_ID !== 'd1') {
+        R.setSeatActorTexture(seatId, tsukiokaArt.url);
+        R.setSeatActorFrame(seatId, { scale: 1, offsetY: 256 / 1080, offsetX: 0.5 - 1086 / 1920 });
+      } else if (kind === 'office') {
         for (const companion of officeArt?.companions ?? []) R.warmTexture(companion.url);
         R.setSeatActorTexture(seatId, officeArt?.url ?? runtimeAssets.COMMUTER_CUSTOMER.url);
         R.setSeatActorFrame(seatId, officeActorFrame(seat.customerId));
@@ -2033,7 +2132,7 @@ function renderGrillWaitingControl(slotViews) {
     tare: cook.waitingCount(menuId, 'tare'),
   }]));
   const hasEmptySlot = slotViews.some((slot) => slot.status === 'empty');
-  const tareUnlocked = ['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID);
+  const tareUnlocked = ['d3', 'd4', 'd5', 'd6'].includes(ACTIVE_DAY_ID);
   grillInventory.hidden = !onGrill;
   // The prepared inventory is shared state, but selecting it is a customer-station action.
   // Keep the stock while hiding the service-counter art from every work station.
@@ -2044,7 +2143,7 @@ function renderGrillWaitingControl(slotViews) {
     const count = counts.salt + counts.tare;
     const label = MENU_META[menuId]?.label ?? '꼬치';
     card.hidden = menuId === 'kawa'
-      ? ACTIVE_DAY_ID !== 'd5'
+      ? !['d5', 'd6'].includes(ACTIVE_DAY_ID)
       : menuId === 'momo' && ACTIVE_DAY_ID === 'd1';
     const disabled = !onGrill || count === 0 || !hasEmptySlot;
     card.classList.toggle('is-disabled', disabled);
@@ -2178,21 +2277,82 @@ function renderReceipts() {
 }
 function renderOrderHud() {
   const hud = el('orderHud');
-  const orders = businessView()?.orders ?? [];
-  hud.innerHTML = orders
-    .filter((order) => !['completed', 'failed', 'abandoned'].includes(order.status))
-    .flatMap((order) => order.lines.map((line) => {
-      const menu = line.menuLabel;
-      const icon = ORDER_ICON[menu] ? `<img src="${ORDER_ICON[menu]}" alt="">` : '';
-      return `<span class="oi ${line.remaining === 0 ? 'done' : ''}" data-testid="order-${order.orderId}-${line.menuId}">`
-        + `${icon}${menu} ${line.served}/${line.quantity}</span>`;
-    }))
-    .join('');
+  const view = businessView();
+  const fragment = document.createDocumentFragment();
+  for (const order of view?.orders ?? []) {
+    if (['completed', 'failed', 'abandoned'].includes(order.status)) continue;
+    const seats = view.seats.filter(seat => seat.orderId === order.orderId);
+    const ticket = document.createElement('section');
+    ticket.className = 'order-ticket';
+    ticket.dataset.orderId = order.orderId;
+    ticket.dataset.urgent = String(seats.some(seat => seat.urgent));
+    const heading = document.createElement('strong');
+    const seatNumbers = seats.map(seat => Number(seat.seatId.split('-').at(-1))).join('·');
+    heading.textContent = seatNumbers + '번 ' + (order.status === 'unaccepted' ? (seats.some(seat => seat.canOrder) ? '주문 받기' : '고르는 중') : '주문');
+    ticket.appendChild(heading);
+    const lines = document.createElement('div');
+    lines.className = 'order-ticket-lines';
+    for (const line of order.lines) {
+      const row = document.createElement('span');
+      row.className = 'oi' + (line.remaining === 0 ? ' done' : '');
+      row.dataset.testid = 'order-' + order.orderId + '-' + line.menuId;
+      const iconUrl = ORDER_ICON[line.menuLabel]
+        ?? ({ 'negima': ORDER_ICON['네기마'], 'highball': D4_MENU_ART_URLS.highballPickup,
+          'cabbage-salad': D4_MENU_ART_URLS.cabbageSaladPlate })[line.menuId];
+      if (iconUrl) {
+        const icon = document.createElement('img'); icon.src = iconUrl; icon.alt = '';
+        row.appendChild(icon);
+      }
+      row.appendChild(document.createTextNode(line.menuLabel + ' ' + line.served + '/' + line.quantity));
+      lines.appendChild(row);
+    }
+    ticket.appendChild(lines);
+    if (order.status !== 'unaccepted') {
+      const meter = document.createElement('progress');
+      meter.max = 1;
+      meter.value = Math.min(...seats.map(seat => seat.waitRatio));
+      meter.setAttribute('aria-label', seatNumbers + '번 손님 남은 대기시간');
+      ticket.appendChild(meter);
+    }
+    fragment.appendChild(ticket);
+  }
+  hud.replaceChildren(fragment);
 }
 
 let previousOccupiedSeatCount = null;
 // 첫 손님이 이미 다녀갔는지. 좌석 배치를 언제 손님용으로 되돌릴지 정한다.
 let tsukiokaSeatedBefore = false;
+const customerMotion = new Map();
+function updateCustomerMotion(nowMs) {
+  const onCustomers = director.activeScreenId() === 'SCR-SVC-CUSTOMERS' && !departureCutsceneActive;
+  for (const seat of businessView()?.seats ?? []) {
+    if (ACTIVE_DAY_ID === 'd1' && seat.customerId === 'REGULAR_TSUKIOKA') continue;
+    const actor = R.seatActorMesh[seat.seatId];
+    if (!actor?.userData.restPosition || !actor.material.map) continue;
+    let motion = customerMotion.get(seat.seatId);
+    if (!seat.occupied || !seat.customerId || seat.cleanupNeeded) {
+      customerMotion.delete(seat.seatId);
+      actor.position.copy(actor.userData.restPosition);
+      actor.material.opacity = 1;
+      continue;
+    }
+    if (motion?.customerId !== seat.customerId) {
+      motion = { customerId: seat.customerId, enteredAt: nowMs, leavingAt: null };
+      customerMotion.set(seat.seatId, motion);
+    }
+    if (seat.phase === 'leaving') motion.leavingAt ??= nowMs;
+    const enter = Math.min(1, Math.max(0, (nowMs - motion.enteredAt) / 450));
+    const leave = motion.leavingAt === null ? 0 : Math.min(1, (nowMs - motion.leavingAt) / 450);
+    const width = actor.geometry.parameters.width;
+    const height = actor.geometry.parameters.height;
+    const drift = (1 - enter) ** 2 * 0.025 + leave ** 2 * 0.025;
+    const breath = Math.sin(nowMs / 800 + Number(seat.seatId.slice(-2))) * 0.0012;
+    actor.position.copy(actor.userData.restPosition);
+    actor.position.add(new THREE.Vector3(width * drift, height * breath, 0).applyQuaternion(actor.quaternion));
+    actor.material.opacity = enter * (1 - leave);
+    actor.visible = onCustomers && leave < 1;
+  }
+}
 
 function syncCustomerAmbience(view) {
   const occupied = view?.seats?.filter((seat) => seat.occupied).length ?? 0;
@@ -2215,7 +2375,7 @@ function syncCustomerAmbience(view) {
 function renderAssemblyTareControl(activeDayFeatureOpen) {
   const progress = cook.assemblyProgress();
   const unlocked = activeDayFeatureOpen
-    && ['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
+    && ['d3', 'd4', 'd5', 'd6'].includes(ACTIVE_DAY_ID)
     && director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
   const panel = el('assemblyTarePanel');
   panel.hidden = !unlocked;
@@ -2258,12 +2418,12 @@ function renderBusiness() {
     && businessSession.completed !== true
     && view?.dayId?.toLowerCase() === ACTIVE_DAY_ID;
   const recipePickerOpen = activeDayFeatureOpen
-    && ['d2', 'd3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
+    && ['d2', 'd3', 'd4', 'd5', 'd6'].includes(ACTIVE_DAY_ID)
     && director.activeScreenId() === 'SCR-SVC-ASSEMBLY';
   assemblyRecipePicker.hidden = !recipePickerOpen;
   for (const button of assemblyRecipePicker.querySelectorAll('[data-menu-id]')) {
-    button.hidden = (button.dataset.d3Only === 'true' && !['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID))
-      || (button.dataset.d5Only === 'true' && ACTIVE_DAY_ID !== 'd5');
+    button.hidden = (button.dataset.d3Only === 'true' && !['d3', 'd4', 'd5', 'd6'].includes(ACTIVE_DAY_ID))
+      || (button.dataset.d5Only === 'true' && !['d5', 'd6'].includes(ACTIVE_DAY_ID));
     const selected = button.dataset.menuId === cook.selectedMenuId();
     button.setAttribute('aria-pressed', String(selected));
     button.disabled = !selected && (cook.assemblyIndex() > 0 || cook.assemblyComplete());
@@ -2278,79 +2438,86 @@ function renderBusiness() {
   el('runtimePausePanel').hidden = !manuallyPaused;
   const panel = el('postBusinessPanel');
   const action = el('postBusinessAction');
-  const steps = el('settlementSteps');
-  const showPost = view?.phase === 'charcoal-down' || view?.phase === 'settlement';
+  const completed = view?.phase === 'complete' || businessSession?.completed;
+  const resultVisible = completed || view?.phase === 'settlement';
+  const showPost = resultVisible || view?.phase === 'charcoal-down';
   panel.hidden = !showPost;
-  steps.innerHTML = '';
+  panel.classList.toggle('is-result', resultVisible);
+  document.body.classList.toggle('show-stage-result', resultVisible);
+  el('resultDay').textContent = ACTIVE_DAY.label;
+  el('resultSeal').hidden = !resultVisible;
+  el('resultRewards').hidden = !resultVisible;
+  el('resultOverlay').hidden = !completed;
+  el('resultSaveStatus').hidden = !resultVisible || completed;
+  action.hidden = resultVisible && !settlementSaveError;
+  el('postBusinessSummary').hidden = resultVisible;
   if (view?.phase === 'charcoal-down') {
-    panel.dataset.componentId = 'closing.charcoal';
-    panel.dataset.requiredAssetId = 'ST-CHARCOAL-CORE';
-    el('postBusinessTitle').textContent = '마감 · 숯불 낮추기';
-    el('postBusinessSummary').textContent = `남은 준비품 ${dock.count()}개는 폐기 수량으로 정산됩니다.`;
+    el('postBusinessTitle').textContent = '오늘 영업을 마칠까요?';
+    el('postBusinessSummary').textContent = view.closing.canLowerCharcoal
+      ? '숯불을 낮추고 하루를 마무리하세요.' : '불 위의 꼬치를 먼저 꺼내 주세요.';
     action.textContent = '숯불 낮추기';
     action.disabled = !view.closing.canLowerCharcoal;
-  } else if (view?.phase === 'settlement') {
-    panel.dataset.componentId = 'settlement.ledger.economy';
-    panel.dataset.requiredAssetId = 'UI-ECONOMY-ICONS';
-    const summary = view.settlement.summary;
-    el('postBusinessTitle').textContent = `${ACTIVE_DAY.label} 정산 · 5단계`;
-    el('postBusinessSummary').textContent = summary
-      ? `방문 ${summary.customers.visited} · 완료 주문 ${summary.orders.completed}\n매출 ${summary.economy.revenue} + 팁 ${summary.economy.tip} = ${summary.economy.total}`
-      : '';
-    const revealed = new Set(view.settlement.revealedSteps);
-    for (const stepId of view.settlement.steps) {
-      const detail = settlementStepDetail(stepId, summary, {
-        nextDayLabel: ACTIVE_DAY.nextLabel,
-        unlockLabels: ACTIVE_DAY.unlockLabels,
-      });
-      const row = document.createElement('li');
-      row.dataset.testid = `settlement-step-${stepId}`;
-      row.classList.toggle('revealed', revealed.has(stepId));
-      const title = document.createElement('p');
-      title.className = 'settlement-step-title';
-      title.textContent = detail.label;
-      row.appendChild(title);
-      // 아직 확인하지 않은 단계는 제목만 둔다. 눌러서 하나씩 여는 흐름이 정산의 절차다.
-      if (revealed.has(stepId)) {
-        for (const line of detail.lines) {
-          const body = document.createElement('p');
-          body.className = 'settlement-step-line';
-          body.textContent = line;
-          row.appendChild(body);
-        }
-      }
-      steps.appendChild(row);
-    }
-    action.textContent = view.settlement.ready
-      ? (finalizing ? '저장 중…' : `${ACTIVE_DAY.label} 보상 저장 · ${ACTIVE_DAY.nextLabel} 전환`)
-      : `다음 결과 확인 (${view.settlement.revealedSteps.length + 1}/5)`;
+  }
+  if (resultVisible) {
+    const saved = businessSession?.bridge?.getState?.()?.economy?.settlements
+      ?.findLast(item => item.dayId === ACTIVE_DAY_ID);
+    const result = stageResult(view?.settlement?.summary, saved);
+    panel.dataset.cleared = String(result.cleared);
+    el('postBusinessTitle').textContent = result.cleared ? '스테이지 클리어!' : '영업 종료';
+    el('resultSeal').textContent = result.cleared ? '✓' : '―';
+    el('resultEarnings').textContent = '+' + result.earnings.toLocaleString('ko-KR');
+    el('resultReputation').textContent = result.signedReputation;
+    el('resultReputation').dataset.negative = String(result.reputation < 0);
+    el('resultSaveStatus').textContent = settlementSaveError
+      ? '저장하지 못했어요. 다시 시도해 주세요.' : '저장 중…';
+    action.textContent = finalizing ? '저장 중…' : '저장 다시 시도';
     action.disabled = finalizing;
+    el('resultMessage').textContent = ACTIVE_DAY.label + ' 영업 완료';
+    el('continueButton').textContent = ACTIVE_DAY_ID === 'd6' ? '후일담 보기' : '다음 날로';
+    el('continueButton').href = ACTIVE_DAY_ID === 'd6'
+      ? './s0-d3.html' : './s0-d3.html?post=' + ACTIVE_DAY_ID;
+  }
+  // The result owns pointer and keyboard focus; hidden cooking controls cannot activate.
+  for (const child of document.body.children) {
+    if (child === panel || ['SCRIPT', 'STYLE', 'LINK'].includes(child.tagName)) continue;
+    if (resultVisible && !child.inert) { child.inert = true; child.dataset.resultInert = 'true'; }
+    else if (!resultVisible && child.dataset.resultInert) { child.inert = false; delete child.dataset.resultInert; }
+  }
+  if (resultVisible) {
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('aria-labelledby', 'postBusinessTitle');
+    const focusState = completed ? 'complete' : settlementSaveError ? 'error' : 'saving';
+    if (focusState !== resultFocusState) {
+      resultFocusState = focusState;
+      (completed ? el('continueButton') : settlementSaveError ? action : el('postBusinessTitle')).focus();
+    }
   }
 
-  const completed = view?.phase === 'complete' || businessSession?.completed;
-  el('resultOverlay').hidden = !completed;
-  if (completed) {
-    const campaign = businessSession?.bridge?.getState?.();
-    el('resultMessage').textContent = `${ACTIVE_DAY.label} 완료 · 보상 ${campaign?.economy?.balance ?? 44} · 명성 ${campaign?.economy?.reputation ?? 12} · ${ACTIVE_DAY.nextLabel} 저장 완료`;
-    el('continueButton').textContent = `${ACTIVE_DAY.nextLabel}로 계속`;
-    el('continueButton').href = ACTIVE_DAY_ID === 'd5'
-      ? './public-shell.html'
-      : `./s0-d3.html?post=${ACTIVE_DAY_ID}`;
-  }
 }
 
 // ── 비법노트 ────────────────────────────────────────────────
 function renderRecipeBook() {
   const container = el('recipeBookEntries');
   container.replaceChildren();
-  const menuIds = ACTIVE_DAY_ID === 'd5'
+  const menuIds = ['d5', 'd6'].includes(ACTIVE_DAY_ID)
     ? ['negima', 'momo', 'kawa', 'beer', 'cabbage-salad', 'highball']
     : ACTIVE_DAY_ID === 'd4'
       ? ['negima', 'momo', 'beer', 'cabbage-salad', 'highball']
-    : ['negima', 'momo', 'beer'];
+    : ACTIVE_DAY_ID === 'd1' ? ['negima', 'beer'] : ['negima', 'momo', 'beer'];
+  const station = director.activeScreenId();
+  const newMenu = ['d5', 'd6'].includes(ACTIVE_DAY_ID) ? 'kawa' : ACTIVE_DAY_ID === 'd2' ? 'momo' : 'negima';
+  const priority = station === 'SCR-SVC-DRINK' ? ['highball', 'beer']
+    : station === 'SCR-SVC-INSTANT' ? ['cabbage-salad']
+      : station === 'SCR-SVC-ASSEMBLY' || station === 'SCR-SVC-GRILL' ? [newMenu, 'negima', 'momo', 'kawa']
+        : ACTIVE_DAY_ID === 'd4' ? ['highball', 'cabbage-salad'] : [newMenu];
+  menuIds.sort((a, b) => {
+    const rank = id => priority.includes(id) ? priority.indexOf(id) : priority.length;
+    return rank(a) - rank(b);
+  });
   for (const entry of recipeBookEntries({
     menuIds,
-    tareAvailable: ['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID),
+    tareAvailable: ['d3', 'd4', 'd5', 'd6'].includes(ACTIVE_DAY_ID),
   })) {
     const article = document.createElement('article');
     article.className = 'recipe-book-entry';
@@ -2375,6 +2542,8 @@ function setRecipeBookOpen(open) {
   if (open) renderRecipeBook();
   panel.hidden = !open;
   toggle.setAttribute('aria-expanded', String(open));
+  setRuntimeSuspended('recipe-book', open);
+  (open ? el('recipeBookClose') : toggle).focus();
 }
 
 el('recipeBookToggle').addEventListener('click', () => {
@@ -2382,14 +2551,23 @@ el('recipeBookToggle').addEventListener('click', () => {
 });
 el('recipeBookClose').addEventListener('click', () => setRecipeBookOpen(false));
 window.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !el('recipeBook').hidden) setRecipeBookOpen(false);
+  if (event.key !== 'Escape' || event.repeat || departureCutsceneActive || document.body.classList.contains('show-stage-result')) return;
+  event.preventDefault();
+  if (!el('recipeBook').hidden) setRecipeBookOpen(false);
+  else {
+    setRuntimeSuspended('manual-pause', !runtimeSuspensionReasons.has('manual-pause'));
+    render();
+    (runtimeSuspensionReasons.has('manual-pause') ? el('runtimePauseResume') : el('businessPhase')).focus();
+  }
 });
 
+let hintTimeout = null;
 function showHint(text) {
   const h = el('hint');
   h.textContent = text;
   h.classList.add('show');
-  setTimeout(() => h.classList.remove('show'), 900);
+  clearTimeout(hintTimeout);
+  hintTimeout = setTimeout(() => h.classList.remove('show'), Math.max(1400, Math.min(4000, text.length * 65)));
 }
 
 // ── 입력: 레이캐스트 ─────────────────────────────────────────
@@ -2543,8 +2721,34 @@ function setRuntimeSuspended(reason, suspended) {
 }
 
 function blockSuspendedInput(event) {
+  if (document.body.classList.contains('show-stage-result')) {
+    if (event.key === 'Tab') {
+      const target = !el('resultOverlay').hidden ? el('continueButton')
+        : !el('postBusinessAction').hidden ? el('postBusinessAction') : el('postBusinessTitle');
+      event.preventDefault();
+      target.focus();
+      return;
+    }
+    if (event.target?.closest?.('#postBusinessPanel')) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    return;
+  }
   if (!runtimeIsSuspended()) return;
-  if (event.target?.closest?.('#departureCutsceneContinue, #runtimePauseResume')) return;
+  if (event.key === 'Escape') return;
+  if (event.key === 'Tab') {
+    const modal = !el('recipeBook').hidden ? el('recipeBook')
+      : !el('runtimePausePanel').hidden ? el('runtimePausePanel') : null;
+    const controls = modal ? [...modal.querySelectorAll('button, a[href], [tabindex="0"]')] : [];
+    if (controls.length) {
+      const first = controls[0]; const last = controls.at(-1);
+      if (!modal.contains(document.activeElement) || (event.shiftKey ? document.activeElement === first : document.activeElement === last)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      }
+      return;
+    }
+  }
+  if (event.target?.closest?.('#departureCutsceneContinue, #runtimePausePanel, #recipeBook, #recipeBookToggle')) return;
   event.preventDefault();
   event.stopImmediatePropagation();
 }
@@ -2603,7 +2807,7 @@ function handle(key, now) {
         if (r.completed) {
           sfx('SFX-ASM-COMPLETE');
           persistFirstOrderRuntime();
-          showHint(['d3', 'd4', 'd5'].includes(ACTIVE_DAY_ID)
+          showHint(['d3', 'd4', 'd5', 'd6'].includes(ACTIVE_DAY_ID)
             ? `${skewerLabel(r.menuId)} 조립 완료 · 소금은 꼬치를 눌러 이동, 타레는 오른쪽 소스통을 선택하세요`
             : `${skewerLabel(r.menuId)} 완성 · 꼬치를 눌러 오른쪽 트레이로 옮기세요`);
         }
@@ -2950,7 +3154,7 @@ buildQuickNav();
 el('navLeft').addEventListener('click', () => director.left(performance.now()));
 el('navRight').addEventListener('click', () => director.right(performance.now()));
 window.addEventListener('keydown', (e) => {
-  if (e.defaultPrevented) return;
+  if (e.defaultPrevented || runtimeIsSuspended() || document.body.classList.contains('show-stage-result')) return;
   if (e.key === 'ArrowLeft') director.left(performance.now());
   else if (e.key === 'ArrowRight') director.right(performance.now());
 });
@@ -2958,18 +3162,26 @@ window.addEventListener('keydown', (e) => {
 async function finalizeBusinessDay() {
   if (!businessPort || finalizing) return null;
   finalizing = true;
+  settlementSaveError = false;
   render();
-  const result = await businessPort.finalize();
-  finalizing = false;
-  if (!result.ok) {
-    showHint(result.error.message);
-  } else {
-    showHint(result.duplicate
-      ? `이미 저장된 ${ACTIVE_DAY.label} 보상입니다.`
-      : `${ACTIVE_DAY.label} 저장 완료 · ${ACTIVE_DAY.nextLabel}로 전환했습니다.`);
+  let result;
+  try {
+    result = await businessPort.finalize();
+  } catch {
+    result = { ok: false, error: { message: '정산 결과를 저장하지 못했습니다.' } };
   }
+  finalizing = false;
+  settlementSaveError = !result.ok;
+  persistFirstOrderRuntime();
   render();
   return result;
+}
+
+function revealAllSettlementSteps() {
+  const count = businessView()?.settlement?.steps?.length ?? 0;
+  for (let i = 0; i < count && !businessView().settlement.ready; i += 1) {
+    if (!dispatchBusiness(D1_UI_INTENT.REVEAL_SETTLEMENT_STEP).ok) break;
+  }
 }
 
 async function handlePostBusinessAction() {
@@ -2980,16 +3192,15 @@ async function handlePostBusinessAction() {
     });
     if (result.ok) {
       dock.clear();
-      showHint('숯불을 낮췄습니다. 정산을 시작합니다.');
+      revealAllSettlementSteps();
+      await finalizeBusinessDay();
     }
     render();
     return;
   }
   if (view?.phase !== 'settlement') return;
   if (!view.settlement.ready) {
-    dispatchBusiness(D1_UI_INTENT.REVEAL_SETTLEMENT_STEP);
-    render();
-    return;
+    revealAllSettlementSteps();
   }
   await finalizeBusinessDay();
 }
@@ -2997,14 +3208,16 @@ el('postBusinessAction').addEventListener('click', handlePostBusinessAction);
 
 async function bootBusinessDay() {
   try {
-    const consumed = ACTIVE_DAY_ID === 'd5'
+    const consumed = ACTIVE_DAY_ID === 'd6'
+      ? await loadD6BusinessDayDefinition()
+      : ACTIVE_DAY_ID === 'd5'
       ? await loadD5BusinessDayDefinition({ url: D5_BUSINESS_DAY_DEFINITION_URL })
       : ACTIVE_DAY_ID === 'd4'
       ? await loadD4BusinessDayDefinition({ url: D4_BUSINESS_DAY_DEFINITION_URL })
       : ACTIVE_DAY_ID === 'd3'
-      ? await loadD3BusinessDayDefinition({ url: D3_BUSINESS_DAY_DEFINITION_URL, seed: daySeed })
+      ? await loadD3BusinessDayDefinition({ url: D3_BUSINESS_DAY_DEFINITION_URL, seed: legacyDaySeed, randomizationVersion: 1 })
       : ACTIVE_DAY_ID === 'd2'
-        ? await loadD2BusinessDayDefinition({ url: D2_BUSINESS_DAY_DEFINITION_URL, seed: daySeed })
+        ? await loadD2BusinessDayDefinition({ url: D2_BUSINESS_DAY_DEFINITION_URL, seed: legacyDaySeed, randomizationVersion: 1 })
         : await loadD1BusinessDayReleaseDefinition({ url: D1_BUSINESS_DAY_RELEASE_DEFINITION_URL });
     if (!consumed.ok) {
       businessBootError = consumed.error;
@@ -3012,7 +3225,13 @@ async function bootBusinessDay() {
       render();
       return;
     }
-    if (['d4', 'd5'].includes(ACTIVE_DAY_ID)) {
+    if (daySeed !== null && customerRandomizationVersion >= 2) {
+      consumed.definition = createBusinessDayDefinition(
+        randomizeBusinessDayRecord(consumed.definition, { seed: daySeed }),
+        { expectedId: ACTIVE_DAY_ID },
+      );
+    }
+    if (['d4', 'd5', 'd6'].includes(ACTIVE_DAY_ID)) {
       const instantDefinition = consumed.definition.stationProcesses?.instant
         ?.items?.['cabbage-salad'];
       const highballDefinition = consumed.definition.stationProcesses?.drink
@@ -3025,7 +3244,7 @@ async function bootBusinessDay() {
         snapshot: restoredFirstOrderRuntime?.highball,
       });
     }
-    if (ACTIVE_DAY_ID === 'd5') {
+    if (['d5', 'd6'].includes(ACTIVE_DAY_ID)) {
       const kawaThresholds = consumed.definition.stationProcesses?.grill
         ?.items?.kawa?.faceThresholdsSec;
       cook.setMenuThresholds('kawa', kawaThresholds);
@@ -3036,6 +3255,7 @@ async function bootBusinessDay() {
       browserStorage: window.localStorage,
       resetDevelopment,
       developmentStartDay,
+      businessSnapshot: restoredFirstOrderRuntime?.business,
     });
     if (!businessSession.ok) {
       businessBootError = businessSession.error;
@@ -3044,12 +3264,17 @@ async function bootBusinessDay() {
       reportedRiskCount = businessView()?.limits.riskProcessCount ?? 0;
       if (runtimeIsSuspended()) dispatchBusiness(D1_UI_INTENT.PAUSE);
       else lastBusinessFrameAt = performance.now();
+      persistFirstOrderRuntime();
     }
   } catch (error) {
     businessBootError = error;
   }
   businessRenderDue = true;
   render();
+  if (businessView()?.phase === 'settlement') {
+    revealAllSettlementSteps();
+    await finalizeBusinessDay();
+  }
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -3128,6 +3353,7 @@ function loop(now) {
   positionServeTargets();
   updateTsukiokaArt(visualNow);
   if (businessRenderDue) render();
+  updateCustomerMotion(visualNow);
   R.renderFrame(now);
   scheduleLoop();
 }

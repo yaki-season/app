@@ -66,7 +66,7 @@ describe('D5 전체 영업 종단', () => {
       economy: { revenue: 91, tip: 18, total: 109 },
     });
     expect(session.bridge.getState()).toMatchObject({
-      campaign: { nodeId: 'd5-complete', phase: 'preview', completedDayIds: ['d1', 'd2', 'd3', 'd4', 'd5'] },
+      campaign: { nodeId: 'd6', phase: 'pre-open', completedDayIds: ['d1', 'd2', 'd3', 'd4', 'd5'] },
       progression: { unlockIds: expect.arrayContaining(['day-d5-completed']) },
       story: { flagIds: expect.arrayContaining(['d5-complete', 'torikawa-introduced']) },
     });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { createBusinessDayDefinition } from '../../src/campaign-runtime.js';
-import { randomizeBusinessDayRecord } from '../../src/domain/businessDay/randomizeBusinessDay.js';
+import { randomizeBusinessDayRecordLegacy as randomizeBusinessDayRecord } from '../../src/domain/businessDay/randomizeBusinessDay.js';
 
 const record = JSON.parse(readFileSync(new URL(
   '../../content/releases/d2-business-day-domain.v1.json', import.meta.url,
@@ -22,7 +22,7 @@ const ordersOf = (day) => new Map(customersOf(day).map((customer) => [customer.o
 const itemCount = (day) => [...ordersOf(day).values()]
   .reduce((sum, order) => sum + order.lines.reduce((lines, line) => lines + line.quantity, 0), 0);
 
-describe('하루 손님 구성 뽑기', () => {
+describe('기존 저장 v1 손님 구성 호환', () => {
   it('같은 seed는 같은 하루를 만든다', () => {
     expect(roll(7)).toEqual(roll(7));
   });

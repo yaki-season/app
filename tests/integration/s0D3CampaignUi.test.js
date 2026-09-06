@@ -39,7 +39,7 @@ async function reachD4PreOpen(bridge, { reputation = 10 } = {}) {
 describe('S0~D4 campaign presentation bridge', () => {
   it('공개 campaign node chain만 소비한다', () => {
     const definition = createS0D3CampaignDefinition();
-    expect(definition.ids).toEqual(['s0', 'd1', 'd2', 'd3', 'd4', 'd5', 'd5-complete']);
+    expect(definition.ids).toEqual(['s0', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd6-complete']);
     expect(S0_D3_STORAGE_PREFIX).toBe('yaki-season.dev2-scenario.');
   });
 

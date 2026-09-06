@@ -35,8 +35,9 @@ describe('S0~D4 stable data contract', () => {
       ['d2', 'd3'],
       ['d3', 'd4'],
       ['d4', 'd5'],
-      ['d5', 'd5-complete'],
-      ['d5-complete', null],
+      ['d5', 'd6'],
+      ['d6', 'd6-complete'],
+      ['d6-complete', null],
     ]);
     expect(content.scenarios.at(-1)).toMatchObject({
       kind: 'preview',

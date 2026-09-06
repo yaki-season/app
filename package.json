@@ -24,8 +24,10 @@
     "assets:validate": "node tools/assets/validate-runtime-assets.mjs",
     "assets:promote": "node tools/assets/promote-runtime-asset.mjs",
     "visual:references:validate": "node tools/visual/validate-reference-images.mjs",
-    "verify": "npm run verify:d1-core",
-    "verify:full-diagnostic": "npm run assets:validate && npm run visual:references:validate && npm run d1:release:check && vitest run && playwright test"
+    "verify": "npm run d1:release:check && npm test && npm run test:e2e:d1-core && npm run test:e2e:gameplay",
+    "test:e2e:gameplay": "playwright test tests/e2e/gameplay-polish.spec.js tests/e2e/audit-fixes.spec.js tests/e2e/stage-result.spec.js tests/e2e/prepared-dock-keyboard.spec.js tests/e2e/public-shell.spec.js tests/e2e/d6-business-day.spec.js --retries=0",
+    "test:e2e:d6-play": "playwright test tests/e2e/d6-real-play.spec.js --retries=0",
+    "verify:full-diagnostic": "node tools/qa/full-diagnostic.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",

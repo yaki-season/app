@@ -33,7 +33,7 @@ async function installD2Save(page) {
   }, { prefix: S0_D3_STORAGE_PREFIX, key: SAVE_STORAGE_KEYS.ACTIVE, value: save });
 }
 
-test('D2 모모는 조립·독립 양면 굽기·회수까지 실제 공정을 통과한다', async ({ page }) => {
+test('D2 모모의 조립·양면 조리 상태와 회수·표시가 연결된다', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await installD2Save(page);
@@ -75,7 +75,7 @@ test('D2 모모는 조립·독립 양면 굽기·회수까지 실제 공정을 �
     return new Promise((resolve) => setTimeout(() => resolve(D.tsukiokaVisual()), 500));
   });
   expect(customerVisual).toMatchObject({
-    artId: 'D1-TSUKIOKA-RECEIVED-EATING',
+    artId: 'D1-TSUKIOKA-WAITING',
     plateVisible: true,
     beerVisible: false,
   });

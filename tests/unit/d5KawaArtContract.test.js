@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { D2_MOMO_RUNTIME_URLS } from '../../src/render/d2MomoSpriteRuntime.js';
 import { D5_KAWA_RUNTIME_URLS } from '../../src/render/d5KawaSpriteRuntime.js';
 
-const publicRoot = new URL('../../public', import.meta.url);
+const publicRoot = new URL('../../public/', import.meta.url);
 
 function assetBytes(url) {
   return readFileSync(fileURLToPath(new URL(`.${url}`, publicRoot)));

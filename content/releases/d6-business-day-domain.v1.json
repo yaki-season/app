@@ -1,0 +1,413 @@
+{
+  "id": "d6",
+  "nextNodeId": "d6-complete",
+  "sessionTargetMs": 450000,
+  "arrivalPolicy": {
+    "maxAllSeatsEmptyWaitSec": 13,
+    "autoCloseAfterFinalCustomer": true,
+    "receivedGroupOrdersBlockArrival": false
+  },
+  "seatIds": [
+    "seat-01",
+    "seat-02",
+    "seat-03",
+    "seat-04",
+    "seat-05",
+    "seat-06"
+  ],
+  "timingMs": {
+    "thinkMin": 4000,
+    "thinkMax": 6000,
+    "eat": 15000,
+    "leave": 1000,
+    "cleanup": 3000,
+    "waitRecovery": 10000
+  },
+  "limits": {
+    "maxActiveOrders": 3,
+    "maxRiskProcesses": 2
+  },
+  "economy": {
+    "baseTip": 2,
+    "menuPrices": {
+      "beer": 6,
+      "negima": 3,
+      "momo": 4,
+      "kawa": 5,
+      "cabbage-salad": 0,
+      "highball": 7
+    }
+  },
+  "menuPolicies": {
+    "beer": {
+      "qualityMode": "graded",
+      "satisfactionWeight": 1,
+      "saleLedger": true,
+      "waitRecoveryMs": 10000
+    },
+    "negima": {
+      "qualityMode": "graded",
+      "satisfactionWeight": 1,
+      "saleLedger": true,
+      "waitRecoveryMs": 10000
+    },
+    "momo": {
+      "qualityMode": "graded",
+      "satisfactionWeight": 1,
+      "saleLedger": true,
+      "waitRecoveryMs": 10000
+    },
+    "kawa": {
+      "qualityMode": "graded",
+      "satisfactionWeight": 1,
+      "saleLedger": true,
+      "waitRecoveryMs": 10000
+    },
+    "cabbage-salad": {
+      "qualityMode": "none",
+      "satisfactionWeight": 0,
+      "saleLedger": false,
+      "waitRecoveryMs": 10000,
+      "requiredForCompletion": true
+    },
+    "highball": {
+      "qualityMode": "graded",
+      "satisfactionWeight": 1,
+      "saleLedger": true,
+      "waitRecoveryMs": 10000
+    }
+  },
+  "stationProcesses": {
+    "assembly": {
+      "screenId": "SCR-SVC-ASSEMBLY",
+      "items": {
+        "kawa": {
+          "ingredientId": "foldedChickenSkin",
+          "ingredientCount": 5,
+          "seasoningPolicy": {
+            "selectionStage": "assembly",
+            "options": [
+              "salt",
+              "tare"
+            ],
+            "saltTransferMode": "direct",
+            "inventoryPartition": "menu-and-seasoning",
+            "tareApplication": {
+              "station": "assembly",
+              "afterAssemblyCompleted": true,
+              "brushPasses": 1,
+              "minimumCoverage": 0.8,
+              "torchEnabled": false
+            }
+          }
+        }
+      }
+    },
+    "grill": {
+      "screenId": "SCR-SVC-GRILL",
+      "items": {
+        "kawa": {
+          "faceThresholdsSec": {
+            "under": 0,
+            "perfect": 10,
+            "over": 14,
+            "burnt": 18
+          },
+          "bothFacesRequired": true,
+          "fullyBurntPolicy": "discard",
+          "inventorySelection": {
+            "groupBy": "menu",
+            "columns": [
+              "salt",
+              "tare"
+            ]
+          }
+        }
+      }
+    },
+    "instant": {
+      "screenId": "SCR-SVC-INSTANT",
+      "items": {
+        "cabbage-salad": {
+          "prepareHoldMs": 2500,
+          "completionQuantity": 1,
+          "autoRepeat": false,
+          "cancelPolicy": "reset-to-zero"
+        }
+      }
+    },
+    "drink": {
+      "screenId": "SCR-SVC-DRINK",
+      "workSurfaces": {
+        "highball": {
+          "manualSlotCount": 1,
+          "flowUnitsPerSec": 1,
+          "overflowThresholdUnits": 4.8,
+          "whiskeyPerfect": [
+            0.8,
+            1.2
+          ],
+          "whiskeyGood": [
+            0.6,
+            1.4
+          ],
+          "sodaPerfect": [
+            2.55,
+            3.45
+          ],
+          "sodaGood": [
+            2.1,
+            3.9
+          ],
+          "ratioPerfect": [
+            2.7,
+            3.3
+          ],
+          "ratioGood": [
+            2.4,
+            3.6
+          ]
+        }
+      }
+    }
+  },
+  "campaignReward": {
+    "unlockIds": [
+      "day-d6-completed",
+      "day-d7"
+    ],
+    "storyFlagIds": [
+      "d6-complete"
+    ]
+  },
+  "waves": [
+    {
+      "id": "D6-WAVE-1",
+      "atMs": 0,
+      "requiresOrderCompletionIds": [],
+      "customers": [
+        {
+          "id": "REGULAR_TSUKIOKA",
+          "typeId": "regular",
+          "patienceMs": 100000,
+          "order": {
+            "id": "D6-ORDER-001",
+            "lines": [
+              {
+                "menuId": "kawa",
+                "quantity": 1,
+                "seasoning": "salt"
+              },
+              {
+                "menuId": "beer",
+                "quantity": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "D6-WAVE-2",
+      "atMs": 45000,
+      "requiresOrderCompletionIds": [],
+      "customers": [
+        {
+          "id": "D6-OFFICE-1",
+          "typeId": "normal",
+          "groupId": "D6-PAIR",
+          "patienceMs": 100000,
+          "order": {
+            "id": "D6-ORDER-002",
+            "lines": [
+              {
+                "menuId": "momo",
+                "quantity": 1,
+                "seasoning": "salt"
+              },
+              {
+                "menuId": "beer",
+                "quantity": 1
+              }
+            ]
+          }
+        },
+        {
+          "id": "D6-SOLO-2",
+          "typeId": "normal",
+          "groupId": "D6-PAIR",
+          "patienceMs": 100000,
+          "order": {
+            "id": "D6-ORDER-003",
+            "lines": [
+              {
+                "menuId": "negima",
+                "quantity": 1,
+                "seasoning": "tare"
+              },
+              {
+                "menuId": "highball",
+                "quantity": 1
+              },
+              {
+                "menuId": "cabbage-salad",
+                "quantity": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "D6-WAVE-3",
+      "atMs": 49000,
+      "requiresOrderCompletionIds": [],
+      "customers": [
+        {
+          "id": "D6-OFFICE-3",
+          "typeId": "normal",
+          "patienceMs": 100000,
+          "order": {
+            "id": "D6-ORDER-004",
+            "lines": [
+              {
+                "menuId": "beer",
+                "quantity": 1
+              },
+              {
+                "menuId": "cabbage-salad",
+                "quantity": 1
+              }
+            ]
+          }
+        },
+        {
+          "id": "D6-SOLO-4",
+          "typeId": "normal",
+          "patienceMs": 100000,
+          "order": {
+            "id": "D6-ORDER-005",
+            "lines": [
+              {
+                "menuId": "highball",
+                "quantity": 1
+              },
+              {
+                "menuId": "cabbage-salad",
+                "quantity": 1
+              }
+            ]
+          }
+        },
+        {
+          "id": "D6-OFFICE-5",
+          "typeId": "normal",
+          "patienceMs": 100000,
+          "order": {
+            "id": "D6-ORDER-006",
+            "lines": [
+              {
+                "menuId": "momo",
+                "quantity": 2,
+                "seasoning": "salt"
+              },
+              {
+                "menuId": "beer",
+                "quantity": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "D6-WAVE-4",
+      "atMs": 61000,
+      "requiresOrderCompletionIds": [],
+      "customers": [
+        {
+          "id": "D6-SOLO-6",
+          "typeId": "normal",
+          "patienceMs": 100000,
+          "order": {
+            "id": "D6-ORDER-007",
+            "lines": [
+              {
+                "menuId": "kawa",
+                "quantity": 1,
+                "seasoning": "tare"
+              },
+              {
+                "menuId": "highball",
+                "quantity": 1
+              },
+              {
+                "menuId": "cabbage-salad",
+                "quantity": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "D6-WAVE-5",
+      "atMs": 100000,
+      "requiresOrderCompletionIds": [],
+      "customers": [
+        {
+          "id": "D6-OFFICE-7",
+          "typeId": "normal",
+          "patienceMs": 100000,
+          "order": {
+            "id": "D6-ORDER-008",
+            "lines": [
+              {
+                "menuId": "negima",
+                "quantity": 1,
+                "seasoning": "salt"
+              },
+              {
+                "menuId": "beer",
+                "quantity": 1
+              }
+            ]
+          }
+        },
+        {
+          "id": "D6-SOLO-8",
+          "typeId": "normal",
+          "patienceMs": 100000,
+          "order": {
+            "id": "D6-ORDER-009",
+            "lines": [
+              {
+                "menuId": "kawa",
+                "quantity": 1,
+                "seasoning": "salt"
+              },
+              {
+                "menuId": "cabbage-salad",
+                "quantity": 1
+              }
+            ]
+          }
+        },
+        {
+          "id": "D6-OFFICE-9",
+          "typeId": "normal",
+          "patienceMs": 100000,
+          "order": {
+            "id": "D6-ORDER-010",
+            "lines": [
+              {
+                "menuId": "highball",
+                "quantity": 1
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

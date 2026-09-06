@@ -1,13 +1,5 @@
-// 하루의 손님 구성을 매 판 다르게 뽑는다(D2부터).
-//
-// 무엇을 바꾸고 무엇을 그대로 두는지가 이 모듈의 전부다.
-//
-// 바꾸는 것 : 엑스트라 손님의 유형(솔로·직장인 2인·통근객…)과 각 주문의 메뉴 구성.
-// 그대로 두는 것: 웨이브 수·도착 시각·선행 주문 조건·좌석 그룹 구조, 주문 건수, 주문별 항목 수와
-//                수량, 그리고 첫 손님(고정 캐릭터). 총량이 유지되므로 하루 목표 매출과 정산
-//                계약은 흔들리지 않고 "오늘은 누가 올까"만 달라진다.
-//
-// 같은 seed면 같은 하루가 나온다. 영업 중 새로고침해도 같은 손님이 앉아 있어야 하기 때문이다.
+// Version 2 shuffles existing guest identities without changing workload.
+// The legacy implementation remains solely for restoring version 1 saves.
 
 const MENU_CATEGORY = Object.freeze({
   beer: 'drink',
@@ -68,7 +60,7 @@ export function customerTypesFromRecord(record, fixedCustomerIds = ['REGULAR_TSU
   return [...found.values()];
 }
 
-export function randomizeBusinessDayRecord(record, {
+export function randomizeBusinessDayRecordLegacy(record, {
   seed = 1,
   customerTypes = customerTypesFromRecord(record),
   availableMenuIds = Object.keys(record?.economy?.menuPrices ?? {}),
@@ -124,5 +116,42 @@ export function randomizeBusinessDayRecord(record, {
     }
   }
 
+  return next;
+}
+
+// Shuffle identities between equivalent party slots. Workload belongs to the slot,
+// never to the appearance: even patience and exact recipes remain unchanged.
+// Keep the legacy algorithm above for saves made before version 2.
+export function randomizeBusinessDayRecord(record, { seed = 1 } = {}) {
+  const next = structuredClone(record);
+  const random = createRandom(seed);
+  const pools = new Map();
+  for (const wave of next.waves) {
+    const parties = new Map();
+    for (const customer of wave.customers) {
+      const key = customer.groupId ?? customer.id;
+      if (!parties.has(key)) parties.set(key, []);
+      parties.get(key).push(customer);
+    }
+    for (const members of parties.values()) {
+      // Shared orders and companions with separate orders must stay distinct.
+      const key = `${members.length}:${new Set(members.map(c => c.order.id)).size}`;
+      if (!pools.has(key)) pools.set(key, []);
+      pools.get(key).push(members);
+    }
+  }
+  for (const slots of pools.values()) {
+    const identities = slots.map(members => members.map(({ id, typeId, source }) => (
+      { id, typeId, ...(source ? { source: structuredClone(source) } : {}) }
+    )));
+    for (let i = identities.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(random() * (i + 1));
+      [identities[i], identities[j]] = [identities[j], identities[i]];
+    }
+    slots.forEach((members, index) => members.forEach((customer, memberIndex) => {
+      delete customer.source;
+      Object.assign(customer, identities[index][memberIndex]);
+    }));
+  }
   return next;
 }

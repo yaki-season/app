@@ -350,8 +350,10 @@ export function createD1BusinessDayState({ definition, runId, seed = 1 }) {
   return state;
 }
 
-function operationalOrderCount(state) {
-  return Object.values(state.orders).filter((order) => !TERMINAL_ORDER_STATUS.has(order.status)).length;
+function operationalOrderCount(state, definition) {
+  return Object.values(state.orders).filter((order) => !TERMINAL_ORDER_STATUS.has(order.status)
+    && !(definition?.arrivalPolicy.receivedGroupOrdersBlockArrival === false
+      && order.status === D1_ORDER_STATUS.GROUP_PENDING)).length;
 }
 
 function acceptedOrderCount(state) {
@@ -418,10 +420,8 @@ function spawnCustomer(state, definition, customerSpec, seat, waveId) {
   state.metrics.visitedCustomers += 1;
 }
 
-// 첫 손님은 좌석 액터가 아니라 화면 가운데를 차지하는 전용 구도로 그려진다(D1의 츠키오카).
-// 그 사람이 자리에 있는 동안 다음 손님을 들이면 두 그림이 겹쳐 보인다. 자리가 정리될 때까지
-// 기다린다. 엑스트라끼리는 좌석 좌표를 쓰므로 이 제한을 받지 않는다.
-// 자리에서 일어난 뒤(meal-complete 이후)에는 그림이 사라지므로 정리를 기다릴 필요는 없다.
+// Preserve the opening wave as a low-pressure warm-up, independent of guest identity.
+// Subsequent arrivals keep the existing timing and concurrency budget.
 const SEATED_VISIBLE_PHASES = new Set([
   D1_CUSTOMER_PHASE.THINKING,
   D1_CUSTOMER_PHASE.ORDER_READY,
@@ -455,7 +455,7 @@ function spawnEligibleWaves(state, definition) {
       && waveSpec.customers[0].groupId;
     if (grouped) {
       const arrivingOrderCount = new Set(waveSpec.customers.map((customer) => customer.order.id)).size;
-      if (operationalOrderCount(state) + arrivingOrderCount > definition.limits.maxActiveOrders) break;
+      if (operationalOrderCount(state, definition) + arrivingOrderCount > definition.limits.maxActiveOrders) break;
       const seats = findAdjacentSeats(state, waveSpec.customers.length);
       if (!seats) break;
       waveSpec.customers.forEach((customer, customerIndex) => {
@@ -464,7 +464,7 @@ function spawnEligibleWaves(state, definition) {
       waveState.nextCustomerIndex = waveSpec.customers.length;
       waveState.status = 'spawned';
       state.clock.allSeatsEmptySinceMs = null;
-      state.limits.peakActiveOrders = Math.max(state.limits.peakActiveOrders, operationalOrderCount(state));
+      state.limits.peakActiveOrders = Math.max(state.limits.peakActiveOrders, operationalOrderCount(state, definition));
       continue;
     }
 
@@ -475,7 +475,7 @@ function spawnEligibleWaves(state, definition) {
       waveState.status = 'spawned';
       continue;
     }
-    if (operationalOrderCount(state) + 1 > definition.limits.maxActiveOrders) break;
+    if (operationalOrderCount(state, definition) + 1 > definition.limits.maxActiveOrders) break;
     const seat = findSingleSeat(state);
     if (!seat) break;
     spawnCustomer(state, definition, customer, seat, waveSpec.id);
@@ -483,7 +483,7 @@ function spawnEligibleWaves(state, definition) {
     if (waveState.nextCustomerIndex >= waveSpec.customers.length) waveState.status = 'spawned';
     state.clock.nextIndividualArrivalAtMs = state.clock.elapsedMs + MIN_INDIVIDUAL_ARRIVAL_GAP_MS;
     state.clock.allSeatsEmptySinceMs = null;
-    state.limits.peakActiveOrders = Math.max(state.limits.peakActiveOrders, operationalOrderCount(state));
+    state.limits.peakActiveOrders = Math.max(state.limits.peakActiveOrders, operationalOrderCount(state, definition));
     return;
   }
 }
@@ -879,10 +879,11 @@ export function dispatchD1Command(state, definition, command) {
       spawnEligibleWaves(next, definition);
       return { state: next, applied: true, duplicate: false, completedOrder: true };
     }
-    customer.waitRemainingMs = Math.min(
-      customer.patienceMs,
-      customer.waitRemainingMs + policy.waitRecoveryMs,
-    );
+    for (const customerId of order.customerIds ?? [customer.id]) {
+      const member = next.customers[customerId];
+      if (member?.phase !== D1_CUSTOMER_PHASE.WAITING) continue;
+      member.waitRemainingMs = Math.min(member.patienceMs, member.waitRemainingMs + policy.waitRecoveryMs);
+    }
     return {
       state: next,
       applied: true,

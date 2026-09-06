@@ -54,8 +54,6 @@ async function installD4Save(page) {
 async function skipD4PreOpenStory(page) {
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D4-PREOPEN');
   await page.getByRole('button', { name: '이 장면 건너뛰기' }).click();
-  await expect(page.getByRole('heading', { name: '잠시 돌아보며' })).toBeVisible();
-  await page.getByRole('button', { name: '이어서' }).click();
   await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-DAY-BRIEFING');
 }
 

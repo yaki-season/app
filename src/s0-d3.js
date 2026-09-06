@@ -1,5 +1,8 @@
 import {
   D4_EPILOGUE_PAGES,
+  D5_EPILOGUE_PAGES,
+  D6_EPILOGUE_PAGES,
+  D6_PREOPEN_SCENE,
   FIXED_CHARACTER,
   S0_D4_STORY_SCENES,
   S0_INTERACTIONS,
@@ -47,6 +50,7 @@ function scheduleS0AmbientOneShot() {
 }
 scheduleS0AmbientOneShot();
 
+const STORY_SCENES = [...S0_D4_STORY_SCENES, D6_PREOPEN_SCENE];
 const errors = validateS0D4Content();
 errors.push(...validateS0ExteriorBackgroundBindingContract());
 if (errors.length) throw new Error(`S0~D4 콘텐츠 오류:\n${errors.join('\n')}`);
@@ -66,7 +70,6 @@ let mode = 's0';
 let s0Index = 0;
 let storyIndex = 0;
 let lineIndex = 0;
-let returnMode = null;
 let dayId = 'S0';
 let epilogueIndex = 0;
 let campaignBridge = null;
@@ -361,7 +364,7 @@ function renderS0() {
   setIds({ screen: step.screenId, state: step.stateId, scene: 'SCN-S0-INTERACTION', dialogue: 'none' });
   const narration = step.phaseId === 'exterior-key'
     ? '비가 막 그친 골목 끝에 가게가 있었다. 문 앞에 서자 발치의 황동 열쇠가 먼저 눈에 들어왔다. 할아버지가 쓰던 열쇠였다.'
-    : '열쇠를 쥔 손이 차가웠다. 한 번 숨을 고르고 돌리자, 오래 닫혀 있던 문이 뻑뻑한 소리를 내며 열렸다.';
+    : '열쇠를 쥔 손이 차가웠다. 자물쇠 앞에서 잠시 멈췄다. 문 너머에는 할아버지가 쓰던 카운터와 차가운 화로가 기다리고 있었다.';
   content.innerHTML = `<p class="scene-narration">${narration}</p>`;
   actions.replaceChildren(button(step.actionLabel, () => {
     sfx(s0Index === 0 ? 'SFX-S0-KEY-PICK' : 'SFX-S0-GATE-OPEN');
@@ -376,7 +379,7 @@ function renderS0() {
 }
 
 function renderStory() {
-  const story = S0_D4_STORY_SCENES[storyIndex];
+  const story = STORY_SCENES[storyIndex];
   const line = story.lines[lineIndex];
   const speaker = speakerById(line.speakerId);
   syncStoryAudio(line.dialogueId);
@@ -387,10 +390,11 @@ function renderStory() {
     'D1-post-settlement': '첫째 날 영업을 마치고',
     'D2-pre-open': '둘째 날 영업 준비',
     'D2-post-settlement': '둘째 날 영업을 마치고',
-    'D3-pre-open': '셋째 날, 타레 메뉴 추가',
+    'D3-pre-open': '셋째 날, 앞치마에 남은 향',
     'D3-post-settlement': '셋째 날 영업을 마치고',
-    'D4-pre-open': '넷째 날, 사라다와 하이볼 추가',
+    'D4-pre-open': '넷째 날, 얼음이 부딪히는 소리',
     'D4-post-settlement': '넷째 날 영업을 마치고',
+    'D6-pre-open': '여섯째 날, 여섯 자리',
   };
   heading.textContent = storyHeadings[story.dayId === 'S0' ? 'S0' : `${story.dayId}-${story.timing}`];
   for (const name of [
@@ -431,12 +435,13 @@ function renderStory() {
     D2: '둘째 영업 시작',
     D3: '셋째 영업 시작',
     D4: '영업 준비',
+    D6: '영업 준비',
   };
   const nextLabel = lastLine && story.timing === 'pre-open'
     ? dayStartLabels[story.dayId]
     : '다음 이야기';
   actions.replaceChildren(
-    button('이 장면 건너뛰기', () => { mode = 'summary'; returnMode = 'story'; render(); }),
+    button('이 장면 건너뛰기', async () => { await advanceAfterStory(story); render(); }),
     button(nextLabel, async () => {
       sfx('SFX-S0-STORY-PAGE');
       if (lineIndex < story.lines.length - 1) lineIndex += 1;
@@ -454,7 +459,7 @@ async function advanceAfterStory(story) {
     return;
   }
   if (story.timing === 'pre-open') {
-    if (story.dayId === 'D4') {
+    if (['D4', 'D6'].includes(story.dayId)) {
       dayPrepFeedback = '';
       mode = 'day-prep';
       return;
@@ -484,7 +489,7 @@ async function advanceAfterStory(story) {
 }
 
 function renderDayPrep() {
-  heading.textContent = '넷째 날 영업 준비';
+  heading.textContent = dayId === 'D6' ? '여섯째 날 영업 준비' : '넷째 날 영업 준비';
   hideStoryPortrait();
   hideStoryIllustration();
   renderStoryBackground('D4');
@@ -571,32 +576,17 @@ function renderDayPrep() {
   claimButton.dataset.testid = 'd4-claim-grill-upgrade';
   claimButton.disabled = !upgrade?.pending;
 
-  const startButton = button(`${claimedSlots}칸으로 넷째 영업 시작`, async () => {
+  const startButton = button(`${claimedSlots}칸으로 ${dayId === 'D6' ? '여섯째' : '넷째'} 영업 시작`, async () => {
     const started = await campaignBridge.startDay();
     if (!started.ok) {
       dayPrepFeedback = `영업 시작 상태를 저장하지 못했습니다. ${started.error?.message ?? ''}`.trim();
       renderDayPrep();
       return;
     }
-    navigateToBusinessDay('D4');
+    navigateToBusinessDay(dayId);
   });
   startButton.dataset.testid = 'd4-start-business-day';
   actions.replaceChildren(claimButton, startButton);
-}
-
-function renderSummary() {
-  const story = S0_D4_STORY_SCENES[storyIndex];
-  heading.textContent = '잠시 돌아보며';
-  hideStoryPortrait();
-  hideStoryIllustration();
-  renderStoryBackground(story.dayId);
-  setIds({ screen: story.screenId, state: `${story.dayId}-skip-summary`, scene: story.sceneId, dialogue: 'SUMMARY-3-LINES' });
-  content.innerHTML = `<ol class="summary">${story.skipSummary.map((line) => `<li>${line}</li>`).join('')}</ol>`;
-  actions.replaceChildren(button('이어서', async () => {
-    mode = returnMode;
-    await advanceAfterStory(story);
-    render();
-  }, true));
 }
 
 function renderBusiness() {
@@ -629,8 +619,10 @@ function renderSettlement() {
 }
 
 function renderEpilogue() {
-  const page = D4_EPILOGUE_PAGES[epilogueIndex];
-  heading.textContent = '넷째 날 마감 후';
+  const completed = dayId === 'D6';
+  const pages = completed ? D6_EPILOGUE_PAGES : dayId === 'D5' ? D5_EPILOGUE_PAGES : D4_EPILOGUE_PAGES;
+  const page = pages[epilogueIndex];
+  heading.textContent = completed ? '여섯째 날 영업을 마치고' : dayId === 'D5' ? '다섯째 날 마감 후' : '넷째 날 마감 후';
   hideStoryPortrait();
   hideStoryIllustration();
   if (renderEpilogueIllustration(page.illustrationAssetId)) {
@@ -640,8 +632,8 @@ function renderEpilogue() {
   }
   setIds({
     screen: 'SCR-POST-EPILOGUE',
-    state: `D4-epilogue-${epilogueIndex + 1}`,
-    scene: 'SCN-D4-EPILOGUE',
+    state: `${dayId}-epilogue-${epilogueIndex + 1}`,
+    scene: `SCN-${dayId}-EPILOGUE`,
     dialogue: page.pageId,
   });
   document.querySelector('#epilogue-visual-line').textContent = page.visualLine;
@@ -669,7 +661,7 @@ function renderEpilogue() {
   }
   const progress = document.createElement('p');
   progress.className = 'epilogue-progress';
-  progress.textContent = `${epilogueIndex + 1} / ${D4_EPILOGUE_PAGES.length}`;
+  progress.textContent = `${epilogueIndex + 1} / ${pages.length}`;
   article.append(progress);
   content.replaceChildren(article);
 
@@ -680,9 +672,13 @@ function renderEpilogue() {
       render();
     }));
   }
-  const lastPage = epilogueIndex === D4_EPILOGUE_PAGES.length - 1;
-  epilogueActions.push(button(lastPage ? 'D5 영업으로' : '다음 장면', () => {
+  const lastPage = epilogueIndex === pages.length - 1;
+  epilogueActions.push(button(completed ? '시작 화면으로' : lastPage ? (dayId === 'D5' ? '여섯째 날 준비' : '다섯째 날 문 열기') : '다음 장면', () => {
+    if (completed) { window.location.assign('./public-shell.html'); return; }
     if (lastPage) {
+      if (dayId === 'D5') {
+        restorePresentationPosition(campaignBridge.getPosition()); render(); return;
+      }
       navigateToBusinessDay('D5');
       return;
     }
@@ -711,7 +707,10 @@ function restorePresentationPosition(position, { postDayId = null } = {}) {
     const normalizedDayId = postDayId.toUpperCase();
     const alreadyCompleted = campaignBridge.getState()?.campaign?.completedDayIds
       ?.includes(postDayId.toLowerCase());
-    const postIndex = S0_D4_STORY_SCENES.findIndex((story) => (
+    if (alreadyCompleted && normalizedDayId === 'D5') {
+      dayId = 'D5'; mode = 'epilogue'; epilogueIndex = 0; return;
+    }
+    const postIndex = STORY_SCENES.findIndex((story) => (
       story.dayId === normalizedDayId && story.timing === 'post-settlement'
     ));
     if (alreadyCompleted && postIndex >= 0) {
@@ -725,12 +724,12 @@ function restorePresentationPosition(position, { postDayId = null } = {}) {
   if (position.kind === 'prologue') return;
   if (position.kind === 'epilogue') {
     mode = 'epilogue';
-    dayId = 'D4';
+    dayId = position.dayId;
     epilogueIndex = 0;
     return;
   }
   dayId = position.dayId;
-  storyIndex = S0_D4_STORY_SCENES.findIndex((story) => (
+  storyIndex = STORY_SCENES.findIndex((story) => (
     story.dayId === position.dayId && story.timing === 'pre-open'
   ));
   lineIndex = 0;
@@ -740,7 +739,6 @@ function restorePresentationPosition(position, { postDayId = null } = {}) {
 function render() {
   if (mode === 's0') renderS0();
   else if (mode === 'story') renderStory();
-  else if (mode === 'summary') renderSummary();
   else if (mode === 'business') renderBusiness();
   else if (mode === 'settlement') renderSettlement();
   else if (mode === 'day-prep') renderDayPrep();

@@ -185,7 +185,7 @@ function updateDrinkPanel(activeScreen) {
   beerEl.style.height = `${beerH}px`;
   foamEl.style.height = `${foamH}px`;
   foamEl.style.bottom = `${beerH}px`;
-  finishBtn.disabled = s.phase !== 'ready';
+  finishBtn.disabled = !s.canFinish;
   overflowEl.hidden = s.phase !== 'overflow';
   if (s.phase === 'overflow') {
     stampEl.hidden = false;
@@ -198,6 +198,7 @@ function updateDrinkPanel(activeScreen) {
 
 function finishDrink() {
   const q = pour.finish(); // Perfect | Good | OK
+  if (!q) { showHint('맥주를 더 채워 주세요'); return; }
   if (q) {
     dock.add({ menu: '생맥주', label: q, good: q === 'Perfect' || q === 'Good' });
     showHint('생맥주를 음료 픽업대에 올렸어요');

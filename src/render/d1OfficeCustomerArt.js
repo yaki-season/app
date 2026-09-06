@@ -21,10 +21,11 @@ export const D1_OFFICE_ART_FIGURE_CENTER_X = Object.freeze({
 // 그래서 날짜 접두사를 D1~D3로 좁히지 않고, 무작위 편성이 뽑는 E 이후 순번도 순환시킨다.
 export function d1OfficeCustomerVariant(customerId) {
   const id = customerId ?? '';
-  const office = /^D[1-9]\d*-OFFICE-([A-Z])$/.exec(id);
-  if (office) return OFFICE_IDS[(office[1].charCodeAt(0) - 65) % OFFICE_IDS.length];
-  const commuter = /^D[1-9]\d*-COMMUTER-([A-Z])$/.exec(id);
-  if (commuter) return COMMUTER_VARIANTS[(commuter[1].charCodeAt(0) - 65) % COMMUTER_VARIANTS.length];
+  const ordinal = value => /^\d+$/.test(value) ? Math.max(0, Number(value) - 1) : value.charCodeAt(0) - 65;
+  const office = /^D[1-9]\d*-OFFICE-([A-Z]|\d+)$/.exec(id);
+  if (office) return OFFICE_IDS[ordinal(office[1]) % OFFICE_IDS.length];
+  const commuter = /^D[1-9]\d*-COMMUTER-([A-Z]|\d+)$/.exec(id);
+  if (commuter) return COMMUTER_VARIANTS[ordinal(commuter[1]) % COMMUTER_VARIANTS.length];
   return null;
 }
 

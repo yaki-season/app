@@ -214,7 +214,9 @@ export function computeSeats(cap, { layoutMode = 'tsukioka' } = {}) {
   // 지나치게 홀쭉해지므로 표시 폭을 분리한다. 확장 좌석에서만 겹침 방지를 위해 축소한다.
   // FHD에서 높이 0.40(432px)에 3:4 승인 캐릭터를 무왜곡 표시하는 정확한 폭.
   const actorWidth = n <= 6 ? 0.16875 : Math.min(0.11, step * 0.9);
-  const logicalToVisual = layoutMode === 'centered-guests'
+  const logicalToVisual = layoutMode === 'sequential-guests'
+    ? [0, 1, 2, 3, 4, 5]
+    : layoutMode === 'centered-guests'
     ? D1_LOGICAL_TO_VISUAL_SEAT_CENTERED
     : D1_LOGICAL_TO_VISUAL_SEAT;
   return Array.from({ length: n }, (_, i) => {

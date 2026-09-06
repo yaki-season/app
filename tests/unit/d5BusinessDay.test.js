@@ -17,7 +17,7 @@ describe('D5 토리카와 영업 정의', () => {
     expect(customers).toHaveLength(9);
     expect(orders.size).toBe(9);
     expect(quantity).toBe(20);
-    expect(definition.nextNodeId).toBe('d5-complete');
+    expect(definition.nextNodeId).toBe('d6');
     expect(definition.economy.menuPrices.kawa).toBe(5);
   });
 
@@ -71,7 +71,7 @@ describe('D5 토리카와 영업 정의', () => {
     });
   });
 
-  it('D6를 열지 않고 D5 완료 기록만 보상한다', () => {
+  it('D5 완료 보상 자체는 유지한다', () => {
     expect(definition.campaignReward).toEqual({
       unlockIds: ['day-d5-completed'],
       storyFlagIds: ['d5-complete', 'torikawa-introduced'],

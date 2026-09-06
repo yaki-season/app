@@ -56,13 +56,15 @@ test('D4 첫 주문은 실제 사라다 홀드와 하이볼 병 홀드로 완료
   await hold(page, page.getByTestId('highball-whiskey'), 1_000);
   await hold(page, page.getByTestId('highball-soda'), 3_000);
   await page.getByTestId('highball-lemon').click();
-  await expect(page.locator('.dock-card[data-menu-id="highball"]')).toContainText('Perfect');
+  await expect(page.locator('.dock-card[data-menu-id="highball"]')).toHaveCount(0);
+  await page.getByTestId('highball-pickup').click();
+  await expect(page.locator('.dock-card[data-menu-id="highball"]')).toContainText('완벽');
 
   await page.getByTestId('quicknav-SCR-SVC-CUSTOMERS').click();
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug.activeScreen())).toBe('SCR-SVC-CUSTOMERS');
   await saladCard.click();
   await page.getByTestId(`serve-target-${first.seatId}`).click();
-  await page.getByTestId('serve-one').click();
+  await expect(page.getByTestId('serve-quantity')).toBeHidden();
   await expect.poll(() => page.evaluate((seatId) => {
     const salad = window.__d1GameDebug.renderer.seatSaladMesh[seatId];
     return {
@@ -75,7 +77,7 @@ test('D4 첫 주문은 실제 사라다 홀드와 하이볼 병 홀드로 완료
   });
   await page.locator('.dock-card[data-menu-id="highball"]').click();
   await page.getByTestId(`serve-target-${first.seatId}`).click();
-  await page.getByTestId('serve-one').click();
+  await expect(page.getByTestId('serve-quantity')).toBeHidden();
 
   const result = await page.evaluate(({ customerId }) => {
     const view = window.__d1GameDebug.businessView();

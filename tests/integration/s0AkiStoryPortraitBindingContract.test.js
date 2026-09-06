@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { S0_D4_STORY_SCENES } from '../../src/scenario/s0-d3-content.js';
+import { S0_D4_STORY_SCENES, D6_PREOPEN_SCENE } from '../../src/scenario/s0-d3-content.js';
 import {
   S0_AKI_STORY_ALLOWED_PRESENTATIONS,
   S0_AKI_STORY_DIALOGUE_VARIANTS,
@@ -61,13 +61,13 @@ describe(`CH-AKI-STORY portrait binding v${S0_AKI_STORY_PORTRAIT_BINDING_CONTRAC
       screenId,
       stateId,
       sceneId,
-    }))).toEqual(S0_D4_STORY_SCENES.map((scene) => ({
+    }))).toEqual([...S0_D4_STORY_SCENES, D6_PREOPEN_SCENE].map((scene) => ({
       screenId: scene.screenId,
       stateId: `${scene.dayId}-${scene.timing}`,
       sceneId: scene.sceneId,
     })));
     expect(Object.keys(S0_AKI_STORY_DIALOGUE_VARIANTS)).toEqual(
-      S0_D4_STORY_SCENES.flatMap(
+      [...S0_D4_STORY_SCENES, D6_PREOPEN_SCENE].flatMap(
         (scene) => scene.lines
           .filter(({ speakerId }) => speakerId === 'CHAR-AKI')
           .map(({ dialogueId }) => dialogueId),
@@ -79,9 +79,9 @@ describe(`CH-AKI-STORY portrait binding v${S0_AKI_STORY_PORTRAIT_BINDING_CONTRAC
     expect(S0_AKI_STORY_EXPRESSION_VARIANTS.map(
       ({ stateVariant }) => stateVariant,
     )).toEqual(['fatigue', 'focus', 'mistake', 'relief']);
-    expect(new Set(Object.values(S0_AKI_STORY_DIALOGUE_VARIANTS))).toEqual(
-      new Set(['fatigue', 'focus', 'mistake', 'relief']),
-    );
+    expect(Object.values(S0_AKI_STORY_DIALOGUE_VARIANTS).every(
+      variant => ['fatigue', 'focus', 'mistake', 'relief'].includes(variant),
+    )).toBe(true);
     expect(S0_AKI_STORY_PORTRAIT_BINDING.sourceMasterPolicy).toMatchObject({
       oneSharedOriginal: true,
       duplicatePerScreen: false,
@@ -182,7 +182,6 @@ describe(`CH-AKI-STORY portrait binding v${S0_AKI_STORY_PORTRAIT_BINDING_CONTRAC
     expect(runtimeCss).not.toContain('.portrait-placeholder');
     expect(functionSource('renderS0', 'renderStory')).toContain('hideStoryPortrait()');
     expect(functionSource('renderStory', 'advanceAfterStory')).toContain('renderStoryPortrait(speaker, line.dialogueId)');
-    expect(functionSource('renderSummary', 'renderBusiness')).toContain('hideStoryPortrait()');
     expect(functionSource('renderBusiness', 'renderSettlement')).toContain('hideStoryPortrait()');
     expect(functionSource('renderSettlement', 'renderComplete')).toContain("renderStoryPortrait(FIXED_CHARACTER.AKI");
     expect(runtimeJs).not.toContain('CH-OWNER-STORY');

@@ -14,9 +14,7 @@ const D = (page, name, ...args) => page.evaluate(
 
 async function skipStory(page) {
   await page.getByRole('button', { name: '이 장면 건너뛰기' }).click();
-  await expect(page.getByRole('heading', { name: '잠시 돌아보며' })).toBeVisible();
-  await expect(page.locator('.summary li')).toHaveCount(3);
-  await page.locator('#actions .primary').click();
+  await expect(page.locator('.summary')).toHaveCount(0);
 }
 
 async function readStory(page) {
@@ -107,7 +105,7 @@ async function finishD1(page) {
   }
 }
 
-test('요약 경로: 공개 새 게임은 실제 release와 공통 day-start 저장으로 D1 전체 영업을 부팅한다', async ({ page }) => {
+test('스킵 직행 경로: 공개 새 게임은 실제 release와 공통 day-start 저장으로 D1 전체 영업을 부팅한다', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => {
@@ -155,10 +153,14 @@ test('요약 경로: 공개 새 게임은 실제 release와 공통 day-start 저
     campaign: { nodeId: 'd1', phase: 'business' },
   });
 
+  const beforeReload = await D(page, 'businessView');
   await page.reload();
   await waitForD1Boot(page);
   expect(await D(page, 'businessSession')).toMatchObject({ ok: true, resumed: true });
-  expect((await D(page, 'businessView')).clock.elapsedMs).toBeLessThan(2000);
+  const restored = await D(page, 'businessView');
+  expect(restored.clock.elapsedMs).toBeGreaterThanOrEqual(beforeReload.clock.elapsedMs);
+  expect(restored.clock.elapsedMs - beforeReload.clock.elapsedMs).toBeLessThan(2000);
+  expect(restored.orders).toEqual(beforeReload.orders);
   expect(await storedEnvelope(page)).toMatchObject({
     checkpointType: 'day-start',
     payload: { campaign: { nodeId: 'd1', phase: 'pre-open' } },
@@ -175,7 +177,7 @@ test('전체 대사 경로도 S0와 D1 pre-open을 읽은 뒤 실제 D1으로 �
   await waitForD1Boot(page);
 });
 
-test('키보드 S0 두 입력 뒤 점화 대사와 요약으로 실제 D1을 부팅한다', async ({ page }) => {
+test('키보드 S0 두 입력 뒤 점화 대사를 스킵해 실제 D1을 부팅한다', async ({ page }) => {
   await beginPublicNewGame(page);
   for (const label of ['열쇠를 집는다', '문을 연다']) {
     const action = page.getByRole('button', { name: label });
@@ -183,7 +185,7 @@ test('키보드 S0 두 입력 뒤 점화 대사와 요약으로 실제 D1을 부
     await page.keyboard.press('Enter');
   }
   await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-S0-001');
-  await expect(page.locator('.dialogue')).toHaveText('문을 열었더니 안에 숯 냄새가 아직 남아 있네.');
+  await expect(page.locator('.dialogue')).toContainText('짐만 정리하고 돌아가려고 했는데');
   await skipStory(page);
   await skipStory(page);
   await waitForD1Boot(page);

@@ -1,11 +1,9 @@
 export const S0_TSUKIOKA_STORY_DIALOGUE_VARIANTS = Object.freeze({
   'DLG-D1-PRE-002': 'calm',
-  'DLG-D1-POST-001': 'supportive',
-  'DLG-D1-POST-003': 'calm',
   'DLG-D2-PRE-002': 'calm',
   'DLG-D3-POST-003': 'supportive',
   'DLG-D4-PRE-002': 'calm',
-  'DLG-D4-POST-003': 'supportive',
+  'DLG-D6-PRE-002': 'calm',
 });
 
 export const S0_TSUKIOKA_STORY_PORTRAIT_BINDING = Object.freeze({

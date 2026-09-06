@@ -107,7 +107,7 @@ export function checkContentRules(bundle) {
     }
   }
 
-  const earlyChain = ['s0', 'd1', 'd2', 'd3', 'd4', 'd5', 'd5-complete'];
+  const earlyChain = ['s0', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd6-complete'];
   if (earlyChain.every((id) => has('scenarios', id))) {
     earlyChain.forEach((id, index) => {
       const record = (bundle.scenarios || []).find((scenario) => scenario.id === id);

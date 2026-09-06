@@ -240,18 +240,39 @@ test('손상 active에서 검증된 백업을 복원하고 원본을 복구 영�
   expect(stored.recovery).toBe(broken);
 });
 
-test('D5 완료 뒤 메인 화면은 완료 저장을 유지하고 새 게임 진입을 제공한다', async ({ page }) => {
-  const d5Save = await makeSave({ campaignId: 'd5-complete-reader', completedDays: 5, balance: 42 });
+test('D6 완료 뒤 메인 화면은 완료 저장을 유지하고 새 게임 진입을 제공한다', async ({ page }) => {
+  const d5Save = await makeSave({ campaignId: 'd5-complete-reader', completedDays: 6, balance: 42 });
   await installStorage(page, { [SAVE_STORAGE_KEYS.ACTIVE]: d5Save });
   await openShell(page);
 
   const before = await page.evaluate(() => JSON.stringify(localStorage));
-  await expect(page.getByRole('button', { name: '처음부터 다시 보기' })).toBeVisible();
-  await expect(page.getByText('닷새의 영업을 마쳤습니다')).toBeVisible();
+  await expect(page.getByRole('button', { name: '후일담 다시 읽기' })).toBeVisible();
+  await expect(page.getByText('여섯째 날 영업을 마쳤습니다')).toBeVisible();
   await expect(page.getByText('PUBLIC WEB SHELL')).toHaveCount(0);
   await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-SYS-START');
   const after = await page.evaluate(() => JSON.stringify(localStorage));
   expect(after).toBe(before);
+  await page.getByRole('button', { name: '후일담 다시 읽기' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D6-EPILOGUE');
+  await expect(page.getByRole('button', { name: '시작 화면으로' })).toBeVisible();
+  await page.getByRole('button', { name: '시작 화면으로' }).click();
+  await expect(page.getByRole('button', { name: '후일담 다시 읽기' })).toBeVisible();
+  expect(await page.evaluate(() => JSON.stringify(localStorage))).toBe(before);
+});
+
+test('구 D5 종착 저장은 원본을 보존한 채 D6 이야기로 이어진다', async ({ page }) => {
+  const parsed = JSON.parse(await makeSave({ completedDays: 5, balance: 42 }));
+  Object.assign(parsed.payload.campaign, {
+    nodeId: 'd5-complete', nodeKind: 'preview', dayId: null, phase: 'preview',
+    unlockedNodeIds: [...parsed.payload.campaign.unlockedNodeIds.filter(id => id !== 'd6'), 'd5-complete'],
+  });
+  const legacy = serializeSaveEnvelope(sealSaveEnvelope(parsed));
+  await installStorage(page, { [SAVE_STORAGE_KEYS.ACTIVE]: legacy });
+  await openShell(page);
+  await expect(page.getByRole('button', { name: '이어하기', exact: true })).toBeVisible();
+  expect(await page.evaluate(key => localStorage.getItem(key), S0_D3_STORAGE_PREFIX + SAVE_STORAGE_KEYS.ACTIVE)).toBe(legacy);
+  await page.getByRole('button', { name: '이어하기', exact: true }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D6-PREOPEN');
 });
 
 test('진단 다운로드에는 로컬 경로·저장 payload·원본 콘텐츠가 없다', async ({ page }) => {

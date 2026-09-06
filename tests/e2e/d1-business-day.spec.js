@@ -72,8 +72,7 @@ async function serve(page, seatId, menu, index) {
   await page.getByTestId(`dock-item-${id}`).click();
   await page.waitForTimeout(230);
   await clickSeat(page, seatId);
-  await expect(page.getByTestId('serve-quantity')).toBeVisible();
-  await page.getByTestId('serve-one').click();
+  await expect(page.getByTestId('serve-quantity')).toBeHidden();
   await expect.poll(() => D(page, 'dockItems').then(
     (items) => !items.some((item) => item.id === id),
   )).toBe(true);
@@ -90,7 +89,7 @@ async function cleanup(page, seatIds) {
   }
 }
 
-test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→정산 5단계→단일 저장→D2를 완주한다', async ({ page }) => {
+test('시간·완성품 fixture 기반 정적 release 통합으로 D1 단일 결과 화면→단일 저장→D2를 검증한다', async ({ page }) => {
   const errors = await boot(page);
   await goCustomers(page);
 
@@ -160,7 +159,7 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   await expect(page.getByTestId('post-business-panel')).toBeVisible();
   await expect(page.getByTestId('post-business-action')).toHaveText('숯불 낮추기');
   await page.getByTestId('post-business-action').click();
-  await expect.poll(() => D(page, 'businessView').then((view) => view.phase)).toBe('settlement');
+  await expect.poll(() => D(page, 'businessView').then((view) => view.phase)).toBe('complete');
   const golden = (await D(page, 'businessView')).settlement.summary;
   expect(golden).toMatchObject({
     customers: { visited: 4, lost: 0, cleanedSeats: 4 },
@@ -171,43 +170,16 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
   expect(golden.operations.elapsedMs).toBeGreaterThanOrEqual(245_000);
   expect(golden.operations.elapsedMs).toBeLessThan(250_000);
 
-  // 같은 intent가 두 번 도착해도 첫 단계가 중복 공개되지 않는다.
-  const duplicateIntent = {
-    type: 'reveal-settlement-step',
-    intentId: 'e2e:duplicate:settlement-step-1',
-  };
-  expect(await D(page, 'businessDispatch', duplicateIntent)).toMatchObject({
-    ok: true,
-    applied: true,
-  });
-  expect(await D(page, 'businessDispatch', duplicateIntent)).toMatchObject({
-    ok: true,
-    applied: false,
-    duplicate: true,
-  });
-  expect((await D(page, 'businessView')).settlement.revealedSteps).toHaveLength(1);
-
-  for (let step = 1; step < 5; step += 1) {
-    await page.getByTestId('post-business-action').click();
-  }
-  await expect.poll(() => D(page, 'businessView').then(
-    (view) => view.settlement.revealedSteps.length,
-  )).toBe(5);
-  // 확인한 단계는 제목만이 아니라 그날의 숫자를 보여준다.
-  await expect(page.getByTestId('settlement-step-customers-orders'))
-    .toContainText('방문 4명 · 주문 수락 4건 · 완료 4건');
-  await expect(page.getByTestId('settlement-step-quality-wait')).toContainText('Perfect 8');
-  await expect(page.getByTestId('settlement-step-quality-wait')).toContainText('평균 대기');
-  await expect(page.getByTestId('settlement-step-revenue-tip')).toContainText('매출 33 + 팁 8 = 41');
-  await expect(page.getByTestId('settlement-step-reputation-review')).toContainText('오늘 명성 +12');
-  await expect(page.getByTestId('settlement-step-recipe-goal')).toContainText('모모 레시피');
-
-  await expect(page.getByTestId('post-business-action')).toContainText('D1 보상 저장');
-  await page.getByTestId('post-business-action').click();
+  // 마감 한 번으로 자동 저장되고 보상 두 값과 진행 버튼만 남는다.
+  await expect(page.getByTestId('post-business-title')).toHaveText('스테이지 클리어!');
+  await expect(page.getByTestId('result-earnings')).toHaveText('+41');
+  await expect(page.getByTestId('result-reputation')).toHaveText('+12');
+  await expect(page.getByTestId('post-business-action')).toBeHidden();
+  await expect(page.locator('#settlementDetails')).toHaveCount(0);
 
   await expect.poll(() => D(page, 'businessView').then((view) => view.phase)).toBe('complete');
   await expect(page.getByTestId('result-overlay')).toBeVisible();
-  await expect(page.getByTestId('result-message')).toContainText('D2 저장 완료');
+  await expect(page.getByTestId('result-message')).toContainText('D1 영업 완료');
   expect(await D(page, 'campaignState')).toMatchObject({
     campaign: {
       nodeId: 'd2',
@@ -237,6 +209,8 @@ test('실제 정적 release 무주입 6석 조작으로 7분 D1 전체 영업→
     economy: { balance: 41, reputation: 12 },
   });
   await expect(page.getByTestId('result-overlay')).toBeVisible();
+  await expect(page.getByTestId('result-earnings')).toHaveText('+41');
+  await expect(page.getByTestId('result-reputation')).toHaveText('+12');
   await page.getByTestId('continue-button').click();
   // D1 마감도 후일담으로 넘어간다(da5d1cb). 날짜별 post 파라미터가 붙는다.
   await expect(page).toHaveURL(/\/src\/s0-d3\.html\?post=d1$/);

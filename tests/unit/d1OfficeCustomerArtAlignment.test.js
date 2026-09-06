@@ -8,9 +8,10 @@ import { alphaBounds, readPngAlpha } from '../helpers/pngAlpha.js';
 import {
   D1_OFFICE_ART_FIGURE_CENTER_X,
   d1OfficeActorOffsetX,
+  d1OfficeCustomerVariant,
 } from '../../src/render/d1OfficeCustomerArt.js';
 
-const publicRoot = new URL('../../public', import.meta.url);
+const publicRoot = new URL('../../public/', import.meta.url);
 const assetBytes = (url) => readFileSync(fileURLToPath(new URL(`.${url}`, publicRoot)));
 const manifest = JSON.parse(readFileSync(fileURLToPath(new URL('./assets/manifest.json', publicRoot)), 'utf8'));
 
@@ -29,6 +30,12 @@ const urlFor = (variant, state) => (variant === 'a' && state === 'waiting'
 const STATES = ['waiting', 'eating-negima', 'drinking-beer'];
 
 describe('D1 office 손님 라스터 좌우 정렬 계약', () => {
+  it('D6 숫자 순번도 서로 다른 승인 인물과 좌우 보정을 사용한다', () => {
+    expect([1, 3, 5, 7, 9].map(n => d1OfficeCustomerVariant(`D6-OFFICE-${n}`)))
+      .toEqual(['a', 'c', 'e', 'b', 'd']);
+    expect(d1OfficeActorOffsetX('D6-OFFICE-1')).toBe(d1OfficeActorOffsetX('D1-OFFICE-A'));
+    expect(d1OfficeActorOffsetX('D6-OFFICE-7')).toBe(d1OfficeActorOffsetX('D1-OFFICE-B'));
+  });
   it('선언한 인물 중심 x가 실제 승인 라스터의 알파 중심과 일치한다', () => {
     for (const variant of ['a', 'b', 'c', 'd', 'e']) {
       for (const state of STATES) {
