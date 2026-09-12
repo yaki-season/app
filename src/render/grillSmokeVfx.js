@@ -104,7 +104,8 @@ export function createGrillSmokeVfx({
     });
     const sprite = new THREE.Sprite(material);
     sprite.visible = false;
-    sprite.renderOrder = 90;
+    // 음식 스프라이트(320+) 뒤에 묻히던 연기를 얇게 앞쪽에 합성한다.
+    sprite.renderOrder = 330;
     sprite.userData.grillSmoke = true;
     scene.add(sprite);
     return {
@@ -170,9 +171,9 @@ export function createGrillSmokeVfx({
     puff.startZ = mesh.position.z + 0.36;
     puff.driftX = ((random() - 0.5) * (burst ? 0.8 : 0.42)) * motionScale;
     puff.driftY = range(random, burst ? [0.95, 1.42] : [0.62, 1.02]) * motionScale;
-    puff.startScale = size.height * range(random, burst ? [0.24, 0.34] : [0.11, 0.17]);
+    puff.startScale = size.height * range(random, burst ? [0.15, 0.21] : [0.09, 0.14]);
     puff.endScale = puff.startScale * range(random, burst ? [2.0, 2.55] : [1.65, 2.05]);
-    puff.maxOpacity = (burst ? range(random, [0.46, 0.60]) : range(random, [0.27, 0.37]))
+    puff.maxOpacity = (burst ? range(random, [0.20, 0.30]) : range(random, [0.14, 0.22]))
       * (reducedMotion ? 0.72 : 1);
     puff.sprite.material.map = textures[Math.floor(random() * textures.length) % textures.length];
     puff.sprite.material.rotation = (random() - 0.5) * 0.34;

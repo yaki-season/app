@@ -106,8 +106,13 @@ export async function createD1BusinessDayBrowserSession({
     campaignRuntime: bridge.runtime,
   });
   const port = new D1BusinessDayUiPort({ runtime, definition });
+  const runId = `${campaign.meta.campaignId}:${dayId}`;
+  // 손상된 영업 저장을 발견했을 때에는 시작 체크포인트도 쓰지 않는다.
+  if (businessSnapshot && !runtime.validateSnapshot(businessSnapshot, runId).ok) {
+    return { ok: false, error: { code: 'BUSINESS_SNAPSHOT_INVALID', message: '영업 중 저장을 복구하지 못했습니다. 원본 저장은 유지됩니다.' }, bridge, port: null };
+  }
   const started = await port.start({
-    runId: `${campaign.meta.campaignId}:${dayId}`,
+    runId,
     seed: campaign.meta.seed,
   });
   if (!started.ok) {
@@ -128,7 +133,7 @@ export async function createD1BusinessDayBrowserSession({
   return {
     ok: true,
     completed: false,
-      resumed: loaded.resumed ?? false,
+    resumed: loaded.resumed ?? false,
     startedFromS0,
     bridge,
     port,

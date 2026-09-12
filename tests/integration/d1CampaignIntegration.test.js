@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { buildGuestScene } from '../../src/scenario/guestStories.js';
 import {
   CAMPAIGN_PHASE,
   D1BusinessDayRuntime,
@@ -115,6 +116,23 @@ function completeFullDay(runtime) {
 }
 
 describe('D1 영업일과 캠페인 저장 통합', () => {
+  it.each([undefined, { damaged: true }])('이전/손상된 손님 기억(%j)을 복구해도 정상 제공을 계속할 수 있다', async guestServings => {
+    const { d1 } = createHarness();
+    await d1.start({ runId: 'memory-recovery' });
+    d1.advance(6000);
+    accept(d1, 'D1-ORDER-001');
+    const snapshot = d1.getState();
+    snapshot.guestServings = guestServings;
+    snapshot.guestStory = { active: { sceneId: 'SCN-D6-TSUKIOKA-ARRIVAL', lineIndex: -1 } };
+    expect(d1.restore(snapshot).ok).toBe(true);
+    expect(d1.getState().guestStory).toEqual({ completedIds: [], active: null, pendingIds: [] });
+    expect(d1.getState().guestServings).toEqual([]);
+    serve(d1, 'REGULAR_TSUKIOKA', 'beer', 1);
+    expect(d1.getState().guestServings).toEqual([
+      expect.objectContaining({ customerId: 'REGULAR_TSUKIOKA', menuId: 'beer' }),
+    ]);
+  });
+
   it('day-start 체크포인트에서 시작하고 영업 중 중단은 D1 영업 전으로 복구한다', async () => {
     const { repository, campaign, d1 } = createHarness();
     const started = await d1.start({ runId: 'campaign-d1-integration:d1:run-1' });
@@ -200,9 +218,17 @@ describe('D1 영업일과 캠페인 저장 통합', () => {
         unlockIds: ['recipe-momo', 'menu-momo', 'day-d2'],
       },
       story: {
-        flagIds: ['d1-complete', 'momo-restored'],
+        flagIds: ['d1-complete', 'momo-restored', 'guest:tsukioka:d1:visited',
+          'guest:tsukioka:d1:ordered', 'guest:tsukioka:d1:first:beer',
+          'guest:tsukioka:d1:served:beer', 'guest:tsukioka:d1:served:negima',
+          ...['ren', 'mio'].flatMap(key => ['visited', 'ordered', 'first:beer', 'served:beer', 'served:negima'].map(flag => `guest:${key}:d1:${flag}`)),
+          ...['visited', 'ordered', 'first:negima', 'served:negima'].map(flag => `guest:sae:d1:${flag}`)],
       },
     });
+    // 저장에 값이 있기만 한 계약이 아니라 다음 방문의 실제 원고 선택기가 소비한다.
+    const nextScene = buildGuestScene({ dayId: 'd2', beat: 'arrival',
+      flagIds: reloadedCampaign.getState().story.flagIds, business: { ...staleSettlementState, dayId: 'd2' } });
+    expect(nextScene.lines[0].text).toContain('맥주부터');
   });
 
   it('day-complete 저장 실패 시 D1 보상과 날짜를 commit하지 않고 같은 완료 ID로 재시도한다', async () => {
@@ -221,9 +247,11 @@ describe('D1 영업일과 캠페인 저장 통합', () => {
       economy: { balance: 0, reputation: 0, settlements: [] },
     });
     expect(d1.getState().phase).toBe(D1_DAY_PHASE.SETTLEMENT);
+    expect(campaign.getState().story.flagIds).not.toContain('guest:tsukioka:d1:first:beer');
 
     const retried = await d1.finalize();
     expect(retried.ok).toBe(true);
+    expect(campaign.getState().story.flagIds.filter(id => id === 'guest:tsukioka:d1:first:beer')).toHaveLength(1);
     expect(campaign.getState()).toMatchObject({
       campaign: { nodeId: 'd2', phase: CAMPAIGN_PHASE.PRE_OPEN },
       economy: { balance: 41, reputation: 12 },

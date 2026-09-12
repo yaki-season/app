@@ -62,6 +62,11 @@ async function openShell(page) {
   await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-SYS-START');
 }
 
+async function openSaveManagement(page) {
+  const section = page.locator('.save-management');
+  if (await section.count() && !(await section.getAttribute('open') !== null)) await section.locator('summary').click();
+}
+
 test('사이트 루트는 테스트 장면 대신 공개 시작 화면을 열고 새 게임으로 이어진다', async ({ page }) => {
   await installStorage(page, {});
   await page.goto('/');
@@ -73,11 +78,12 @@ test('사이트 루트는 테스트 장면 대신 공개 시작 화면을 열고
   await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-STORY-PROLOGUE');
 });
 
-test('FHD/720 title에서 키보드·마우스로 설정·플레이방법·일시정지를 사용할 수 있다', async ({ page }) => {
+test('FHD/720 title은 주 행동을 분리하고 설정·플레이방법·저장 관리를 제공한다', async ({ page }) => {
   await installStorage(page, {});
   await openShell(page);
 
-  await expect(page.getByRole('button', { name: '이어하기' })).toBeDisabled();
+  await expect(page.locator('#continue-button')).toBeHidden();
+  await expect(page.getByRole('button', { name: '일시정지', exact:true })).toHaveCount(0);
   await page.getByRole('button', { name: '설정', exact: true }).click();
   await expect(page.locator('dialog')).toHaveAttribute('data-overlay-id', 'OVR-SETTINGS');
   await expect(page.locator('dialog')).not.toContainText('오디오 볼륨');
@@ -99,10 +105,9 @@ test('FHD/720 title에서 키보드·마우스로 설정·플레이방법·일�
   await expect(page.locator('dialog')).toContainText('Tab과 Shift+Tab');
   await page.keyboard.press('Escape');
 
-  await page.locator('#pause-button').focus();
-  await page.keyboard.press('Enter');
-  await expect(page.locator('dialog')).toHaveAttribute('data-overlay-id', 'OVR-PAUSE');
-  await page.getByRole('button', { name: '재개' }).click();
+  await expect(page.getByRole('button', { name: '플레이방법', exact:true })).toBeFocused();
+  await openSaveManagement(page);
+  await expect(page.getByRole('button', { name: '저장 파일 불러오기' })).toBeVisible();
 
   const layout = await page.evaluate(() => ({
     width: document.documentElement.scrollWidth,
@@ -122,10 +127,12 @@ test('검증된 저장을 다운로드하고 호환 파일 교체 전 기존 act
   await openShell(page);
 
   const downloadPromise = page.waitForEvent('download');
+  await openSaveManagement(page);
   await page.getByRole('button', { name: '저장 파일 다운로드' }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toContain('yaki-season-existing');
 
+  await openSaveManagement(page);
   await page.getByRole('button', { name: '저장 파일 불러오기' }).click();
   await page.locator('#save-file-input').setInputFiles({
     name: 'compatible-save.json',
@@ -197,6 +204,7 @@ test('비호환 저장 파일을 거부하고 기존 저장·백업을 변경하
   });
   await openShell(page);
 
+  await openSaveManagement(page);
   await page.getByRole('button', { name: '저장 파일 불러오기' }).click();
   await page.locator('#save-file-input').setInputFiles({
     name: 'future-save.json',
@@ -247,7 +255,7 @@ test('D6 완료 뒤 메인 화면은 완료 저장을 유지하고 새 게임 �
 
   const before = await page.evaluate(() => JSON.stringify(localStorage));
   await expect(page.getByRole('button', { name: '후일담 다시 읽기' })).toBeVisible();
-  await expect(page.getByText('여섯째 날 영업을 마쳤습니다')).toBeVisible();
+  await expect(page.getByText('여섯 번의 저녁을 마쳤습니다', { exact:false })).toBeVisible();
   await expect(page.getByText('PUBLIC WEB SHELL')).toHaveCount(0);
   await expect(page.locator('body')).toHaveAttribute('data-screen-id', 'SCR-SYS-START');
   const after = await page.evaluate(() => JSON.stringify(localStorage));

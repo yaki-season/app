@@ -134,13 +134,14 @@ describe('D1 영업일 UI port 경계 통합', () => {
     expect(ordering).toMatchObject({
       phase: 'ordering',
       canOrder: true,
-      orderLabel: '생맥주 · 네기마 0/2',
+      orderLabel: '',
+      remainingItems: [],
     });
     expect(buildSeatStates(port.getViewModel().seats).find(
       (seat) => seat.seatId === ordering.seatId,
     )).toMatchObject({
       occupied: true,
-      orderLabel: '생맥주 · 네기마 0/2',
+      orderLabel: '',
     });
 
     expect(dispatch(port, 'accept:seat', D1_UI_INTENT.ACCEPT_ORDER, {
@@ -148,6 +149,7 @@ describe('D1 영업일 UI port 경계 통합', () => {
     })).toMatchObject({ ok: true, applied: true });
     const acceptedSeat = port.getViewModel().seats.find((seat) => seat.seatId === ordering.seatId);
     expect(acceptedSeat).toMatchObject({
+      orderLabel: '생맥주 · 네기마 0/2',
       remainingOrderLabel: '생맥주 1개 · 네기마 2개',
       remainingItems: [
         { menuId: 'beer', menuLabel: '생맥주', remaining: 1 },

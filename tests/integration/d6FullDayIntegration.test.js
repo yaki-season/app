@@ -119,7 +119,9 @@ describe('D6 겹침 도착·회전·저장', () => {
     state.seats[1].status = 'empty';
     state = advanceD1BusinessDay(state, definition, 1);
     expect(state.waves[1].status).toBe('spawned');
-    expect(state.seats.slice(0, 2).map(s => s.customerId)).toEqual(['D6-OFFICE-1', 'D6-SOLO-2']);
+    const party = ['D6-OFFICE-1', 'D6-SOLO-2'].map(id => state.seats.findIndex(seat => seat.customerId === id));
+    expect(party[0]).toBeGreaterThanOrEqual(0);
+    expect(party[1]).toBe(party[0] + 1);
   });
 
   it('마감까지 미도착한 손님은 이후 입장하지 않으며 도착 주문만 정리해 마감한다', async () => {

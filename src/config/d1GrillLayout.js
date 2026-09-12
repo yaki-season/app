@@ -141,7 +141,7 @@ export const D1_PUBLIC_GRILL_LAYOUT = Object.freeze({
   })),
 });
 
-// D4부터 명성 업그레이드를 적용했을 때 사용하는 3칸 구성. 기존 두 칸과 같은 승인
+// 기존 D4에서 도입한 3칸 구성. 현재는 명성 마켓으로 해금하며 기존 두 칸과 같은 승인
 // footprint를 유지하면서 석쇠 안쪽에 세 꼬치가 같은 간격으로 놓이도록 별도 계약으로 둔다.
 // 자동 균등 배치(computeGrillSlots(3))는 꼬치가 지나치게 작아지므로 공개 영업 화면에서는
 // 이 명시 레이아웃만 사용한다.
@@ -162,7 +162,37 @@ export const D4_PUBLIC_GRILL_LAYOUT = Object.freeze({
   })),
 });
 
-// CM-GRILL-STATION-QUEUED-SELECTION R3에서 연속 석쇠 안쪽만 보수적으로 잡은 검증 경계.
+// 2/3칸의 구도를 보존하고 확장 칸은 같은 석쇠 안에서 간격을 나눈다.
+export function publicGrillLayout(slotCount) {
+  if (slotCount <= 2) return D1_PUBLIC_GRILL_LAYOUT;
+  if (slotCount === 3) return D4_PUBLIC_GRILL_LAYOUT;
+  const count = Math.min(6, Math.max(4, Math.trunc(slotCount)));
+  const span = 840;
+  const lane = span / count;
+  return Object.freeze({
+    contractId: `REPUTATION-GRILL-${count}-SLOTS`,
+    initialPlacementSlots: Object.freeze(Array.from({ length: count }, (_, i) => i + 1)),
+    slots: Object.freeze(Array.from({ length: count }, (_, index) => {
+      const visualRect = normalizedRect({ x: 550 + lane * index + (lane - 116) / 2, y: 276 + (index % 2) * 8, width: 116, height: 398 });
+      return Object.freeze({ key: `pgSlot${index}`, rect: rendererCompensatedRect(visualRect), approvedVisualRect: visualRect });
+    })),
+  });
+}
+
+// 음식과 카드의 단일 좌표 원본. 숨긴 슬롯이 있어도 다른 카드의 위치는 변하지 않는다.
+export function grillStatusLayout(layout) {
+  const centers = layout.slots.map(({ approvedVisualRect: r }) => r.x + r.width / 2);
+  const top = Math.max(...layout.slots.map(({ approvedVisualRect: r }) => r.y + r.height)) + 0.016;
+  return centers.map((center, i) => ({
+    center, top,
+    width: Math.min(0.15, Math.min(
+      i ? center - centers[i - 1] : Infinity,
+      i + 1 < centers.length ? centers[i + 1] - center : Infinity,
+    ) - 0.008),
+  }));
+}
+
+// CM-GRILL-STATION-QUEUED-SELECTION R3의 석쇠 안쪽 검증 경계.
 // 아트 추출/등록용 bbox가 아니라 슬롯 overlay가 물리 석쇠를 벗어나지 않는지 검사하는 runtime 경계다.
 export const D1_GRILL_MASTER_GRATE_SAFE_RECT = normalizedRect({
   x: 500,

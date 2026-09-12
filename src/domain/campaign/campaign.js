@@ -223,7 +223,7 @@ export function getCampaignGrillSlotUpgradeState(state, config = {}) {
 
 // 해금 조건을 만족해도 플레이어가 직접 선택해야만 반영한다.
 // 명성과 골드는 판정에만 사용하고 state.economy는 변경하지 않는다.
-export function claimCampaignGrillSlots(state, config = {}) {
+export function claimCampaignGrillSlots(state, config = {}, targetSlots = null) {
   const upgrade = getCampaignGrillSlotUpgradeState(state, config);
   if (state?.campaign?.phase !== CAMPAIGN_PHASE.PRE_OPEN) {
     return {
@@ -233,7 +233,10 @@ export function claimCampaignGrillSlots(state, config = {}) {
       upgrade,
     };
   }
-  if (!upgrade.pending) {
+  if (targetSlots !== null && targetSlots <= upgrade.claimed) {
+    return { state, applied: false, reason: GRILL_SLOT_CLAIM_REASON.ALREADY_CLAIMED, upgrade };
+  }
+  if (!upgrade.pending || (targetSlots !== null && targetSlots !== upgrade.targetSlots)) {
     const reason = upgrade.blockedBy === GRILL_SLOT_UPGRADE_BLOCK.UNLOCK
       ? GRILL_SLOT_CLAIM_REASON.UNLOCK_REQUIRED
       : upgrade.blockedBy === GRILL_SLOT_UPGRADE_BLOCK.REPUTATION
@@ -248,7 +251,7 @@ export function claimCampaignGrillSlots(state, config = {}) {
     ...state,
     progression: {
       ...state.progression,
-      claimedGrillSlots: upgrade.available,
+      claimedGrillSlots: upgrade.targetSlots,
     },
   };
   return {

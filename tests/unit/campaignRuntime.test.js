@@ -65,7 +65,7 @@ describe('S0~D5 캠페인 도메인', () => {
         dayId,
         completionId: `${dayId}-upgrade-path`,
         reward: dayId === 'd3'
-          ? { balance: 700, reputation: 10, unlockIds: ['day-d4'] }
+          ? { balance: 700, reputation: 12, unlockIds: ['day-d4'] }
           : {},
       }).state;
     }
@@ -80,7 +80,7 @@ describe('S0~D5 캠페인 도메인', () => {
     expect(claimed.state.progression.claimedGrillSlots).toBe(3);
     expect(claimed.state.economy).toEqual(state.economy);
 
-    const duplicate = claimCampaignGrillSlots(claimed.state, grillSlotConfig);
+    const duplicate = claimCampaignGrillSlots(claimed.state, grillSlotConfig, 3);
     expect(duplicate).toMatchObject({
       applied: false,
       reason: 'already-claimed',
@@ -88,11 +88,26 @@ describe('S0~D5 캠페인 도메인', () => {
     expect(duplicate.state).toBe(claimed.state);
   });
 
-  it('영업 전이 아니거나 D4·명성 조건이 없으면 claim하지 않는다', () => {
+  it('명성 90에서도 한 상품씩만 받고 중복·단계 건너뛰기를 거부한다', () => {
+    let state = completePrologue(initialState(), definition());
+    state = { ...state, economy: { ...state.economy, reputation: 90, balance: 700 } };
+    expect(claimCampaignGrillSlots(state, grillSlotConfig, 6).applied).toBe(false);
+    for (const slots of [3, 4, 5, 6]) {
+      const result = claimCampaignGrillSlots(state, grillSlotConfig, slots);
+      expect(result.applied).toBe(true);
+      state = result.state;
+      expect(state.progression.claimedGrillSlots).toBe(slots);
+      expect(state.economy).toMatchObject({ reputation: 90, balance: 700 });
+      expect(claimCampaignGrillSlots(state, grillSlotConfig, slots)).toMatchObject({ applied: false, reason: 'already-claimed' });
+    }
+    expect(claimCampaignGrillSlots(state, grillSlotConfig).applied).toBe(false);
+  });
+
+  it('영업 전이 아니거나 명성 조건이 없으면 claim하지 않는다', () => {
     const d1 = completePrologue(initialState(), definition());
     expect(claimCampaignGrillSlots(d1, grillSlotConfig)).toMatchObject({
       applied: false,
-      reason: 'unlock-required',
+      reason: 'reputation-required',
     });
     expect(claimCampaignGrillSlots(beginBusinessDay(d1), grillSlotConfig)).toMatchObject({
       applied: false,

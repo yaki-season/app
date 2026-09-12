@@ -1,3 +1,5 @@
+import { selectArrivalSeats } from './seatSelection.js';
+
 export const D1_DAY_PHASE = Object.freeze({
   OPEN: 'open',
   CLOSING_DRAIN: 'closing-drain',
@@ -300,6 +302,7 @@ export function createD1BusinessDayState({ definition, runId, seed = 1 }) {
     runId,
     phase: D1_DAY_PHASE.OPEN,
     randomState: seed >>> 0,
+    seatingSeed: seed >>> 0,
     clock: {
       elapsedMs: 0,
       targetMs: definition.sessionTargetMs,
@@ -325,6 +328,8 @@ export function createD1BusinessDayState({ definition, runId, seed = 1 }) {
     customers: {},
     orders: {},
     ledger: [],
+    guestServings: [],
+    guestStory: { completedIds: [], active: null, pendingIds: [] },
     handledEventIds: [],
     failureCauseIds: [],
     metrics: {
@@ -361,18 +366,6 @@ function acceptedOrderCount(state) {
     D1_ORDER_STATUS.ACCEPTED,
     D1_ORDER_STATUS.PARTIAL,
   ].includes(order.status)).length;
-}
-
-function findSingleSeat(state, excludedIds = new Set()) {
-  return state.seats.find((seat) => seat.status === 'empty' && !excludedIds.has(seat.id)) ?? null;
-}
-
-function findAdjacentSeats(state, count) {
-  for (let index = 0; index <= state.seats.length - count; index += 1) {
-    const candidate = state.seats.slice(index, index + count);
-    if (candidate.every((seat) => seat.status === 'empty')) return candidate;
-  }
-  return null;
 }
 
 function orderIsResolved(state, orderId) {
@@ -456,7 +449,7 @@ function spawnEligibleWaves(state, definition) {
     if (grouped) {
       const arrivingOrderCount = new Set(waveSpec.customers.map((customer) => customer.order.id)).size;
       if (operationalOrderCount(state, definition) + arrivingOrderCount > definition.limits.maxActiveOrders) break;
-      const seats = findAdjacentSeats(state, waveSpec.customers.length);
+      const seats = selectArrivalSeats(state, waveSpec.customers);
       if (!seats) break;
       waveSpec.customers.forEach((customer, customerIndex) => {
         spawnCustomer(state, definition, customer, seats[customerIndex], waveSpec.id);
@@ -476,7 +469,11 @@ function spawnEligibleWaves(state, definition) {
       continue;
     }
     if (operationalOrderCount(state, definition) + 1 > definition.limits.maxActiveOrders) break;
-    const seat = findSingleSeat(state);
+    const nextGroup = definition.waves.slice(index + 1).find((wave, offset) => (
+      state.waves[index + 1 + offset].status === 'pending' && wave.customers.length > 1
+      && wave.customers[0].groupId && wave.customers.every(c => c.groupId === wave.customers[0].groupId)
+    ));
+    const seat = selectArrivalSeats(state, [customer], { upcomingGroupSize: nextGroup?.customers.length })?.[0];
     if (!seat) break;
     spawnCustomer(state, definition, customer, seat, waveSpec.id);
     waveState.nextCustomerIndex = customerIndex + 1;
@@ -855,6 +852,11 @@ export function dispatchD1Command(state, definition, command) {
       return commandError(state, 'invalid-quality');
     }
     line.servedQualities.push(quality);
+    // 무료 사라다도 판매 장부와 별개로 남긴다. 거절·중복 입력은 이 지점에 도달하지 않는다.
+    (next.guestServings ??= []).push({
+      customerId: customer.id, menuId: command.menuId,
+      seasoning: line.seasoning ?? null, quality,
+    });
     order.status = D1_ORDER_STATUS.PARTIAL;
     next.metrics.servedItems += 1;
     if (quality != null) next.metrics.quality[quality] += 1;

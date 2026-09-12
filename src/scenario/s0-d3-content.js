@@ -77,10 +77,10 @@ export const S0_D4_STORY_SCENES = Object.freeze([
     sourceMasterId: 'CM-PROLOGUE-INHERITANCE-R1',
     lines: [
       { dialogueId: 'DLG-D1-PRE-001', speakerId: 'CHAR-AKI', text: '닭도 썰었고, 잔도 닦았고… 간판을 켜니 정말 가게가 됐네.' },
-      { dialogueId: 'DLG-D1-PRE-002', speakerId: 'CHAR-TSUKIOKA', text: '이 불빛을 얼마 만에 보나. 네기마 둘에 생맥주 하나 주겠나?' },
-      { dialogueId: 'DLG-D1-PRE-003', speakerId: 'CHAR-AKI', text: '어서 오세요. 아직 손이 좀 느린데… 편히 앉아 계세요.' },
+      { dialogueId: 'DLG-D1-PRE-002', speakerId: 'CHAR-AKI', text: '노트는 불에서 조금 떨어뜨려 놓자. 또 숯이 묻겠네.' },
+      { dialogueId: 'DLG-D1-PRE-003', speakerId: 'CHAR-AKI', text: '어서 오세요. 자리는 편한 곳에 앉으시면 돼요.' },
     ],
-    summary: ['청소와 재료 준비를 마치고 간판에 불을 켰다.', '옛 단골 츠키오카가 네기마 둘과 생맥주 한 잔을 주문했다.', '아키는 물려받은 노트를 곁에 두고 첫 손님을 맞는다.'],
+    summary: ['청소와 재료 준비를 마치고 간판에 불을 켰다.', '아키는 노트를 불에서 떨어뜨려 놓았다.', '문 앞의 손님을 맞았다. 첫 주문과 손님 이야기는 실제 영업에서 나눈다.'],
   }),
   scene({
     sceneId: 'SCN-D1-POST',
@@ -101,10 +101,10 @@ export const S0_D4_STORY_SCENES = Object.freeze([
     sourceMasterId: 'CM-PREOPEN-PLANNING-R1',
     lines: [
       { dialogueId: 'DLG-D2-PRE-001', speakerId: 'CHAR-AKI', text: '닭다리살만 꽂으니 모모는 제법 묵직하네. 오늘 메뉴판에 한 줄 더 써 두자.' },
-      { dialogueId: 'DLG-D2-PRE-002', speakerId: 'CHAR-TSUKIOKA', text: '어제 그 자리 비었나? 저쪽에 앉으면 골목이 잘 보이거든.' },
+      { dialogueId: 'DLG-D2-PRE-002', speakerId: 'CHAR-AKI', text: '어제 놓았던 잔 자리네. 행주로 닦아도 동그란 자국이 조금 남았어.' },
       { dialogueId: 'DLG-D2-PRE-003', speakerId: 'EXTRA-COMMUTER', text: '저, 한 명인데요. 퇴근길에 냄새를 따라 들어왔어요.' },
     ],
-    summary: ['아키는 노트를 보고 닭다리살 꼬치 모모를 준비했다.', '츠키오카는 어제 앉았던 자리를 찾았다.', '퇴근길의 새 손님도 가게 안을 기웃거린다.'],
+    summary: ['아키는 노트를 보고 닭다리살 꼬치 모모를 준비했다.', '카운터의 잔 자국을 닦으며 둘째 날을 준비했다.', '퇴근길의 새 손님도 가게 안을 기웃거린다.'],
   }),
   scene({
     sceneId: 'SCN-D2-POST',
@@ -137,7 +137,7 @@ export const S0_D4_STORY_SCENES = Object.freeze([
     lines: [
       { dialogueId: 'DLG-D3-POST-001', speakerId: 'EXTRA-COMMUTER', text: '이 가게, 친구한테 알려 줘도 돼요? 퇴근하고 같이 앉을 데를 찾고 있거든요.' },
       { dialogueId: 'DLG-D3-POST-002', speakerId: 'CHAR-AKI', text: '그럼요. 두 분 오시면 잔부터 꺼내 놓을게요.' },
-      { dialogueId: 'DLG-D3-POST-003', speakerId: 'CHAR-TSUKIOKA', text: '나는 안쪽 자리면 되네. 골목 보이는 쪽은 새 손님께 내드리지.' },
+      { dialogueId: 'DLG-D3-POST-003', speakerId: 'CHAR-AKI', text: '누군가 여길 같이 오고 싶은 곳으로 생각했구나.' },
     ],
     summary: ['타레 메뉴를 포함한 셋째 날 영업을 마쳤다.', '한 손님이 지인들에게 가게를 소개하고 싶다고 했다.', '다음 영업부터 양배추 사라다와 하이볼을 준비한다.'],
   }),
@@ -148,8 +148,8 @@ export const S0_D4_STORY_SCENES = Object.freeze([
     sourceMasterId: 'CM-PREOPEN-PLANNING-R1',
     lines: [
       { dialogueId: 'DLG-D4-PRE-001', speakerId: 'CHAR-AKI', text: '양배추에 깨를 조금. 불 앞에서 기다릴 때 아삭한 것부터 드시면 좋겠어.' },
-      { dialogueId: 'DLG-D4-PRE-002', speakerId: 'CHAR-TSUKIOKA', text: '얼음 소리가 시원하군. 오늘은 하이볼 한 잔에 사라다부터 주겠나?' },
-      { dialogueId: 'DLG-D4-PRE-003', speakerId: 'CHAR-AKI', text: '네. 레몬도 방금 잘랐어요. 오늘은 잔에서 다른 향이 날 거예요.' },
+      { dialogueId: 'DLG-D4-PRE-002', speakerId: 'CHAR-AKI', text: '얼음은 충분하고, 긴 잔은 여기. 하이볼 자리도 비워 뒀다.' },
+      { dialogueId: 'DLG-D4-PRE-003', speakerId: 'CHAR-AKI', text: '레몬을 자르니 손에 향이 남네. 오늘은 잔에서도 이 냄새가 나겠지.' },
     ],
     summary: ['손님이 기다리는 동안 무료 양배추 사라다를 먼저 낸다.', '하이볼 주문이 새로 추가된다.', '사이드 메뉴·그릴·드링크를 함께 운영한다.'],
   }),
@@ -171,8 +171,8 @@ export const D6_PREOPEN_SCENE = Object.freeze({
   sceneId: 'SCN-D6-PREOPEN', dayId: 'D6', timing: 'pre-open', screenId: 'SCR-STORY-BEAT',
   lines: [
     { dialogueId: 'DLG-D6-PRE-001', speakerId: 'CHAR-AKI', text: '오늘은 메뉴를 더 늘리지 말자. 잔하고 접시부터 손 닿는 곳에.' },
-    { dialogueId: 'DLG-D6-PRE-002', speakerId: 'CHAR-TSUKIOKA', text: '골목에서 이 집 얘기를 하더군. 의자는 여섯 개 다 꺼내 두게.' },
-    { dialogueId: 'DLG-D6-PRE-003', speakerId: 'CHAR-AKI', text: '여섯 자리… 네. 먼저 오신 분 것부터 차근차근 낼게요.' },
+    { dialogueId: 'DLG-D6-PRE-002', speakerId: 'CHAR-AKI', text: '의자도 여섯 개 다 닦았다. 안쪽 자리까지 불빛이 닿네.' },
+    { dialogueId: 'DLG-D6-PRE-003', speakerId: 'CHAR-AKI', text: '누가 먼저 올까. 문을 열고 기다려 보자.' },
   ],
   skipSummary: ['새 메뉴 대신 익숙한 조리대로 여섯째 날을 준비한다.', '아키는 잔과 접시를 채우고 여섯 의자를 꺼내 놓았다.'],
 });

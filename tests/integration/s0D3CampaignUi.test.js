@@ -22,7 +22,7 @@ const grillSlotConfig = JSON.parse(readFileSync(
   'utf8',
 ));
 
-async function reachD4PreOpen(bridge, { reputation = 10 } = {}) {
+async function reachD4PreOpen(bridge, { reputation = 12 } = {}) {
   await bridge.loadOrStart();
   bridge.finishPrologue();
   for (const dayId of ['D1', 'D2', 'D3']) {
@@ -105,13 +105,13 @@ describe('S0~D4 campaign presentation bridge', () => {
       available: 3,
       pending: true,
     });
-    expect(await bridge.claimGrillSlots(grillSlotConfig)).toMatchObject({
+    expect(await bridge.claimGrillSlots(grillSlotConfig, 3)).toMatchObject({
       ok: true,
       applied: true,
     });
     expect(bridge.getState().progression.claimedGrillSlots).toBe(3);
     expect(bridge.getState().economy).toEqual(economyBefore);
-    expect(await bridge.claimGrillSlots(grillSlotConfig)).toMatchObject({
+    expect(await bridge.claimGrillSlots(grillSlotConfig, 3)).toMatchObject({
       ok: true,
       applied: false,
       reason: 'already-claimed',
@@ -121,7 +121,7 @@ describe('S0~D4 campaign presentation bridge', () => {
     expect((await reloaded.loadOrStart()).ok).toBe(true);
     expect(reloaded.getState()).toMatchObject({
       campaign: { nodeId: 'd4', phase: CAMPAIGN_PHASE.PRE_OPEN },
-      economy: { reputation: 10, balance: 0 },
+      economy: { reputation: 12, balance: 0 },
       progression: { claimedGrillSlots: 3 },
     });
   });
@@ -137,7 +137,7 @@ describe('S0~D4 campaign presentation bridge', () => {
       '저장 공간 부족',
     ));
 
-    expect(await bridge.claimGrillSlots(grillSlotConfig)).toMatchObject({ ok: false });
+    expect(await bridge.claimGrillSlots(grillSlotConfig, 3)).toMatchObject({ ok: false });
     expect(bridge.getState()).toEqual(stateBefore);
     expect(bridge.getState().progression.claimedGrillSlots).toBe(2);
     expect(await storage.get(SAVE_STORAGE_KEYS.ACTIVE)).toBe(activeBefore);
@@ -151,7 +151,7 @@ describe('S0~D4 campaign presentation bridge', () => {
     expect(bridge.getState()).toMatchObject({
       campaign: { nodeId: 'd4', phase: CAMPAIGN_PHASE.BUSINESS },
       progression: { claimedGrillSlots: 2 },
-      economy: { reputation: 10 },
+      economy: { reputation: 12 },
     });
   });
 

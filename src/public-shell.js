@@ -25,6 +25,7 @@ import {
   readTextFile,
 } from './public-shell/browserFiles.js';
 import { createPublicShellDialogs } from './public-shell/publicShellDialogs.js';
+import { createImagePreloader } from './presentation/imageReadiness.js';
 import {
   indexApprovedRuntimeAssets,
   resolveApprovedRuntimeAsset,
@@ -82,9 +83,11 @@ function actionButton(label, handler, {
   });
   button.disabled = disabled;
   button.addEventListener('click', async () => {
-    button.disabled = true;
     try {
-      await handler();
+      // 대화상자가 호출 버튼을 기억한 뒤 비활성화한다(키보드 초점 복귀).
+      const operation = handler();
+      button.disabled = true;
+      await operation;
     } catch (error) {
       await showRecovery(error, { preserveMessage: '현재 저장과 설정을 변경하지 않았습니다.' });
     } finally {
@@ -144,13 +147,6 @@ function diagnosticText() {
 }
 
 function navigateToScenario({ forceNew = false } = {}) {
-  const nodeId = loadResult?.value?.envelope?.payload?.campaign?.nodeId;
-  if (!forceNew && nodeId === 'd5') {
-    const target = new URL('./d1-game.html', window.location.href);
-    target.searchParams.set('day', 'd5');
-    window.location.assign(target);
-    return;
-  }
   const target = new URL('./s0-d3.html', window.location.href);
   if (forceNew) target.searchParams.set('new', '1');
   window.location.assign(target);
@@ -166,8 +162,8 @@ function requestNewGame() {
     kicker: '새 게임 확인',
     title: '처음부터 다시 시작할까요?',
     content: [
-      element('p', { text: '지금까지 걸어온 이야기는 새 이야기가 자리를 잡은 뒤에 고이 남겨 둡니다.' }),
-      element('p', { className: 'warning', text: '마음을 정하기 전까지는 아무것도 달라지지 않습니다.' }),
+      element('p', { text: '프롤로그부터 다시 시작합니다. 첫 영업을 시작할 때 현재 진행이 새 게임으로 교체됩니다.' }),
+      element('p', { className: 'warning', text: '현재 저장은 백업으로 남습니다. 파일로 보관하려면 취소 후 저장 관리를 열어 주세요.' }),
     ],
     actions: [
       actionButton('취소', shellDialogs.close),
@@ -203,7 +199,7 @@ function summaryDefinition(summary) {
     ['진행 위치', summary.dayLabel],
     ['저장 지점', checkpointLabel],
     ['완료 날짜', summary.completedDayId ?? '없음'],
-    ['저장 시각', summary.writtenAt],
+    ['저장 시각', Number.isNaN(Date.parse(summary.writtenAt)) ? '확인할 수 없음' : new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(summary.writtenAt))],
   ]) {
     list.append(element('dt', { text: term }), element('dd', { text: value }));
   }
@@ -216,27 +212,21 @@ function renderStart(extraStatus = null) {
   const campaignComplete = isCampaignCompleteSave(loadResult);
   const missing = loadResult?.error?.code === PERSISTENCE_ERROR_CODE.SAVE_MISSING;
   const summary = saveSummary(loadResult);
-  const intro = element('div');
+  const intro = element('div', { className: 'title-intro' });
   intro.append(
-    element('p', { className: 'eyebrow', text: '아사노 아키, 다시 불을 켜다' }),
+    element('p', { className: 'eyebrow', text: '다시 불을 켜는 이야기' }),
     element('h1', { text: 'YAKI SEASON' }),
     element('p', {
       className: 'lead',
-      text: '남겨진 열쇠를 손에 쥐었다. 오래 비어 있던 가게에, 오늘은 내 손으로 다시 불을 켜 보려 한다.',
+      text: '숯불 앞에서 보내는 저녁. 한 접시를 사이에 두고, 조금씩 가까워지는 사람들.',
     }),
   );
   if (extraStatus) intro.append(extraStatus);
   else if (valid) {
-    const card = operationStatus(
-      'success',
-      campaignComplete ? '여섯째 날 영업을 마쳤습니다' : '돌아갈 자리가 남아 있습니다',
-      campaignComplete ? '다음 이야기를 기다리는 동안 후일담을 다시 읽을 수 있습니다.' : summary.dayLabel,
-    );
-    card.append(summaryDefinition(summary));
-    intro.append(card);
-  } else if (missing) {
-    intro.append(operationStatus('warning', '아직 쓰이지 않은 첫날', '마음을 정했다. 이제 오래 닫힌 문 앞에 서면 된다.'));
-  } else {
+    intro.append(element('p', { className: 'save-resume-note', text: campaignComplete
+      ? '여섯 번의 저녁을 마쳤습니다 · 후일담을 다시 읽을 수 있어요'
+      : `${summary.dayLabel} · 마지막으로 남긴 이야기에서 계속합니다` }));
+  } else if (!missing) {
     intro.append(operationStatus('error', '저장 복구가 필요합니다', loadResult?.error?.message ?? '저장 상태를 읽지 못했습니다.'));
   }
 
@@ -245,30 +235,36 @@ function renderStart(extraStatus = null) {
     attributes: { 'aria-label': '시작 메뉴' },
   });
   menu.append(
-    actionButton('새 게임', requestNewGame, { primary: !valid, id: 'new-game-button' }),
     actionButton(campaignComplete ? '후일담 다시 읽기' : '이어하기', () => navigateToScenario(), {
       disabled: !valid,
       primary: valid,
       id: 'continue-button',
     }),
+    actionButton('새 게임', requestNewGame, { primary: !valid, id: 'new-game-button' }),
   );
+  if (!valid) menu.querySelector('#continue-button').hidden = true;
   if (!valid && !missing) {
     menu.append(actionButton('저장 복구', () => showRecovery(loadResult.error), {
       primary: true,
       id: 'recovery-button',
     }));
   }
-  menu.append(
+  const utilities = element('nav', { className: 'title-utilities', attributes: { 'aria-label': '도움과 저장' } });
+  utilities.append(
     actionButton('설정', () => shellDialogs.openSettings('start')),
     actionButton('플레이방법', shellDialogs.openHelp),
-    actionButton('일시정지', shellDialogs.openPause),
-    actionButton('저장 파일 다운로드', downloadSave, { disabled: !valid, id: 'export-save-button' }),
-    importButton(),
   );
+  const saves = element('details', { className: 'save-management' });
+  saves.append(element('summary', { text: '저장 관리' }));
+  const savePanel = element('div', { className: 'save-management-panel' });
+  if (summary) savePanel.append(summaryDefinition(summary));
+  else savePanel.append(element('p', { text: '다른 기기의 저장 파일을 가져올 수 있습니다.' }));
+  savePanel.append(actionButton('저장 파일 다운로드', downloadSave, { disabled: !valid, id: 'export-save-button' }), importButton());
+  saves.append(savePanel); utilities.append(saves);
   const grid = element('div', { className: 'screen-grid' });
-  grid.append(intro, menu);
-  screen.append(grid);
-  screen.focus({ preventScroll: true });
+  intro.append(menu);
+  grid.append(intro);
+  screen.append(grid, utilities);
 }
 
 async function restoreBackup(slot) {
@@ -390,15 +386,17 @@ async function refreshLoadResult() {
 async function applyStartSceneBackground(fetchImpl = globalThis.fetch) {
   try {
     // /src/ 아래에서 열리면 /public/assets/… 로 해석된다(정션에 의존하지 않는다).
-    const response = await fetchImpl(runtimeAssetUrl('/assets/manifest.json'));
+    const response = await fetchImpl(runtimeAssetUrl('/assets/manifest.json'), { signal:AbortSignal.timeout(15000) });
     if (!response.ok) return null;
     const asset = resolveApprovedRuntimeAsset(
       indexApprovedRuntimeAssets(await response.json()),
       START_SCENE_ASSET_ID,
     );
     if (!asset) return null;
+    await createImagePreloader().load(asset.url);
     document.body.style.setProperty('--start-scene', `url("${asset.url}")`);
     document.body.dataset.startSceneAssetId = asset.id;
+    document.body.dataset.startSceneReady = 'true';
     return asset;
   } catch {
     return null;
@@ -445,8 +443,6 @@ export async function bootPublicShell() {
   applySettings();
   await refreshLoadResult();
 
-  document.querySelector('#pause-button').addEventListener('click', shellDialogs.openPause);
-  document.querySelector('#refresh-button').addEventListener('click', () => window.location.reload());
   fileInput.addEventListener('change', async () => {
     const [file] = fileInput.files;
     fileInput.value = '';

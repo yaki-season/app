@@ -50,6 +50,42 @@ async function readEnvelope(storage, key) {
 }
 
 describe('자동 체크포인트와 정산 원자성', () => {
+  it('검증해 불러온 동일 day-start는 재기록하지 않고 백업을 보존한다', async () => {
+    const { storage, runtime } = createHarness();
+    await runtime.startDay();
+    const saved = storage.snapshot();
+    await runtime.loadCampaign();
+    expect((await runtime.startDay()).ok).toBe(true);
+    expect(runtime.getState().campaign.phase).toBe(CAMPAIGN_PHASE.BUSINESS);
+    expect(storage.snapshot()).toEqual(saved);
+  });
+
+  it('불러온 이후 변경된 영업 전 상태는 저장 실패를 우회하지 않는다', async () => {
+    const { storage, runtime } = createHarness();
+    await runtime.startDay();
+    await runtime.loadCampaign();
+    runtime.state.economy.reputation = 12;
+    const saved = storage.snapshot();
+    storage.failNext('set');
+    expect((await runtime.startDay()).ok).toBe(false);
+    expect(runtime.getState().campaign.phase).toBe(CAMPAIGN_PHASE.PRE_OPEN);
+    expect(storage.snapshot()).toEqual(saved);
+  });
+
+  it('불러온 day-complete는 다음 날 시작 체크포인트로 정상 교체한다', async () => {
+    const { storage, runtime } = createHarness();
+    await runtime.startDay();
+    runtime.closeDayForSettlement();
+    await runtime.completeDay({ dayId: 'd1', completionId: 'checkpoint:d1', reward: {} });
+    const completed = await storage.get(SAVE_STORAGE_KEYS.ACTIVE);
+    await runtime.loadCampaign();
+    expect((await runtime.startDay()).ok).toBe(true);
+    expect(await readEnvelope(storage, SAVE_STORAGE_KEYS.ACTIVE)).toMatchObject({
+      checkpointType: CHECKPOINT_TYPE.DAY_START, payload: { campaign: { nodeId: 'd2' } },
+    });
+    expect(await storage.get(SAVE_STORAGE_KEYS.BACKUP_1)).toBe(completed);
+  });
+
   it('day-start 저장 뒤에만 영업을 열고 중단 복귀는 영업 전 상태를 사용한다', async () => {
     const { storage, repository, runtime } = createHarness();
     const started = await runtime.startDay();

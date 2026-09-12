@@ -16,7 +16,7 @@ async function seatGroup(page) {
     for (const order of view.orders) {
       seq += 1;
       await D(page, 'businessDispatch', { type: 'accept-order', intentId: `g:${seq}`, orderId: order.orderId });
-      for (const line of order.lines) {
+      for (const line of (await D(page, 'businessView')).orders.find(o => o.orderId === order.orderId).lines) {
         for (let i = 0; i < (line.quantity ?? 1) - (line.served ?? 0); i += 1) {
           seq += 1;
           await D(page, 'businessDispatch', {

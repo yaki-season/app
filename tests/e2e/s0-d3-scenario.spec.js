@@ -142,7 +142,7 @@ test('D1 영업 전 세 대사에서 승인된 전체 장면을 일관되게 표
   await expect(page.locator('#story-background')).toBeHidden();
 });
 
-test('KEY exact PR-SHOP-KEY가 없으면 승인 closed 배경 위에서도 placeholder를 유지한다', async ({
+test('KEY 필수 이미지가 없으면 빈 그림으로 진행시키지 않고 복구 경로를 제공한다', async ({
   page,
 }) => {
   await page.route('**/public/assets/manifest.json', async (route) => {
@@ -164,30 +164,23 @@ test('KEY exact PR-SHOP-KEY가 없으면 승인 closed 배경 위에서도 place
     });
   });
   await page.goto('/src/s0-d3.html');
-  await expect(page.locator('body')).toHaveAttribute('data-state-id', 'S0-STATE-KEY');
-  await expect(page.locator('body')).toHaveAttribute('data-asset-mode', 'placeholder');
-  await expect(page.locator('body')).toHaveAttribute(
-    'data-interaction-asset-mode',
-    'placeholder',
-  );
-  await expect(page.locator('#s0-exterior-background')).toBeVisible();
+  await expect(page.locator('body')).toHaveAttribute('data-entry-state', 'error');
+  await expect(page.locator('#entry-status').getByRole('link', { name:'다시 시도' })).toBeVisible();
+  await expect(page.locator('#entry-status').getByRole('link', { name:'시작 화면으로' })).toBeVisible();
   await expect(page.locator('#s0-interaction-visual')).toBeHidden();
   await expect(page.getByText('개발 중')).toHaveCount(0);
 });
 
-test('GATE는 PR-SHOP-GATE-S0 없이 exact background 한 장과 DOM action만 렌더한다', async ({
+test('문 열기 입력 전에는 열쇠 없는 닫힌 문을 유지하며 별도 대문 레이어를 요구하지 않는다', async ({
   page,
 }) => {
   await page.route('**/public/assets/manifest.json', async (route) => {
+    const manifest = await (await route.fetch()).json();
+    manifest.assets = manifest.assets.filter(asset => !['PR-SHOP-GATE-S0', 'BG-EXTERIOR-S0-GATE-OPEN'].includes(asset.id));
+    manifest.assets.push({ id:'BG-EXTERIOR-S0-GATE-OPEN', status:'approved', url:'/assets/s0/gate-open-approved.png' });
     await route.fulfill({
       contentType: 'application/json',
-      body: JSON.stringify({
-        assets: [{
-          id: 'BG-EXTERIOR-S0-GATE-OPEN',
-          status: 'approved',
-          url: '/assets/s0/gate-open-approved.png',
-        }],
-      }),
+      body: JSON.stringify(manifest),
     });
   });
   await page.route('**/public/assets/s0/gate-open-approved.png', async (route) => {
@@ -197,11 +190,11 @@ test('GATE는 PR-SHOP-GATE-S0 없이 exact background 한 장과 DOM action만 �
     });
   });
   await page.goto('/src/s0-d3.html');
-  await expect(page.locator('body')).toHaveAttribute('data-asset-mode', 'placeholder');
+  await expect(page.locator('body')).toHaveAttribute('data-entry-state', 'ready');
   await page.getByRole('button', { name: '열쇠를 집는다' }).click();
   await expect(page.locator('body')).toHaveAttribute(
     'data-required-asset-id',
-    'BG-EXTERIOR-S0-GATE-OPEN',
+    'BG-EXTERIOR-S0-CLOSED',
   );
   await expect(page.locator('body')).toHaveAttribute('data-asset-mode', 'approved');
   await expect(page.locator('body')).toHaveAttribute('data-runtime-visual-layer-count', '1');
@@ -213,7 +206,7 @@ test('GATE는 PR-SHOP-GATE-S0 없이 exact background 한 장과 DOM action만 �
     'data-pr-shop-gate-runtime-visual',
     'false',
   );
-  await expect(page.locator('body')).toHaveAttribute('data-open-gate-outline-count', '1');
+  await expect(page.locator('body')).toHaveAttribute('data-open-gate-outline-count', '0');
   await expect(page.locator('body')).toHaveAttribute(
     'data-closed-gate-residual-pixel-count',
     '0',
@@ -222,20 +215,21 @@ test('GATE는 PR-SHOP-GATE-S0 없이 exact background 한 장과 DOM action만 �
   await expect(page.locator('#s0-exterior-background')).toBeVisible();
   await expect(page.locator('#s0-exterior-background')).toHaveAttribute(
     'src',
-    '/public/assets/s0/gate-open-approved.png',
+    '/public/assets/core/s0/prologue/bg-exterior-s0-closed-r2-b1.png',
   );
+  await expect(page.locator('#s0-interaction-visual')).toBeHidden();
   await expect(page.getByText('개발 중')).toHaveCount(0);
   const action = page.getByRole('button', { name: '문을 연다' });
   await expect(action).toBeVisible();
-  const backgroundBox = await page.locator('#s0-exterior-background').boundingBox();
+  const contentBox = await page.locator('#content-panel').boundingBox();
   const actionBox = await action.boundingBox();
-  const overlap = backgroundBox.x < actionBox.x + actionBox.width
-    && backgroundBox.x + backgroundBox.width > actionBox.x
-    && backgroundBox.y < actionBox.y + actionBox.height
-    && backgroundBox.y + backgroundBox.height > actionBox.y;
-  expect(overlap).toBe(false);
+  // 장면 전체 위에 대사·행동을 올리되 두 조작 영역은 겹치지 않는다.
+  expect(contentBox.y + contentBox.height).toBeLessThanOrEqual(actionBox.y);
   await expect(page.locator('[data-runtime-visual-asset-id="PR-SHOP-GATE-S0"]'))
     .toHaveCount(0);
+  await action.click();
+  await expect(page.locator('#story-illustration')).toBeVisible();
+  await expect(page.locator('body')).toHaveAttribute('data-dialogue-id', 'DLG-S0-001');
 });
 
 test.describe('기준 viewport', () => {

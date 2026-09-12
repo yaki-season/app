@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { createNegimaStageTextures } from './negimaStageTextures.js';
+import { tareCoatMultiplier } from './grillShaderParams.js';
 import { GLTFLoader } from '/node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 
 export const D1_RAW_NEGIMA_COMPOSITION_ID = 'MDL-NEGIMA-GRILL-RAW';
@@ -80,7 +82,7 @@ async function textureFromPng(bytes, createImageBitmapImpl) {
   if (typeof createImageBitmapImpl !== 'function') {
     throw new Error('PNG nearest albedo decode를 위한 createImageBitmap이 없습니다');
   }
-  const image = await createImageBitmapImpl(new Blob([bytes], { type: 'image/png' }));
+  const image = await createImageBitmapImpl(new Blob([bytes], { type: 'image/png' }), { premultiplyAlpha: 'none' });
   const texture = new THREE.Texture(image);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.magFilter = THREE.NearestFilter;
@@ -300,6 +302,8 @@ function grillSpriteInstanceForSlot(stageTextures, slotMesh, sourceTransform) {
     // ImageBitmap upload reverses this standalone artwork plane. Rotate the plane only so
     // the sharp tip stays at the authored top and the handle remains at the bottom.
     plane.rotation.z = Math.PI;
+    // Bitmap의 상하 반전만 보정한다. 좌우까지 뒤집으면 지정 원본의 파 단면이 바뀐다.
+    plane.scale.x = -1;
     plane.renderOrder = 320 + index;
     plane.frustumCulled = false;
     plane.raycast = () => {};
@@ -333,6 +337,7 @@ function grillSpriteInstanceForSlot(stageTextures, slotMesh, sourceTransform) {
     targetSize,
     setStage(stage) {
       const normalized = Object.hasOwn(planes, stage) ? stage : 'raw';
+      if (holder.userData.stage === normalized) return normalized;
       Object.entries(planes).forEach(([key, plane]) => {
         plane.visible = key === normalized;
       });
@@ -340,38 +345,13 @@ function grillSpriteInstanceForSlot(stageTextures, slotMesh, sourceTransform) {
       return normalized;
     },
     stage: () => holder.userData.stage,
+    setTare(amount = 0) {
+      if (holder.userData.tare === amount) return;
+      holder.userData.tare = amount;
+      const tint = new THREE.Color().setRGB(...tareCoatMultiplier(), THREE.LinearSRGBColorSpace);
+      Object.values(planes).forEach(plane => plane.material.color.set(0xffffff).lerp(tint, amount));
+    },
     ingredientCount: () => D1_RAW_NEGIMA_SEQUENCE.length,
-    // 승인 원본 평면에 굽는 셰이더를 직접 입힌다. 셰이더를 별도 mesh(pgSlot)에 두면 그쪽은
-    // 슬롯 rect 비율이라 같은 텍스처가 다른 실루엣으로 늘어나고, 단계가 바뀌는 순간 이미지가
-    // 통째로 교체된 것처럼 보인다. 평면을 하나만 쓰면 교체 자체가 존재하지 않는다.
-    // 굽기 전에는 승인 원본 재질을 그대로 쓰고, 굽기 시작하면 같은 평면의 재질만 셰이더로
-    // 바꾼다. 평면(지오메트리·위치)이 하나라 실루엣이 변하지 않고, 생것은 승인 색 그대로다.
-    setCooking(active) {
-      const next = active ? holder.userData.cookingMaterialRef : holder.userData.rawMaterialRef;
-      if (!next || planes.raw.material === next) return false;
-      planes.raw.material = next;
-      return true;
-    },
-    applyCookingMaterial(material) {
-      if (!material || holder.userData.cookingMaterialRef === material) return false;
-      // 승인 평면이 쓰던 렌더 상태를 그대로 물려준다. 특히 toneMapped를 켜두면 three가
-      // 출력 색을 한 번 더 변환해 승인 아트의 생고기·생파 색이 따뜻하게 밀린다.
-      material.toneMapped = false;
-      material.transparent = true;
-      material.depthTest = false;
-      material.depthWrite = false;
-      material.side = THREE.DoubleSide;
-      material.needsUpdate = true;
-      holder.userData.rawMaterialRef ??= planes.raw.material;
-      holder.userData.cookingMaterialRef = material;
-      Object.entries(planes).forEach(([key, plane]) => { plane.visible = key === 'raw'; });
-      holder.userData.stage = 'raw';
-      holder.userData.cookingMaterial = true;
-      return true;
-    },
-    usesCookingMaterial: () => holder.userData.cookingMaterial === true,
-    // 지금 평면이 굽는 셰이더 재질을 쓰는가(= 조리 중). 평면·지오메트리는 바뀌지 않는다.
-    cookingActive: () => planes.raw.material === holder.userData.cookingMaterialRef,
   };
 }
 
@@ -531,6 +511,7 @@ function trayInstanceForSlot(texture, slotMesh, sourceTransform, stackIndex) {
 
 export async function createD1RawNegimaCompositor({
   bundle,
+  renderer = null,
   fetchImpl = globalThis.fetch,
   cryptoImpl = globalThis.crypto,
   gltfLoader = new GLTFLoader(),
@@ -564,12 +545,14 @@ export async function createD1RawNegimaCompositor({
       textureFromPng(bytesByRole['negi-albedo'], createImageBitmapImpl),
       textureFromPng(bytesByRole['tray-sprite'], createImageBitmapImpl),
     ]);
-    const stageTextures = Object.freeze(Object.fromEntries(await Promise.all(
+    const approvedStageTextures = Object.freeze(Object.fromEntries(await Promise.all(
       Object.keys(bundle.stageSprites).map(async (stage) => [
         stage,
         await textureFromPng(bytesByRole[`stage-${stage}`], createImageBitmapImpl),
       ]),
     )));
+    const derived = renderer ? createNegimaStageTextures(renderer, traySprite) : null;
+    const stageTextures = derived?.textures ?? approvedStageTextures;
     const built = buildComposition({
       composition,
       models: { skewerBase, chicken, negi },
@@ -584,6 +567,7 @@ export async function createD1RawNegimaCompositor({
       sourceAlbedoCount: 3,
       traySpriteCount: 1,
       grillStageSpriteCount: Object.keys(stageTextures).length,
+      stageSource: derived ? 'spr-assembly-tray-negima-r1-b1.png' : 'legacy-grill-sprites',
       composedIngredientCount: composition.sequence.length,
       triangleCount: built.triangles,
       materialCount: materialCount(built.root),
@@ -592,7 +576,8 @@ export async function createD1RawNegimaCompositor({
     });
     return Object.freeze({
       diagnostics,
-      // All five approved planes remain available for exact stage switching.
+      stageTargets: derived?.targets ?? [],
+      // 같은 원본에서 파생한 다섯 상태를 고정된 평면에서 교체한다.
       grillRawTexture: stageTextures.raw,
       createInstance: (slotMesh, sourceTransform) => (
         grillSpriteInstanceForSlot(stageTextures, slotMesh, sourceTransform)

@@ -35,7 +35,7 @@ const REQUIRED_RUNTIME_FILES = Object.freeze([
   '/public/assets/core/cooking/spr-assembly-tray-negima-r1-b1.png',
 ]);
 
-test('approved grill negima exact-loads and cooks the approved raw plane with the runtime shader', async ({ page }, testInfo) => {
+test('원본 네기마를 로드하고 실제 굽기 단계에 맞춰 상태 텍스처를 교체한다', async ({ page }, testInfo) => {
   await routeD1ReleaseDefinition(page);
   const responses = new Map();
   page.on('response', (response) => {
@@ -138,9 +138,9 @@ test('approved grill negima exact-loads and cooks the approved raw plane with th
     const activeSlots = runtime.slots.slice(0, 2);
     return activeSlots.every((slot) => (
       slot.approvedRawVisible
-      && slot.shaderOnApprovedPlane
-      && slot.shaderCookingActive
-      && slot.shaderUsesApprovedRaw
+      && !slot.shaderOnApprovedPlane
+      && !slot.shaderCookingActive
+      && slot.visibleSpriteStage === slot.approvedStage
       && slot.interactionVisible
     )) ? runtime : null;
   }).not.toBeNull();
@@ -150,15 +150,15 @@ test('approved grill negima exact-loads and cooks the approved raw plane with th
   for (const slot of activeRawRuntime.slots.slice(0, 2)) {
     expect(slot).toMatchObject({
       approvedRawVisible: true,
-      shaderOnApprovedPlane: true,
-      shaderCookingActive: true,
-      shaderUsesApprovedRaw: true,
+      shaderOnApprovedPlane: false,
+      shaderCookingActive: false,
+      shaderUsesApprovedRaw: false,
       interactionVisible: true,
     });
   }
   await D(page, 'cookElapse', 8);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
-    .toMatchObject({ approvedStage: 'proper', visibleSpriteStage: 'raw', shaderCookingActive: true });
+    .toMatchObject({ approvedStage: 'proper', visibleSpriteStage: 'proper', shaderCookingActive: false });
   await page.screenshot({
     path: testInfo.outputPath(`raster-proper-${page.viewportSize().width}x${page.viewportSize().height}.png`),
     fullPage: true,
@@ -181,19 +181,19 @@ test('approved grill negima exact-loads and cooks the approved raw plane with th
   expect(flippedBackVisual).toMatchObject({
     visibleSpriteStage: 'raw',
     visualMirrorX: -1,
-    shaderCookingActive: true,
+    shaderCookingActive: false,
   });
   await D(page, 'cookElapse', 8);
   let progressedBackVisual = await D(page, 'rawNegimaRuntime').then((runtime) => runtime.slots[0]);
   expect(['proper', 'overcooked', 'burnt']).toContain(progressedBackVisual.approvedStage);
-  expect(progressedBackVisual.visibleSpriteStage).toBe('raw');
+  expect(progressedBackVisual.visibleSpriteStage).toBe(progressedBackVisual.approvedStage);
   await D(page, 'cookElapse', 8);
   progressedBackVisual = await D(page, 'rawNegimaRuntime').then((runtime) => runtime.slots[0]);
   expect(['overcooked', 'burnt']).toContain(progressedBackVisual.approvedStage);
-  expect(progressedBackVisual.visibleSpriteStage).toBe('raw');
+  expect(progressedBackVisual.visibleSpriteStage).toBe(progressedBackVisual.approvedStage);
   await D(page, 'cookElapse', 5);
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
-    .toMatchObject({ approvedStage: 'burnt', visibleSpriteStage: 'raw' });
+    .toMatchObject({ approvedStage: 'burnt', visibleSpriteStage: 'burnt' });
 });
 
 test('이어하기는 이전 페이지에서 만료된 그릴 잠금을 제거해 완성 꼬치를 즉시 회수한다', async ({ page }) => {
@@ -252,16 +252,16 @@ test('이어하기는 이전 페이지에서 만료된 그릴 잠금을 제거�
   expect(restoredSlot.frontElapsedSec).toBeCloseTo(8, 4);
   expect(restoredSlot.backElapsedSec).toBeGreaterThanOrEqual(8);
 
-  // 다 익은 슬롯이므로 승인 원본 스프라이트가 아니라 GLSL이 그 이미지를 칠한 상태여야 한다.
+  // 저장한 적정 상태 텍스처와 회수 입력이 함께 복원되어야 한다.
   // 입력(회수 클릭)은 어느 쪽이든 살아 있어야 한다.
   await expect.poll(async () => (await D(page, 'rawNegimaRuntime')).slots[0])
     .toMatchObject({
       approvedRawVisible: true,
       approvedStage: 'proper',
-      visibleSpriteStage: 'raw',
-      shaderOnApprovedPlane: true,
-      shaderCookingActive: true,
-      shaderUsesApprovedRaw: true,
+      visibleSpriteStage: 'proper',
+      shaderOnApprovedPlane: false,
+      shaderCookingActive: false,
+      shaderUsesApprovedRaw: false,
       interactionVisible: true,
     });
   const grillSlotKey = (await D(page, 'rawNegimaRuntime')).slots[0].key;

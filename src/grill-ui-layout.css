@@ -80,6 +80,14 @@ body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .hint {
   margin: 0;
 }
 
+/* 확장 그릴의 두 번째 상태 줄은 비워 두고 안내를 석쇠 위쪽으로 옮긴다. */
+body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active):has(.grill-status-layer[data-expanded="true"]) .hint {
+  top: 12vh;
+  left: 28vw;
+  width: 45vw;
+  min-height: 30px;
+}
+
 /* 그릴 화면은 같은 공용 재고를 오른쪽의 읽기 전용 품질 목록으로 투영한다. */
 body:has(.quick-nav button[data-screen="SCR-SVC-GRILL"].active) .dock-shelf {
   display: none !important;

@@ -15,12 +15,14 @@ const D = (page, name, ...args) => page.evaluate(
 async function skipStory(page) {
   await page.getByRole('button', { name: '이 장면 건너뛰기' }).click();
   await expect(page.locator('.summary')).toHaveCount(0);
+  if (await page.getByTestId('market-start-business').isVisible()) await page.getByTestId('market-start-business').click();
 }
 
 async function readStory(page) {
   await page.locator('#actions .primary').click();
   await page.locator('#actions .primary').click();
   await page.locator('#actions .primary').click();
+  if (await page.getByTestId('market-start-business').isVisible()) await page.getByTestId('market-start-business').click();
 }
 
 async function completeS0Interactions(page) {
@@ -191,7 +193,7 @@ test('키보드 S0 두 입력 뒤 점화 대사를 스킵해 실제 D1을 부팅
   await waitForD1Boot(page);
 });
 
-test('day-start 저장 실패 시 d1-game으로 이동하지 않고 campaign-error를 표시한다', async ({ page }) => {
+test('day-start 저장 실패 시 이동하지 않고 마켓에서 재시도할 수 있다', async ({ page }) => {
   await page.addInitScript(() => {
     const nativeSetItem = Storage.prototype.setItem;
     window.__failCampaignDayStart = false;
@@ -214,8 +216,8 @@ test('day-start 저장 실패 시 d1-game으로 이동하지 않고 campaign-err
   await skipStory(page);
 
   await expect(page).toHaveURL(/\/src\/s0-d3\.html\?new=1$/);
-  await expect(page.locator('body')).toHaveAttribute('data-state-id', 'campaign-error');
-  await expect(page.getByRole('heading', { name: '진행을 계속할 수 없습니다' })).toBeVisible();
+  await expect(page.getByTestId('market-status')).toContainText('영업 시작을 저장하지 못했습니다');
+  await expect(page.getByTestId('market-start-business')).toBeEnabled();
   expect(await page.evaluate(() => window.__s0d3Debug.campaignState())).toMatchObject({
     campaign: { nodeId: 'd1', phase: 'pre-open' },
   });

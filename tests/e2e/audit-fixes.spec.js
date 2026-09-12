@@ -47,6 +47,9 @@ test('첫 손님을 섞고 새로고침해도 같은 주문·인물을 유지한
   await page.reload();
   await page.waitForFunction(() => window.__d1GameDebug?.businessSession?.().ok);
   expect((await D(page, 'businessView')).seats[0].customerId).toBe(first.customerId);
+  expect((await D(page, 'businessView')).orders[0].lines).toEqual([]);
+  await expect.poll(async () => (await D(page, 'businessView')).seats[0].canOrder, { timeout: 10000 }).toBe(true);
+  await page.getByTestId(`serve-target-${first.seatId}`).click();
   expect((await D(page, 'businessView')).orders[0].lines.map(l => [l.menuId, l.quantity]))
     .toEqual([['kawa', 1], ['beer', 1]]);
   await page.screenshot({ path: test.info().outputPath('random-first-resumed.png') });

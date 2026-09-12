@@ -26,9 +26,16 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     pendingTextures += 1;
     const tex = loader.load(
       resolved,
-      () => { pendingTextures -= 1; },
+      () => {
+        pendingTextures -= 1;
+        // 복구 직후 대화로 시간이 멈췄어도 늦게 받은 인물/배경은 그린다.
+        if (pendingTextures === 0 && pausedAtMs !== null && !disposed) renderStillFrame(pausedAtMs);
+      },
       undefined,
-      () => { pendingTextures -= 1; textureErrorCount += 1; },
+      () => {
+        pendingTextures -= 1; textureErrorCount += 1;
+        if (pendingTextures === 0 && pausedAtMs !== null && !disposed) renderStillFrame(pausedAtMs);
+      },
     );
     tex.colorSpace = THREE.SRGBColorSpace;
     texCache.set(resolved, tex);
@@ -293,9 +300,9 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
   }
 
   // 빌보드를 새 rect로 제자리 재배치(지오메트리·위치 갱신). 좌석 확장 시 좌석 재배치에 쓴다.
-  function placeBillboard(mesh, cam, rect, z) {
+  function placeBillboard(mesh, cam, rect, z, screenSized = false) {
     const center = worldAtScreen(cam, rect.x + rect.width / 2, rect.y + rect.height / 2, z);
-    const dist = center.distanceTo(cam.position);
+    const dist = screenSized ? Math.abs(center.clone().applyMatrix4(cam.matrixWorldInverse).z) : center.distanceTo(cam.position);
     const fullH = 2 * dist * TAN_HALF;
     mesh.geometry.dispose();
     mesh.geometry = new THREE.PlaneGeometry(fullH * ASPECT * rect.width, fullH * rect.height);
@@ -445,6 +452,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
   const camera = makeCamera(eye, currentLook);
   let lookTween = null; // { from:Vector3, to:Vector3, startMs, endMs }
   let pausedAtMs = null;
+  let disposed = false;
 
   // 화면 전환: 시선을 현재값에서 목표 프리셋으로 트윈(수렴). 오브젝트는 즉시 활성 화면으로 토글.
   function goToScreen(screenId, nowMs, transitionMs) {
@@ -483,11 +491,15 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     lastH = height;
   }
 
-  function renderFrame(nowMs) {
-    if (pausedAtMs !== null) return;
+  function renderStillFrame(nowMs) {
     tickCamera(nowMs);
     resize();
     renderer.render(scene, camera);
+  }
+
+  function renderFrame(nowMs) {
+    if (pausedAtMs !== null) return;
+    renderStillFrame(nowMs);
     if (lastFrameAt != null) {
       const d = nowMs - lastFrameAt;
       if (d > 0 && d < 250) {
@@ -608,7 +620,9 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     },
     // 아직 화면에 걸지 않은 그림을 미리 받아 둔다. 교체 순간 디코딩이 끝나 있지 않으면
     // 그 한 프레임이 비어 검게 뜬다(교대 프레임 애니메이션의 첫 전환).
-    warmTexture: (url) => { if (url) texture(url); },
+    // companion에는 frame-manifest JSON도 있다. 그것을 TextureLoader에 넣으면
+    // 이미지 디코딩 오류로 진입 준비 전체가 실패하므로 raster만 미리 읽는다.
+    warmTexture: (url) => { if (url && /\.(?:png|webp|jpe?g|avif)(?:[?#]|$)/i.test(url)) texture(url); },
     setArtUrl: (key, url) => {
       const mesh = artMesh[key];
       if (!mesh) return;
@@ -628,6 +642,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     seatCleanupWorld,
     setSeatCapacity,
     setSeatLayoutMode,
+    seatLayoutMode: () => seatLayoutMode,
     setSeatFoodLayout,
     setSeatPlateVisible: (seatId, visible) => {
       const plate = seatBaseMesh[seatId];
@@ -724,7 +739,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
         y: offsetY,
         width: 1,
         height: 1,
-      }, LAYER_Z.actor);
+      }, LAYER_Z.actor, true);
       actor.scale.set(scale, scale, 1);
       actor.userData.restPosition = actor.position.clone();
       actor.userData.frameKey = frameKey;
@@ -733,6 +748,7 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     activeScreenId: () => activeId,
     goToScreen,
     renderFrame,
+    renderStillFrame,
     pause,
     resume,
     isPaused: () => pausedAtMs !== null,
@@ -745,6 +761,6 @@ export function createProductionRenderer(canvas, { runtimeAssets = null } = {}) 
     projectScreenPointAtPreset,
     projectArtUvAtPreset,
     quaternionFor: (screenId) => presetCam[screenId].quaternion.clone(),
-    dispose: () => renderer.dispose(),
+    dispose: () => { disposed = true; renderer.dispose(); },
   };
 }

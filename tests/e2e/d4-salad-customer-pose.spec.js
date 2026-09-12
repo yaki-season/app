@@ -19,23 +19,13 @@ async function seatSaladCustomer(page) {
   let seq = 0;
   for (let round = 0; round < 8; round += 1) {
     await D(page, 'businessAdvance', 6_000);
+    for (const seat of (await D(page, 'businessView')).seats.filter(s => s.canOrder))
+      await D(page, 'businessDispatch', { type: 'accept-order', intentId: `salad:accept:${++seq}`, orderId: seat.orderId });
     const view = await D(page, 'businessView');
     const saladSeat = view.seats.find((seat) => seat.occupied
       && seat.customerId !== 'REGULAR_TSUKIOKA'
       && (seat.remainingItems ?? []).some((item) => item.menuId === 'cabbage-salad'));
-    if (saladSeat) {
-      for (let step = 0; step < 15; step += 1) {
-        const current = (await D(page, 'businessView')).seats
-          .find((seat) => seat.seatId === saladSeat.seatId);
-        if (current?.canOrder) break;
-        await D(page, 'businessAdvance', 1_000);
-      }
-      seq += 1;
-      await D(page, 'businessDispatch', {
-        type: 'accept-order', intentId: `salad:${seq}`, orderId: saladSeat.orderId,
-      });
-      return saladSeat;
-    }
+    if (saladSeat) return saladSeat;
     for (const order of view.orders) {
       seq += 1;
       await D(page, 'businessDispatch', { type: 'accept-order', intentId: `salad:${seq}`, orderId: order.orderId });
@@ -69,7 +59,8 @@ test('사라다만 받은 손님은 꼬치를 먹지 않고 대기 자세로 남
 
   const seat = await seatSaladCustomer(page);
   const waitingSource = await actorSource(page, seat.seatId);
-  expect(waitingSource, '대기 라스터').toMatch(/-waiting-/);
+  // solo 대기 자산은 명세에서 service로 명명되고, 개발자 외형은 waiting으로 명명된다.
+  expect(waitingSource, '승인 대기 라스터').toMatch(/(?:-waiting-|-solo-service-)/);
 
   const served = await D(page, 'businessDispatch', {
     type: 'serve-item',

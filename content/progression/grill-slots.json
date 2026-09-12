@@ -4,9 +4,12 @@
   "displayKey": "progression.grillSlots",
   "active": true,
   "status": "approved",
-  "maxSlots": 8,
+  "maxSlots": 6,
   "tiers": [
     { "reputation": 0, "slots": 2 },
-    { "reputation": 10, "slots": 3, "requiresUnlockId": "day-d4" }
+    { "reputation": 12, "slots": 3, "name": "첫 확장", "description": "한 손님 분을 굽는 동안 다음 꼬치도 준비합니다." },
+    { "reputation": 30, "slots": 4, "name": "나란한 두 접시", "description": "두 꼬치씩, 두 손님의 접시를 함께 돌봅니다." },
+    { "reputation": 60, "slots": 5, "name": "붐비는 저녁", "description": "서로 다른 메뉴의 굽기를 나누어 살필 여유를 얻습니다." },
+    { "reputation": 90, "slots": 6, "name": "골목의 화로", "description": "여섯 꼬치까지. 채울 만큼만 채우고 각각의 익힘을 읽으세요." }
   ]
 }

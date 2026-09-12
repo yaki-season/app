@@ -9,11 +9,18 @@
 <link rel="apple-touch-icon" href="/yaki-season-icon-r3-512.png">
 <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="./s0-d3.css">
+  <link rel="stylesheet" href="./presentation/page-entry.css">
 </head>
-<body>
+<body data-entry-state="loading">
+  <section id="entry-status" class="entry-status" role="status">
+    <h1>가게 문을 준비하고 있어요</h1>
+    <p>이야기와 장면을 불러옵니다.</p>
+    <nav class="entry-recovery" hidden><a href="">다시 시도</a><a href="./public-shell.html">시작 화면으로</a></nav>
+  </section>
   <main id="scenario-app" class="scenario-app" data-testid="scenario-app">
     <header class="scenario-header">
-      <h1 id="screen-heading">남겨진 열쇠</h1>
+      <div><p class="scene-kicker">YAKI SEASON</p><h1 id="screen-heading">남겨진 열쇠</h1></div>
+      <button id="scenario-menu" type="button" aria-haspopup="dialog">메뉴</button>
     </header>
 
     <section id="visual-placeholder" class="visual-placeholder" aria-label="이야기 장면">
@@ -32,7 +39,24 @@
 
     <section id="content-panel" class="content-panel" aria-live="polite"></section>
     <nav id="actions" class="actions" aria-label="시나리오 조작"></nav>
+    <p id="scene-status" class="scene-status" role="status" hidden></p>
   </main>
-  <script type="module" src="./s0-d3.js"></script>
+  <dialog id="scenario-menu-dialog" aria-labelledby="scenario-menu-title">
+    <h2 id="scenario-menu-title">잠깐 쉬어가기</h2>
+    <p>이야기는 Enter 또는 Space로 넘길 수 있습니다.<br>시작 화면으로 돌아가면 현재 장면은 처음부터 다시 읽게 됩니다. 저장된 영업은 유지됩니다.</p>
+    <div class="scenario-menu-actions"><a href="./public-shell.html">시작 화면으로</a><button id="scenario-menu-close" type="button" autofocus>이야기 계속 읽기</button></div>
+  </dialog>
+  <noscript>이야기를 표시하려면 브라우저의 JavaScript를 켜 주세요.</noscript>
+  <script type="module">
+    import('./s0-d3.js').catch(error => {
+      document.body.dataset.entryState = 'error';
+      const entry = document.querySelector('#entry-status');
+      entry.hidden = false;
+      entry.querySelector('h1').textContent = '화면을 준비하지 못했습니다';
+      entry.querySelector('p').textContent = '연결을 확인하고 다시 시도해 주세요. 저장된 이야기는 유지됩니다.';
+      entry.querySelector('.entry-recovery').hidden = false;
+      console.error('SCENARIO_BOOT_FAILED', error?.name);
+    });
+  </script>
 </body>
 </html>

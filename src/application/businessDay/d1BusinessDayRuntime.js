@@ -1,4 +1,5 @@
 import { CAMPAIGN_PHASE } from '../../domain/campaign/campaign.js';
+import { buildGuestMemoryFlags, normalizeGuestStoryProgress } from '../../domain/businessDay/guestMemory.js';
 import {
   D1_DAY_PHASE,
   advanceD1BusinessDay,
@@ -56,9 +57,9 @@ export class D1BusinessDayRuntime {
     return { ok: true, value: this.getState(), checkpoint: checkpoint.save };
   }
 
-  restore(snapshot) {
+  validateSnapshot(snapshot, runId = this.state?.runId) {
     // 영업 시작 체크포인트와 같은 회차만 재개한다. 오래된 완료 snapshot은 보상을 재실행하지 않는다.
-    if (!snapshot || snapshot.runId !== this.state?.runId
+    if (!snapshot || snapshot.runId !== runId
       || snapshot.dayId !== this.definition.id || snapshot.phase === D1_DAY_PHASE.COMPLETE) {
       return { ok: false, reason: 'snapshot-session-mismatch' };
     }
@@ -79,7 +80,15 @@ export class D1BusinessDayRuntime {
       return { ok: false, reason: 'invalid-snapshot' };
     }
     if (!validation.valid) return { ok: false, reason: 'invalid-snapshot', errors: validation.errors };
+    return { ok: true };
+  }
+
+  restore(snapshot) {
+    const validation = this.validateSnapshot(snapshot);
+    if (!validation.ok) return validation;
     this.state = structuredClone(snapshot);
+    this.state.guestStory = normalizeGuestStoryProgress(this.state.guestStory, this.definition.id);
+    if (!Array.isArray(this.state.guestServings)) this.state.guestServings = [];
     this.state.clock.paused = false;
     return { ok: true, value: this.getState() };
   }
@@ -88,6 +97,11 @@ export class D1BusinessDayRuntime {
     if (!this.state) throw new TypeError('D1 영업을 먼저 시작해야 합니다.');
     this.state = advanceD1BusinessDay(this.state, this.definition, deltaMs);
     return { ok: true, value: this.getState() };
+  }
+
+  setGuestStoryProgress(progress) {
+    if (!this.state) return;
+    this.state.guestStory = normalizeGuestStoryProgress(progress, this.definition.id);
   }
 
   dispatch(command) {
@@ -113,10 +127,12 @@ export class D1BusinessDayRuntime {
       this.campaignRuntime.closeDayForSettlement();
     }
     const summary = this.state.settlement.summary;
+    const reward = buildBusinessDayCampaignReward(summary, this.definition);
+    reward.storyFlagIds = [...new Set([...reward.storyFlagIds, ...buildGuestMemoryFlags(this.state)])];
     const result = await this.campaignRuntime.completeDay({
       dayId: this.definition.id,
       completionId: this.state.settlement.completionId,
-      reward: buildBusinessDayCampaignReward(summary, this.definition),
+      reward,
       summary,
     });
     if (!result.ok) {

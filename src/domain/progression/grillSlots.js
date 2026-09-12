@@ -1,5 +1,20 @@
 export const DEFAULT_CLAIMED_GRILL_SLOTS = 2;
 
+// 공개 마켓은 실제 렌더 가능한 연속 상품만 받는다. 손상된 JSON도 로딩 실패로 복구한다.
+export function assertGrillMarketConfig(config) {
+  if (config?.status !== 'approved' || config.active !== true || config.maxSlots !== 6
+    || !Array.isArray(config.tiers) || config.tiers.length !== 5
+    || config.tiers.some((tier, index) => tier?.slots !== index + 2
+      || !Number.isFinite(tier.reputation) || tier.reputation < 0
+      || (index === 0 ? tier.reputation !== 0
+        : tier.reputation <= config.tiers[index - 1].reputation
+          || typeof tier.name !== 'string' || !tier.name.trim()
+          || typeof tier.description !== 'string' || !tier.description.trim()))) {
+    throw new TypeError('그릴 마켓 상품 구성이 올바르지 않습니다.');
+  }
+  return config;
+}
+
 export const GRILL_SLOT_UPGRADE_BLOCK = Object.freeze({
   UNAVAILABLE: 'unavailable',
   UNLOCK: 'unlock',
@@ -71,7 +86,7 @@ export function campaignGrillUpgradeState({
   return {
     available,
     claimed,
-    pending: available > claimed,
+    pending: blockedBy === null && available > claimed,
     targetSlots: target?.slots ?? null,
     requiredReputation: target?.reputation ?? null,
     requiredUnlockId: target?.requiresUnlockId ?? null,

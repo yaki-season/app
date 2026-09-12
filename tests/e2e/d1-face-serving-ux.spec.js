@@ -103,8 +103,9 @@ test('그릴 시작 2칸은 감각적 굽기 상태와 다음 행동을 FHD/720 
   expect(visible).toHaveLength(2);
   for (const slot of visible) {
     expect(slot.contactFace).toBe('front');
-    expect(slot.text).toContain('첫 면 굽는 중');
-    expect(slot.text).toContain('색이 노릇해질 때까지 지켜보세요');
+    expect(slot.text).toContain('앞면');
+    expect(slot.text).toContain('뒷면');
+    expect(slot.text).toContain('지글지글 · 익히는 중');
     expect(slot.text).not.toMatch(/\d+\.\d초/);
     expect(slot.ariaLabel).not.toContain('초');
   }
@@ -136,7 +137,7 @@ test('뒤집는 동안 입력을 잠그고 착지 후 뒤집은 면 상태를 �
   const airborneStart = (await D(page, 'grillStatusSnapshot'))[0];
   expect(airborneStart.nextAction).toBe('wait');
   expect(airborneStart.text).toContain('뒤집는 중');
-  expect(airborneStart.text).toContain('꼬치가 돌아가는 중입니다');
+  expect(airborneStart.ariaLabel).toContain('뒤집는 중');
   expect(airborneStart.text).not.toMatch(/\d+\.\d초/);
   await page.waitForTimeout(100);
   const airborneLater = (await D(page, 'cookSlots'))[0];
@@ -148,7 +149,7 @@ test('뒤집는 동안 입력을 잠그고 착지 후 뒤집은 면 상태를 �
   )).toBe('back');
   const after = (await D(page, 'grillStatusSnapshot'))[0];
   expect(after.nextAction).toBe('flip');
-  expect(after.text).toContain('뒤집은 면 굽는 중');
+  expect(after.ariaLabel).toContain('뒤집은 면 굽는 중');
   expect(after.text).not.toMatch(/\d+\.\d초/);
 
   await D(page, 'cookElapse', 8);
@@ -161,7 +162,7 @@ test('뒤집는 동안 입력을 잠그고 착지 후 뒤집은 면 상태를 �
     (slots) => slots[0].nextAction,
   )).toBe('retrieve');
   const ready = (await D(page, 'grillStatusSnapshot'))[0];
-  expect(ready.text).toContain('다 익었어요 · 꼬치를 눌러 꺼내세요');
+  expect(ready.text).toContain('양면 노릇 · 꺼내기');
   expect(errors).toEqual([]);
 });
 
@@ -181,6 +182,7 @@ test('키보드로 공용 완성품을 선택하고 일치하는 여러 손님 �
   await expect.poll(() => D(page, 'businessView').then(
     (view) => view.seats.find((seat) => seat.seatId === tsukioka.seatId).canServe,
   )).toBe(true);
+  await page.locator('#guestSceneSkip').click();
 
   const firstNegima = await D(page, 'dockAdd', {
     menu: '네기마',
@@ -232,6 +234,7 @@ test('키보드로 공용 완성품을 선택하고 일치하는 여러 손님 �
     const target = page.getByTestId(`serve-target-${seat.seatId}`);
     await target.focus();
     await page.keyboard.press('Enter');
+    for (let i = 0; i < 3 && await page.locator('#departureCutscene').isVisible(); i++) await page.locator('#guestSceneSkip').click();
   }
   await expect.poll(() => D(page, 'businessView').then(
     (view) => view.seats.filter((seat) => seat.customerId?.startsWith('D1-OFFICE'))

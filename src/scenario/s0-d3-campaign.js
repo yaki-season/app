@@ -205,8 +205,8 @@ export class S0D3CampaignBridge {
     return this.runtime.getGrillSlotUpgradeState(config);
   }
 
-  claimGrillSlots(config = {}) {
-    return this.runtime.claimGrillSlots(config);
+  claimGrillSlots(config = {}, targetSlots = null) {
+    return this.runtime.claimGrillSlots(config, targetSlots);
   }
 
   enterSettlement() {

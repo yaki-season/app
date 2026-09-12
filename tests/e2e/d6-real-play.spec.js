@@ -3,57 +3,81 @@ import { FIRST_ORDER_RUNTIME_STORAGE_KEY } from '../../src/d1/firstOrderRuntimeS
 
 // 시작 날짜만 개발 진입으로 격리한다. 이후에는 조회 + 일반 마우스/키보드만 사용한다.
 // 완성품·주문 주입, 시간 가속, business dispatch 없이 조리부터 22항목을 직접 제공한다.
-const D = (page, name) => page.evaluate(name => window.__d1GameDebug[name](), name);
+const D = async (page, name) => {
+  for (let i = 0; i < 64; i++) {
+    const story = await page.evaluate(() => window.__d1GameDebug.departureCutscene());
+    if (!story.active && !story.pendingIds.length) break;
+    await expect(page.locator('#departureCutsceneContinue')).toBeVisible();
+    await page.locator('#departureCutsceneContinue').click();
+  }
+  return page.evaluate(name => window.__d1GameDebug[name](), name);
+};
+async function click(page, target) {
+  // 확인과 클릭 사이에 열린 대화만 읽고 다시 클릭한다. 비활성 조작/게임 오류는 숨기지 않는다.
+  for (let i = 0; i < 6; i++) {
+    await D(page, 'activeScreen');
+    try { await target.click({timeout:1200}); return; }
+    catch (error) {
+      if (!await page.locator('#departureCutscene').isVisible()) throw error;
+    }
+  }
+  throw new Error('대화 이후 실제 조작을 재개하지 못했습니다');
+}
 async function nav(page, station) {
   if (await D(page, 'activeScreen') === `SCR-SVC-${station}`) return;
-  await page.getByTestId(`quicknav-SCR-SVC-${station}`).click();
+  await click(page, page.getByTestId(`quicknav-SCR-SVC-${station}`));
   await page.waitForFunction(() => !window.__d1GameDebug.isTransitioning());
 }
 async function object(page, key) {
+  // 배웅 대화는 손님 화면에서 듣는다. 그 뒤 원래 작업대로 실제 이동해 조리를 잇는다.
+  await nav(page, key.startsWith('pgSlot') ? 'GRILL' : key === 'glassRack' ? 'DRINK' : 'ASSEMBLY');
   const p = await page.evaluate(key => window.__d1GameDebug.screenPosOf(key), key);
+  expect(p, `${key} 실제 작업대 클릭 영역`).toBeTruthy();
   await page.mouse.click(p.x, p.y);
   await page.waitForTimeout(350);
 }
 async function hold(page, button, ms) {
+  await D(page, 'activeScreen');
   const b = await button.boundingBox();
+  expect(b, '이야기를 마친 실제 작업대의 누르기 영역').toBeTruthy();
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
   await page.mouse.down(); await page.waitForTimeout(ms); await page.mouse.up();
 }
 async function drink(page, menu) {
   await nav(page, 'DRINK');
   if (menu === 'highball') {
-    await page.getByTestId('highball-glass').click();
-    await page.getByTestId('highball-ice').click();
+    await click(page, page.getByTestId('highball-glass'));
+    await click(page, page.getByTestId('highball-ice'));
     await hold(page, page.getByTestId('highball-whiskey'), 1000);
     await hold(page, page.getByTestId('highball-soda'), 3000);
-    await page.getByTestId('highball-lemon').click();
-    await page.getByTestId('highball-pickup').click();
+    await click(page, page.getByTestId('highball-lemon'));
+    await click(page, page.getByTestId('highball-pickup'));
   } else {
     await object(page, 'glassRack');
     const p = await page.evaluate(() => window.__d1GameDebug.screenPosOf('drinkLeverDrag'));
     await page.mouse.move(p.x, p.y); await page.mouse.down();
     await page.mouse.move(p.x, p.y + 60, { steps: 4 }); await page.waitForTimeout(2600);
     await page.mouse.move(p.x, p.y - 60, { steps: 4 }); await page.waitForTimeout(600); await page.mouse.up();
-    await page.getByTestId('drink-finish').click();
+    await click(page, page.getByTestId('drink-finish'));
   }
 }
 async function skewers(page, menu, seasoning, quantity) {
   const names = { negima: '네기마', momo: '모모', kawa: '토리카와' };
   await nav(page, 'ASSEMBLY');
-  await page.getByRole('button', { name: names[menu], exact: true }).click();
+  await click(page, page.getByRole('button', { name: names[menu], exact: true }));
   for (let n = 0; n < quantity; n++) {
     for (let i = 0; i < 5; i++)
       await object(page, menu === 'kawa' ? 'binTorikawa' : menu === 'negima' && i % 2 ? 'binLeek' : 'binChicken');
     if (seasoning === 'tare') {
       const pot = page.getByTestId('assembly-tare-pot');
-      await pot.click(); await pot.focus();
+      await click(page, pot); await pot.focus();
       await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowRight');
     }
     await object(page, 'jigSkewer');
   }
   await nav(page, 'GRILL');
   for (let n = 0; n < quantity; n++) {
-    await page.getByTestId(`grill-waiting-${menu}`).locator(`[data-seasoning="${seasoning}"]`).click();
+    await click(page, page.getByTestId(`grill-waiting-${menu}`).locator(`[data-seasoning="${seasoning}"]`));
     await page.waitForTimeout(350);
     await expect.poll(async () => (await D(page, 'cookSlots')).filter(s => s.status !== 'empty').length).toBe(n + 1);
   }
@@ -78,7 +102,10 @@ test('D6 실입력 완주: 실제 조리 시간으로 10주문·22항목을 제�
   }, FIRST_ORDER_RUNTIME_STORAGE_KEY);
   await page.goto('/d1-game.html?day=d6&devUnlock=1');
   await page.waitForFunction(() => window.__d1GameDebug?.businessSession?.().ok);
-  expect((await D(page, 'businessView')).seats[0].customerId).not.toBe('REGULAR_TSUKIOKA');
+  // 세션 생성 성공은 화면 진입 성공과 다르다. 로딩 오류에서 10분간 빈 주문을 순회하지 않는다.
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug.businessReady()), {timeout:25000}).toBe(true);
+  await expect(page.locator('body')).toHaveAttribute('data-entry-state', 'ready');
+  expect((await D(page, 'businessView')).seats.find(seat => seat.occupied)?.customerId).not.toBe('REGULAR_TSUKIOKA');
   // 새로고침 시 개발용 초기화가 반복되지 않도록 URL만 정리한다.
   await page.evaluate(() => history.replaceState(null, '', '/d1-game.html?day=d6'));
   let peakSeats = 0, lastCompleted = -1;
@@ -92,10 +119,12 @@ test('D6 실입력 완주: 실제 조리 시간으로 10주문·22항목을 제�
       regularAlongsideOthers = true;
       await page.screenshot({ animations: 'disabled', path: test.info().outputPath('regular-late-with-guests.png') });
     }
-    peakSeats = Math.max(peakSeats, view.seats.filter(s => s.occupied && !s.cleanupNeeded).length);
+    const occupied = view.seats.filter(s => s.occupied && !s.cleanupNeeded).length;
+    if (occupied === 6 && peakSeats < 6) await page.screenshot({path:test.info().outputPath('six-customers.png')});
+    peakSeats = Math.max(peakSeats, occupied);
     for (const seat of view.seats.filter(s => s.canOrder)) {
       if ((await D(page, 'businessView')).seats.find(s => s.seatId === seat.seatId)?.canOrder)
-        await page.getByTestId(`serve-target-${seat.seatId}`).click();
+        await click(page, page.getByTestId(`serve-target-${seat.seatId}`));
     }
     view = await D(page, 'businessView');
     const completed = view.orders.filter(o => o.status === 'completed').length;
@@ -121,9 +150,9 @@ test('D6 실입력 완주: 실제 조리 시간으로 10주문·22항목을 제�
     const item = (await D(page, 'dockItems')).find(i => i.menuId === line.menuId
       && (line.seasoning !== 'tare' || i.seasoning === 'tare'));
     expect(item, `prepared ${line.menuId}`).toBeTruthy();
-    await page.getByTestId(`dock-item-${item.id}`).click();
-    await page.getByTestId(`serve-target-${order.seatId}`).click();
-    if (await page.getByTestId('serve-quantity').isVisible()) await page.getByTestId('serve-all').click();
+    await click(page, page.getByTestId(`dock-item-${item.id}`));
+    await click(page, page.getByTestId(`serve-target-${order.seatId}`));
+    if (await page.getByTestId('serve-quantity').isVisible()) await click(page, page.getByTestId('serve-all'));
   }
   const view = await D(page, 'businessView');
   expect(regularAlongsideOthers).toBe(true);
@@ -135,10 +164,13 @@ test('D6 실입력 완주: 실제 조리 시간으로 10주문·22항목을 제�
   await expect(page.getByTestId('result-earnings')).toHaveText('+111');
   await expect(page.getByTestId('result-reputation')).toHaveText('+30');
   const campaign = await D(page, 'campaignState');
+  expect(await page.evaluate(() => window.__d1GameDebug.renderer.textureErrors())).toBe(0);
   await page.screenshot({ animations: 'disabled', path: test.info().outputPath('single-result-screen.png') });
   expect(campaign.campaign.nodeId).toBe('d6-complete');
   expect(campaign.progression.unlockIds).toContain('day-d7');
   expect(campaign.economy.settlements.at(-1).summary.customers).toMatchObject({ visited: 10, lost: 0, cleanedSeats: 10 });
+  for (const key of ['tsukioka', 'ren', 'mio', 'sae', 'hayato', 'genji', 'akane', 'naoko', 'shun', 'daichi']) for (const beat of ['arrival', 'departure'])
+    expect(campaign.story.flagIds).toContain(`guest:${key}:d6:scene:${beat}`);
   console.log('D6 real-input final:', JSON.stringify({ peakSeats, summary: campaign.economy.settlements.at(-1).summary }));
   await page.locator('#continueButton').click();
   await expect(page.locator('body')).toHaveAttribute('data-scene-id', 'SCN-D6-EPILOGUE');

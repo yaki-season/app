@@ -60,6 +60,7 @@ async function accept(page, customerId) {
     const seat = (await D(page, 'businessView')).seats.find((item) => item.seatId === seatId);
     return seat?.canServe ?? false;
   }).toBe(true);
+  for (let i = 0; i < 3 && await page.locator('#departureCutscene').isVisible(); i++) await page.locator('#guestSceneSkip').click();
   return seatId;
 }
 
@@ -224,6 +225,7 @@ test('시간·완성품 fixture 기반 정적 release 통합으로 D1 단일 결
   for (let index = 0; index < 3; index += 1) {
     await page.locator('#actions button.primary').click();
   }
+  await page.getByTestId('market-start-business').click();
   await expect(page).toHaveURL(/\/src\/d1-game\.html\?day=d2$/);
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessReady?.())).toBe(true);
   await D(page, 'requestScreen', 'SCR-SVC-ASSEMBLY');
@@ -281,10 +283,7 @@ test('영업 중 새로고침은 day-start D1로 복구하고 중복 제공 입�
     orders: [{
       orderId: 'D1-ORDER-001',
       status: 'unaccepted',
-      lines: [
-        { menuId: 'beer', served: 0 },
-        { menuId: 'negima', served: 0 },
-      ],
+      lines: [],
     }],
   });
   expect(restored.clock.elapsedMs).toBeLessThan(1000);

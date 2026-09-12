@@ -480,6 +480,8 @@ export function createCookStations({
         tarePrepared: slot.tarePrepared === true,
         tareCoverage: slot.tareCoverage ?? 0,
         doneness: slot.contactFace ? classifyFor(slot.menuId, faceElapsedSec) : null,
+        frontDoneness: classifyFor(slot.menuId, slot.elapsedSec.front),
+        backDoneness: classifyFor(slot.menuId, slot.elapsedSec.back),
         faceElapsedSec,
         frontElapsedSec: slot.elapsedSec.front,
         backElapsedSec: slot.elapsedSec.back,

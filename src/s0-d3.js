@@ -10,6 +10,8 @@ import {
   validateS0D4Content,
 } from './scenario/s0-d3-content.js';
 import { S0D3CampaignBridge } from './scenario/s0-d3-campaign.js';
+import { renderReputationMarket } from './render/reputationMarketUi.js';
+import { assertGrillMarketConfig } from './domain/progression/grillSlots.js';
 import { S0_ART_BINDING_INVENTORY } from './assets/s0D1ArtBindingContract.js';
 import {
   S0_EXTERIOR_BACKGROUND_BINDINGS,
@@ -28,8 +30,11 @@ import {
   S0_TSUKIOKA_STORY_PORTRAIT_BINDING,
 } from './assets/s0TsukiokaStoryPortraitBindingContract.js';
 import { S0_D3_STORY_ILLUSTRATION_BY_SCENE_KEY } from './assets/s0D3StoryIllustrationBindingContract.js';
-import { clearFirstOrderRuntime } from './d1/firstOrderRuntimeStorage.js';
+import { clearFirstOrderRuntime, hasInProgressBusiness } from './d1/firstOrderRuntimeStorage.js';
 import { installGameAudio, loopOn, setBgm, sfx } from './audio/gameAudio.js';
+import { createImagePreloader } from './presentation/imageReadiness.js';
+import { finishPageEntry, failPageEntry } from './presentation/pageEntry.js';
+import { loadPresentationSettings } from './presentation/settings.js';
 
 installGameAudio(window);
 setBgm('BGM-S0-ALLEY');
@@ -56,15 +61,15 @@ errors.push(...validateS0ExteriorBackgroundBindingContract());
 if (errors.length) throw new Error(`S0~D4 콘텐츠 오류:\n${errors.join('\n')}`);
 
 const heading = document.querySelector('#screen-heading');
-const storyPortrait = document.querySelector('#story-portrait');
-const storyIllustration = document.querySelector('#story-illustration');
-const storyBackground = document.querySelector('#story-background');
+let storyPortrait = document.querySelector('#story-portrait');
+let storyIllustration = document.querySelector('#story-illustration');
+let storyBackground = document.querySelector('#story-background');
 const content = document.querySelector('#content-panel');
 const actions = document.querySelector('#actions');
 const visualPlaceholder = document.querySelector('#visual-placeholder');
 const s0ArtCamera = document.querySelector('#s0-art-camera');
-const exteriorBackground = document.querySelector('#s0-exterior-background');
-const interactionVisual = document.querySelector('#s0-interaction-visual');
+let exteriorBackground = document.querySelector('#s0-exterior-background');
+let interactionVisual = document.querySelector('#s0-interaction-visual');
 
 let mode = 's0';
 let s0Index = 0;
@@ -76,7 +81,10 @@ let campaignBridge = null;
 let approvedRuntimeAssets = new Map();
 let grillSlotConfig = null;
 let grillSlotConfigError = null;
-let dayPrepFeedback = '';
+const sceneImages = createImagePreloader();
+let presentationBusy = false;
+let actionBusy = false;
+let returnFocusToAction = false;
 const playedStoryAudio = new Set();
 
 function syncStoryAudio(dialogueId) {
@@ -92,6 +100,18 @@ const STORY_BACKGROUND_ASSET_IDS = Object.freeze({
   S0: 'BG-EXTERIOR-S0-GATE-OPEN',
   DEFAULT: 'BG-INTERIOR-BASE',
 });
+
+// 미리 decode한 실제 노드를 부착한다. src 재지정/clone은 캐시가 없는 연결에서
+// 두 번째 요청을 만들어 대사만 먼저 나타날 수 있다. 숨긴 이미지의 src도 보존한다.
+function attachPreparedImage(previous, url) {
+  const image = sceneImages.get(url);
+  if (!image) throw new Error('장면 이미지가 아직 준비되지 않았습니다.');
+  if (image === previous) return previous;
+  for (const attr of [...image.attributes]) if (attr.name !== 'src') image.removeAttribute(attr.name);
+  for (const attr of previous.attributes) if (attr.name !== 'src') image.setAttribute(attr.name, attr.value);
+  previous.replaceWith(image);
+  return image;
+}
 function storyIllustrationBinding(activeDayId, dialogueId) {
   if (activeDayId === 'S0') return S0_D3_STORY_ILLUSTRATION_BY_SCENE_KEY.S0;
   const timing = dialogueId?.includes('-POST-') ? 'POST' : 'PRE';
@@ -100,7 +120,6 @@ function storyIllustrationBinding(activeDayId, dialogueId) {
 
 function hideStoryIllustration() {
   storyIllustration.hidden = true;
-  storyIllustration.removeAttribute('src');
   delete document.body.dataset.storyIllustrationAssetId;
 }
 
@@ -115,7 +134,7 @@ function renderStoryIllustration(activeDayId, dialogueId) {
     hideStoryIllustration();
     return false;
   }
-  storyIllustration.src = asset.url;
+  storyIllustration = attachPreparedImage(storyIllustration, asset.url);
   storyIllustration.alt = binding.alt;
   storyIllustration.hidden = false;
   document.body.dataset.storyIllustrationAssetId = asset.id;
@@ -128,7 +147,7 @@ function renderEpilogueIllustration(assetId) {
     hideStoryIllustration();
     return false;
   }
-  storyIllustration.src = asset.url;
+  storyIllustration = attachPreparedImage(storyIllustration, asset.url);
   storyIllustration.alt = '';
   storyIllustration.hidden = false;
   document.body.dataset.storyIllustrationAssetId = asset.id;
@@ -137,7 +156,6 @@ function renderEpilogueIllustration(assetId) {
 
 function hideStoryBackground() {
   storyBackground.hidden = true;
-  storyBackground.removeAttribute('src');
   storyBackground.removeAttribute('data-required-asset-id');
   delete document.body.dataset.storyBackgroundAssetId;
 }
@@ -151,7 +169,7 @@ function renderStoryBackground(activeDayId) {
     hideStoryBackground();
     return;
   }
-  storyBackground.src = asset.url;
+  storyBackground = attachPreparedImage(storyBackground, asset.url);
   storyBackground.dataset.requiredAssetId = asset.id;
   storyBackground.alt = activeDayId === 'S0' ? '비 갠 밤의 가게 외관' : '밤의 야키토리 가게 내부';
   storyBackground.hidden = false;
@@ -160,7 +178,6 @@ function renderStoryBackground(activeDayId) {
 
 function hideStoryPortrait() {
   storyPortrait.hidden = true;
-  storyPortrait.removeAttribute('src');
   storyPortrait.removeAttribute('data-state-variant');
 }
 
@@ -184,7 +201,7 @@ function renderStoryPortrait(speaker, activeDialogueId) {
     visualPlaceholder.dataset.assetMode = 'placeholder';
     return;
   }
-  storyPortrait.src = asset.url;
+  storyPortrait = attachPreparedImage(storyPortrait, asset.url);
   storyPortrait.alt = `${speaker.displayName} 이야기 초상`;
   storyPortrait.dataset.stateVariant = variants[activeDialogueId] ?? (isAki ? 'fatigue' : 'calm');
   storyPortrait.hidden = false;
@@ -211,19 +228,19 @@ async function loadRuntimeAssets() {
     const manifestUrl = window.location.pathname.startsWith('/src/')
       ? '/public/assets/manifest.json'
       : '/assets/manifest.json';
-    const response = await fetch(manifestUrl);
-    if (!response.ok) return;
+    const response = await fetch(manifestUrl, { signal:AbortSignal.timeout(15000) });
+    if (!response.ok) throw new Error('장면 목록을 불러오지 못했습니다.');
     approvedRuntimeAssets = indexApprovedRuntimeAssets(await response.json());
-  } catch {
-    approvedRuntimeAssets = new Map();
+  } catch (error) {
+    throw new Error('장면을 준비하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.', { cause:error });
   }
 }
 
 async function loadGrillSlotConfig() {
   try {
-    const response = await fetch('/content/progression/grill-slots.json');
+    const response = await fetch('/content/progression/grill-slots.json', { signal:AbortSignal.timeout(15000) });
     if (!response.ok) throw new Error(`그릴 업그레이드 데이터 응답 오류: ${response.status}`);
-    grillSlotConfig = await response.json();
+    grillSlotConfig = assertGrillMarketConfig(await response.json());
     grillSlotConfigError = null;
   } catch (error) {
     grillSlotConfig = null;
@@ -245,20 +262,17 @@ function renderS0ExteriorBackground(backgroundBinding, interactionBinding) {
   );
   exteriorBackground.hidden = !backgroundAsset;
   if (backgroundAsset) {
-    exteriorBackground.src = backgroundAsset.url;
-  } else {
-    exteriorBackground.removeAttribute('src');
+    exteriorBackground = attachPreparedImage(exteriorBackground, backgroundAsset.url);
   }
   interactionVisual.hidden = !interactionAsset;
   if (interactionAsset) {
     const bounds = interactionBinding.bounds.fhd.visualBounds;
-    interactionVisual.src = interactionAsset.url;
+    interactionVisual = attachPreparedImage(interactionVisual, interactionAsset.url);
     interactionVisual.style.left = `${bounds.x / 19.2}%`;
     interactionVisual.style.top = `${bounds.y / 10.8}%`;
     interactionVisual.style.width = `${bounds.width / 19.2}%`;
     interactionVisual.style.height = `${bounds.height / 10.8}%`;
   } else {
-    interactionVisual.removeAttribute('src');
     interactionVisual.removeAttribute('style');
   }
   visualPlaceholder.dataset.assetMode = approved ? 'approved' : 'placeholder';
@@ -301,12 +315,18 @@ function button(label, handler, primary = false) {
   node.type = 'button';
   node.textContent = label;
   if (primary) node.className = 'primary';
-  node.addEventListener('click', async () => {
+  node.addEventListener('click', async (event) => {
+    if (presentationBusy || actionBusy || event.detail > 1) return;
+    actionBusy = true;
+    returnFocusToAction = actions.contains(document.activeElement);
     node.disabled = true;
     try {
       await handler();
     } catch (error) {
       renderCampaignError(error);
+    } finally {
+      actionBusy = false;
+      if (node.isConnected) node.disabled = false;
     }
   });
   return node;
@@ -319,15 +339,20 @@ function setIds({ screen, state = 'none', scene = 'none', dialogue = 'none' }) {
   document.body.dataset.dialogueId = dialogue;
 }
 
+function waitingExteriorBinding(step) {
+  // GATE의 열린 문 아트 계약은 동작 완료 모습이다. 공개 조작 대기 중에는
+  // 열쇠만 손에 든 닫힌 문을 유지하고, 클릭 뒤 S0 이야기에서 열린 문을 보여준다.
+  const visualState = step.stateId === 'S0-STATE-GATE' ? 'S0-STATE-KEY' : step.stateId;
+  return S0_EXTERIOR_BACKGROUND_BINDINGS.find(binding => binding.stateId === visualState);
+}
+
 function renderS0() {
   const step = S0_INTERACTIONS[s0Index];
   const binding = S0_ART_BINDING_INVENTORY.find(
     (entry) => entry.interactionId === step.interactionId,
   );
   if (!binding) throw new Error(`S0 binding 누락: ${step.interactionId}`);
-  const exteriorBackgroundBinding = S0_EXTERIOR_BACKGROUND_BINDINGS.find(
-    (entry) => entry.stateId === step.stateId,
-  );
+  const exteriorBackgroundBinding = waitingExteriorBinding(step);
   heading.textContent = step.phaseId === 'exterior-key'
     ? '비 그친 골목에서'
     : '오래 닫힌 문';
@@ -338,9 +363,7 @@ function renderS0() {
     renderS0ExteriorBackground(exteriorBackgroundBinding, binding);
   } else {
     exteriorBackground.hidden = true;
-    exteriorBackground.removeAttribute('src');
     interactionVisual.hidden = true;
-    interactionVisual.removeAttribute('src');
     interactionVisual.removeAttribute('style');
     visualPlaceholder.dataset.assetMode = 'placeholder';
     document.body.dataset.componentId = binding.componentId;
@@ -415,9 +438,7 @@ function renderStory() {
     'closedGateResidualPixelCount',
   ]) delete document.body.dataset[name];
   exteriorBackground.hidden = true;
-  exteriorBackground.removeAttribute('src');
   interactionVisual.hidden = true;
-  interactionVisual.removeAttribute('src');
   interactionVisual.removeAttribute('style');
   if (renderStoryIllustration(story.dayId, line.dialogueId)) {
     hideStoryBackground();
@@ -431,9 +452,9 @@ function renderStory() {
   content.innerHTML = `<p class="speaker">${speaker.displayName}</p><p class="dialogue">${line.text}</p>`;
   const lastLine = lineIndex === story.lines.length - 1;
   const dayStartLabels = {
-    D1: '첫 손님 맞이하기',
-    D2: '둘째 영업 시작',
-    D3: '셋째 영업 시작',
+    D1: '영업 준비',
+    D2: '영업 준비',
+    D3: '영업 준비',
     D4: '영업 준비',
     D6: '영업 준비',
   };
@@ -449,6 +470,11 @@ function renderStory() {
       render();
     }, true),
   );
+  const progress = document.createElement('span');
+  progress.className = 'story-progress';
+  progress.textContent = `${lineIndex + 1} / ${story.lines.length}`;
+  progress.setAttribute('aria-label', `대화 ${lineIndex + 1} / ${story.lines.length}`);
+  actions.prepend(progress);
 }
 
 async function advanceAfterStory(story) {
@@ -459,8 +485,7 @@ async function advanceAfterStory(story) {
     return;
   }
   if (story.timing === 'pre-open') {
-    if (['D4', 'D6'].includes(story.dayId)) {
-      dayPrepFeedback = '';
+    if (['D1', 'D2', 'D3', 'D4', 'D5', 'D6'].includes(story.dayId)) {
       mode = 'day-prep';
       return;
     }
@@ -489,104 +514,21 @@ async function advanceAfterStory(story) {
 }
 
 function renderDayPrep() {
-  heading.textContent = dayId === 'D6' ? '여섯째 날 영업 준비' : '넷째 날 영업 준비';
+  heading.textContent = `${dayId} 영업 준비`;
   hideStoryPortrait();
   hideStoryIllustration();
-  renderStoryBackground('D4');
-  setIds({
-    screen: 'SCR-DAY-BRIEFING',
-    state: 'D4-pre-open-upgrade',
-    scene: 'SCN-D4-DAY-PREP',
-    dialogue: 'none',
+  hideStoryBackground();
+  setIds({ screen: 'SCR-DAY-BRIEFING', state: `${dayId}-reputation-market`, scene: `SCN-${dayId}-DAY-PREP`, dialogue: 'none' });
+  renderReputationMarket({
+    content, actions, config: grillSlotConfig, error: grillSlotConfigError, bridge: campaignBridge, dayId,
+    isBusinessRunning: () => hasInProgressBusiness(window.localStorage, campaignBridge.getState()),
+    onStart: async () => {
+      const started = await campaignBridge.startDay();
+      if (started.ok) navigateToBusinessDay(dayId);
+      return started;
+    },
+    onRetry: async () => { await loadGrillSlotConfig(); renderDayPrep(); },
   });
-
-  const campaignState = campaignBridge.getState();
-  const reputation = campaignState.economy.reputation;
-  const claimedSlots = campaignState.progression.claimedGrillSlots;
-  const tier = grillSlotConfig?.tiers?.find((item) => item.slots === 3) ?? null;
-  const upgrade = grillSlotConfig
-    ? campaignBridge.getGrillSlotUpgradeState(grillSlotConfig)
-    : null;
-  const alreadyClaimed = claimedSlots >= 3;
-  const cardState = grillSlotConfigError
-    ? 'unavailable'
-    : alreadyClaimed
-      ? 'claimed'
-      : upgrade?.pending
-        ? 'claimable'
-        : 'locked';
-
-  const article = document.createElement('article');
-  article.className = 'day-prep-card';
-  article.dataset.testid = 'd4-grill-upgrade-card';
-  article.dataset.upgradeState = cardState;
-
-  const copy = document.createElement('div');
-  copy.className = 'day-prep-copy';
-  copy.innerHTML = `
-    <p class="day-prep-kicker">명성 업그레이드</p>
-    <h2>그릴 한 칸 확장</h2>
-    <p>동시에 구울 수 있는 꼬치가 두 개에서 세 개로 늘어납니다.</p>
-    <p class="day-prep-no-spend">명성과 골드는 조건 확인에만 사용되며 차감되지 않습니다.</p>
-  `;
-
-  const details = document.createElement('div');
-  details.className = 'day-prep-details';
-  details.innerHTML = `
-    <div class="grill-slot-flow" aria-label="그릴 칸 2개에서 3개로 확장">
-      <strong data-testid="d4-grill-current-slots">${claimedSlots}칸</strong>
-      <span aria-hidden="true">→</span>
-      <strong>${alreadyClaimed ? claimedSlots : tier?.slots ?? 3}칸</strong>
-    </div>
-    <dl class="upgrade-requirements">
-      <div><dt>현재 명성</dt><dd data-testid="d4-current-reputation">${reputation}</dd></div>
-      <div><dt>필요 명성</dt><dd data-testid="d4-required-reputation">${tier?.reputation ?? 10}</dd></div>
-    </dl>
-  `;
-
-  const status = document.createElement('p');
-  status.className = 'day-prep-status';
-  status.dataset.testid = 'd4-grill-upgrade-status';
-  status.setAttribute('role', 'status');
-  if (dayPrepFeedback) status.textContent = dayPrepFeedback;
-  else if (grillSlotConfigError) {
-    status.textContent = '업그레이드 정보를 불러오지 못했습니다. 현재 칸으로 영업을 시작할 수 있습니다.';
-  } else if (alreadyClaimed) status.textContent = '그릴 3칸 확장이 적용되었습니다.';
-  else if (upgrade?.pending) status.textContent = '지금 확장할 수 있습니다.';
-  else if (upgrade?.blockedBy === 'reputation') {
-    status.textContent = `명성 ${Math.max(0, (upgrade.requiredReputation ?? 10) - reputation)}이 더 필요합니다.`;
-  } else if (upgrade?.blockedBy === 'unlock') {
-    status.textContent = '넷째 날 해금 조건을 먼저 완료해야 합니다.';
-  } else status.textContent = '현재 적용할 수 있는 확장이 없습니다.';
-
-  article.append(copy, details, status);
-  content.replaceChildren(article);
-
-  const claimButton = button('3칸 확장 적용', async () => {
-    const result = await campaignBridge.claimGrillSlots(grillSlotConfig);
-    if (!result.ok) {
-      dayPrepFeedback = `저장하지 못했습니다. 확장은 적용되지 않았습니다. ${result.error?.message ?? ''}`.trim();
-    } else if (result.applied) {
-      dayPrepFeedback = '그릴을 3칸으로 확장했습니다. 명성과 골드는 그대로입니다.';
-    } else {
-      dayPrepFeedback = '현재는 확장을 적용할 수 없습니다.';
-    }
-    renderDayPrep();
-  }, true);
-  claimButton.dataset.testid = 'd4-claim-grill-upgrade';
-  claimButton.disabled = !upgrade?.pending;
-
-  const startButton = button(`${claimedSlots}칸으로 ${dayId === 'D6' ? '여섯째' : '넷째'} 영업 시작`, async () => {
-    const started = await campaignBridge.startDay();
-    if (!started.ok) {
-      dayPrepFeedback = `영업 시작 상태를 저장하지 못했습니다. ${started.error?.message ?? ''}`.trim();
-      renderDayPrep();
-      return;
-    }
-    navigateToBusinessDay(dayId);
-  });
-  startButton.dataset.testid = 'd4-start-business-day';
-  actions.replaceChildren(claimButton, startButton);
 }
 
 function renderBusiness() {
@@ -679,7 +621,7 @@ function renderEpilogue() {
       if (dayId === 'D5') {
         restorePresentationPosition(campaignBridge.getPosition()); render(); return;
       }
-      navigateToBusinessDay('D5');
+      dayId = 'D5'; mode = 'day-prep'; render();
       return;
     }
     epilogueIndex += 1;
@@ -699,7 +641,8 @@ function renderCampaignError(error) {
   const message = document.createElement('p');
   message.textContent = error.message;
   content.replaceChildren(title, message);
-  actions.replaceChildren();
+  actions.replaceChildren(button('다시 시도', () => window.location.reload(), true), button('시작 화면으로', () => window.location.assign('./public-shell.html')));
+  finishPageEntry();
 }
 
 function restorePresentationPosition(position, { postDayId = null } = {}) {
@@ -729,6 +672,7 @@ function restorePresentationPosition(position, { postDayId = null } = {}) {
     return;
   }
   dayId = position.dayId;
+  if (dayId === 'D5') { mode = 'day-prep'; return; }
   storyIndex = STORY_SCENES.findIndex((story) => (
     story.dayId === position.dayId && story.timing === 'pre-open'
   ));
@@ -736,7 +680,7 @@ function restorePresentationPosition(position, { postDayId = null } = {}) {
   mode = 'story';
 }
 
-function render() {
+function renderCurrentPresentation() {
   if (mode === 's0') renderS0();
   else if (mode === 'story') renderStory();
   else if (mode === 'business') renderBusiness();
@@ -745,8 +689,91 @@ function render() {
   else renderEpilogue();
 }
 
+function requiredPresentationUrls({ targetMode = mode, targetS0 = s0Index, targetStory = storyIndex, targetLine = lineIndex } = {}) {
+  const url = id => {
+    const asset = resolveApprovedRuntimeAsset(approvedRuntimeAssets, id);
+    if (!asset) throw new Error('필요한 장면이 준비되지 않았습니다. 다시 시도해 주세요.');
+    return asset.url;
+  };
+  if (targetMode === 's0') {
+    const step = S0_INTERACTIONS[targetS0];
+    const background = waitingExteriorBinding(step);
+    const ids = [background.requiredAssetId];
+    if (step.stateId === 'S0-STATE-KEY') ids.push(S0_ART_BINDING_INVENTORY.find(binding => binding.interactionId === step.interactionId).requiredAssetId);
+    return ids.map(url);
+  }
+  if (targetMode === 'story') {
+    const story = STORY_SCENES[targetStory];
+    const line = story.lines[targetLine];
+    const illustration = storyIllustrationBinding(story.dayId, line.dialogueId);
+    if (illustration) return [url(illustration.requiredAssetId)];
+    const speaker = speakerById(line.speakerId);
+    const portrait = speaker.id === FIXED_CHARACTER.AKI.id ? S0_AKI_STORY_PORTRAIT_BINDING : S0_TSUKIOKA_STORY_PORTRAIT_BINDING;
+    return [url(story.dayId === 'S0' ? STORY_BACKGROUND_ASSET_IDS.S0 : STORY_BACKGROUND_ASSET_IDS.DEFAULT), url(portrait.requiredAssetId)];
+  }
+  if (targetMode === 'epilogue') {
+    const pages = dayId === 'D6' ? D6_EPILOGUE_PAGES : dayId === 'D5' ? D5_EPILOGUE_PAGES : D4_EPILOGUE_PAGES;
+    return [url(pages[epilogueIndex].illustrationAssetId ?? STORY_BACKGROUND_ASSET_IDS.DEFAULT)];
+  }
+  return [];
+}
+
+function prefetchNextPresentation() {
+  let next = null;
+  if (mode === 's0') next = s0Index + 1 < S0_INTERACTIONS.length
+    ? { targetS0:s0Index + 1 } : { targetMode:'story', targetStory:0, targetLine:0 };
+  else if (mode === 'story' && storyIndex + 1 < STORY_SCENES.length) next = { targetStory:storyIndex + 1, targetLine:0 };
+  if (next) {
+    try { void sceneImages.prepare(requiredPresentationUrls(next)).catch(() => {}); } catch { /* 다음 장면에서 복구 안내 */ }
+  }
+}
+
+async function render() {
+  presentationBusy = true;
+  const keyboardFocus = returnFocusToAction || actions.contains(document.activeElement);
+  returnFocusToAction = false;
+  actions.inert = true;
+  document.querySelector('#scenario-app').setAttribute('aria-busy', 'true');
+  const status = document.querySelector('#scene-status');
+  status.hidden = true;
+  const delayedStatus = setTimeout(() => {
+    status.textContent = '다음 장면을 준비하고 있어요…'; status.hidden = false;
+  }, 250);
+  try {
+    await sceneImages.prepare(requiredPresentationUrls());
+    renderCurrentPresentation();
+    finishPageEntry();
+    prefetchNextPresentation();
+  } catch (error) {
+    if (document.body.dataset.entryState !== 'ready') failPageEntry(error);
+    else {
+      status.textContent = `${error.message} 이전 장면은 그대로 두었습니다.`;
+      actions.replaceChildren(button('장면 다시 불러오기', render, true), button('시작 화면으로', () => window.location.assign('./public-shell.html')));
+    }
+  } finally {
+    clearTimeout(delayedStatus);
+    presentationBusy = false;
+    actions.inert = false;
+    if (keyboardFocus) actions.querySelector('.primary')?.focus({ preventScroll:true });
+    document.querySelector('#scenario-app').setAttribute('aria-busy', 'false');
+    status.hidden = !actions.textContent.includes('장면 다시 불러오기');
+  }
+}
+
+const scenarioMenu = document.querySelector('#scenario-menu-dialog');
+document.querySelector('#scenario-menu').addEventListener('click', () => scenarioMenu.showModal());
+document.querySelector('#scenario-menu-close').addEventListener('click', () => scenarioMenu.close());
+document.addEventListener('keydown', event => {
+  if (scenarioMenu.open || document.body.dataset.entryState !== 'ready') return;
+  if (!['Enter', ' '].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
+  if (event.repeat || presentationBusy || actionBusy) { event.preventDefault(); return; }
+  if (event.target.closest('button, a, input, summary')) return;
+  if (!['s0', 'story', 'epilogue'].includes(mode)) return;
+  event.preventDefault(); actions.querySelector('.primary')?.click();
+});
+
 async function initialize() {
-  await Promise.all([loadRuntimeAssets(), loadGrillSlotConfig()]);
+  await Promise.all([loadRuntimeAssets(), loadGrillSlotConfig(), loadPresentationSettings()]);
   campaignBridge = new S0D3CampaignBridge({ browserStorage: window.localStorage });
   const params = new URLSearchParams(window.location.search);
   const forceNew = params.get('new') === '1';
@@ -757,10 +784,12 @@ async function initialize() {
     return;
   }
   restorePresentationPosition(campaignBridge.getPosition(), { postDayId: params.get('post') });
-  render();
+  await render();
 }
 
-await initialize();
+try { await initialize(); } catch (error) { failPageEntry(error); }
+// BFCache의 영업 시작 직전 DOM/저장 상태를 재사용하지 않는다.
+window.addEventListener('pageshow', event => { if (event.persisted) window.location.reload(); });
 window.__s0d3Debug = {
   getState: () => ({ mode, s0Index, storyIndex, lineIndex, dayId, epilogueIndex }),
   campaignState: () => campaignBridge?.getState() ?? null,

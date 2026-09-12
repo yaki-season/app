@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { D4_EPILOGUE_PAGES, D5_EPILOGUE_PAGES, FIXED_CHARACTER, S0_D4_STORY_SCENES,
+import { D4_EPILOGUE_PAGES, D5_EPILOGUE_PAGES, S0_D4_STORY_SCENES,
   S0_INTERACTIONS, speakerById, validateS0D4Content } from '../../src/scenario/s0-d3-content.js';
+import { readFileSync } from 'node:fs';
+import { createD1BusinessDayDefinition, createD1BusinessDayState, advanceD1BusinessDay, dispatchD1Command } from '../../src/domain/businessDay/d1BusinessDay.js';
+import { buildGuestScene } from '../../src/scenario/guestStories.js';
 
 // 문장 전체의 복제 대신 실제 깨진 장면·화자·스킵을 막는다.
 describe('캠페인 이야기 연결', () => {
@@ -18,10 +21,15 @@ describe('캠페인 이야기 연결', () => {
     }
   });
   it('첫 주문은 실제 메뉴·수량과 일치한다', () => {
-    const line = S0_D4_STORY_SCENES.find(s => s.sceneId === 'SCN-D1-PREOPEN').lines
-      .find(l => l.speakerId === FIXED_CHARACTER.TSUKIOKA.id).text;
-    expect(line).toMatch(/네기마 둘/);
-    expect(line).toMatch(/생맥주 하나/);
+    const definition = createD1BusinessDayDefinition(JSON.parse(readFileSync(
+      new URL('../fixtures/business-days/d1-full-day.json', import.meta.url), 'utf8')));
+    let business = createD1BusinessDayState({ definition, runId: 'story-order' });
+    expect(buildGuestScene({ dayId: 'd1', beat: 'arrival', business })).toBeNull();
+    business = advanceD1BusinessDay(business, definition, 6000);
+    business = dispatchD1Command(business, definition, { type: 'accept-order', eventId: 'story-accept', orderId: 'D1-ORDER-001' }).state;
+    const line = buildGuestScene({ dayId: 'd1', beat: 'arrival', business }).lines.at(-1).text;
+    expect(line).toContain('네기마 2개');
+    expect(line).toContain('생맥주 1잔');
   });
   it('영업 전후 장면과 D4·D5 후일담은 각 날짜에 연결된다', () => {
     for (const dayId of ['D1', 'D2', 'D3', 'D4']) {

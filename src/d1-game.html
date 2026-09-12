@@ -8,19 +8,19 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/yaki-season-icon-r3-192.png">
 <link rel="apple-touch-icon" href="/yaki-season-icon-r3-512.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-workstation-base-draft-r8.png">
-<link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-glass-draft-r3.png">
-<link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-ice-fill-draft-r2.png">
-<link rel="preload" as="image" fetchpriority="high" href="/assets/campaign/d4/prop-highball-bottles-draft-r1.png">
-<link rel="preload" as="image" href="/assets/campaign/d3/prop-tare-sauce-pot-r2-b1.png">
-<link rel="preload" as="image" href="/assets/campaign/d3/prop-tare-sauce-pot-open-r2-b1.png">
 <link rel="stylesheet" href="./game.css">
 <link rel="stylesheet" href="./d1-game.css">
+<link rel="stylesheet" href="./presentation/page-entry.css">
 <script type="importmap">
 { "imports": { "three": "/node_modules/three/build/three.module.js" } }
 </script>
 </head>
-<body>
+<body data-entry-state="loading">
+  <section id="entry-status" class="entry-status" role="status">
+    <h1>오늘의 가게를 준비하고 있어요</h1>
+    <p>준비가 끝날 때까지 영업 시간은 흐르지 않습니다.</p>
+    <nav class="entry-recovery" hidden><a href="">다시 시도</a><a href="./public-shell.html">시작 화면으로</a></nav>
+  </section>
   <canvas id="scene" data-testid="scene-canvas"></canvas>
   <div id="assemblyTareCursor" class="assembly-tare-cursor" data-testid="assembly-tare-cursor" aria-hidden="true" hidden>
     <span class="assembly-tare-cursor-handle"></span>
@@ -49,6 +49,7 @@
     <ol id="receipts" class="receipts" data-testid="svc-receipts" aria-label="조립 진행"></ol>
     <span id="orderHud" class="order-hud" data-testid="order-hud"></span>
     <button id="recipeBookToggle" class="recipe-book-toggle" data-testid="recipe-book-toggle" type="button" aria-expanded="false" aria-controls="recipeBook">비법노트</button>
+    <button id="guestJournalToggle" class="recipe-book-toggle" type="button" aria-expanded="false" aria-controls="guestJournal">손님 기록</button>
     <span id="businessClock" class="business-clock" data-testid="business-clock">17:30</span>
     <button id="businessPhase" class="business-phase" data-testid="business-phase" type="button" aria-label="영업 일시정지" aria-pressed="false">준비</button>
   </header>
@@ -317,10 +318,19 @@
     hidden
   >
     <div class="departure-cutscene__dialogue">
-      <p class="departure-cutscene__eyebrow">첫 손님의 한마디</p>
+      <p id="guestSceneTitle" class="departure-cutscene__eyebrow"></p>
       <strong id="departureCutsceneSpeaker">츠키오카 세이지</strong>
-      <p id="departureCutsceneLine"></p>
+      <p id="departureCutsceneLine" aria-live="polite" aria-atomic="true"></p>
       <button id="departureCutsceneContinue" type="button" data-testid="departure-cutscene-continue">계속</button>
+      <small id="guestSceneProgress"></small>
+      <button id="guestSceneSkip" type="button">건너뛰기</button>
+    </div>
+  </section>
+
+  <section id="guestJournal" class="guest-journal" role="dialog" aria-modal="true" aria-labelledby="guestJournalTitle" hidden>
+    <div class="guest-journal__page">
+      <header><div><small>저녁의 기록</small><h2 id="guestJournalTitle">이 골목의 손님들</h2></div><button id="guestJournalClose" type="button">닫기</button></header>
+      <div id="guestJournalEntries"></div>
     </div>
   </section>
 
@@ -382,6 +392,17 @@
   </section>
 
 
-  <script type="module" src="./d1-game.js"></script>
+  <script type="module">
+    window.__d1GameDebug = { lifecycle:() => 'booting', businessReady:() => false, texturesReady:() => false };
+    import('./d1-game.js').catch(error => {
+      document.body.dataset.entryState = 'error';
+      const entry = document.querySelector('#entry-status');
+      entry.hidden = false;
+      entry.querySelector('h1').textContent = '가게를 준비하지 못했습니다';
+      entry.querySelector('p').textContent = '연결을 확인하고 다시 시도해 주세요. 저장된 영업은 유지됩니다.';
+      entry.querySelector('.entry-recovery').hidden = false;
+      console.error('BUSINESS_BOOT_FAILED', error?.name);
+    });
+  </script>
 </body>
 </html>

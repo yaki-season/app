@@ -125,6 +125,8 @@ test('츠키오카 접수→시작 2칸에서 두 꼬치를 독립적으로 조�
   expect(customerHit).toMatchObject({ opacity: 0, colorWrite: false });
   await clickCustomerActor(page, tsukiokaSeat);
   await expect.poll(() => D(page, 'custPhase')).toBe('ordered');
+  await expect(page.locator('#departureCutscene')).toHaveAttribute('data-beat', 'arrival');
+  await page.locator('#guestSceneSkip').click();
 
   // 조립: 첫 주문 네기마 2개를 실제 화면 클릭으로 조립하고, 완성 꼬치를 명시적으로 옮긴다.
   await goScreen(page, 'SCR-SVC-ASSEMBLY');
@@ -202,7 +204,7 @@ test('츠키오카 접수→시작 2칸에서 두 꼬치를 독립적으로 조�
     window.__d1GameDebug.renderer.objectMesh.pgSlot0.quaternion.toArray()
   ));
   await clickObj(page, 'pgSlot0');
-  await expect(page.locator('#hint')).toContainText('꼬치를 뒤집는 중');
+  await expect(page.getByTestId('grill-feedback-0')).toContainText('앞면');
   await expect.poll(() => D(page, 'cookSlots').then((slots) => slots.map(({ status }) => status)))
     .toEqual(['back', 'front']);
   await page.waitForTimeout(350);

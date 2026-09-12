@@ -13,7 +13,13 @@ test('D3 8명·7주문·16항목을 정리와 정산까지 완주한다', async 
   page.on('pageerror', (error) => errors.push(error.message));
   await openD3(page);
 
-  // 첫 손님의 타레 모모는 이야기가 걸려 있어 뽑기에서 제외된다.
+  // 첫 배정은 접수 전에는 숨기며, 접수 성공 뒤에만 실제 메뉴를 읽는다.
+  expect(await page.evaluate(() => window.__d1GameDebug.businessView().orders[0].lines)).toEqual([]);
+  await page.evaluate(() => {
+    const D = window.__d1GameDebug;
+    D.businessAdvance(6000);
+    D.businessDispatch({ type: 'accept-order', intentId: 'd3:first-accept', orderId: D.businessView().orders[0].orderId });
+  });
   const firstOrder = await page.evaluate(() => window.__d1GameDebug.businessView().orders[0]);
   expect(firstOrder.lines[0]).toMatchObject({ menuId: 'momo' });
 
@@ -65,7 +71,7 @@ test('D3 8명·7주문·16항목을 정리와 정산까지 완주한다', async 
     return { view: D.businessView(), audio: D.audioState() };
   });
 
-  expect(result.view.phase, JSON.stringify(result.view.settlement)).toBe('settlement');
+  expect(result.view.phase, JSON.stringify(result.view.settlement)).toBe('complete');
   expect(result.view.settlement.summary).toMatchObject({
     customers: { visited: 8 },
     orders: { accepted: 7, completed: 7 },

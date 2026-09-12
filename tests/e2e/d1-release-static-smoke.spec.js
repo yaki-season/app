@@ -12,7 +12,10 @@ async function staticRelease(page) {
 
 async function expectExplicitStartFailure(page, expectedCode) {
   await page.goto('/src/d1-game.html?reset=1');
-  await expect(page.getByTestId('scene-canvas')).toBeVisible();
+  await expect(page.locator('body')).toHaveAttribute('data-entry-state', 'error');
+  await expect(page.getByTestId('scene-canvas')).toBeHidden();
+  await expect(page.locator('#entry-status').getByRole('link', { name:'다시 시도' })).toBeVisible();
+  await expect(page.locator('#entry-status').getByRole('link', { name:'시작 화면으로' })).toBeVisible();
   await expect.poll(() => D(page, 'businessReady')).toBe(true);
   expect(await D(page, 'businessSession')).toMatchObject({
     ok: false,

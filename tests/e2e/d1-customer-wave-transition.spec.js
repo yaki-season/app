@@ -14,6 +14,7 @@ async function bootAndServeTsukioka(page) {
   const seat = (await D(page, 'businessView')).seats
     .find(({ customerId }) => customerId === 'REGULAR_TSUKIOKA');
   await D(page, 'businessClickSeat', seat.seatId);
+  await page.locator('#guestSceneSkip').click();
   for (const [menuId, count] of [['beer', 1], ['negima', 2]]) {
     for (let index = 0; index < count; index += 1) {
       expect(await D(page, 'businessDispatch', {
@@ -54,6 +55,7 @@ test('첫 손님이 실패 음식에 화나서 떠나도 다음 손님은 계속
   const firstSeat = (await D(page, 'businessView')).seats
     .find(({ customerId }) => customerId === 'REGULAR_TSUKIOKA');
   await D(page, 'businessClickSeat', firstSeat.seatId);
+  await page.locator('#guestSceneSkip').click();
   expect(await D(page, 'businessDispatch', {
     type: 'serve-item',
     intentId: 'arrival-after-angry:fail',
@@ -90,11 +92,11 @@ test('츠키오카 퇴장 장면 뒤 직장인 둘은 이전 식기 없이 나�
     'data-scene-id',
     'SCN-D1-TSUKIOKA-DEPARTURE',
   );
-  await expect(page.getByTestId('departure-cutscene')).toContainText('뭐, 나쁘지 않군');
+  await expect(page.getByTestId('departure-cutscene')).toContainText('파가 달게');
   expect((await D(page, 'businessView')).clock.paused).toBe(true);
   expect(await page.evaluate(() => window.__d1GameDebug.renderer.artMesh.custTsukioka.visible)).toBe(true);
 
-  await page.getByTestId('departure-cutscene-continue').click();
+  await page.locator('#guestSceneSkip').click();
   await expect(page.getByTestId('departure-cutscene')).toBeHidden();
   expect((await D(page, 'businessView')).clock.paused).toBe(false);
   expect(await page.evaluate(() => window.__d1GameDebug.renderer.artMesh.custTsukioka.visible)).toBe(false);

@@ -15,8 +15,10 @@ export function createPublicShellDialogs({
   const titleNode = document.querySelector('#dialog-title');
   const contentNode = document.querySelector('#dialog-content');
   const actionsNode = document.querySelector('#dialog-actions');
+  let returnFocus = null;
 
   function open({ overlayId, kicker, title, content, actions }) {
+    if (!dialog.open) returnFocus = document.activeElement;
     dialog.dataset.overlayId = overlayId;
     document.body.dataset.overlayId = overlayId;
     kickerNode.textContent = kicker;
@@ -88,7 +90,7 @@ export function createPublicShellDialogs({
     return row;
   }
 
-  function openSettings(origin = 'start') {
+  function openSettings() {
     const list = element('div', { className: 'settings-list' });
     list.append(
       settingRow('largeHitArea', '큰 입력 영역'),
@@ -96,10 +98,6 @@ export function createPublicShellDialogs({
       settingRow('reducedMotion', '움직임 줄이기'),
       settingRow('helpEnabled', '도움말 표시'),
     );
-    const returnToOrigin = () => {
-      close();
-      if (origin === 'pause') openPause();
-    };
     open({
       overlayId: 'OVR-SETTINGS',
       kicker: '설정',
@@ -108,11 +106,11 @@ export function createPublicShellDialogs({
         list,
         element('p', {
           className: 'notice',
-          text: '변경은 로컬에만 저장됩니다. 오디오 설정과 원격 동기화는 제공하지 않습니다.',
+          text: '이 브라우저에 저장되며 이야기와 영업 화면에도 적용됩니다.',
         }),
       ],
       actions: [
-        actionButton('취소', returnToOrigin),
+        actionButton('취소', close),
         actionButton('설정 저장', async () => {
           const next = Object.fromEntries(
             [...list.querySelectorAll('input')].map((input) => [input.name, input.checked]),
@@ -121,36 +119,17 @@ export function createPublicShellDialogs({
           if (!saved.ok) throw saved.error;
           setSettings(saved.value);
           onOperation('settings-saved');
-          returnToOrigin();
+          close();
         }, { primary: true }),
       ],
     });
   }
 
-  function openPause() {
-    open({
-      overlayId: 'OVR-PAUSE',
-      kicker: '일시정지',
-      title: '메뉴를 잠시 멈췄습니다',
-      content: [
-        element('p', { text: '이 shell에는 진행 중인 gameplay timer가 없습니다. 저장과 캠페인 상태도 변경하지 않습니다.' }),
-      ],
-      actions: [
-        actionButton('플레이방법', () => {
-          close();
-          openHelp();
-        }),
-        actionButton('설정', () => {
-          close();
-          openSettings('pause');
-        }),
-        actionButton('재개', close, { primary: true }),
-      ],
-    });
-  }
-
   dialog.addEventListener('close', () => {
+    if (dialog.open) return;
     delete document.body.dataset.overlayId;
+    delete dialog.dataset.overlayId;
+    if (returnFocus?.isConnected) returnFocus.focus({ preventScroll:true });
   });
 
   return Object.freeze({
@@ -158,7 +137,6 @@ export function createPublicShellDialogs({
     close,
     openDiagnostics,
     openHelp,
-    openPause,
     openSettings,
   });
 }

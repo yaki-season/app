@@ -186,7 +186,7 @@ function lineMenuLabel(line) {
 }
 
 function remainingOrderItems(order) {
-  if (!order) return [];
+  if (!order || order.acceptedAtMs == null) return [];
   return order.lines
     .map((line) => ({
       menuId: line.menuId,
@@ -245,7 +245,7 @@ function seatView(state, definition, seat) {
     phase,
     mood,
     orderId: order?.id ?? null,
-    orderLabel: orderLabel(order),
+    orderLabel: order?.acceptedAtMs == null ? '' : orderLabel(order),
     remainingItems,
     remainingOrderLabel: remainingOrderLabel(remainingItems),
     waitRatio,
@@ -287,7 +287,7 @@ function orderView(state, order) {
     status: order.status,
     acceptedAtMs: order.acceptedAtMs,
     completedAtMs: order.completedAtMs,
-    lines: order.lines.map((line) => ({
+    lines: (order.acceptedAtMs == null ? [] : order.lines).map((line) => ({
       menuId: line.menuId,
       seasoning: line.seasoning ?? null,
       menuLabel: lineMenuLabel(line),

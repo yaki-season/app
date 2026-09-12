@@ -136,6 +136,9 @@ export const D1_EXTRA_ACTOR_GEOMETRY = deepFreeze({
 
 export const D1_EXTRA_ACTOR_ROLE_SEMANTICS = deepFreeze({
   role: 'nameless-commuter-extra-category',
+  // SCN-004 사용자 후속: 지정 runtime ID의 승인 A/B 외형은 이름 있는 손님으로 확장한다.
+  // 나머지 엑스트라에는 아래 익명 계약을 계속 적용한다. 판정은 storyGuests가 단독 소유한다.
+  namedGuestException: { specId: 'SCN-004', characterIds: ['CHAR-REN', 'CHAR-MIO'], identityOwner: 'domain/businessDay/storyGuests.js' },
   fixedCharacterBoundary: {
     onlyNamedCharacters: ['CHAR-AKI', 'CHAR-TSUKIOKA'],
     extraMustNotBecomeFixedCharacter: true,

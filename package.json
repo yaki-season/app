@@ -27,6 +27,10 @@
     "verify": "npm run d1:release:check && npm test && npm run test:e2e:d1-core && npm run test:e2e:gameplay",
     "test:e2e:gameplay": "playwright test tests/e2e/gameplay-polish.spec.js tests/e2e/audit-fixes.spec.js tests/e2e/stage-result.spec.js tests/e2e/prepared-dock-keyboard.spec.js tests/e2e/public-shell.spec.js tests/e2e/d6-business-day.spec.js --retries=0",
     "test:e2e:d6-play": "playwright test tests/e2e/d6-real-play.spec.js --retries=0",
+    "test:e2e:grill": "playwright test tests/e2e/grill-craft.spec.js tests/e2e/d1-raw-negima-runtime.spec.js tests/e2e/d1-face-serving-ux.spec.js --retries=0",
+    "test:e2e:story": "playwright test tests/e2e/guest-story.spec.js tests/e2e/developer-guest-story.spec.js --retries=0",
+    "test:e2e:market": "playwright test tests/e2e/d4-grill-upgrade-preopen.spec.js --retries=0",
+    "test:e2e:presentation": "playwright test tests/e2e/intro-presentation.spec.js tests/e2e/public-shell.spec.js tests/e2e/s0-d3-scenario.spec.js --retries=0",
     "verify:full-diagnostic": "node tools/qa/full-diagnostic.mjs"
   },
   "devDependencies": {

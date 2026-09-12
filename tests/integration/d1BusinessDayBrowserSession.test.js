@@ -81,6 +81,28 @@ function finishDay(port) {
 }
 
 describe('D1 브라우저 영업 세션 조립', () => {
+  it('같은 영업 snapshot 재개는 활성 저장과 백업을 변경하지 않는다', async () => {
+    const storage = new MemoryStorageAdapter();
+    const first = await createD1BusinessDayBrowserSession({ definition, storagePort: storage });
+    first.port.advance(6_000);
+    const businessSnapshot = first.port.runtime.getState();
+    const saved = storage.snapshot();
+    const resumed = await createD1BusinessDayBrowserSession({ definition, storagePort: storage, businessSnapshot });
+    expect(resumed.ok).toBe(true);
+    expect(resumed.port.getViewModel().clock.elapsedMs).toBe(6_000);
+    expect(storage.snapshot()).toEqual(saved);
+  });
+
+  it('손상된 영업 snapshot은 시작 저장 전 거절하고 원본을 보존한다', async () => {
+    const storage = new MemoryStorageAdapter();
+    const saved = storage.snapshot();
+    const invalid = await createD1BusinessDayBrowserSession({
+      definition, storagePort: storage, businessSnapshot: { runId: 'wrong-session' },
+    });
+    expect(invalid).toMatchObject({ ok: false, error: { code: 'BUSINESS_SNAPSHOT_INVALID' }, port: null });
+    expect(storage.snapshot()).toEqual(saved);
+  });
+
   it('직접 진입은 S0를 끝내고 day-start 저장 뒤 D1 6석 영업을 시작한다', async () => {
     const storage = new MemoryStorageAdapter();
     const session = await createD1BusinessDayBrowserSession({
@@ -128,10 +150,7 @@ describe('D1 브라우저 영업 세션 조립', () => {
       orders: [{
         orderId: 'D1-ORDER-001',
         status: 'unaccepted',
-        lines: [
-          { menuId: 'beer', served: 0 },
-          { menuId: 'negima', served: 0 },
-        ],
+        lines: [],
       }],
     });
 
