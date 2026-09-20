@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { prepareCabbageSalad } from './helpers/saladPrepare.js';
 
 async function hold(page, locator, durationMs) {
   const box = await locator.boundingBox();
@@ -13,7 +14,9 @@ test('D4 첫 주문은 실제 사라다 홀드와 하이볼 병 홀드로 완료
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/src/d1-game.html?day=d4&devUnlock=1&reset=1');
-  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
+  // session.ok는 화면 제시 전에 참이 된다. 그 사이 requestScreen은 진입 로딩 정지에
+  // 막혀 삼켜지므로, 조작 가능한 시점인 lifecycle 'ready'를 기다린다.
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.lifecycle?.())).toBe('ready');
   await expect(page.getByTestId('quicknav-SCR-SVC-INSTANT')).toBeVisible();
   await expect(page.getByTestId('instant-station-badge')).toHaveCount(0);
 
@@ -31,7 +34,7 @@ test('D4 첫 주문은 실제 사라다 홀드와 하이볼 병 홀드로 완료
   await page.getByTestId('quicknav-SCR-SVC-INSTANT').click();
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug.activeScreen())).toBe('SCR-SVC-INSTANT');
   await expect(page.getByTestId('cabbage-salad-prepare')).toBeVisible();
-  await hold(page, page.getByTestId('cabbage-salad-prepare'), 2_650);
+  await prepareCabbageSalad(page, page.getByTestId('cabbage-salad-prepare'));
   const saladCard = page.locator('.dock-card[data-menu-id="cabbage-salad"]');
   await expect(saladCard).toHaveCount(1);
   await expect(saladCard.locator('.dock-quality')).toHaveCount(0);
@@ -94,7 +97,9 @@ test('D4 첫 주문은 실제 사라다 홀드와 하이볼 병 홀드로 완료
 
 test('하이볼 작업대는 자리가 고정된 채 들어오고 액체 혼합·탄산·넘침을 잔에서 보여준다', async ({ page }) => {
   await page.goto('/src/d1-game.html?day=d4&devUnlock=1&reset=1');
-  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
+  // session.ok는 화면 제시 전에 참이 된다. 그 사이 requestScreen은 진입 로딩 정지에
+  // 막혀 삼켜지므로, 조작 가능한 시점인 lifecycle 'ready'를 기다린다.
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.lifecycle?.())).toBe('ready');
 
   // 전환 중에는 작업대를 감췄다가 제자리에 나타난다. 예전에는 도착 카메라로 투영한 위치·배율을
   // 얹어 날아 들어왔는데, 매번 자리가 바뀌는 것처럼 보였다.
@@ -333,7 +338,9 @@ test('하이볼은 레몬 뒤 잔을 눌러야 픽업대에 올라가고, 따라
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/src/d1-game.html?day=d5&devUnlock=1&reset=1');
-  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.businessSession?.().ok)).toBe(true);
+  // session.ok는 화면 제시 전에 참이 된다. 그 사이 requestScreen은 진입 로딩 정지에
+  // 막혀 삼켜지므로, 조작 가능한 시점인 lifecycle 'ready'를 기다린다.
+  await expect.poll(() => page.evaluate(() => window.__d1GameDebug?.lifecycle?.())).toBe('ready');
   await page.evaluate(() => window.__d1GameDebug.requestScreen('SCR-SVC-DRINK'));
   await expect.poll(() => page.evaluate(() => window.__d1GameDebug.activeScreen())).toBe('SCR-SVC-DRINK');
   await expect(page.getByTestId('highball-panel')).toHaveClass(/is-art-ready/);

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { pourPerfectBeer } from './helpers/beerPour.js';
 import { settleGuestScene } from './helpers/guestScene.js';
+import { prepareCabbageSalad } from './helpers/saladPrepare.js';
 
 const D = (page, name) => page.evaluate(name => window.__d1GameDebug[name](), name);
 
@@ -132,7 +133,7 @@ test('한 재료로 넘친 하이볼은 다시 만들 수 있고 사라다 카�
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
   await page.waitForTimeout(300); await page.mouse.move(5, 5); await page.waitForTimeout(2800); await page.mouse.up();
   expect(await D(page, 'dockItems')).toEqual([]);
-  await hold(page, button, 2700);
+  await prepareCabbageSalad(page, button);
   expect(await D(page, 'dockItems')).toHaveLength(1);
 });
 
@@ -155,7 +156,8 @@ test('D4 하이볼과 사라다 두 항목 제공은 맥주 그림이나 세 항
     const image = window.__d1GameDebug.renderer.seatBeerMesh[id].material.map.image;
     return image?.currentSrc || image?.src || '';
   }, seat.seatId)).toContain('highball');
-  await nav(page, 'INSTANT'); await hold(page, page.getByTestId('cabbage-salad-prepare'), 2700);
+  await nav(page, 'INSTANT');
+  await prepareCabbageSalad(page, page.getByTestId('cabbage-salad-prepare'));
   await serveOne(page, seat, 'cabbage-salad');
   await expect(page.locator('#hint')).toHaveText('주문 제공 완료 · 총 2항목');
   expect((await D(page, 'businessView')).orders[0].status).toBe('completed');
