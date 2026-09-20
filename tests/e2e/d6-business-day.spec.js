@@ -58,7 +58,10 @@ test('D6 만석 fixture에서 좌석 표시·조작 영역과 일시정지·새�
   expect((await D(page, 'businessView')).seats.filter(s => s.occupied && !s.cleanupNeeded)).toHaveLength(6);
   await expect(page.locator('.order-bubble:visible')).toHaveCount(5);
   await expect(page.locator('.customer-serve-target:not([hidden])')).toHaveCount(6);
-  await expect(page.getByTestId('bubble-seat-06')).toContainText('타레 토리카와');
+  // 좌석 배정은 seatingSeed가 정하므로 좌석 번호 대신 표시 형태를 본다. 접수한 주문은
+  // 남은 항목을 읽히고, 아직 접수하지 않은 주문은 내용 없이 '주문서'만 보인다(주문 발견).
+  await expect(page.locator('.order-bubble:visible').filter({ hasText: '소금 모모 0/2 · 생맥주' })).toHaveCount(1);
+  await expect(page.locator('.order-bubble:visible').filter({ hasText: /^주문서$/ })).toHaveCount(1);
   await page.screenshot({ path: test.info().outputPath('d6-full-seats.png') });
   console.log('D6 full-seat renderer sample:', JSON.stringify(await D(page, 'rendererStats')));
   const bubbles = await page.locator('.order-bubble:visible').evaluateAll(nodes => nodes.map(node => {

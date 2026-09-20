@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { FIRST_ORDER_RUNTIME_STORAGE_KEY } from '../../src/d1/firstOrderRuntimeStorage.js';
+import { pourPerfectBeer } from './helpers/beerPour.js';
 
 // 시작 날짜만 개발 진입으로 격리한다. 이후에는 조회 + 일반 마우스/키보드만 사용한다.
 // 완성품·주문 주입, 시간 가속, business dispatch 없이 조리부터 22항목을 직접 제공한다.
@@ -54,10 +55,7 @@ async function drink(page, menu) {
     await click(page, page.getByTestId('highball-pickup'));
   } else {
     await object(page, 'glassRack');
-    const p = await page.evaluate(() => window.__d1GameDebug.screenPosOf('drinkLeverDrag'));
-    await page.mouse.move(p.x, p.y); await page.mouse.down();
-    await page.mouse.move(p.x, p.y + 60, { steps: 4 }); await page.waitForTimeout(2600);
-    await page.mouse.move(p.x, p.y - 60, { steps: 4 }); await page.waitForTimeout(600); await page.mouse.up();
+    await pourPerfectBeer(page, await page.evaluate(() => window.__d1GameDebug.screenPosOf('drinkLeverDrag')));
     await click(page, page.getByTestId('drink-finish'));
   }
 }

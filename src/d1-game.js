@@ -3504,7 +3504,10 @@ async function presentBusinessDay() {
       if (businessBootError) throw businessBootError;
       if ([rawNegimaRuntime, momoRuntime, kawaRuntime].some(runtime => runtime.status === 'failed')) throw new Error('조리 그림을 불러오지 못했습니다. 저장된 영업은 유지됩니다.');
       if (R.textureErrors()) throw new Error('가게 그림을 불러오지 못했습니다. 연결을 확인하고 다시 시도해 주세요.');
-      return Boolean(businessPort) && ![rawNegimaRuntime, momoRuntime, kawaRuntime].some(runtime => runtime.status === 'loading') && R.texturesReady();
+      // 마감까지 끝난 날을 다시 열면 port 없이 결과 화면만 복원한다. port를 기다리면
+      // 영원히 오지 않아 진입이 오류로 끝나고 결과·이어하기 버튼이 가려진다.
+      const sessionReady = Boolean(businessPort) || businessSession?.completed === true;
+      return sessionReady && ![rawNegimaRuntime, momoRuntime, kawaRuntime].some(runtime => runtime.status === 'loading') && R.texturesReady();
     }, { timeoutMs:20000 });
     render();
     await waitForPresentation(() => {

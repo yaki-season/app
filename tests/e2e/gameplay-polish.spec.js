@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { pourPerfectBeer } from './helpers/beerPour.js';
+import { settleGuestScene } from './helpers/guestScene.js';
 
 const D = (page, name) => page.evaluate(name => window.__d1GameDebug[name](), name);
 
@@ -59,6 +61,7 @@ async function boot(page, day = 'd1') {
   await page.waitForFunction(() => window.__d1GameDebug?.businessSession?.().ok);
 }
 async function nav(page, station) {
+  await settleGuestScene(page);
   await page.getByTestId(`quicknav-SCR-SVC-${station}`).click();
   await page.waitForFunction(() => !window.__d1GameDebug.isTransitioning());
 }
@@ -78,6 +81,8 @@ async function acceptFirst(page) {
   await expect.poll(async () => (await D(page, 'businessView')).seats.some(s => s.canOrder), { timeout: 15000 }).toBe(true);
   const seat = (await D(page, 'businessView')).seats.find(s => s.canOrder);
   await page.getByTestId(`serve-target-${seat.seatId}`).click();
+  // 접수 직후 도착 이야기가 화면을 덮으므로 닫고 조작을 이어간다.
+  await settleGuestScene(page);
   return seat;
 }
 async function serveOne(page, seat, menu) {
@@ -99,12 +104,7 @@ test('Perfect 잔을 선택하면 먼저 만든 Fail 잔을 대신 제공하지 
   await page.waitForTimeout(5100); await page.mouse.up();
   await page.locator('#drinkPanel [data-act="serve-low"]').click();
   await object(page, 'glassRack');
-  lever = await position(page, 'drinkLeverDrag');
-  await page.mouse.move(lever.x, lever.y); await page.mouse.down();
-  await page.mouse.move(lever.x, lever.y + 60, { steps: 4 });
-  await page.waitForTimeout(2600);
-  await page.mouse.move(lever.x, lever.y - 60, { steps: 4 });
-  await page.waitForTimeout(600); await page.mouse.up();
+  await pourPerfectBeer(page, await position(page, 'drinkLeverDrag'));
   await page.getByTestId('drink-finish').click();
   const [bad, good] = await D(page, 'dockItems');
   expect(bad.quality).toBe('Fail'); expect(good.quality).toBe('Perfect');

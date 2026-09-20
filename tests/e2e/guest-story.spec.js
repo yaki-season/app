@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { randomizeBusinessDayRecord } from '../../src/domain/businessDay/randomizeBusinessDay.js';
 import { FIRST_ORDER_RUNTIME_STORAGE_KEY } from '../../src/d1/firstOrderRuntimeStorage.js';
+import { pourPerfectBeer } from './helpers/beerPour.js';
 
 const D = (page, name, ...args) => page.evaluate(({ name, args }) => window.__d1GameDebug?.[name]?.(...args) ?? null, { name, args });
 async function nav(page, station) {
@@ -52,10 +53,7 @@ test('실입력: 대화를 듣고 맥주·네기마를 직접 만들어 내면 �
   expect((await readScene(page)).at(-1)).toContain('생맥주');
   await nav(page, 'DRINK');
   await object(page, 'glassRack');
-  const lever = await D(page, 'screenPosOf', 'drinkLeverDrag');
-  await page.mouse.move(lever.x, lever.y); await page.mouse.down();
-  await page.mouse.move(lever.x, lever.y + 60, { steps: 4 }); await page.waitForTimeout(2600);
-  await page.mouse.move(lever.x, lever.y - 60, { steps: 4 }); await page.waitForTimeout(600); await page.mouse.up();
+  await pourPerfectBeer(page, await D(page, 'screenPosOf', 'drinkLeverDrag'));
   await page.getByTestId('drink-finish').click();
   await nav(page, 'CUSTOMERS');
   await page.locator('.dock-card').filter({ hasText: '생맥주' }).click();

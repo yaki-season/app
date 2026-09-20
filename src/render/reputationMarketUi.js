@@ -1,3 +1,4 @@
+import { dayOrdinal } from '../content/dayOrdinal.js';
 // GPL-009: 실제 연결된 그릴 상품만 표시한다. 설치는 캠페인의 원자적 저장을 거친다.
 export function renderReputationMarket({ content, actions, config, error, bridge, dayId, onStart, onRetry, isBusinessRunning = () => false }) {
   let busy = false;
@@ -59,7 +60,7 @@ export function renderReputationMarket({ content, actions, config, error, bridge
       : '설치는 다음 영업부터 유지됩니다. 영업 도중에는 그릴을 바꾸지 않습니다.'));
     status.setAttribute('role', 'status'); status.dataset.testid = 'market-status'; market.append(status);
     content.replaceChildren(market);
-    const start = make('button', 'primary', `${claimed}칸으로 ${dayId} 영업 ${running ? '재개' : '시작'}`);
+    const start = make('button', 'primary', `${claimed}칸으로 ${dayOrdinal(dayId) ?? dayId} 영업 ${running ? '재개' : '시작'}`);
     start.dataset.testid = 'market-start-business'; start.disabled = busy;
     start.addEventListener('click', async () => {
       if (busy) return;
