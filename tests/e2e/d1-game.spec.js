@@ -2,6 +2,7 @@
 // d1-business-day.spec.js가 별도로 검증한다.
 import { test, expect } from '@playwright/test';
 import { routeD1ReleaseDefinition } from './d1-release-definition.js';
+import { pourPerfectBeer } from './helpers/beerPour.js';
 
 const D = (page, fn, ...a) => page.evaluate(({ f, args }) => window.__d1GameDebug[f](...args), { f: fn, args: a });
 const active = (page) => D(page, 'activeScreen');
@@ -46,16 +47,7 @@ async function clickCustomerActor(page, seatId) {
 }
 
 async function pourBeerWithLever(page) {
-  const lever = await D(page, 'screenPosOf', 'drinkLeverDrag');
-  if (!lever) throw new Error('보이지 않는 대상: drinkLeverDrag');
-  await page.mouse.move(lever.x, lever.y);
-  await page.mouse.down();
-  await page.mouse.move(lever.x, lever.y + 60, { steps: 4 });
-  await page.waitForTimeout(2_600);
-  await page.mouse.move(lever.x, lever.y - 60, { steps: 4 });
-  await page.waitForTimeout(600);
-  await page.mouse.up();
-  await expect.poll(() => D(page, 'drinkState')).toMatchObject({ beerOk: true, foamOk: true });
+  await pourPerfectBeer(page, await D(page, 'screenPosOf', 'drinkLeverDrag'));
 }
 
 test('6석 프로덕션 renderer와 승인 손님 배경이 조리 스테이션과 공존한다', async ({ page }) => {
@@ -98,6 +90,9 @@ test('스테이션을 좌·우/퀵/키보드로 전환한다', async ({ page }) 
 });
 
 test('츠키오카 접수→시작 2칸에서 두 꼬치를 독립적으로 조리·회수한다', async ({ page }) => {
+  // 접수→조립→굽기→따르기→서빙을 실제 입력과 벽시계로 한 번에 도는 종단 경로라
+  // 기본 45초로는 느린 CPU 렌더 환경에서 구조적으로 모자란다(로컬 SwiftShader 약 53초).
+  test.slow();
   const errs = await boot(page);
 
   // 4~6초 주문 고민 뒤 츠키오카 좌석 hit target으로 접수한다.

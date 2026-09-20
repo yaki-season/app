@@ -4,7 +4,8 @@ import { FIRST_ORDER_RUNTIME_STORAGE_KEY } from '../../src/d1/firstOrderRuntimeS
 const D = (page, name) => page.evaluate(name => window.__d1GameDebug[name](), name);
 test('새 영업은 조작하기 전부터 배정 seed와 버전을 저장한다', async ({ page }) => {
   await page.goto('/d1-game.html?day=d6&devUnlock=1&reset=1');
-  await page.waitForFunction(() => window.__d1GameDebug?.businessSession?.().ok);
+  // 저장은 화면 제시가 끝난 시점에 처음 일어난다. session.ok만 보면 그 전을 읽는다.
+  await page.waitForFunction(() => window.__d1GameDebug?.lifecycle?.() === 'ready');
   const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), FIRST_ORDER_RUNTIME_STORAGE_KEY);
   expect(saved.customerRandomizationVersion).toBe(2);
   expect(saved.daySeed).toBeGreaterThan(0);
@@ -12,7 +13,8 @@ test('새 영업은 조작하기 전부터 배정 seed와 버전을 저장한다
   await page.evaluate(() => history.replaceState(null, '', '/d1-game.html?day=d6'));
   await page.reload();
   await page.waitForFunction(() => window.__d1GameDebug?.businessSession?.().ok);
-  expect((await D(page, 'businessView')).seats[0].customerId).toBe(saved.business.seats[0].customerId);
+  expect((await D(page, 'businessView')).seats.map(seat => seat.customerId))
+    .toEqual(saved.business.seats.map(seat => seat.customerId));
 });
 
 async function boot(page, day = 'd6', seed = 7) {
@@ -40,15 +42,18 @@ async function hold(page, target, ms) {
 test('첫 손님을 섞고 새로고침해도 같은 주문·인물을 유지한다', async ({ page }) => {
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await boot(page);
-  const first = (await D(page, 'businessView')).seats[0];
+  // 좌석 번호는 seatingSeed가 정하므로 '첫 손님이 앉은 자리'를 찾아서 본다.
+  const occupied = view => view.seats.find(seat => seat.customerId);
+  const first = occupied(await D(page, 'businessView'));
   expect(first.customerId).toBe('D6-SOLO-6');
   expect(first.orderId).toBe('D6-ORDER-001');
   await page.keyboard.press('Escape');
   await page.reload();
   await page.waitForFunction(() => window.__d1GameDebug?.businessSession?.().ok);
-  expect((await D(page, 'businessView')).seats[0].customerId).toBe(first.customerId);
+  expect(occupied(await D(page, 'businessView')).seatId).toBe(first.seatId);
+  expect(occupied(await D(page, 'businessView')).customerId).toBe(first.customerId);
   expect((await D(page, 'businessView')).orders[0].lines).toEqual([]);
-  await expect.poll(async () => (await D(page, 'businessView')).seats[0].canOrder, { timeout: 10000 }).toBe(true);
+  await expect.poll(async () => occupied(await D(page, 'businessView')).canOrder, { timeout: 10000 }).toBe(true);
   await page.getByTestId(`serve-target-${first.seatId}`).click();
   expect((await D(page, 'businessView')).orders[0].lines.map(l => [l.menuId, l.quantity]))
     .toEqual([['kawa', 1], ['beer', 1]]);

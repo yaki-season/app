@@ -62,9 +62,10 @@ test('구매: 골드 차감·소유·판매가 효과 반영', async ({ page }) 
   expect(await page.evaluate(() => window.__prodDebug.economyBasePrice())).toBe(expectedPrice);
 });
 
-test('프로덕션 그릴은 명성 달성 다음 영업일에 클릭으로 2칸에서 4칸 해금된다', async ({ page }) => {
+// 해금 사다리는 `content/progression/grill-slots.json`이 정본이다(3칸=명성 12, 4칸=30 …).
+test('프로덕션 그릴은 명성 달성 다음 영업일에 클릭으로 2칸에서 3칸 해금된다', async ({ page }) => {
   await boot(page);
-  await page.evaluate(() => window.__prodDebug.setWallet(9999, 10));
+  await page.evaluate(() => window.__prodDebug.setWallet(9999, 12));
   expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(2);
 
   await page.getByTestId('end-day').click();
@@ -75,12 +76,12 @@ test('프로덕션 그릴은 명성 달성 다음 영업일에 클릭으로 2칸
 
   await page.getByTestId('purchase-close').click();
   await page.getByTestId('next-day').click();
-  expect(await page.evaluate(() => window.__prodDebug.grillUnlock())).toEqual({ claimed: 2, available: 4, pending: true });
+  expect(await page.evaluate(() => window.__prodDebug.grillUnlock())).toEqual({ claimed: 2, available: 3, pending: true });
   await page.evaluate(() => window.__prodDebug.requestScreen('SCR-SVC-GRILL'));
   await expect(page.getByTestId('grill-unlock')).toBeVisible();
   await page.getByTestId('grill-unlock').click();
-  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(4);
-  expect(await page.evaluate(() => window.__prodDebug.grillUnlock())).toEqual({ claimed: 4, available: 4, pending: false });
+  expect(await page.evaluate(() => window.__prodDebug.cookSlots().length)).toBe(3);
+  expect(await page.evaluate(() => window.__prodDebug.grillUnlock())).toEqual({ claimed: 3, available: 3, pending: false });
 });
 
 test('게이팅: 명성·선행 조건이 구매를 막는다', async ({ page }) => {

@@ -11,6 +11,7 @@ import {
 } from './scenario/s0-d3-content.js';
 import { S0D3CampaignBridge } from './scenario/s0-d3-campaign.js';
 import { renderReputationMarket } from './render/reputationMarketUi.js';
+import { dayOrdinalDay } from './content/dayOrdinal.js';
 import { assertGrillMarketConfig } from './domain/progression/grillSlots.js';
 import { S0_ART_BINDING_INVENTORY } from './assets/s0D1ArtBindingContract.js';
 import {
@@ -514,7 +515,7 @@ async function advanceAfterStory(story) {
 }
 
 function renderDayPrep() {
-  heading.textContent = `${dayId} 영업 준비`;
+  heading.textContent = `${dayOrdinalDay(dayId)} 영업 준비`;
   hideStoryPortrait();
   hideStoryIllustration();
   hideStoryBackground();

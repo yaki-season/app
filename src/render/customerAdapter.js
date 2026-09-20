@@ -107,7 +107,12 @@ export function createCustomerAdapter({ renderer, container, customerScreenId = 
     const groupPrefix = s.groupId ? '그룹 주문 · ' : '';
     switch (phase) {
       case 'thinking': return { text: '…', ratio: null, tone: 'think' };
-      case 'ordering': return { text: `${s.groupId ? '그룹 주문' : '주문서'} · ${s.orderLabel}`, ratio: s.waitRatio, tone: 'order' };
+      // 접수 전에는 주문 내용을 알 수 없다(주문 발견). 빈 내용에 구분점만 남기지 않는다.
+      case 'ordering': return {
+        text: [s.groupId ? '그룹 주문' : '주문서', s.orderLabel].filter(Boolean).join(' · '),
+        ratio: s.waitRatio,
+        tone: 'order',
+      };
       case 'waiting': return { text: `${groupPrefix}${s.orderLabel}`, ratio: s.waitRatio, tone: 'wait' };
       case 'eating': return { text: '식사 중', ratio: null, tone: 'eat' };
       case 'done': return { text: '완료 (동행 대기)', ratio: null, tone: 'eat' };
