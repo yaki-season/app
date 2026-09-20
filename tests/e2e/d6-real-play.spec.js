@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { FIRST_ORDER_RUNTIME_STORAGE_KEY } from '../../src/d1/firstOrderRuntimeStorage.js';
 import { pourPerfectBeer } from './helpers/beerPour.js';
+import { prepareCabbageSalad } from './helpers/saladPrepare.js';
 
 // 시작 날짜만 개발 진입으로 격리한다. 이후에는 조회 + 일반 마우스/키보드만 사용한다.
 // 완성품·주문 주입, 시간 가속, business dispatch 없이 조리부터 22항목을 직접 제공한다.
@@ -142,7 +143,8 @@ test('D6 실입력 완주: 실제 조리 시간으로 10주문·22항목을 제�
     console.log(`D6 prepare: ${order.orderId} ${line.menuId} ${seasoning} x${line.remaining}`);
     if (['beer', 'highball'].includes(line.menuId)) await drink(page, line.menuId);
     else if (line.menuId === 'cabbage-salad') {
-      await nav(page, 'INSTANT'); await hold(page, page.getByTestId('cabbage-salad-prepare'), 2700);
+      await nav(page, 'INSTANT');
+      await prepareCabbageSalad(page, page.getByTestId('cabbage-salad-prepare'));
     } else await skewers(page, line.menuId, seasoning, Math.min(line.remaining, 2));
     await nav(page, 'CUSTOMERS');
     const item = (await D(page, 'dockItems')).find(i => i.menuId === line.menuId
